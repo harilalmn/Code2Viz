@@ -39,6 +39,10 @@ public partial class MainWindow : Window
     private BraceFoldingStrategy? _foldingStrategy;
     private DispatcherTimer? _foldingTimer;
 
+    // File system watcher for external changes
+    private FileSystemWatcher? _projectWatcher;
+    private DispatcherTimer? _fileWatcherDebounceTimer;
+
     // Snippet session for Tab navigation
     private SnippetSession? _snippetSession;
     private VizTextMarkerService? _textMarkerService;
@@ -69,10 +73,13 @@ public partial class MainWindow : Window
             _currentProject = project;
             LoadProjectTree();
             RefreshFileTabs();
-            
+
             var entry = _currentProject.EntryPointFile;
             if (entry != null) SelectFile(entry);
-            
+
+            // Start watching for external changes
+            StartProjectWatcher(_currentProject.ProjectDirectory);
+
             LoadSettingsToUI();
         }
 
@@ -1191,6 +1198,9 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Stop existing watcher
+            StopProjectWatcher();
+
             _currentProject = VizCodeProject.Load(projectFilePath);
             LoadProjectTree();
             RefreshFileTabs();
@@ -1200,6 +1210,9 @@ public partial class MainWindow : Window
             {
                 SelectFile(fileToSelect);
             }
+
+            // Start watching for external changes
+            StartProjectWatcher(_currentProject.ProjectDirectory);
 
             // Add to recent projects
             Project.RecentProjectsManager.AddProject(projectFilePath, _currentProject.ProjectFile.Name);
@@ -1357,6 +1370,140 @@ public partial class MainWindow : Window
         RefreshFileTabs(); // In case any files were modified/added externally (unlikely but good practice)
     }
 
+    #region File System Watcher
+
+    private void StartProjectWatcher(string projectDirectory)
+    {
+        if (string.IsNullOrEmpty(projectDirectory) || !Directory.Exists(projectDirectory))
+            return;
+
+        try
+        {
+            _projectWatcher = new FileSystemWatcher(projectDirectory)
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
+                IncludeSubdirectories = true,
+                EnableRaisingEvents = true
+            };
+
+            // Watch for .cs and .fs files
+            _projectWatcher.Created += OnProjectFileChanged;
+            _projectWatcher.Deleted += OnProjectFileChanged;
+            _projectWatcher.Renamed += OnProjectFileRenamed;
+            _projectWatcher.Changed += OnProjectFileChanged;
+
+            // Initialize debounce timer for batching rapid changes
+            _fileWatcherDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _fileWatcherDebounceTimer.Tick += (s, e) =>
+            {
+                _fileWatcherDebounceTimer.Stop();
+                RefreshProjectFromDisk();
+            };
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Warning: Could not start file watcher: {ex.Message}", isError: false);
+        }
+    }
+
+    private void StopProjectWatcher()
+    {
+        if (_projectWatcher != null)
+        {
+            _projectWatcher.EnableRaisingEvents = false;
+            _projectWatcher.Created -= OnProjectFileChanged;
+            _projectWatcher.Deleted -= OnProjectFileChanged;
+            _projectWatcher.Renamed -= OnProjectFileRenamed;
+            _projectWatcher.Changed -= OnProjectFileChanged;
+            _projectWatcher.Dispose();
+            _projectWatcher = null;
+        }
+
+        _fileWatcherDebounceTimer?.Stop();
+    }
+
+    private void OnProjectFileChanged(object sender, FileSystemEventArgs e)
+    {
+        // React to source code files or directories
+        if (!ShouldRefreshForPath(e.FullPath)) return;
+
+        // Debounce rapid changes
+        Dispatcher.Invoke(() =>
+        {
+            _fileWatcherDebounceTimer?.Stop();
+            _fileWatcherDebounceTimer?.Start();
+        });
+    }
+
+    private void OnProjectFileRenamed(object sender, RenamedEventArgs e)
+    {
+        // React if either old or new path should trigger refresh
+        if (!ShouldRefreshForPath(e.FullPath) && !ShouldRefreshForPath(e.OldFullPath)) return;
+
+        Dispatcher.Invoke(() =>
+        {
+            _fileWatcherDebounceTimer?.Stop();
+            _fileWatcherDebounceTimer?.Start();
+        });
+    }
+
+    private bool ShouldRefreshForPath(string path)
+    {
+        // Always refresh for directories (folder created/deleted)
+        if (Directory.Exists(path) || !Path.HasExtension(path))
+            return true;
+
+        // Refresh for source code files
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        return ext == ".cs" || ext == ".fs";
+    }
+
+    private void RefreshProjectFromDisk()
+    {
+        if (_currentProject == null) return;
+
+        try
+        {
+            // Remember current active file
+            var currentActiveFilePath = _activeFile?.FilePath;
+
+            // Refresh files from disk
+            _currentProject.RefreshFilesFromDisk();
+
+            // Refresh UI
+            LoadProjectTree();
+            RefreshFileTabs();
+
+            // Restore active file if still exists
+            if (!string.IsNullOrEmpty(currentActiveFilePath))
+            {
+                var restoredFile = _currentProject.Files.FirstOrDefault(f =>
+                    f.FilePath.Equals(currentActiveFilePath, StringComparison.OrdinalIgnoreCase));
+                if (restoredFile != null && restoredFile != _activeFile)
+                {
+                    SelectFile(restoredFile);
+                }
+                else if (_activeFile != null && !_currentProject.Files.Contains(_activeFile))
+                {
+                    // Active file was deleted, select entry point or first file
+                    var fallback = _currentProject.EntryPointFile ?? _currentProject.Files.FirstOrDefault();
+                    if (fallback != null) SelectFile(fallback);
+                }
+            }
+
+            SetStatus("Project refreshed from disk", isError: false);
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Error refreshing project: {ex.Message}", isError: true);
+        }
+    }
+
+    #endregion
+
     #endregion
 
     #region Tab Events
@@ -1376,8 +1523,10 @@ public partial class MainWindow : Window
             // Don't allow closing the entry point file
             if (file.IsEntryPoint)
             {
+                var entryFileName = _currentProject?.ProjectFile.Language == ProjectLanguage.FSharp
+                    ? "StartViz.fs" : "StartViz.cs";
                 MessageBox.Show(
-                    "Cannot close the entry point file (StartViz.vizcode).",
+                    $"Cannot close the entry point file ({entryFileName}).",
                     "Cannot Close",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -1427,8 +1576,11 @@ public partial class MainWindow : Window
         dialog.Owner = this;
         if (dialog.ShowDialog() == true)
         {
-            try 
+            try
             {
+                // Stop existing watcher
+                StopProjectWatcher();
+
                 if (dialog.OpenExistingProject)
                 {
                     // Open existing project instead of creating new
@@ -1440,10 +1592,13 @@ public partial class MainWindow : Window
                     _currentProject = VizCodeProject.CreateNew(dialog.FullPath, dialog.ProjectName, dialog.SelectedLanguage);
                     SetStatus($"Project created: {dialog.ProjectName}", false);
                 }
-                
+
                 LoadProjectTree();
                 RefreshFileTabs();
-                
+
+                // Start watching for external changes
+                StartProjectWatcher(_currentProject.ProjectDirectory);
+
                 if (_currentProject.EntryPointFile != null)
                 {
                     SelectFile(_currentProject.EntryPointFile);
@@ -1464,22 +1619,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Generate unique name
+        // Generate unique name based on project language
+        var ext = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp ? ".fs" : ".cs";
         int i = 1;
-        string fileName = "Untitled-1.vizcode";
+        string fileName = $"Untitled-1{ext}";
         while (_currentProject.Files.Any(f => f.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
         {
             i++;
-            fileName = $"Untitled-{i}.vizcode";
+            fileName = $"Untitled-{i}{ext}";
         }
 
-        // Create new in-memory file
+        // Create new in-memory file with language-appropriate template
         var projectName = _currentProject.ProjectFile.Name;
         var className = Path.GetFileNameWithoutExtension(fileName);
+        var isFSharp = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp;
+        var content = isFSharp
+            ? FSharpTemplates.GetEmptyModuleTemplate(projectName, className)
+            : string.Format(Templates.EmptyModuleTemplate, projectName, className);
+
         var newFile = new VizCodeFile
         {
             FilePath = string.Empty, // No path yet
-            Content = string.Format(Templates.EmptyModuleTemplate, projectName, className),
+            Content = content,
             HasUnsavedChanges = true,
             IsNew = true // Flag as new
         };
@@ -1770,7 +1931,11 @@ public partial class MainWindow : Window
         if (!PromptSaveChanges())
         {
             e.Cancel = true;
+            return;
         }
+
+        // Clean up file watcher
+        StopProjectWatcher();
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -1784,11 +1949,12 @@ public partial class MainWindow : Window
         foreach (var file in _currentProject.Files.Where(f => f.IsNew).ToList())
         {
             SelectFile(file); // Show the file being saved
+            var isFSharp = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp;
             var dialog = new SaveFileDialog
             {
                 FileName = file.FileName,
-                Filter = "VizCode Files (*.vizcode)|*.vizcode",
-                DefaultExt = ".vizcode",
+                Filter = isFSharp ? "F# Files (*.fs)|*.fs" : "C# Files (*.cs)|*.cs",
+                DefaultExt = isFSharp ? ".fs" : ".cs",
                 InitialDirectory = _currentProject.ProjectDirectory
             };
 
@@ -1837,8 +2003,8 @@ public partial class MainWindow : Window
         // Verify entry point exists
         if (_currentProject.EntryPointFile == null)
         {
-            var expectedFile = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp 
-                ? "StartViz.fs" : "StartViz.vizcode";
+            var expectedFile = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp
+                ? "StartViz.fs" : "StartViz.cs";
             SetStatus($"Error: {expectedFile} not found", isError: true);
             return;
         }
@@ -2586,8 +2752,413 @@ public partial class MainWindow : Window
         }
     }
 
+    #region Project Tree Context Menu
 
+    private void ContextMenu_NewFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProject == null) return;
 
+        var item = GetContextMenuTargetItem(sender);
+        if (item == null) return;
+
+        // Determine target directory
+        var targetDir = item.IsDirectory ? item.FullPath : Path.GetDirectoryName(item.FullPath);
+        if (string.IsNullOrEmpty(targetDir)) return;
+
+        // Prompt for file name
+        var fileName = PromptForInput("New File", "Enter file name:", GetDefaultNewFileName());
+        if (string.IsNullOrEmpty(fileName)) return;
+
+        // Ensure correct extension
+        var ext = Path.GetExtension(fileName);
+        if (string.IsNullOrEmpty(ext))
+        {
+            ext = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp ? ".fs" : ".cs";
+            fileName += ext;
+        }
+
+        var fullPath = Path.Combine(targetDir, fileName);
+
+        if (File.Exists(fullPath))
+        {
+            MessageBox.Show($"File '{fileName}' already exists.", "File Exists", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            // Create file with template
+            var projectName = _currentProject.ProjectFile.Name;
+            var className = Path.GetFileNameWithoutExtension(fileName);
+            var isFSharp = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp;
+            var content = isFSharp
+                ? FSharpTemplates.GetEmptyModuleTemplate(projectName, className)
+                : string.Format(Templates.EmptyModuleTemplate, projectName, className);
+
+            File.WriteAllText(fullPath, content);
+
+            // Add to project and open
+            var newFile = new VizCodeFile
+            {
+                FilePath = fullPath,
+                Content = content,
+                HasUnsavedChanges = false
+            };
+            _currentProject.Files.Add(newFile);
+
+            LoadProjectTree();
+            RefreshFileTabs();
+            SelectFile(newFile);
+            SetStatus($"Created: {fileName}", isError: false);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error creating file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ContextMenu_NewFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProject == null) return;
+
+        var item = GetContextMenuTargetItem(sender);
+        if (item == null) return;
+
+        // Determine target directory
+        var targetDir = item.IsDirectory ? item.FullPath : Path.GetDirectoryName(item.FullPath);
+        if (string.IsNullOrEmpty(targetDir)) return;
+
+        // Prompt for folder name
+        var folderName = PromptForInput("New Folder", "Enter folder name:", "NewFolder");
+        if (string.IsNullOrEmpty(folderName)) return;
+
+        var fullPath = Path.Combine(targetDir, folderName);
+
+        if (Directory.Exists(fullPath))
+        {
+            MessageBox.Show($"Folder '{folderName}' already exists.", "Folder Exists", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            LoadProjectTree();
+            SetStatus($"Created folder: {folderName}", isError: false);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error creating folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ContextMenu_Rename_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProject == null) return;
+
+        var item = GetContextMenuTargetItem(sender);
+        if (item == null || item.IsReferencesNode || item.IsReferenceItem) return;
+
+        // Don't allow renaming entry point
+        if (!item.IsDirectory && IsEntryPointFile(item.FullPath))
+        {
+            MessageBox.Show("Cannot rename the entry point file.", "Cannot Rename", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var currentName = item.Name;
+        var newName = PromptForInput("Rename", $"Enter new name for '{currentName}':", currentName);
+        if (string.IsNullOrEmpty(newName) || newName == currentName) return;
+
+        var parentDir = Path.GetDirectoryName(item.FullPath);
+        if (string.IsNullOrEmpty(parentDir)) return;
+
+        var newPath = Path.Combine(parentDir, newName);
+
+        try
+        {
+            if (item.IsDirectory)
+            {
+                if (Directory.Exists(newPath))
+                {
+                    MessageBox.Show($"Folder '{newName}' already exists.", "Folder Exists", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                Directory.Move(item.FullPath, newPath);
+
+                // Update any open files that were in this directory
+                foreach (var file in _currentProject.Files)
+                {
+                    if (file.FilePath.StartsWith(item.FullPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        file.FilePath = file.FilePath.Replace(item.FullPath, newPath);
+                    }
+                }
+            }
+            else
+            {
+                if (File.Exists(newPath))
+                {
+                    MessageBox.Show($"File '{newName}' already exists.", "File Exists", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                File.Move(item.FullPath, newPath);
+
+                // Update open file reference
+                var openFile = _currentProject.Files.FirstOrDefault(f => f.FilePath.Equals(item.FullPath, StringComparison.OrdinalIgnoreCase));
+                if (openFile != null)
+                {
+                    openFile.FilePath = newPath;
+                }
+            }
+
+            LoadProjectTree();
+            RefreshFileTabs();
+            SetStatus($"Renamed to: {newName}", isError: false);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error renaming: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ContextMenu_Delete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProject == null) return;
+
+        var item = GetContextMenuTargetItem(sender);
+        if (item == null || item.IsReferencesNode || item.IsReferenceItem) return;
+
+        // Don't allow deleting entry point
+        if (!item.IsDirectory && IsEntryPointFile(item.FullPath))
+        {
+            MessageBox.Show("Cannot delete the entry point file.", "Cannot Delete", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var itemType = item.IsDirectory ? "folder" : "file";
+        var result = MessageBox.Show(
+            $"Are you sure you want to delete the {itemType} '{item.Name}'?\n\nThis action cannot be undone.",
+            "Confirm Delete",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            if (item.IsDirectory)
+            {
+                // Close any open files from this directory
+                var filesToClose = _currentProject.Files
+                    .Where(f => f.FilePath.StartsWith(item.FullPath, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                foreach (var file in filesToClose)
+                {
+                    _currentProject.Files.Remove(file);
+                }
+
+                Directory.Delete(item.FullPath, true);
+            }
+            else
+            {
+                // Close file if open
+                var openFile = _currentProject.Files.FirstOrDefault(f => f.FilePath.Equals(item.FullPath, StringComparison.OrdinalIgnoreCase));
+                if (openFile != null)
+                {
+                    _currentProject.Files.Remove(openFile);
+                }
+
+                File.Delete(item.FullPath);
+            }
+
+            LoadProjectTree();
+            RefreshFileTabs();
+
+            // Select first available file if current was deleted
+            if (_activeFile == null || !_currentProject.Files.Contains(_activeFile))
+            {
+                var firstFile = _currentProject.Files.FirstOrDefault();
+                if (firstFile != null) SelectFile(firstFile);
+            }
+
+            SetStatus($"Deleted: {item.Name}", isError: false);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error deleting: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ProjectTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Select the TreeViewItem under the mouse
+        var treeViewItem = FindAncestor<TreeViewItem>((DependencyObject)e.OriginalSource);
+        if (treeViewItem != null)
+        {
+            treeViewItem.IsSelected = true;
+            treeViewItem.Focus();
+
+            // Show context menu
+            var contextMenu = CreateProjectTreeContextMenu();
+            contextMenu.PlacementTarget = treeViewItem;
+            contextMenu.IsOpen = true;
+            e.Handled = true;
+        }
+    }
+
+    private ContextMenu CreateProjectTreeContextMenu()
+    {
+        var menu = new ContextMenu
+        {
+            Background = (SolidColorBrush)FindResource("SecondaryBackgroundBrush"),
+            BorderBrush = (SolidColorBrush)FindResource("BorderBrush"),
+            Foreground = (SolidColorBrush)FindResource("ForegroundBrush")
+        };
+
+        var newFileItem = new MenuItem { Header = "New File" };
+        newFileItem.Icon = new Image { Source = new BitmapImage(new Uri("/img/file.png", UriKind.Relative)), Width = 16, Height = 16 };
+        newFileItem.Click += ContextMenu_NewFile_Click;
+        menu.Items.Add(newFileItem);
+
+        var newFolderItem = new MenuItem { Header = "New Folder" };
+        newFolderItem.Icon = new Image { Source = new BitmapImage(new Uri("/img/folder.png", UriKind.Relative)), Width = 16, Height = 16 };
+        newFolderItem.Click += ContextMenu_NewFolder_Click;
+        menu.Items.Add(newFolderItem);
+
+        menu.Items.Add(new Separator { Background = (SolidColorBrush)FindResource("BorderBrush") });
+
+        var renameItem = new MenuItem { Header = "Rename" };
+        renameItem.Click += ContextMenu_Rename_Click;
+        menu.Items.Add(renameItem);
+
+        var deleteItem = new MenuItem { Header = "Delete", Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E74C3C")) };
+        deleteItem.Click += ContextMenu_Delete_Click;
+        menu.Items.Add(deleteItem);
+
+        return menu;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T found)
+                return found;
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
+    private ProjectTreeItem? GetContextMenuTargetItem(object sender)
+    {
+        // Use selected item (set by PreviewMouseRightButtonDown)
+        if (ProjectTreeView.SelectedItem is ProjectTreeItem selectedItem)
+            return selectedItem;
+        return null;
+    }
+
+    private bool IsEntryPointFile(string filePath)
+    {
+        var fileName = Path.GetFileName(filePath);
+        return fileName.Equals("StartViz.cs", StringComparison.OrdinalIgnoreCase)
+            || fileName.Equals("StartViz.fs", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetDefaultNewFileName()
+    {
+        if (_currentProject == null) return "NewFile.cs";
+        var ext = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp ? ".fs" : ".cs";
+        return $"NewFile{ext}";
+    }
+
+    private string? PromptForInput(string title, string prompt, string defaultValue)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 350,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            Background = (SolidColorBrush)FindResource("SecondaryBackgroundBrush")
+        };
+
+        var grid = new Grid { Margin = new Thickness(16) };
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var label = new TextBlock
+        {
+            Text = prompt,
+            Foreground = (SolidColorBrush)FindResource("ForegroundBrush"),
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        Grid.SetRow(label, 0);
+        grid.Children.Add(label);
+
+        var textBox = new TextBox
+        {
+            Text = defaultValue,
+            Background = (SolidColorBrush)FindResource("BackgroundBrush"),
+            Foreground = (SolidColorBrush)FindResource("ForegroundBrush"),
+            BorderBrush = (SolidColorBrush)FindResource("BorderBrush"),
+            Padding = new Thickness(8, 6, 8, 6),
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+        textBox.SelectAll();
+        Grid.SetRow(textBox, 1);
+        grid.Children.Add(textBox);
+
+        var buttonPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        Grid.SetRow(buttonPanel, 2);
+
+        string? result = null;
+
+        var okButton = new Button
+        {
+            Content = "OK",
+            Width = 80,
+            Padding = new Thickness(0, 6, 0, 6),
+            Margin = new Thickness(0, 0, 8, 0),
+            Background = (SolidColorBrush)FindResource("AccentBrush"),
+            Foreground = Brushes.White,
+            BorderThickness = new Thickness(0)
+        };
+        okButton.Click += (s, e) =>
+        {
+            result = textBox.Text.Trim();
+            dialog.DialogResult = true;
+        };
+
+        var cancelButton = new Button
+        {
+            Content = "Cancel",
+            Width = 80,
+            Padding = new Thickness(0, 6, 0, 6),
+            Background = (SolidColorBrush)FindResource("SecondaryBackgroundBrush"),
+            Foreground = (SolidColorBrush)FindResource("ForegroundBrush"),
+            BorderBrush = (SolidColorBrush)FindResource("BorderBrush")
+        };
+        cancelButton.Click += (s, e) => dialog.DialogResult = false;
+
+        buttonPanel.Children.Add(okButton);
+        buttonPanel.Children.Add(cancelButton);
+        grid.Children.Add(buttonPanel);
+
+        dialog.Content = grid;
+        dialog.Loaded += (s, e) => textBox.Focus();
+
+        return dialog.ShowDialog() == true ? result : null;
+    }
+
+    #endregion
 
     #endregion
 
@@ -2894,8 +3465,9 @@ public partial class MainWindow : Window
         {
             var fileName = _activeFile.FileName ?? "";
             var ext = Path.GetExtension(fileName);
-            if (string.IsNullOrEmpty(ext)) ext = ".vizcode";
-            
+            if (string.IsNullOrEmpty(ext))
+                ext = _currentProject?.ProjectFile.Language == ProjectLanguage.FSharp ? ".fs" : ".cs";
+
             moveItem.Header = $"Move type '{className}' to {className}{ext}";
             moveItem.Tag = className;
             moveItem.Visibility = Visibility.Visible;
@@ -2957,7 +3529,8 @@ public partial class MainWindow : Window
         // Create new file
         var fileName = _activeFile.FileName ?? "";
         var ext = Path.GetExtension(fileName);
-        if (string.IsNullOrEmpty(ext)) ext = ".vizcode";
+        if (string.IsNullOrEmpty(ext))
+            ext = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp ? ".fs" : ".cs";
         var newFileName = $"{className}{ext}";
         
         // Basic template for new file (preserving usings if possible, or just the class)

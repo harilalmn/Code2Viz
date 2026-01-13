@@ -1,7 +1,7 @@
 // ============================================
 // Viz2D Sample Code - Shape Reference & Demo
 // ============================================
-// Copy this code into StartViz.vizcode to test all shapes
+// Copy this code into StartViz.cs to test all shapes
 // ============================================
 
 namespace StartViz

@@ -214,8 +214,11 @@ public class ModuleCompiler
 
     public async Task<(CSharpCompilation Compilation, HashSet<string> AllDlls)> CreateCompilationAsync(VizCodeProject project)
     {
+        // Get ALL source files from project directory (not just open ones)
+        var allSourceFiles = project.GetAllSourceFiles().ToList();
+
         // Parse all source files into syntax trees
-        var syntaxTrees = project.Files.Select(file =>
+        var syntaxTrees = allSourceFiles.Select(file =>
             CSharpSyntaxTree.ParseText(
                 file.Content,
                 path: file.FilePath,

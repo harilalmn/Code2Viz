@@ -296,7 +296,7 @@ namespace Code2Viz.Documentation
                 { "VBezier", "let b = VBezier(VPoint(0.0,0.0), VPoint(0.0,100.0), VPoint(100.0,100.0), VPoint(100.0,0.0))\nb.Draw()" },
                 { "VSpline", "let pts = [| VPoint(0.0,0.0); VPoint(50.0,50.0); VPoint(100.0,0.0) |]\nlet s = VSpline(pts)\ns.Draw()" },
                 { "VText", "let t = VText(VPoint(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Draw()" },
-                { "VArrow", "let a = VArrow(VPoint(10.0, 10.0), VPoint(100.0, 10.0))\na.Draw()" },
+                { "VArrow", "// From two points\nlet a = VArrow(VPoint(10.0, 10.0), VPoint(100.0, 10.0))\na.Draw()\n\n// From start point, direction, and length\nlet a2 = VArrow(VPoint(0.0, 0.0), VXYZ.BasisX, 50.0)\na2.Draw()" },
                 { "VGroup", "let g = VGroup()\ng.Add(VCircle(VPoint(0.0,0.0), 10.0))\ng.Move(100.0, 100.0)\ng.Draw()" },
                 
                 // 3D V-Objects
@@ -443,6 +443,7 @@ namespace Code2Viz.Documentation
                 { "VPlane", "VXYZ origin = VXYZ.Zero;\nVXYZ normal = VXYZ.BasisZ;\nVPlane plane = VPlane.CreateByNormalAndOrigin(normal, origin);" },
                 { "VTransform", "VTransform t = VTransform.CreateRotation(VXYZ.BasisZ, 90.0);" },
                 { "VBox", "// VBox is abstract.\n// Usage depends on concrete implementation." },
+                { "VArrow", "// From two points\nVArrow a = new VArrow(new VPoint(10, 10), new VPoint(100, 10));\na.Draw();\n\n// From start point, direction, and length\nVArrow a2 = new VArrow(new VPoint(0, 0), VXYZ.BasisX, 50);\na2.Draw();" },
 
                 { "CanvasRenderer", "CanvasRenderer.Instance.Clear();\nCanvasRenderer.Instance.AddShape(someShape);" },
                 { "VizConsole", "VizConsole.Log(\"Debug info\");\nVizConsole.Clear();" }

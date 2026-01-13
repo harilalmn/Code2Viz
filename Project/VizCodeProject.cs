@@ -75,8 +75,8 @@ public class VizCodeProject
         project.SaveProjectFile();
 
         // Create entry point file with namespace matching project name
-        var extension = language == ProjectLanguage.FSharp ? ".fs" : ".vizcode";
-        var fileName = language == ProjectLanguage.FSharp ? "StartViz.fs" : "StartViz.vizcode";
+        var extension = language == ProjectLanguage.FSharp ? ".fs" : ".cs";
+        var fileName = language == ProjectLanguage.FSharp ? "StartViz.fs" : "StartViz.cs";
         var entryPointPath = Path.Combine(directory, fileName);
         
         var content = language == ProjectLanguage.FSharp 
@@ -164,7 +164,7 @@ public class VizCodeProject
             // Assuming flat structure for now or preserving relative?
             // Old impl assumed flat (Path.Combine(newDirectory, file.FileName))
             var name = Path.GetFileName(file.FilePath);
-            if (string.IsNullOrEmpty(name)) name = $"{Guid.NewGuid()}.vizcode"; // Should not happen for existing files
+            if (string.IsNullOrEmpty(name)) name = $"{Guid.NewGuid()}.cs"; // Should not happen for existing files
             file.FilePath = Path.Combine(newDirectory, name);
         }
 
@@ -180,9 +180,89 @@ public class VizCodeProject
     private static IEnumerable<string> DiscoverVizCodeFiles(string directory)
     {
         var files = new List<string>();
-        files.AddRange(Directory.GetFiles(directory, "*.vizcode", SearchOption.AllDirectories));
+        files.AddRange(Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories));
         files.AddRange(Directory.GetFiles(directory, "*.fs", SearchOption.AllDirectories));
         return files;
+    }
+
+    /// <summary>
+    /// Gets all source files from the project directory for compilation.
+    /// Uses in-memory content for open files, reads from disk for others.
+    /// </summary>
+    public IEnumerable<VizCodeFile> GetAllSourceFiles()
+    {
+        var allFiles = new List<VizCodeFile>();
+        var discoveredPaths = DiscoverVizCodeFiles(ProjectDirectory).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var filePath in discoveredPaths)
+        {
+            // Check if file is already loaded (use in-memory content)
+            var loadedFile = Files.FirstOrDefault(f => f.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase));
+            if (loadedFile != null)
+            {
+                allFiles.Add(loadedFile);
+            }
+            else
+            {
+                // Read from disk
+                try
+                {
+                    allFiles.Add(new VizCodeFile
+                    {
+                        FilePath = filePath,
+                        Content = File.ReadAllText(filePath),
+                        HasUnsavedChanges = false
+                    });
+                }
+                catch
+                {
+                    // Skip files that can't be read
+                }
+            }
+        }
+
+        return allFiles;
+    }
+
+    /// <summary>
+    /// Refreshes the Files list to match what's on disk.
+    /// Adds new files, removes deleted files, preserves unsaved changes.
+    /// </summary>
+    public void RefreshFilesFromDisk()
+    {
+        var discoveredPaths = DiscoverVizCodeFiles(ProjectDirectory).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Remove files that no longer exist on disk (unless they have unsaved changes)
+        var filesToRemove = Files
+            .Where(f => !discoveredPaths.Contains(f.FilePath) && !f.HasUnsavedChanges && !f.IsNew)
+            .ToList();
+        foreach (var file in filesToRemove)
+        {
+            Files.Remove(file);
+        }
+
+        // Add new files that aren't already loaded
+        foreach (var filePath in discoveredPaths)
+        {
+            if (!Files.Any(f => f.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    Files.Add(new VizCodeFile
+                    {
+                        FilePath = filePath,
+                        Content = File.ReadAllText(filePath),
+                        HasUnsavedChanges = false
+                    });
+                }
+                catch
+                {
+                    // Skip files that can't be read
+                }
+            }
+        }
+
+        SortFiles(this);
     }
 
     private static void SortFiles(VizCodeProject project)

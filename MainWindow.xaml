@@ -172,11 +172,12 @@
                                    FontSize="12"/>
                     </Border>
                     
-                    <TreeView x:Name="ProjectTreeView" 
-                              Grid.Row="1" 
-                              Background="Transparent" 
-                              BorderThickness="0" 
+                    <TreeView x:Name="ProjectTreeView"
+                              Grid.Row="1"
+                              Background="Transparent"
+                              BorderThickness="0"
                               MouseDoubleClick="ProjectTreeView_MouseDoubleClick"
+                              PreviewMouseRightButtonDown="ProjectTreeView_PreviewMouseRightButtonDown"
                               Padding="0,5">
                         <TreeView.Resources>
                             <!-- Expander Toggle Button Style -->

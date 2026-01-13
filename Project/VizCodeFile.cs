@@ -9,6 +9,6 @@ public class VizCodeFile
     public string Content { get; set; } = string.Empty;
     public bool HasUnsavedChanges { get; set; }
     public bool IsNew { get; set; }
-    public bool IsEntryPoint => FileName.Equals("StartViz.vizcode", StringComparison.OrdinalIgnoreCase) 
+    public bool IsEntryPoint => FileName.Equals("StartViz.cs", StringComparison.OrdinalIgnoreCase)
                                || FileName.Equals("StartViz.fs", StringComparison.OrdinalIgnoreCase);
 }

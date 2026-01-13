@@ -1,0 +1,13 @@
+{
+  "Name": "FSharpSample",
+  "Language": 1,
+  "Packages": [],
+  "References": [],
+  "Settings": {
+    "DefaultStrokeColor": "White",
+    "DefaultFillColor": null,
+    "DefaultCanvasBackgroundColor": null,
+    "DefaultExportBackground": null,
+    "DefaultStrokeThickness": 2
+  }
+}

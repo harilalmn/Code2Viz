@@ -37,6 +37,14 @@ public class VArrow : Shape
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
     }
 
+    public VArrow(VPoint startPoint, VXYZ direction, double length)
+    {
+        Start = startPoint;
+        var normalizedDir = direction.Normalize();
+        End = new VPoint(startPoint.X + normalizedDir.X * length, startPoint.Y + normalizedDir.Y * length);
+        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+    }
+
     /// <summary>
     /// Gets the arrowhead points for the end of the arrow.
     /// </summary>

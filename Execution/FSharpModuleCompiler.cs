@@ -40,14 +40,47 @@ public class FSharpModuleCompiler
 
             try
             {
-                // Write files to temp directory
+                // Get ALL source files from project directory (not just open ones)
+                var allSourceFiles = project.GetAllSourceFiles().ToList();
+
+                // Write files to temp directory, preserving folder structure
+                // F# requires files in dependency order - StartViz.fs must be last
                 var sourceFiles = new List<string>();
-                foreach (var file in project.Files)
+                string? startVizPath = null;
+
+                foreach (var file in allSourceFiles)
                 {
+                    // Preserve relative path structure to avoid name collisions
+                    var relativePath = Path.GetRelativePath(project.ProjectDirectory, file.FilePath);
+                    var tempPath = Path.Combine(tempDir, relativePath);
+
+                    // Ensure directory exists
+                    var tempFileDir = Path.GetDirectoryName(tempPath);
+                    if (!string.IsNullOrEmpty(tempFileDir) && !Directory.Exists(tempFileDir))
+                    {
+                        Directory.CreateDirectory(tempFileDir);
+                    }
+
+                    // Convert tabs to 4 spaces (F# doesn't allow tabs)
+                    var content = file.Content.Replace("\t", "    ");
+                    File.WriteAllText(tempPath, content);
+
+                    // StartViz.fs is the entry point, must be compiled last
                     var fileName = Path.GetFileName(file.FilePath);
-                    var tempPath = Path.Combine(tempDir, fileName);
-                    File.WriteAllText(tempPath, file.Content);
-                    sourceFiles.Add(tempPath);
+                    if (fileName.Equals("StartViz.fs", StringComparison.OrdinalIgnoreCase))
+                    {
+                        startVizPath = tempPath;
+                    }
+                    else
+                    {
+                        sourceFiles.Add(tempPath);
+                    }
+                }
+
+                // Add StartViz.fs at the end
+                if (startVizPath != null)
+                {
+                    sourceFiles.Add(startVizPath);
                 }
 
                 // Prepare arguments

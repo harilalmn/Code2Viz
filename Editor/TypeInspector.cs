@@ -428,6 +428,32 @@ public static class TypeInspector
     }
 
     /// <summary>
+    /// Get the return type of a member (property or field) on a type.
+    /// Returns the type name as a string, or null if not found.
+    /// </summary>
+    public static string? GetMemberReturnType(Type type, string memberName)
+    {
+        if (type == null || string.IsNullOrEmpty(memberName))
+            return null;
+
+        // Check properties (instance and static, including inherited)
+        var property = type.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+        if (property != null)
+        {
+            return property.PropertyType.Name;
+        }
+
+        // Check fields (instance and static, including inherited)
+        var field = type.GetField(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+        if (field != null)
+        {
+            return field.FieldType.Name;
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Get constructor signatures for a type.
     /// </summary>
     public static List<string> GetConstructorSignatures(string typeName)

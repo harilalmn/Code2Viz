@@ -70,13 +70,35 @@ public static class CompletionProvider
         if (!string.IsNullOrEmpty(textBeforeCursor))
         {
             var currentClass = FindCurrentClass(textBeforeCursor);
-            if (!string.IsNullOrEmpty(currentClass) && _customClasses.TryGetValue(currentClass, out var classMembers))
+            if (!string.IsNullOrEmpty(currentClass))
             {
-                foreach (var member in classMembers)
+                // Add members from the custom class itself
+                if (_customClasses.TryGetValue(currentClass, out var classMembers))
                 {
-                    if (string.IsNullOrEmpty(prefix) || member.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    foreach (var member in classMembers)
                     {
-                        completions.Add(new CompletionData(member.Name, member.Description, member.Kind));
+                        if (string.IsNullOrEmpty(prefix) || member.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            completions.Add(new CompletionData(member.Name, member.Description, member.Kind));
+                        }
+                    }
+                }
+
+                // Add inherited members from base class
+                var baseClassName = FindBaseClass(allCode ?? textBeforeCursor, currentClass);
+                if (!string.IsNullOrEmpty(baseClassName))
+                {
+                    var baseType = TypeInspector.ResolveType(baseClassName);
+                    if (baseType != null)
+                    {
+                        var inheritedMembers = TypeInspector.GetTypeMembersFromReflection(baseType);
+                        foreach (var member in inheritedMembers)
+                        {
+                            if (string.IsNullOrEmpty(prefix) || member.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                            {
+                                completions.Add(new CompletionData(member.Name, $"{member.Description} (inherited)", member.Kind));
+                            }
+                        }
                     }
                 }
             }
@@ -523,6 +545,27 @@ public static class CompletionProvider
             return variableName;
         }
 
+        // Check if the variable is an inherited member from a base class
+        var currentClass = FindCurrentClass(text);
+        if (!string.IsNullOrEmpty(currentClass))
+        {
+            // Find the base class of the current class
+            var baseClassName = FindBaseClass(allCode ?? text, currentClass);
+            if (!string.IsNullOrEmpty(baseClassName))
+            {
+                // Check if the variable is a property/field on the base class
+                var baseType = TypeInspector.ResolveType(baseClassName);
+                if (baseType != null)
+                {
+                    var memberType = TypeInspector.GetMemberReturnType(baseType, variableName);
+                    if (memberType != null)
+                    {
+                        return memberType;
+                    }
+                }
+            }
+        }
+
         // Escape variable name for regex
         var escapedVarName = Regex.Escape(variableName);
 
@@ -639,6 +682,21 @@ public static class CompletionProvider
         }
 
         return signatures;
+    }
+
+    /// <summary>
+    /// Finds the base class of a custom class from user code.
+    /// </summary>
+    private static string? FindBaseClass(string allCode, string className)
+    {
+        // Pattern: class ClassName : BaseClass or class ClassName : BaseClass, IInterface
+        var pattern = $@"\bclass\s+{Regex.Escape(className)}\s*:\s*(\w+)";
+        var match = Regex.Match(allCode, pattern);
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+        return null;
     }
 
     /// <summary>

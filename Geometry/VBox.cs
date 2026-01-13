@@ -33,15 +33,16 @@ namespace Code2Viz.Geometry
         public VXYZ CornerBackRight => Origin + RightDirection * Width / 2 + BackDirection * Depth / 2;
 
         // Geometry
-        public List<VLine3D> Boundary
+        public VPolygon Boundary
         {
             get
             {
-                VLine3D line1 = VLine3D.CreateBound(CornerFrontLeft, CornerBackLeft);
-                VLine3D line2 = VLine3D.CreateBound(CornerBackLeft, CornerBackRight);
-                VLine3D line3 = VLine3D.CreateBound(CornerBackRight, CornerFrontRight);
-                VLine3D line4 = VLine3D.CreateBound(CornerFrontRight, CornerFrontLeft);
-                return new List<VLine3D>() { line1, line2, line3, line4 };
+                return new VPolygon(
+                    CornerFrontLeft.AsVPoint(),
+                    CornerBackLeft.AsVPoint(),
+                    CornerBackRight.AsVPoint(),
+                    CornerFrontRight.AsVPoint()
+                );
             }
         }
 
