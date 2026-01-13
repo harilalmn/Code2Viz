@@ -1,0 +1,60 @@
+using System.Collections.Generic;
+
+namespace Code2Viz.Geometry;
+
+public interface ICurve
+{
+    /// <summary>
+    /// Divides the curve into the specified number of segments.
+    /// </summary>
+    /// <returns>A list of points including the start and end points.</returns>
+    List<VPoint> Divide(int numberOfSegments);
+
+    /// <summary>
+    /// Measures points along the curve at fixed intervals.
+    /// </summary>
+    /// <returns>A list of points separated by the specified length.</returns>
+    List<VPoint> Measure(double segmentLength);
+
+    /// <summary>
+    /// Gets the total length of the curve.
+    /// </summary>
+    double GetLength();
+
+    /// <summary>
+    /// Projects a point onto the curve.
+    /// </summary>
+    VPoint Project(VPoint point);
+
+    /// <summary>
+    /// Returns a point at a given distance along the curve from the start.
+    /// </summary>
+    VPoint PointAtSegmentLength(double segmentLength);
+
+    /// <summary>
+    /// Creates an offset curve at the specified distance.
+    /// </summary>
+    ICurve Offset(double distance);
+
+    /// <summary>
+    /// Creates multiple offset curves at the specified distances.
+    /// </summary>
+    List<ICurve> Offset(List<double> distances);
+
+    /// <summary>
+    /// Finds points on the curve that are at a specific chord length from a given point.
+    /// If the point is not on the curve, it is projected first.
+    /// </summary>
+    List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength);
+
+    /// <summary>
+    /// Splits the curve at the specified point.
+    /// Returns a tuple of two segments.
+    /// </summary>
+    (ICurve, ICurve) SplitAtPoint(VPoint point);
+
+    /// <summary>
+    /// Calculates the normal vector at a specific point on the curve.
+    /// </summary>
+    VXYZ NormalAtPoint(VPoint p);
+}

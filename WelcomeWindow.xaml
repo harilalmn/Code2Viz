@@ -1,0 +1,125 @@
+<Window x:Class="Code2Viz.WelcomeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Welcome to Code2Viz" Height="450" Width="800"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E"
+        ResizeMode="NoResize">
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.5*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Side: Branding/Recent -->
+        <Border Grid.Column="0" Background="#252526">
+            <StackPanel Margin="40">
+                <TextBlock Text="Code2Viz" FontSize="48" FontWeight="Light" Foreground="White" Margin="0,0,0,10"/>
+                <TextBlock Text="Visual Geometry Environment" FontSize="18" Foreground="#888888" Margin="0,0,0,40"/>
+                
+                <TextBlock Text="Recent Projects" FontSize="16" Foreground="#E0E0E0" Margin="0,0,0,10"/>
+                <TextBlock x:Name="NoRecentProjectsText" Text="No recent projects" FontSize="13" Foreground="#666666" FontStyle="Italic" Visibility="Collapsed"/>
+                <ListView x:Name="RecentProjectsList"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Foreground="#CCCCCC"
+                          MouseDoubleClick="RecentProjectsList_MouseDoubleClick"
+                          KeyDown="RecentProjectsList_KeyDown"
+                          MaxHeight="220"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="8,6"/>
+                            <Setter Property="Margin" Value="0,2"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#3E3E42"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#094771"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Path}" FontSize="11" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </Border>
+
+        <!-- Right Side: Actions -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="40">
+            <TextBlock Text="Get Started" FontSize="24" Foreground="White" Margin="0,0,0,30"/>
+
+            <Button x:Name="NewProjectBtn" Click="NewProjectBtn_Click" Margin="0,0,0,15" Height="60" Background="#3E3E42" BorderThickness="0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="15">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Icon placeholder -->
+                                <Path Grid.Column="0" Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White" Stretch="Uniform" Width="24" Height="24" Margin="0,0,15,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Create a new project" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#505050"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button x:Name="OpenProjectBtn" Click="OpenProjectBtn_Click" Height="60" Background="#3E3E42" BorderThickness="0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="15">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Icon placeholder -->
+                                <Path Grid.Column="0" Data="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z" Fill="White" Stretch="Uniform" Width="24" Height="24" Margin="0,0,15,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Open a local project" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#505050"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

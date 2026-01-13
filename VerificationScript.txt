@@ -1,0 +1,44 @@
+namespace Verification
+{
+    public class Test
+    {
+        public static void Main()
+        {
+            VizConsole.Log("Testing Intersection...");
+
+            // Test 1: Line-Line Intersection (Crossing)
+            var l1 = new VLine(0, 0, 100, 100);
+            var l2 = new VLine(0, 100, 100, 0);
+            var i1 = l1.Intersect(l2);
+            VizConsole.Log($"Line-Line Crossing: {i1}"); // Expected: VPoint(50, 50)
+            if(i1 != null) i1.Draw();
+
+            // Test 2: Line-Line Parallel
+            var l3 = new VLine(0, 0, 100, 0);
+            var l4 = new VLine(0, 10, 100, 10);
+            var i2 = l3.Intersect(l4);
+            VizConsole.Log($"Line-Line Parallel: {i2}"); // Expected: null
+
+            // Test 3: Line-Line Overlap
+            var l5 = new VLine(0, 0, 100, 0);
+            var l6 = new VLine(50, 0, 150, 0);
+            var i3 = l5.Intersect(l6);
+            VizConsole.Log($"Line-Line Overlap: {i3}"); // Expected: VLine(50, 0, 100, 0)
+            if(i3 != null) { i3.StrokeColor = "Red"; i3.StrokeThickness=5; i3.Draw(); }
+
+           // Test 4: Rect-Rect Intersection
+           var r1 = new VRectangle(0, 0, 100, 100);
+           var r2 = new VRectangle(50, 50, 100, 100);
+           var i4 = r1.Intersect(r2);
+           VizConsole.Log($"Rect-Rect Intersection: {i4}"); // Expected: VRectangle(50, 50, 50, 50)
+           if(i4 != null) { i4.FillColor = "Green"; i4.Draw(); }
+
+           // Test 5: Line-Rect Intersection
+           var r3 = new VRectangle(0, 0, 100, 100);
+           var l7 = new VLine(-50, 50, 150, 50);
+           var i5 = r3.Intersect(l7);
+           VizConsole.Log($"Line-Rect Intersection: {i5}"); // Expected: VLine(0, 50, 100, 50)
+           if(i5 != null) { i5.StrokeColor = "Blue"; i5.StrokeThickness=4; i5.Draw(); }
+        }
+    }
+}

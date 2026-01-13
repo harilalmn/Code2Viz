@@ -1,0 +1,276 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="C#" extensions=".cs" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <!-- Pastel colors for dark theme -->
+  <Color name="Comment" foreground="#6A9955" fontStyle="italic" />
+  <Color name="String" foreground="#CE9178" />
+  <Color name="Char" foreground="#CE9178" />
+  <Color name="Number" foreground="#B5CEA8" />
+  <Color name="Keywords" foreground="#C586C0" fontWeight="bold" />
+  <Color name="ControlKeywords" foreground="#C586C0" fontWeight="bold" />
+  <Color name="TypeKeywords" foreground="#569CD6" />
+  <Color name="ValueTypeKeywords" foreground="#569CD6" />
+  <Color name="Operators" foreground="#D4D4D4" />
+  <Color name="MethodCall" foreground="#DCDCAA" />
+  <Color name="ClassName" foreground="#4EC9B0" fontWeight="bold" />
+  <Color name="Interpolation" foreground="#9CDCFE" />
+
+  <!-- Custom Pastel Colors for Punctuation -->
+  <Color name="PunctParenthesis" foreground="#FFFFB0" fontWeight="bold" /> <!-- Pastel Yellow -->
+  <Color name="PunctBrace" foreground="#D8BFD8" fontWeight="bold" /> <!-- Pastel Purple -->
+  <Color name="PunctBracket" foreground="#87CEFA" fontWeight="bold" /> <!-- Pastel Blue -->
+  <Color name="PunctAngle" foreground="#98FB98" fontWeight="bold" /> <!-- Pastel Green -->
+
+  <RuleSet>
+    <!-- Method calls - must be FIRST to get priority -->
+    <Rule color="MethodCall">
+      [A-Za-z_][A-Za-z0-9_]*(?=\s*\()
+    </Rule>
+
+    <!-- Comments -->
+    <Span color="Comment" begin="//" />
+    <Span color="Comment" multiline="true" begin="/\*" end="\*/" />
+
+    <!-- Interpolated strings $"..." -->
+    <Span color="String" begin="\$&quot;" end="&quot;">
+      <RuleSet>
+        <Span begin="\\" end="." />
+        <Span color="Interpolation" begin="\{" end="\}" />
+      </RuleSet>
+    </Span>
+
+    <!-- Verbatim interpolated strings $@"..." or @$"..." -->
+    <Span color="String" begin="\$@&quot;" end="&quot;">
+      <RuleSet>
+        <Span begin="&quot;&quot;" end="" />
+        <Span color="Interpolation" begin="\{" end="\}" />
+      </RuleSet>
+    </Span>
+    <Span color="String" begin="@\$&quot;" end="&quot;">
+      <RuleSet>
+        <Span begin="&quot;&quot;" end="" />
+        <Span color="Interpolation" begin="\{" end="\}" />
+      </RuleSet>
+    </Span>
+
+    <!-- Regular strings -->
+    <Span color="String" begin="&quot;" end="&quot;">
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+
+    <!-- Verbatim strings @"..." -->
+    <Span color="String" begin="@&quot;" end="&quot;">
+      <RuleSet>
+        <Span begin="&quot;&quot;" end="" />
+      </RuleSet>
+    </Span>
+
+    <!-- Character literals -->
+    <Span color="Char" begin="'" end="'">
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+
+    <!-- Numbers -->
+    <Rule color="Number">
+      \b0[xX][0-9a-fA-F]+|(\b\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[fFdDmM]?
+    </Rule>
+
+    <!-- Punctuation -->
+    <Rule color="PunctParenthesis">[\(\)]</Rule>
+    <Rule color="PunctBrace">[\{\}]</Rule>
+    <Rule color="PunctBracket">[\[\]]</Rule>
+    <Rule color="PunctAngle">[&lt;&gt;]</Rule>
+
+    <!-- Control Keywords -->
+    <Keywords color="ControlKeywords">
+      <Word>if</Word>
+      <Word>else</Word>
+      <Word>switch</Word>
+      <Word>case</Word>
+      <Word>default</Word>
+      <Word>for</Word>
+      <Word>foreach</Word>
+      <Word>while</Word>
+      <Word>do</Word>
+      <Word>break</Word>
+      <Word>continue</Word>
+      <Word>return</Word>
+      <Word>throw</Word>
+      <Word>try</Word>
+      <Word>catch</Word>
+      <Word>finally</Word>
+      <Word>goto</Word>
+      <Word>yield</Word>
+      <Word>await</Word>
+    </Keywords>
+
+    <!-- Keywords -->
+    <Keywords color="Keywords">
+      <Word>abstract</Word>
+      <Word>as</Word>
+      <Word>async</Word>
+      <Word>base</Word>
+      <Word>class</Word>
+      <Word>const</Word>
+      <Word>delegate</Word>
+      <Word>enum</Word>
+      <Word>event</Word>
+      <Word>explicit</Word>
+      <Word>extern</Word>
+      <Word>fixed</Word>
+      <Word>implicit</Word>
+      <Word>in</Word>
+      <Word>interface</Word>
+      <Word>internal</Word>
+      <Word>is</Word>
+      <Word>lock</Word>
+      <Word>namespace</Word>
+      <Word>new</Word>
+      <Word>operator</Word>
+      <Word>out</Word>
+      <Word>override</Word>
+      <Word>params</Word>
+      <Word>partial</Word>
+      <Word>private</Word>
+      <Word>protected</Word>
+      <Word>public</Word>
+      <Word>readonly</Word>
+      <Word>ref</Word>
+      <Word>sealed</Word>
+      <Word>sizeof</Word>
+      <Word>stackalloc</Word>
+      <Word>static</Word>
+      <Word>struct</Word>
+      <Word>this</Word>
+      <Word>typeof</Word>
+      <Word>unchecked</Word>
+      <Word>unsafe</Word>
+      <Word>using</Word>
+      <Word>var</Word>
+      <Word>virtual</Word>
+      <Word>void</Word>
+      <Word>volatile</Word>
+      <Word>where</Word>
+    </Keywords>
+
+    <!-- Value Type Keywords -->
+    <Keywords color="ValueTypeKeywords">
+      <Word>bool</Word>
+      <Word>byte</Word>
+      <Word>char</Word>
+      <Word>decimal</Word>
+      <Word>double</Word>
+      <Word>float</Word>
+      <Word>int</Word>
+      <Word>long</Word>
+      <Word>object</Word>
+      <Word>sbyte</Word>
+      <Word>short</Word>
+      <Word>string</Word>
+      <Word>uint</Word>
+      <Word>ulong</Word>
+      <Word>ushort</Word>
+      <Word>dynamic</Word>
+    </Keywords>
+
+    <!-- Type Keywords -->
+    <Keywords color="TypeKeywords">
+      <Word>true</Word>
+      <Word>false</Word>
+      <Word>null</Word>
+    </Keywords>
+
+    <!-- Viz2d shape types -->
+    <Keywords color="ClassName">
+      <Word>VPoint</Word>
+      <Word>VLine</Word>
+      <Word>VArc</Word>
+      <Word>VCircle</Word>
+      <Word>VRectangle</Word>
+      <Word>VEllipse</Word>
+      <Word>VPolygon</Word>
+      <Word>VPolyline</Word>
+      <Word>VText</Word>
+      <Word>VBezier</Word>
+      <Word>VSpline</Word>
+      <Word>VArrow</Word>
+      <Word>VDimension</Word>
+      <Word>VGroup</Word>
+      <Word>VizConsole</Word>
+    </Keywords>
+
+    <!-- Common .NET types -->
+    <Keywords color="ClassName">
+      <Word>Console</Word>
+      <Word>Math</Word>
+      <Word>Vector2</Word>
+      <Word>Vector3</Word>
+      <Word>Vector4</Word>
+      <Word>Matrix3x2</Word>
+      <Word>Matrix4x4</Word>
+      <Word>List</Word>
+      <Word>Dictionary</Word>
+      <Word>HashSet</Word>
+      <Word>Array</Word>
+      <Word>String</Word>
+      <Word>Object</Word>
+      <Word>Exception</Word>
+      <Word>DateTime</Word>
+      <Word>TimeSpan</Word>
+      <Word>Guid</Word>
+      <Word>Random</Word>
+      <Word>Convert</Word>
+      <Word>Enumerable</Word>
+      <Word>Task</Word>
+      <Word>File</Word>
+      <Word>Path</Word>
+      <Word>Directory</Word>
+      <Word>Environment</Word>
+    </Keywords>
+
+    <!-- PascalCase type names (custom classes) - matches after 'class', 'new', or as type before identifier -->
+    <Rule color="ClassName">
+      (?&lt;=\bclass\s+)[A-Z][a-zA-Z0-9_]*
+    </Rule>
+    <Rule color="ClassName">
+      (?&lt;=\bnew\s+)[A-Z][a-zA-Z0-9_]*
+    </Rule>
+    <Rule color="ClassName">
+      (?&lt;=:\s*)[A-Z][a-zA-Z0-9_]*
+    </Rule>
+    <Rule color="ClassName">
+      \b[A-Z][a-zA-Z0-9_]*(?=\s+[a-z_][a-zA-Z0-9_]*\s*[=;,\)\{])
+    </Rule>
+
+    <!-- Common method names (since Rule regex may not work properly) -->
+    <Keywords color="MethodCall">
+      <Word>Main</Word>
+      <Word>WriteLine</Word>
+      <Word>Write</Word>
+      <Word>Draw</Word>
+      <Word>ToString</Word>
+      <Word>Create</Word>
+      <Word>Add</Word>
+      <Word>Remove</Word>
+      <Word>Clear</Word>
+      <Word>Contains</Word>
+      <Word>Count</Word>
+      <Word>Length</Word>
+      <Word>Sqrt</Word>
+      <Word>Abs</Word>
+      <Word>Sin</Word>
+      <Word>Cos</Word>
+      <Word>Tan</Word>
+      <Word>Atan2</Word>
+      <Word>Min</Word>
+      <Word>Max</Word>
+      <Word>Round</Word>
+      <Word>Floor</Word>
+      <Word>Ceiling</Word>
+      <Word>Pow</Word>
+    </Keywords>
+  </RuleSet>
+</SyntaxDefinition>

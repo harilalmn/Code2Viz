@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>img\logo.ico</ApplicationIcon>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300" />
+    <PackageReference Include="FSharp.Core" Version="8.0.300" />
+    <PackageReference Include="NuGet.Protocol" Version="6.12.0" />
+    <PackageReference Include="NuGet.Packaging" Version="6.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Editor\CSharpHighlighting.xshd" />
+    <EmbeddedResource Include="Editor\FSharpHighlighting.xshd" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="img\logo.ico" />
+    <Resource Include="img\logo.png" />
+    <Resource Include="img\folder.png" />
+    <Resource Include="img\file.png" />
+  </ItemGroup>
+
+</Project>

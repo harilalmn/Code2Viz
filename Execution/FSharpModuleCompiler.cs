@@ -1,0 +1,185 @@
+using System.IO;
+using System.Reflection;
+using Microsoft.CodeAnalysis;
+using Code2Viz.Project;
+using FSharp.Compiler.CodeAnalysis;
+using FSharp.Compiler.Text;
+using Code2Viz.Console;
+
+namespace Code2Viz.Execution;
+
+public class FSharpModuleCompiler
+{
+    private static readonly FSharpChecker Checker = FSharpChecker.Create(
+        projectCacheSize: null,
+        keepAssemblyContents: null,
+        keepAllBackgroundResolutions: null,
+        legacyReferenceResolver: null,
+        tryGetMetadataSnapshot: null,
+        suggestNamesForErrors: null,
+        keepAllBackgroundSymbolUses: null,
+        enableBackgroundItemKeyStoreAndSemanticClassification: null,
+        enablePartialTypeChecking: null,
+        parallelReferenceResolution: null,
+        captureIdentifiersWhenParsing: null,
+        documentSource: null,
+        useTransparentCompiler: null,
+        useSyntaxTreeCache: null
+    );
+
+    public async Task<CompilationResult> CompileAndExecuteAsync(VizCodeProject project)
+    {
+        try
+        {
+            // Clear previous shapes and console
+            Code2Viz.Canvas.CanvasRenderer.Instance.Clear();
+            ConsoleOutput.Instance.Clear();
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "Code2Viz_FSharp_Build", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                // Write files to temp directory
+                var sourceFiles = new List<string>();
+                foreach (var file in project.Files)
+                {
+                    var fileName = Path.GetFileName(file.FilePath);
+                    var tempPath = Path.Combine(tempDir, fileName);
+                    File.WriteAllText(tempPath, file.Content);
+                    sourceFiles.Add(tempPath);
+                }
+
+                // Prepare arguments
+                var dllName = $"{project.ProjectFile.Name ?? "Output"}.dll";
+                var dllPath = Path.Combine(tempDir, dllName);
+
+                var args = new List<string>
+                {
+                    "fsc.exe",
+                    "-o", dllPath,
+                    "-a", // Library
+                    "--target:library",
+                    "--debug+",
+                    "--optimize-",
+                    "--targetprofile:netcore"
+                };
+
+                // Add references
+                var refs = await GetReferencesAsync(project);
+                foreach (var r in refs)
+                {
+                    args.Add($"-r:{r}");
+                }
+
+                // Add source files
+                args.AddRange(sourceFiles);
+
+                // Compile
+                var compileAsync = Checker.Compile(args.ToArray(), userOpName: null);
+                var results = Microsoft.FSharp.Control.FSharpAsync.RunSynchronously(compileAsync, null, null);
+
+                if (results.Item2 != 0) // Exit code
+                {
+                    var errorMsg = string.Join("\n", results.Item1.Select(e => $"{e.FileName}({e.StartLine},{e.StartColumn}): {e.Severity} {e.ErrorNumber}: {e.Message}"));
+                    
+                    return new CompilationResult
+                    {
+                        Success = false,
+                        Error = "Compilation Error:\n" + errorMsg
+                    };
+                }
+
+                // Read assembly into memory
+                using var fs = File.OpenRead(dllPath);
+                using var ms = new MemoryStream();
+                await fs.CopyToAsync(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                
+                // Execute
+                return await ModuleCompiler.ExecuteAssemblyAsync(ms, refs, project.ProjectFile.Name ?? "MyProject");
+            }
+            finally
+            {
+                try { Directory.Delete(tempDir, true); } catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+             return new CompilationResult
+            {
+                Success = false,
+                Error = $"Error: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<HashSet<string>> GetReferencesAsync(VizCodeProject project)
+    {
+        var references = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Standard references
+        var trustedAssemblies = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? "")
+            .Split(Path.PathSeparator);
+
+        var neededAssemblies = new[]
+        {
+            "System.Runtime",
+            "System.Private.CoreLib",
+            "netstandard",
+            "System.Collections",
+            "System.Console",
+            "System.Linq",
+            "System.Numerics.Vectors",
+            "System.Runtime.Numerics",
+            "System.ObjectModel",
+            "System.ComponentModel",
+            "System.IO",
+            "System.Text.RegularExpressions"
+        };
+
+        foreach (var assembly in trustedAssemblies)
+        {
+            var name = Path.GetFileNameWithoutExtension(assembly);
+            if (neededAssemblies.Any(n => name.Equals(n, StringComparison.OrdinalIgnoreCase)))
+            {
+                references.Add(assembly);
+            }
+        }
+
+        // Add FSharp.Core
+        var fsharpCore = trustedAssemblies.FirstOrDefault(a => Path.GetFileNameWithoutExtension(a).Equals("FSharp.Core", StringComparison.OrdinalIgnoreCase));
+        if (fsharpCore != null) references.Add(fsharpCore);
+        else 
+        {
+             var appDir = Path.GetDirectoryName(typeof(FSharpModuleCompiler).Assembly.Location);
+             var localFsCore = Path.Combine(appDir!, "FSharp.Core.dll");
+             if (File.Exists(localFsCore)) references.Add(localFsCore);
+        }
+
+        // Add Code2Viz.Geometry/Viz2d
+        references.Add(typeof(Code2Viz.Geometry.VPoint).Assembly.Location);
+
+        // Project references (NuGet)
+        if (project.ProjectFile != null && project.ProjectFile.Packages.Any())
+        {
+            var packagesDir = Path.Combine(project.ProjectDirectory, ".packages");
+            using var nuget = new NuGetHelper(packagesDir);
+
+            foreach (var pkg in project.ProjectFile.Packages)
+            {
+                try
+                {
+                    var dlls = await nuget.RestorePackageAsync(pkg.Id, pkg.Version);
+                    foreach (var dll in dlls) references.Add(dll);
+                }
+                catch (Exception ex)
+                {
+                    ConsoleOutput.Instance.WriteLine("Compiler", 0, $"Warning: Failed to restore {pkg.Id}: {ex.Message}");
+                }
+            }
+        }
+
+        return references;
+    }
+}
