@@ -12,127 +12,196 @@ public static class TypeInspector
     // Cache to avoid repeated reflection
     private static readonly Dictionary<string, List<(string Name, string Description, CompletionKind Kind)>> _typeCache = new();
 
-    // Known type mappings for common types
-    private static readonly Dictionary<string, Type> _knownTypes = new()
-    {
-        // System types
-        ["Math"] = typeof(Math),
-        ["Console"] = typeof(System.Console),
-        ["Convert"] = typeof(Convert),
-        ["String"] = typeof(string),
-        ["string"] = typeof(string),
-        ["Int32"] = typeof(int),
-        ["int"] = typeof(int),
-        ["Double"] = typeof(double),
-        ["double"] = typeof(double),
-        ["Boolean"] = typeof(bool),
-        ["bool"] = typeof(bool),
-        ["DateTime"] = typeof(DateTime),
-        ["TimeSpan"] = typeof(TimeSpan),
-        ["Random"] = typeof(Random),
-        ["Environment"] = typeof(Environment),
-        ["Path"] = typeof(System.IO.Path),
-        ["File"] = typeof(System.IO.File),
-        ["Directory"] = typeof(System.IO.Directory),
-        ["Guid"] = typeof(Guid),
-        ["Object"] = typeof(object),
-        ["object"] = typeof(object),
-        ["Enumerable"] = typeof(Enumerable),
-
-
-
-        // Viz2d types
-        ["VPoint"] = typeof(Geometry.VPoint),
-        ["VXYZ"] = typeof(Geometry.VXYZ),
-        ["VLine3D"] = typeof(Geometry.VLine3D),
-        ["VPlane"] = typeof(Geometry.VPlane),
-        ["VTransform"] = typeof(Geometry.VTransform),
-        ["VBox"] = typeof(Geometry.VBox),
-        ["VCircle"] = typeof(Geometry.VCircle),
-        ["VArc"] = typeof(Geometry.VArc),
-        ["VRectangle"] = typeof(Geometry.VRectangle),
-        ["VEllipse"] = typeof(Geometry.VEllipse),
-        ["VPolygon"] = typeof(Geometry.VPolygon),
-        ["VPolyline"] = typeof(Geometry.VPolyline),
-        ["VText"] = typeof(Geometry.VText),
-        ["VBezier"] = typeof(Geometry.VBezier),
-        ["VSpline"] = typeof(Geometry.VSpline),
-        ["VArrow"] = typeof(Geometry.VArrow),
-        ["VDimension"] = typeof(Geometry.VDimension),
-        ["VGroup"] = typeof(Geometry.VGroup),
-        ["VGroup"] = typeof(Geometry.VGroup),
-        ["VizConsole"] = typeof(Console.VizConsole),
-        ["VLine"] = typeof(Geometry.VLine),
-
-        // Generic Collections
-        ["List"] = typeof(System.Collections.Generic.List<>),
-        ["Dictionary"] = typeof(System.Collections.Generic.Dictionary<,>),
-        ["HashSet"] = typeof(System.Collections.Generic.HashSet<>),
-        ["Queue"] = typeof(System.Collections.Generic.Queue<>),
-        ["Stack"] = typeof(System.Collections.Generic.Stack<>),
-        ["LinkedList"] = typeof(System.Collections.Generic.LinkedList<>),
-        ["SortedList"] = typeof(System.Collections.Generic.SortedList<,>),
-        ["SortedSet"] = typeof(System.Collections.Generic.SortedSet<>),
-        ["SortedDictionary"] = typeof(System.Collections.Generic.SortedDictionary<,>),
-
-        // Collection interfaces (use List<> as backing type for members)
-        ["IList"] = typeof(System.Collections.Generic.IList<>),
-        ["ICollection"] = typeof(System.Collections.Generic.ICollection<>),
-        ["IEnumerable"] = typeof(System.Collections.Generic.IEnumerable<>),
-        ["IDictionary"] = typeof(System.Collections.Generic.IDictionary<,>),
-        ["ISet"] = typeof(System.Collections.Generic.ISet<>),
-
-        // Non-generic collections
-        ["ArrayList"] = typeof(System.Collections.ArrayList),
-        ["Hashtable"] = typeof(System.Collections.Hashtable),
-    };
-
-    // Types to add for general completion
-    private static readonly (string Name, string Description)[] CommonTypes =
-    {
-        // Viz2d types
-        ("VPoint", "2D point with X, Y coordinates"),
-        ("VXYZ", "3D vector with X, Y, Z coordinates"),
-        ("VLine3D", "Line between two points in 3D"),
-        ("VPlane", "Infinite plane in 3D"),
-        ("VTransform", "3D Transformation matrix"),
-        ("VBox", "Abstract base class for 3D boxes"),
-        ("VCircle", "Circle with center and radius"),
-        ("VArc", "Arc with center, radius, start and end angles"),
-        ("VRectangle", "Rectangle with position, width and height"),
-        ("VEllipse", "Ellipse with center, radiusX and radiusY"),
-        ("VPolygon", "Closed polygon from list of points"),
-        ("VPolyline", "Open polyline from list of points"),
-        ("VText", "Text with location, content, color and height"),
-        ("VBezier", "Cubic Bezier curve with 4 control points"),
-        ("VSpline", "Catmull-Rom spline through control points"),
-        ("VArrow", "Arrow with configurable arrowhead"),
-        ("VDimension", "Dimension line showing distance between points"),
-        ("VGroup", "Group of shapes for batch transformations"),
-        ("VizConsole", "Console output with line tracking"),
-
-        // Common System types
-        ("Math", "System.Math - Mathematical functions"),
-        ("Console", "System.Console - Console I/O"),
-        ("Convert", "System.Convert - Type conversion"),
-        ("String", "System.String - String manipulation"),
-        ("List", "System.Collections.Generic.List<T>"),
-        ("Dictionary", "System.Collections.Generic.Dictionary<K,V>"),
-        ("Random", "System.Random - Random number generator"),
-        ("DateTime", "System.DateTime - Date and time"),
-        ("TimeSpan", "System.TimeSpan - Time interval"),
-        ("Environment", "System.Environment - Environment info"),
-        ("Path", "System.IO.Path - Path manipulation"),
-        ("File", "System.IO.File - File operations"),
-        ("Directory", "System.IO.Directory - Directory operations"),
-        ("Guid", "System.Guid - Unique identifiers"),
-        ("Enumerable", "System.Linq.Enumerable - LINQ methods"),
-    };
+    // Known type mappings - built dynamically via reflection
+    private static Dictionary<string, Type>? _knownTypes;
+    private static List<(string Name, string Description)>? _commonTypes;
+    private static HashSet<string>? _collectionTypeNames;
 
     /// <summary>
-    /// Get all common types for general completion.
+    /// Get or build the known types dictionary using reflection.
     /// </summary>
-    public static IEnumerable<(string Name, string Description)> GetCommonTypes() => CommonTypes;
+    private static Dictionary<string, Type> GetKnownTypes()
+    {
+        if (_knownTypes != null)
+            return _knownTypes;
+
+        _knownTypes = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+
+        // Add primitive type aliases
+        _knownTypes["string"] = typeof(string);
+        _knownTypes["int"] = typeof(int);
+        _knownTypes["double"] = typeof(double);
+        _knownTypes["float"] = typeof(float);
+        _knownTypes["bool"] = typeof(bool);
+        _knownTypes["long"] = typeof(long);
+        _knownTypes["short"] = typeof(short);
+        _knownTypes["byte"] = typeof(byte);
+        _knownTypes["char"] = typeof(char);
+        _knownTypes["decimal"] = typeof(decimal);
+        _knownTypes["object"] = typeof(object);
+
+        // Scan Code2Viz.Geometry assembly for all public types
+        var geometryAssembly = typeof(Geometry.VPoint).Assembly;
+        foreach (var type in geometryAssembly.GetExportedTypes())
+        {
+            if (type.IsPublic && !type.IsNested)
+            {
+                _knownTypes[type.Name] = type;
+            }
+        }
+
+        // Add VizConsole
+        _knownTypes["VizConsole"] = typeof(Console.VizConsole);
+
+        // Scan common System namespaces
+        var systemTypes = new[]
+        {
+            typeof(Math), typeof(System.Console), typeof(Convert), typeof(string),
+            typeof(DateTime), typeof(TimeSpan), typeof(Random), typeof(Environment),
+            typeof(Guid), typeof(Enumerable), typeof(object),
+            typeof(System.IO.Path), typeof(System.IO.File), typeof(System.IO.Directory),
+            typeof(System.Text.StringBuilder), typeof(System.Text.RegularExpressions.Regex),
+        };
+        foreach (var type in systemTypes)
+        {
+            _knownTypes[type.Name] = type;
+        }
+
+        // Scan System.Collections.Generic for collection types
+        var collectionsAssembly = typeof(List<>).Assembly;
+        var collectionNamespace = "System.Collections.Generic";
+        foreach (var type in collectionsAssembly.GetExportedTypes())
+        {
+            if (type.Namespace == collectionNamespace && type.IsPublic && !type.IsNested)
+            {
+                // Use the name without generic arity suffix for easier lookup
+                var name = type.Name;
+                var tickIndex = name.IndexOf('`');
+                if (tickIndex > 0)
+                    name = name.Substring(0, tickIndex);
+
+                if (!_knownTypes.ContainsKey(name))
+                    _knownTypes[name] = type;
+            }
+        }
+
+        // Add non-generic collections
+        _knownTypes["ArrayList"] = typeof(System.Collections.ArrayList);
+        _knownTypes["Hashtable"] = typeof(System.Collections.Hashtable);
+
+        return _knownTypes;
+    }
+
+    /// <summary>
+    /// Get all common types for general completion - built dynamically via reflection.
+    /// </summary>
+    public static IEnumerable<(string Name, string Description)> GetCommonTypes()
+    {
+        if (_commonTypes != null)
+            return _commonTypes;
+
+        _commonTypes = new List<(string Name, string Description)>();
+
+        // Add Code2Viz.Geometry types with XML doc summaries where available
+        var geometryAssembly = typeof(Geometry.VPoint).Assembly;
+        foreach (var type in geometryAssembly.GetExportedTypes())
+        {
+            if (type.IsPublic && !type.IsNested && !type.IsAbstract)
+            {
+                var description = $"{type.Namespace}.{type.Name}";
+                _commonTypes.Add((type.Name, description));
+            }
+        }
+
+        // Add VizConsole
+        _commonTypes.Add(("VizConsole", "Console output with line tracking"));
+
+        // Add common System types
+        var systemTypes = new (Type Type, string Desc)[]
+        {
+            (typeof(Math), "Mathematical functions"),
+            (typeof(System.Console), "Console I/O"),
+            (typeof(Convert), "Type conversion"),
+            (typeof(string), "String manipulation"),
+            (typeof(Random), "Random number generator"),
+            (typeof(DateTime), "Date and time"),
+            (typeof(TimeSpan), "Time interval"),
+            (typeof(Environment), "Environment info"),
+            (typeof(Guid), "Unique identifiers"),
+            (typeof(Enumerable), "LINQ methods"),
+            (typeof(System.IO.Path), "Path manipulation"),
+            (typeof(System.IO.File), "File operations"),
+            (typeof(System.IO.Directory), "Directory operations"),
+            (typeof(System.Text.StringBuilder), "Mutable string builder"),
+            (typeof(System.Text.RegularExpressions.Regex), "Regular expressions"),
+        };
+        foreach (var (type, desc) in systemTypes)
+        {
+            _commonTypes.Add((type.Name, $"{type.FullName} - {desc}"));
+        }
+
+        // Add generic collections
+        var genericCollections = new (Type Type, string Desc)[]
+        {
+            (typeof(List<>), "Generic list"),
+            (typeof(Dictionary<,>), "Key-value dictionary"),
+            (typeof(HashSet<>), "Unique element set"),
+            (typeof(Queue<>), "FIFO queue"),
+            (typeof(Stack<>), "LIFO stack"),
+            (typeof(LinkedList<>), "Doubly-linked list"),
+            (typeof(SortedSet<>), "Sorted unique set"),
+            (typeof(SortedList<,>), "Sorted key-value list"),
+            (typeof(SortedDictionary<,>), "Sorted dictionary"),
+        };
+        foreach (var (type, desc) in genericCollections)
+        {
+            var name = type.Name;
+            var tickIndex = name.IndexOf('`');
+            if (tickIndex > 0)
+                name = name.Substring(0, tickIndex);
+            _commonTypes.Add((name, $"System.Collections.Generic.{name} - {desc}"));
+        }
+
+        return _commonTypes;
+    }
+
+    /// <summary>
+    /// Get set of collection type names - built dynamically via reflection.
+    /// </summary>
+    private static HashSet<string> GetCollectionTypeNames()
+    {
+        if (_collectionTypeNames != null)
+            return _collectionTypeNames;
+
+        _collectionTypeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Scan System.Collections.Generic for types that implement IEnumerable
+        var collectionsAssembly = typeof(List<>).Assembly;
+        var enumerableType = typeof(System.Collections.IEnumerable);
+
+        foreach (var type in collectionsAssembly.GetExportedTypes())
+        {
+            if (type.Namespace?.StartsWith("System.Collections") == true &&
+                type.IsPublic && !type.IsNested &&
+                enumerableType.IsAssignableFrom(type))
+            {
+                var name = type.Name;
+                var tickIndex = name.IndexOf('`');
+                if (tickIndex > 0)
+                    name = name.Substring(0, tickIndex);
+                _collectionTypeNames.Add(name);
+            }
+        }
+
+        // Add interface names
+        _collectionTypeNames.Add("IList");
+        _collectionTypeNames.Add("ICollection");
+        _collectionTypeNames.Add("IEnumerable");
+        _collectionTypeNames.Add("IDictionary");
+        _collectionTypeNames.Add("ISet");
+
+        return _collectionTypeNames;
+    }
 
     /// <summary>
     /// Try to resolve a type name to an actual Type.
@@ -153,7 +222,7 @@ public static class TypeInspector
         }
 
         // Check known types first (using base name)
-        if (_knownTypes.TryGetValue(baseTypeName, out var knownType))
+        if (GetKnownTypes().TryGetValue(baseTypeName, out var knownType))
             return knownType;
 
         // Try common System namespaces with Type.GetType
@@ -255,19 +324,8 @@ public static class TypeInspector
         if (genericIndex > 0)
             baseName = typeName.Substring(0, genericIndex);
 
-        // Check against known collection type names
-        var collectionTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "List", "IList", "ICollection", "IEnumerable",
-            "HashSet", "ISet", "Dictionary", "IDictionary",
-            "Queue", "Stack", "LinkedList", "SortedSet",
-            "SortedList", "SortedDictionary", "ArrayList", "Hashtable",
-            "Collection", "ObservableCollection", "ReadOnlyCollection",
-            "ConcurrentBag", "ConcurrentQueue", "ConcurrentStack", "ConcurrentDictionary",
-            "ImmutableList", "ImmutableArray", "ImmutableHashSet", "ImmutableDictionary"
-        };
-
-        return collectionTypes.Contains(baseName);
+        // Check against dynamically-discovered collection type names
+        return GetCollectionTypeNames().Contains(baseName);
     }
 
     /// <summary>
@@ -478,7 +536,7 @@ public static class TypeInspector
     /// </summary>
     public static bool IsKnownType(string typeName)
     {
-        return !string.IsNullOrEmpty(typeName) && _knownTypes.ContainsKey(typeName);
+        return !string.IsNullOrEmpty(typeName) && GetKnownTypes().ContainsKey(typeName);
     }
 
     /// <summary>
