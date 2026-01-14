@@ -147,6 +147,68 @@ public class FSharpModuleCompiler
         }
     }
 
+    /// <summary>
+    /// Check for syntax errors without compiling/executing.
+    /// </summary>
+    public async Task<CompilationResult> CheckSyntaxAsync(VizCodeProject project)
+    {
+        try
+        {
+            var allSourceFiles = project.GetAllSourceFiles().ToList();
+            var diagnostics = new List<FSharpDiagnosticInfo>();
+
+            foreach (var file in allSourceFiles)
+            {
+                // Convert tabs to spaces for F#
+                var content = file.Content.Replace("\t", "    ");
+                var sourceText = SourceText.ofString(content);
+
+                // Parse and check for errors
+                var parseResults = Checker.ParseFile(
+                    file.FilePath,
+                    sourceText,
+                    FSharpParsingOptions.Default,
+                    userOpName: null,
+                    cache: null
+                );
+
+                var parsed = Microsoft.FSharp.Control.FSharpAsync.RunSynchronously(parseResults, null, null);
+
+                foreach (var error in parsed.Diagnostics)
+                {
+                    diagnostics.Add(new FSharpDiagnosticInfo
+                    {
+                        FilePath = file.FilePath,
+                        StartLine = error.StartLine,
+                        StartColumn = error.StartColumn,
+                        EndLine = error.EndLine,
+                        EndColumn = error.EndColumn,
+                        Message = error.Message,
+                        Severity = error.Severity.IsError ? "Error" : "Warning",
+                        ErrorNumber = error.ErrorNumber.ToString()
+                    });
+                }
+            }
+
+            var errors = diagnostics.Where(d => d.Severity == "Error").ToList();
+
+            return new CompilationResult
+            {
+                Success = errors.Count == 0,
+                Error = errors.Count > 0 ? $"{errors.Count} error(s)" : null,
+                FSharpDiagnostics = diagnostics
+            };
+        }
+        catch (Exception ex)
+        {
+            return new CompilationResult
+            {
+                Success = false,
+                Error = $"F# syntax check error: {ex.Message}"
+            };
+        }
+    }
+
     private async Task<HashSet<string>> GetReferencesAsync(VizCodeProject project)
     {
         var references = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

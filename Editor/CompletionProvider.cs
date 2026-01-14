@@ -289,35 +289,38 @@ public static class CompletionProvider
     }
 
     /// <summary>
-    /// Finds local variables declared before the cursor position in the current scope.
+    /// Finds local variables declared before the cursor position in all enclosing scopes.
     /// </summary>
     private static List<(string Name, string Type)> FindLocalVariables(string textBeforeCursor)
     {
         var variables = new List<(string Name, string Type)>();
+        var seenNames = new HashSet<string>();
 
-        // Find the start of the current method body
-        var lastMethodBrace = textBeforeCursor.LastIndexOf('{');
-        if (lastMethodBrace == -1)
+        // Find the method body start by looking for method signature pattern followed by {
+        var methodPattern = @"(?:public|private|protected|internal)?\s*(?:static\s+)?(?:[\w<>\[\]?]+\s+)?\w+\s*\([^)]*\)\s*\{";
+        var methodMatches = Regex.Matches(textBeforeCursor, methodPattern);
+
+        if (methodMatches.Count == 0)
             return variables;
 
-        // Find the innermost scope by tracking brace depth from the end
-        var braceDepth = 0;
-        var scopeStart = textBeforeCursor.Length;
-        for (int i = textBeforeCursor.Length - 1; i >= 0; i--)
+        // Find which method body we're actually inside
+        int methodBodyStart = 0;
+        foreach (Match match in methodMatches)
         {
-            if (textBeforeCursor[i] == '}') braceDepth++;
-            else if (textBeforeCursor[i] == '{')
+            var matchEnd = match.Index + match.Length;
+            // Count braces to see if we're still inside this method
+            var textAfter = textBeforeCursor.Substring(matchEnd);
+            var opens = textAfter.Count(c => c == '{') + 1; // +1 for the method's opening brace
+            var closes = textAfter.Count(c => c == '}');
+            if (opens > closes)
             {
-                if (braceDepth == 0)
-                {
-                    scopeStart = i + 1;
-                    break;
-                }
-                braceDepth--;
+                // We're inside this method - start searching from after its opening brace
+                methodBodyStart = matchEnd;
             }
         }
 
-        var scopeText = textBeforeCursor.Substring(scopeStart);
+        // Search from method body start to cursor for all variable declarations
+        var scopeText = textBeforeCursor.Substring(methodBodyStart);
 
         // Match variable declarations: "Type name = " or "Type name;" or "var name = "
         var varPattern = @"\b(var|[\w<>\[\]?]+)\s+(\w+)\s*[=;]";
@@ -328,14 +331,31 @@ public static class CompletionProvider
             var varType = match.Groups[1].Value;
             var varName = match.Groups[2].Value;
 
-            // Skip if it looks like a method call or keyword
-            if (!Keywords.Contains(varType) && !Keywords.Contains(varName))
+            // Skip if it looks like a method call or keyword, or if already seen (shadowing)
+            if (!Keywords.Contains(varType) && !Keywords.Contains(varName) && !seenNames.Contains(varName))
             {
                 variables.Add((varName, varType));
+                seenNames.Add(varName);
             }
         }
 
         return variables;
+    }
+
+    /// <summary>
+    /// Public wrapper for FindLocalVariables for use by hover tooltip.
+    /// </summary>
+    public static List<(string Name, string Type)> FindLocalVariablesPublic(string textBeforeCursor)
+    {
+        return FindLocalVariables(textBeforeCursor);
+    }
+
+    /// <summary>
+    /// Public wrapper for FindCurrentMethodParameters for use by hover tooltip.
+    /// </summary>
+    public static List<(string Name, string Type)> FindCurrentMethodParametersPublic(string textBeforeCursor)
+    {
+        return FindCurrentMethodParameters(textBeforeCursor);
     }
 
     /// <summary>

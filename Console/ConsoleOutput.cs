@@ -10,6 +10,11 @@ public class ConsoleEntry
     public string Message { get; set; } = string.Empty;
     public bool IsNewLine { get; set; }
     public bool IsError { get; set; }
+
+    // For clickable error navigation
+    public string? FilePath { get; set; }
+    public int Column { get; set; }
+    public bool IsClickable => !string.IsNullOrEmpty(FilePath) && LineNumber > 0;
 }
 
 public class ConsoleOutput
@@ -82,6 +87,28 @@ public class ConsoleOutput
             {
                 ModuleName = moduleName,
                 LineNumber = lineNumber,
+                Message = message,
+                IsNewLine = true,
+                IsError = true
+            });
+        }
+        NotifyOutputChanged();
+    }
+
+    /// <summary>
+    /// Writes a compilation error with full location info for click-to-navigate.
+    /// </summary>
+    public void WriteCompilationError(string filePath, int lineNumber, int column, string message)
+    {
+        var fileName = System.IO.Path.GetFileName(filePath);
+        lock (_lock)
+        {
+            _entries.Add(new ConsoleEntry
+            {
+                ModuleName = fileName,
+                LineNumber = lineNumber,
+                Column = column,
+                FilePath = filePath,
                 Message = message,
                 IsNewLine = true,
                 IsError = true

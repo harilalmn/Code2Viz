@@ -9,11 +9,24 @@ using Code2Viz.Project;
 
 namespace Code2Viz.Execution;
 
+public class FSharpDiagnosticInfo
+{
+    public string FilePath { get; set; } = string.Empty;
+    public int StartLine { get; set; }
+    public int StartColumn { get; set; }
+    public int EndLine { get; set; }
+    public int EndColumn { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public string ErrorNumber { get; set; } = string.Empty;
+}
+
 public class CompilationResult
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
     public IEnumerable<Diagnostic>? Diagnostics { get; set; }
+    public List<FSharpDiagnosticInfo>? FSharpDiagnostics { get; set; }
 }
 
 public class ModuleCompiler
@@ -122,6 +135,43 @@ public class ModuleCompiler
             // Execute
             ms.Seek(0, SeekOrigin.Begin);
             return await ExecuteAssemblyAsync(ms, allDlls, project.ProjectFile.Name ?? "MyProject");
+        }
+        catch (Exception ex)
+        {
+            return new CompilationResult
+            {
+                Success = false,
+                Error = $"Error: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Check for syntax and compilation errors without executing.
+    /// Used for real-time error checking while typing.
+    /// </summary>
+    public async Task<CompilationResult> CheckSyntaxAsync(VizCodeProject project)
+    {
+        if (project.ProjectFile.Language == ProjectLanguage.FSharp)
+        {
+            var fsCompiler = new FSharpModuleCompiler();
+            return await fsCompiler.CheckSyntaxAsync(project);
+        }
+
+        try
+        {
+            var (compilation, _) = await CreateCompilationAsync(project);
+
+            // Get diagnostics without emitting
+            var diagnostics = compilation.GetDiagnostics();
+            var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+
+            return new CompilationResult
+            {
+                Success = errors.Count == 0,
+                Error = errors.Count > 0 ? $"{errors.Count} error(s)" : null,
+                Diagnostics = diagnostics
+            };
         }
         catch (Exception ex)
         {

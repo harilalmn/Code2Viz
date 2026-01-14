@@ -48,7 +48,11 @@ public partial class MainWindow : Window
     private VizTextMarkerService? _textMarkerService;
     private RefactoringProvider? _refactoringProvider;
     private BracketHighlightRenderer? _bracketRenderer;
-    
+
+    // Real-time error checking
+    private DispatcherTimer? _syntaxCheckTimer;
+    private bool _textChangedSinceLastCheck;
+
     public static RoutedCommand RenameCommand = new RoutedCommand();
 
     public MainWindow(VizCodeProject? project = null)
@@ -167,6 +171,54 @@ public partial class MainWindow : Window
         {
             ConsoleListBox.SelectAll();
             e.Handled = true;
+        }
+    }
+
+    private void ConsoleListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ConsoleListBox.SelectedItem is Console.ConsoleEntry entry && entry.IsClickable)
+        {
+            NavigateToError(entry.FilePath!, entry.LineNumber, entry.Column);
+            e.Handled = true;
+        }
+    }
+
+    private void NavigateToError(string filePath, int line, int column)
+    {
+        if (_currentProject == null) return;
+
+        // Find and open the file in the project
+        var file = _currentProject.Files.FirstOrDefault(f =>
+            string.Equals(f.FilePath, filePath, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(Path.GetFileName(f.FilePath), Path.GetFileName(filePath), StringComparison.OrdinalIgnoreCase));
+
+        if (file != null)
+        {
+            // Switch to the file's tab
+            SelectFile(file);
+
+            // Navigate to the line and column
+            try
+            {
+                // Ensure line is within bounds
+                if (line > 0 && line <= CodeEditor.Document.LineCount)
+                {
+                    var lineObj = CodeEditor.Document.GetLineByNumber(line);
+                    var col = Math.Max(1, Math.Min(column, lineObj.Length + 1));
+                    var offset = CodeEditor.Document.GetOffset(line, col);
+
+                    CodeEditor.CaretOffset = offset;
+                    CodeEditor.ScrollToLine(line);
+                    CodeEditor.Focus();
+
+                    // Highlight the line briefly
+                    CodeEditor.Select(lineObj.Offset, lineObj.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"NavigateToError: {ex.Message}");
+            }
         }
     }
 
@@ -321,7 +373,7 @@ public partial class MainWindow : Window
         // Timer for folding updates
         _foldingTimer = new DispatcherTimer();
         _foldingTimer.Interval = TimeSpan.FromSeconds(2);
-        _foldingTimer.Tick += (s, e) => 
+        _foldingTimer.Tick += (s, e) =>
         {
             try
             {
@@ -333,6 +385,22 @@ public partial class MainWindow : Window
             }
         };
         _foldingTimer.Start();
+
+        // Timer for real-time syntax checking (continuous interval)
+        _syntaxCheckTimer = new DispatcherTimer();
+        _syntaxCheckTimer.Interval = TimeSpan.FromMilliseconds(800);
+        _syntaxCheckTimer.Tick += async (s, e) =>
+        {
+            if (_textChangedSinceLastCheck && _currentProject != null)
+            {
+                _textChangedSinceLastCheck = false;
+                await PerformSyntaxCheckAsync();
+            }
+        };
+        _syntaxCheckTimer.Start();
+
+        // Track text changes for syntax checking
+        CodeEditor.TextChanged += (s, e) => _textChangedSinceLastCheck = true;
     }
 
     #region Autocomplete
@@ -383,7 +451,8 @@ public partial class MainWindow : Window
         var wrappedText = $"{open}{selectedText}{close}";
         document.Replace(startOffset, length, wrappedText);
 
-        // Position caret after the wrapped text
+        // Clear selection and position caret after the closing bracket
+        CodeEditor.TextArea.ClearSelection();
         CodeEditor.CaretOffset = startOffset + wrappedText.Length;
     }
 
@@ -612,6 +681,141 @@ public partial class MainWindow : Window
         {
             // Show general completions after typing a letter
             ShowGeneralCompletion();
+        }
+    }
+
+    /// <summary>
+    /// Performs syntax check and updates error markers.
+    /// </summary>
+    private async Task PerformSyntaxCheckAsync()
+    {
+        if (_currentProject == null) return;
+
+        try
+        {
+            // Sync current editor content
+            if (_activeFile != null)
+            {
+                _activeFile.Content = CodeEditor.Text;
+            }
+
+            var result = await _compiler.CheckSyntaxAsync(_currentProject);
+
+            // Clear previous markers
+            _textMarkerService?.Clear();
+
+            if (result.Diagnostics != null)
+            {
+                var errorCount = 0;
+                foreach (var diagnostic in result.Diagnostics)
+                {
+                    if (diagnostic.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Error &&
+                        diagnostic.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Warning)
+                        continue;
+
+                    var lineSpan = diagnostic.Location.GetLineSpan();
+
+                    // Check if diagnostic belongs to the currently active file
+                    var activePath = _activeFile?.FilePath;
+                    bool isMatch = false;
+
+                    if (activePath != null)
+                    {
+                        if (string.IsNullOrEmpty(lineSpan.Path))
+                            isMatch = true;
+                        else if (string.Equals(lineSpan.Path, activePath, StringComparison.OrdinalIgnoreCase))
+                            isMatch = true;
+                        else if (string.Equals(Path.GetFileName(lineSpan.Path), Path.GetFileName(activePath), StringComparison.OrdinalIgnoreCase))
+                            isMatch = true;
+                    }
+
+                    if (isMatch)
+                    {
+                        var startLine = lineSpan.StartLinePosition.Line + 1;
+                        var startCol = lineSpan.StartLinePosition.Character + 1;
+                        var endLine = lineSpan.EndLinePosition.Line + 1;
+                        var endCol = lineSpan.EndLinePosition.Character + 1;
+
+                        try
+                        {
+                            var offset = CodeEditor.Document.GetOffset(new TextLocation(startLine, startCol));
+                            var endOffset = CodeEditor.Document.GetOffset(new TextLocation(endLine, endCol));
+                            var length = endOffset - offset;
+
+                            if (length > 0)
+                            {
+                                var color = diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error ? Colors.Red : Colors.Orange;
+                                _textMarkerService?.Create(offset, length, diagnostic.GetMessage(), color);
+
+                                if (diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
+                                    errorCount++;
+                            }
+                        }
+                        catch { /* Ignore invalid ranges */ }
+                    }
+                }
+
+                // Update status bar with error count (subtle, not alarming)
+                if (errorCount > 0)
+                {
+                    SetStatus($"{errorCount} error{(errorCount != 1 ? "s" : "")}", isError: true);
+                }
+            }
+
+            // Handle F# diagnostics
+            if (result.FSharpDiagnostics != null)
+            {
+                var errorCount = 0;
+                foreach (var diagnostic in result.FSharpDiagnostics)
+                {
+                    if (diagnostic.Severity != "Error" && diagnostic.Severity != "Warning")
+                        continue;
+
+                    // Check if diagnostic belongs to the currently active file
+                    var activePath = _activeFile?.FilePath;
+                    bool isMatch = false;
+
+                    if (activePath != null)
+                    {
+                        if (string.IsNullOrEmpty(diagnostic.FilePath))
+                            isMatch = true;
+                        else if (string.Equals(diagnostic.FilePath, activePath, StringComparison.OrdinalIgnoreCase))
+                            isMatch = true;
+                        else if (string.Equals(Path.GetFileName(diagnostic.FilePath), Path.GetFileName(activePath), StringComparison.OrdinalIgnoreCase))
+                            isMatch = true;
+                    }
+
+                    if (isMatch)
+                    {
+                        try
+                        {
+                            var offset = CodeEditor.Document.GetOffset(new TextLocation(diagnostic.StartLine, diagnostic.StartColumn + 1));
+                            var endOffset = CodeEditor.Document.GetOffset(new TextLocation(diagnostic.EndLine, diagnostic.EndColumn + 1));
+                            var length = endOffset - offset;
+
+                            if (length > 0)
+                            {
+                                var color = diagnostic.Severity == "Error" ? Colors.Red : Colors.Orange;
+                                _textMarkerService?.Create(offset, length, diagnostic.Message, color);
+
+                                if (diagnostic.Severity == "Error")
+                                    errorCount++;
+                            }
+                        }
+                        catch { /* Ignore invalid ranges */ }
+                    }
+                }
+
+                // Update status bar with error count
+                if (errorCount > 0)
+                {
+                    SetStatus($"{errorCount} error{(errorCount != 1 ? "s" : "")}", isError: true);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Syntax check error: {ex.Message}");
         }
     }
 
@@ -869,32 +1073,58 @@ public partial class MainWindow : Window
             if (dotOffset < 0)
                 return;
 
-            // Find the full dotted identifier before the dot (e.g., "System.Numerics")
-            var identifierStart = FindDottedIdentifierStart(CodeEditor.Document, dotOffset);
-            
-            // Safety check to avoid negative length
-            if (identifierStart >= dotOffset)
-                return;
-            
-            var fullIdentifier = CodeEditor.Document.GetText(identifierStart, dotOffset - identifierStart);
-
-            if (string.IsNullOrEmpty(fullIdentifier))
-                return;
-
             var allCode = GetAllProjectCode();
+            string? typeName = null;
 
-            // For simple identifiers (no dots), try to find variable type
-            string typeName;
-            if (!fullIdentifier.Contains('.'))
+            // Check if the character before the dot is ')' - parenthesized expression
+            // dotOffset is the position of the dot, so dotOffset-1 is the character before it
+            if (dotOffset > 0)
             {
-                var textBefore = CodeEditor.Document.GetText(0, identifierStart);
-                typeName = CompletionProvider.FindVariableType(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
+                var charBeforeDot = CodeEditor.Document.GetCharAt(dotOffset - 1);
+                if (charBeforeDot == ')')
+                {
+                    // Find matching opening parenthesis (starting from the ')' position)
+                    var closeParenPos = dotOffset - 1;
+                    var openParen = FindMatchingOpenParen(closeParenPos);
+                    if (openParen >= 0)
+                    {
+                        var expr = CodeEditor.Document.GetText(openParen + 1, closeParenPos - openParen - 1);
+                        var textBefore = CodeEditor.Document.GetText(0, openParen);
+                        typeName = InferExpressionType(expr, textBefore, allCode);
+                    }
+                }
             }
-            else
+
+            // If not a parenthesized expression or couldn't infer type, try normal identifier
+            if (typeName == null)
             {
-                // For dotted identifiers, use as-is (could be namespace or nested type)
-                typeName = fullIdentifier;
+                // Find the full dotted identifier before the dot (e.g., "System.Numerics")
+                var identifierStart = FindDottedIdentifierStart(CodeEditor.Document, dotOffset);
+
+                // Safety check to avoid negative length
+                if (identifierStart >= dotOffset)
+                    return;
+
+                var fullIdentifier = CodeEditor.Document.GetText(identifierStart, dotOffset - identifierStart);
+
+                if (string.IsNullOrEmpty(fullIdentifier))
+                    return;
+
+                // For simple identifiers (no dots), try to find variable type
+                if (!fullIdentifier.Contains('.'))
+                {
+                    var textBefore = CodeEditor.Document.GetText(0, identifierStart);
+                    typeName = CompletionProvider.FindVariableType(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
+                }
+                else
+                {
+                    // For dotted identifiers, use as-is (could be namespace or nested type)
+                    typeName = fullIdentifier;
+                }
             }
+
+            if (string.IsNullOrEmpty(typeName))
+                return;
 
             var completions = CompletionProvider.GetMemberCompletions(typeName, allCode).ToList();
             if (completions.Count == 0)
@@ -919,6 +1149,104 @@ public partial class MainWindow : Window
             System.Diagnostics.Debug.WriteLine($"ShowMemberCompletion error: {ex}");
             SetStatus($"Autocomplete error: {ex.Message}", true);
         }
+    }
+
+    /// <summary>
+    /// Finds the matching opening parenthesis for a closing paren at the given offset.
+    /// </summary>
+    private int FindMatchingOpenParen(int closeParenOffset)
+    {
+        var document = CodeEditor.Document;
+        var depth = 1;
+
+        for (int i = closeParenOffset - 1; i >= 0; i--)
+        {
+            var c = document.GetCharAt(i);
+            if (c == ')')
+                depth++;
+            else if (c == '(')
+            {
+                depth--;
+                if (depth == 0)
+                    return i;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// Infers the result type of an expression like "p1 - p2" or "a + b".
+    /// </summary>
+    private string? InferExpressionType(string expression, string textBefore, string allCode)
+    {
+        expression = expression.Trim();
+
+        // Handle binary operations: look for +, -, *, / operators
+        // Find the last operator at depth 0 (not inside nested parens)
+        var operatorIndex = -1;
+        var depth = 0;
+        for (int i = expression.Length - 1; i >= 0; i--)
+        {
+            var c = expression[i];
+            if (c == ')') depth++;
+            else if (c == '(') depth--;
+            else if (depth == 0 && (c == '+' || c == '-' || c == '*' || c == '/'))
+            {
+                // Make sure it's a binary operator, not unary
+                if (i > 0 && !IsOperatorChar(expression[i - 1]))
+                {
+                    operatorIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (operatorIndex > 0)
+        {
+            // Binary expression - get the left operand and infer its type
+            var leftOperand = expression.Substring(0, operatorIndex).Trim();
+
+            // Extract the identifier from the left operand
+            var leftId = ExtractLastIdentifier(leftOperand);
+            if (!string.IsNullOrEmpty(leftId))
+            {
+                var leftType = CompletionProvider.FindVariableType(textBefore, leftId, allCode);
+                if (leftType != null)
+                {
+                    // For arithmetic operations on same type, result is usually same type
+                    return leftType;
+                }
+            }
+        }
+
+        // Single identifier or method call
+        var identifier = ExtractLastIdentifier(expression);
+        if (!string.IsNullOrEmpty(identifier))
+        {
+            return CompletionProvider.FindVariableType(textBefore, identifier, allCode);
+        }
+
+        return null;
+    }
+
+    private static bool IsOperatorChar(char c) => c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '<' || c == '>';
+
+    private static string? ExtractLastIdentifier(string expr)
+    {
+        expr = expr.Trim();
+        // Find the last word-like identifier
+        var end = expr.Length;
+        while (end > 0 && !char.IsLetterOrDigit(expr[end - 1]) && expr[end - 1] != '_')
+            end--;
+
+        var start = end;
+        while (start > 0 && (char.IsLetterOrDigit(expr[start - 1]) || expr[start - 1] == '_'))
+            start--;
+
+        if (start < end)
+            return expr.Substring(start, end - start);
+
+        return null;
     }
 
     private static int FindWordStart(TextDocument document, int offset)
@@ -2034,18 +2362,39 @@ public partial class MainWindow : Window
             }
             else
             {
-                SetStatus(result.Error ?? "Unknown error", isError: true);
+                // Count errors for status
+                var errorCount = result.Diagnostics?.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error) ?? 0;
+                SetStatus($"Compilation failed: {errorCount} error{(errorCount != 1 ? "s" : "")}", isError: true);
             }
 
-            // Show diagnostics (errors/warnings)
+            // Show diagnostics (errors/warnings) in console and editor
             if (result.Diagnostics != null)
             {
                 foreach (var diagnostic in result.Diagnostics)
                 {
+                    // Only show errors and warnings
+                    if (diagnostic.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Error &&
+                        diagnostic.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Warning)
+                        continue;
+
                     var lineSpan = diagnostic.Location.GetLineSpan();
-                    
-                    // Check if diagnostic belongs to the currently active file
-                    // Use case-insensitive comparison and allow matching by filename as fallback
+                    var startLine = lineSpan.StartLinePosition.Line + 1;
+                    var startCol = lineSpan.StartLinePosition.Character + 1;
+
+                    // Determine file path - use lineSpan.Path or try to find matching project file
+                    var filePath = lineSpan.Path;
+                    if (string.IsNullOrEmpty(filePath) && _currentProject != null)
+                    {
+                        // Try to find the file by matching filename in the error
+                        filePath = _activeFile?.FilePath ?? "";
+                    }
+
+                    // Add to console as clickable error entry
+                    var errorCode = diagnostic.Id;
+                    var message = $"{errorCode}: {diagnostic.GetMessage()}";
+                    Console.ConsoleOutput.Instance.WriteCompilationError(filePath, startLine, startCol, message);
+
+                    // Also highlight in editor if it matches the active file
                     var activePath = _activeFile?.FilePath;
                     bool isMatch = false;
 
@@ -2053,14 +2402,12 @@ public partial class MainWindow : Window
                     {
                         if (string.IsNullOrEmpty(lineSpan.Path))
                         {
-                            isMatch = true; // Assume no path belongs to current context (e.g. script)
+                            isMatch = true;
                         }
                         else
                         {
-                            // Try exact path match
                             if (string.Equals(lineSpan.Path, activePath, StringComparison.OrdinalIgnoreCase))
                                 isMatch = true;
-                            // Try filename match (fallback)
                             else if (string.Equals(Path.GetFileName(lineSpan.Path), Path.GetFileName(activePath), StringComparison.OrdinalIgnoreCase))
                                 isMatch = true;
                         }
@@ -2068,14 +2415,11 @@ public partial class MainWindow : Window
 
                     if (isMatch)
                     {
-                        var startLine = lineSpan.StartLinePosition.Line + 1;
-                        var startCol = lineSpan.StartLinePosition.Character + 1;
                         var endLine = lineSpan.EndLinePosition.Line + 1;
                         var endCol = lineSpan.EndLinePosition.Character + 1;
 
-                        try 
+                        try
                         {
-                            // Convert line/col to offset
                             var offset = CodeEditor.Document.GetOffset(new TextLocation(startLine, startCol));
                             var endOffset = CodeEditor.Document.GetOffset(new TextLocation(endLine, endCol));
                             var length = endOffset - offset;
@@ -3169,62 +3513,180 @@ public partial class MainWindow : Window
         try
         {
             var pos = CodeEditor.GetPositionFromPoint(e.GetPosition(CodeEditor));
-            if (pos != null && _textMarkerService != null)
+            if (pos == null || CodeEditor.Document == null) return;
+
+            var offset = CodeEditor.Document.GetOffset(pos.Value.Line, pos.Value.Column);
+
+            // First check for error markers
+            if (_textMarkerService != null)
             {
-                if (CodeEditor.Document == null) return;
-                
-                var offset = CodeEditor.Document.GetOffset(pos.Value.Line, pos.Value.Column);
                 var marker = _textMarkerService.GetMarkerAtOffset(offset);
-                
                 if (marker != null && marker.Message != null)
                 {
-                    if (_currentToolTip == null)
-                    { // Create new tooltip only if needed, logic was: if (_currentToolTip == null) { create }
-                      // But original logic was nested differently. Let's replicate safe logic.
-                    
-                        _currentToolTip = new ToolTip();
-                        _currentToolTip.PlacementTarget = CodeEditor;
-                        var textBlock = new TextBlock
-                        {
-                            Text = marker.Message,
-                            TextWrapping = TextWrapping.Wrap,
-                            MaxWidth = 300
-                        };
-                        _currentToolTip.Content = textBlock;
-                        _currentToolTip.IsOpen = true;
-                        e.Handled = true;
-                    }
-                    else
-                    {
-                         // If tooltip already exists, maybe update it? 
-                         // Original logic: 
-                         /*
-                             if (_currentToolTip == null) { ... create ... }
-                         */
-                         // Wait, original logic didn't close existing tooltip inside the inner if?
-                         // Ah, previous check was in `if (marker != null ...)`
-                         // Let's stick to simple replacement.
-                         
-                        _currentToolTip.IsOpen = false;
-                        _currentToolTip = new ToolTip();
-                        _currentToolTip.PlacementTarget = CodeEditor;
-                        var textBlock = new TextBlock
-                        {
-                            Text = marker.Message,
-                            TextWrapping = TextWrapping.Wrap,
-                            MaxWidth = 300
-                        };
-                        _currentToolTip.Content = textBlock;
-                        _currentToolTip.IsOpen = true;
-                        e.Handled = true;
-                    }
+                    ShowTooltip(marker.Message, isError: true);
+                    e.Handled = true;
+                    return;
                 }
+            }
+
+            // No error marker - try to show type information for identifier under cursor
+            var typeInfo = GetTypeInfoAtOffset(offset);
+            if (typeInfo != null)
+            {
+                ShowStyledTypeTooltip(typeInfo.Value.category, typeInfo.Value.typeName, typeInfo.Value.identifier);
+                e.Handled = true;
             }
         }
         catch (Exception ex)
         {
-            Code2Viz.Console.ConsoleOutput.Instance.WriteLine("Editor", 0, $"Hover error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Hover error: {ex.Message}");
         }
+    }
+
+    private (string category, string typeName, string identifier)? GetTypeInfoAtOffset(int offset)
+    {
+        var document = CodeEditor.Document;
+        if (document == null) return null;
+
+        // Find the identifier at this position
+        var wordStart = offset;
+        var wordEnd = offset;
+
+        // Expand backwards to find word start
+        while (wordStart > 0)
+        {
+            var c = document.GetCharAt(wordStart - 1);
+            if (!char.IsLetterOrDigit(c) && c != '_')
+                break;
+            wordStart--;
+        }
+
+        // Expand forwards to find word end
+        while (wordEnd < document.TextLength)
+        {
+            var c = document.GetCharAt(wordEnd);
+            if (!char.IsLetterOrDigit(c) && c != '_')
+                break;
+            wordEnd++;
+        }
+
+        if (wordStart >= wordEnd)
+            return null;
+
+        var identifier = document.GetText(wordStart, wordEnd - wordStart);
+        if (string.IsNullOrEmpty(identifier))
+            return null;
+
+        var textBeforeCursor = document.GetText(0, wordStart);
+        var allCode = GetAllProjectCode();
+
+        // Check if it's a type name
+        var resolvedType = Editor.TypeInspector.ResolveType(identifier);
+        if (resolvedType != null)
+        {
+            var typeDesc = resolvedType.IsClass ? "class" : (resolvedType.IsValueType ? "struct" : "type");
+            return (typeDesc, resolvedType.FullName ?? identifier, identifier);
+        }
+
+        // Check common types
+        var commonType = Editor.TypeInspector.GetCommonTypes().FirstOrDefault(t => t.Name == identifier);
+        if (commonType.Name != null)
+        {
+            return ("type", commonType.Description, identifier);
+        }
+
+        // Check if it's a method parameter
+        var parameters = Editor.CompletionProvider.FindCurrentMethodParametersPublic(textBeforeCursor);
+        var param = parameters.FirstOrDefault(p => p.Name == identifier);
+        if (param.Name != null)
+        {
+            return ("parameter", param.Type, identifier);
+        }
+
+        // Check if it's a local variable
+        var locals = Editor.CompletionProvider.FindLocalVariablesPublic(textBeforeCursor);
+        var local = locals.FirstOrDefault(v => v.Name == identifier);
+        if (local.Name != null)
+        {
+            return ("local", local.Type, identifier);
+        }
+
+        // Try to find variable type using existing infrastructure
+        var varType = Editor.CompletionProvider.FindVariableType(textBeforeCursor, identifier, allCode);
+        if (varType != null)
+        {
+            return ("variable", varType, identifier);
+        }
+
+        return null;
+    }
+
+    private void ShowTooltip(string message, bool isError = false)
+    {
+        if (_currentToolTip != null)
+        {
+            _currentToolTip.IsOpen = false;
+        }
+
+        _currentToolTip = new ToolTip();
+        _currentToolTip.PlacementTarget = CodeEditor;
+        _currentToolTip.Background = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        _currentToolTip.BorderBrush = new SolidColorBrush(isError ? Color.FromRgb(200, 80, 80) : Color.FromRgb(60, 60, 60));
+        _currentToolTip.Foreground = Brushes.White;
+
+        var textBlock = new TextBlock
+        {
+            Text = message,
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 400
+        };
+        _currentToolTip.Content = textBlock;
+        _currentToolTip.IsOpen = true;
+    }
+
+    private void ShowStyledTypeTooltip(string category, string typeName, string identifier)
+    {
+        if (_currentToolTip != null)
+        {
+            _currentToolTip.IsOpen = false;
+        }
+
+        _currentToolTip = new ToolTip();
+        _currentToolTip.PlacementTarget = CodeEditor;
+        _currentToolTip.Background = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        _currentToolTip.BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+
+        // Category in gray: (local), (parameter), (type), etc.
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"({category}) ",
+            Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+            FontSize = 12
+        });
+
+        // Type name in teal
+        panel.Children.Add(new TextBlock
+        {
+            Text = typeName,
+            Foreground = new SolidColorBrush(Color.FromRgb(78, 201, 176)),
+            FontSize = 12
+        });
+
+        // Identifier name in light blue (only if different from type)
+        if (identifier != typeName && category != "type" && category != "class" && category != "struct")
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = $" {identifier}",
+                Foreground = new SolidColorBrush(Color.FromRgb(156, 220, 254)),
+                FontSize = 12
+            });
+        }
+
+        _currentToolTip.Content = panel;
+        _currentToolTip.IsOpen = true;
     }
 
     private void TextEditor_MouseHoverStopped(object sender, MouseEventArgs e)
@@ -3288,6 +3750,17 @@ public partial class MainWindow : Window
         // 4. Show menu or feedback
         if (hasItems)
         {
+            // Position the menu near the caret/variable, not at mouse cursor
+            var caretPos = CodeEditor.TextArea.Caret.CalculateCaretRectangle();
+            var visualPos = CodeEditor.TextArea.TextView.GetVisualPosition(
+                new TextViewPosition(CodeEditor.TextArea.Caret.Line, CodeEditor.TextArea.Caret.Column),
+                ICSharpCode.AvalonEdit.Rendering.VisualYPosition.LineBottom);
+            var screenPos = CodeEditor.TextArea.TextView.PointToScreen(visualPos);
+
+            contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.AbsolutePoint;
+            contextMenu.HorizontalOffset = screenPos.X;
+            contextMenu.VerticalOffset = screenPos.Y;
+
             CodeEditor.ContextMenu = contextMenu;
             contextMenu.IsOpen = true;
             SetStatus("Quick actions available", false);

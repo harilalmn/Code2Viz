@@ -31,9 +31,21 @@ public class VPoint : Shape
     /// </summary>
     public VPoint Add(VXYZ vector) => new VPoint(X + vector.X, Y + vector.Y);
 
-    // Operator overloads
+    // Operator overloads - Addition
     public static VPoint operator +(VPoint a, VPoint b) => new VPoint(a.X + b.X, a.Y + b.Y);
     public static VPoint operator +(VPoint a, VXYZ b) => new VPoint(a.X + b.X, a.Y + b.Y);
+
+    // Subtraction
+    public static VPoint operator -(VPoint a, VPoint b) => new VPoint(a.X - b.X, a.Y - b.Y);
+    public static VPoint operator -(VPoint a, VXYZ b) => new VPoint(a.X - b.X, a.Y - b.Y);
+    public static VPoint operator -(VPoint a) => new VPoint(-a.X, -a.Y); // Unary negation
+
+    // Scalar multiplication
+    public static VPoint operator *(VPoint a, double scalar) => new VPoint(a.X * scalar, a.Y * scalar);
+    public static VPoint operator *(double scalar, VPoint a) => new VPoint(a.X * scalar, a.Y * scalar);
+
+    // Scalar division
+    public static VPoint operator /(VPoint a, double scalar) => new VPoint(a.X / scalar, a.Y / scalar);
 
     public override void Draw()
     {

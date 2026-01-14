@@ -376,7 +376,8 @@
                                  SelectionMode="Extended"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                 KeyDown="ConsoleListBox_KeyDown">
+                                 KeyDown="ConsoleListBox_KeyDown"
+                                 MouseDoubleClick="ConsoleListBox_MouseDoubleClick">
                             <ListBox.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Copy" Click="ConsoleCopy_Click" InputGestureText="Ctrl+C">
@@ -404,20 +405,57 @@
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Message}" 
-                                               FontFamily="Cascadia Code, Consolas, Courier New"
-                                               FontSize="12">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsError}" Value="True">
-                                                        <Setter Property="Foreground" Value="#FF5555" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                    <StackPanel Orientation="Horizontal">
+                                        <!-- File:Line prefix for clickable errors -->
+                                        <TextBlock FontFamily="Cascadia Code, Consolas, Courier New" FontSize="12">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#808080" />
+                                                    <Setter Property="Text" Value="{Binding ModuleName, StringFormat='[{0}:'}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsClickable}" Value="True">
+                                                            <Setter Property="Foreground" Value="#4EC9B0" />
+                                                            <Setter Property="Cursor" Value="Hand" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding LineNumber}"
+                                                   FontFamily="Cascadia Code, Consolas, Courier New"
+                                                   FontSize="12">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#808080" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsClickable}" Value="True">
+                                                            <Setter Property="Foreground" Value="#4EC9B0" />
+                                                            <Setter Property="Cursor" Value="Hand" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="] "
+                                                   FontFamily="Cascadia Code, Consolas, Courier New"
+                                                   FontSize="12"
+                                                   Foreground="#808080" />
+                                        <!-- Message -->
+                                        <TextBlock Text="{Binding Message}"
+                                                   FontFamily="Cascadia Code, Consolas, Courier New"
+                                                   FontSize="12">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                            <Setter Property="Foreground" Value="#FF5555" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
