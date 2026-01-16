@@ -32,14 +32,9 @@ namespace Code2Viz
             }
         }
 
-        private void RecentProjectsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void RecentProjectsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            OpenSelectedRecentProject();
-        }
-
-        private void RecentProjectsList_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
+            if (RecentProjectsList.SelectedItem != null)
             {
                 OpenSelectedRecentProject();
             }

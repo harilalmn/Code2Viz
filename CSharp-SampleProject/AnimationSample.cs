@@ -51,10 +51,16 @@ namespace CSharpSample
             bezier.StrokeColor = "Magenta";
             bezier.StrokeThickness = 2;
 
+            // A rectangle that will fade in and out
+            var rect = new VRectangle(-150, -50, 60, 40);
+            rect.StrokeColor = "Red";
+            rect.FillColor = "#40FF0000";
+            rect.Opacity = 0; // Start invisible for fade in
+
             // 2. Create timeline
-            var shapes = new List<Shape> { line, circle, arc, triangle, bezier };
+            var shapes = new List<Shape> { line, circle, arc, triangle, bezier, rect };
             var timeline = new Timeline(shapes);
-            timeline.Duration = 10.0;
+            timeline.Duration = 15.0;
             timeline.Repeat = true;
 
             // 3. Add animations
@@ -73,6 +79,10 @@ namespace CSharpSample
             // Rotate animations - shapes spin
             var triangleCenter = new VPoint(230, 20);
             timeline.AddAnimation(new RotateAnimation(triangle, triangleCenter, 360, 5.0, 3.0));
+
+            // Fade animations - shapes appear/disappear smoothly
+            timeline.AddAnimation(new FadeInAnimation(rect, 3.0, 2.0));  // Fade in from t=1 to t=3
+            timeline.AddAnimation(new FadeOutAnimation(rect, 6.0, 2.0)); // Fade out from t=7 to t=9
 
             // 4. Start playback
             timeline.Play();

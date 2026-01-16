@@ -24,8 +24,7 @@
                           Background="Transparent"
                           BorderThickness="0"
                           Foreground="#CCCCCC"
-                          MouseDoubleClick="RecentProjectsList_MouseDoubleClick"
-                          KeyDown="RecentProjectsList_KeyDown"
+                          SelectionChanged="RecentProjectsList_SelectionChanged"
                           MaxHeight="220"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListView.ItemContainerStyle>

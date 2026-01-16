@@ -127,6 +127,65 @@ namespace Code2Viz.Animation
     }
 
     /// <summary>
+    /// Animates fading in a shape from transparent to opaque.
+    /// </summary>
+    public class FadeInAnimation : Animation
+    {
+        private double? _initialOpacity;
+
+        public FadeInAnimation(Shape target, double startTime, double duration)
+            : base(target, startTime, duration)
+        {
+        }
+
+        public override void Apply(double t)
+        {
+            if (_initialOpacity == null)
+            {
+                _initialOpacity = Target.Opacity;
+            }
+
+            double easedT = EasingFunction(t);
+            // Fade from initial opacity (typically 0) to 1
+            Target.Opacity = _initialOpacity.Value + (1.0 - _initialOpacity.Value) * easedT;
+        }
+    }
+
+    /// <summary>
+    /// Animates fading out a shape from opaque to transparent.
+    /// </summary>
+    public class FadeOutAnimation : Animation
+    {
+        private double? _initialOpacity;
+        private double _targetOpacity;
+
+        /// <summary>
+        /// Creates a fade out animation.
+        /// </summary>
+        /// <param name="target">The shape to fade.</param>
+        /// <param name="startTime">When the animation starts.</param>
+        /// <param name="duration">How long the fade takes.</param>
+        /// <param name="targetOpacity">The target opacity (default 0 = fully transparent).</param>
+        public FadeOutAnimation(Shape target, double startTime, double duration, double targetOpacity = 0.0)
+            : base(target, startTime, duration)
+        {
+            _targetOpacity = targetOpacity;
+        }
+
+        public override void Apply(double t)
+        {
+            if (_initialOpacity == null)
+            {
+                _initialOpacity = Target.Opacity;
+            }
+
+            double easedT = EasingFunction(t);
+            // Interpolate from initial opacity to target opacity
+            Target.Opacity = _initialOpacity.Value + (_targetOpacity - _initialOpacity.Value) * easedT;
+        }
+    }
+
+    /// <summary>
     /// Provides common easing functions.
     /// </summary>
     public static class EasingFunctions

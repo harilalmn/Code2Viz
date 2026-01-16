@@ -429,16 +429,26 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawPoint(DrawingContext dc, VPoint point)
     {
+        if (point.Opacity <= 0) return;
+
+        var applyOpacity = point.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(point.Opacity);
+
         var screenPos = WorldToScreen(point.X, point.Y);
         var fill = GetCachedBrush(point.FillColor);
         var pen = GetCachedPen(point.StrokeColor, point.StrokeThickness);
 
         dc.DrawEllipse(fill, pen, screenPos, PointRadius, PointRadius);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawLine(DrawingContext dc, VLine line)
     {
-        if (line.DrawFactor <= 0) return;
+        if (line.DrawFactor <= 0 || line.Opacity <= 0) return;
+
+        var applyOpacity = line.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(line.Opacity);
 
         // Apply offset for move animation
         var offsetX = line.OffsetX;
@@ -457,11 +467,16 @@ public class RenderCanvas : FrameworkElement
         }
 
         dc.DrawLine(pen, start, end);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawArc(DrawingContext dc, VArc arc)
     {
-        if (arc.DrawFactor <= 0) return;
+        if (arc.DrawFactor <= 0 || arc.Opacity <= 0) return;
+
+        var applyOpacity = arc.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(arc.Opacity);
 
         // Apply offset for move animation
         var offsetX = arc.OffsetX;
@@ -498,11 +513,16 @@ public class RenderCanvas : FrameworkElement
         geometry.Freeze();
 
         dc.DrawGeometry(null, pen, geometry);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawCircle(DrawingContext dc, VCircle circle)
     {
-        if (circle.DrawFactor <= 0) return;
+        if (circle.DrawFactor <= 0 || circle.Opacity <= 0) return;
+
+        var applyOpacity = circle.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(circle.Opacity);
 
         // Apply offset for move animation
         var offsetX = circle.OffsetX;
@@ -540,11 +560,16 @@ public class RenderCanvas : FrameworkElement
         {
             dc.DrawEllipse(fill, pen, centerScreen, screenRadius, screenRadius);
         }
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawRectangle(DrawingContext dc, VRectangle rect)
     {
-        if (rect.DrawFactor <= 0) return;
+        if (rect.DrawFactor <= 0 || rect.Opacity <= 0) return;
+
+        var applyOpacity = rect.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(rect.Opacity);
 
         // Apply offset for move animation
         var offsetX = rect.OffsetX;
@@ -603,10 +628,17 @@ public class RenderCanvas : FrameworkElement
         {
             dc.DrawRectangle(fill, pen, new Rect(corner.X, corner.Y, screenWidth, screenHeight));
         }
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawEllipse(DrawingContext dc, VEllipse ellipse)
     {
+        if (ellipse.Opacity <= 0) return;
+
+        var applyOpacity = ellipse.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(ellipse.Opacity);
+
         var centerScreen = WorldToScreen(ellipse.Center.X, ellipse.Center.Y);
         var screenRadiusX = ellipse.RadiusX * _scale;
         var screenRadiusY = ellipse.RadiusY * _scale;
@@ -614,11 +646,16 @@ public class RenderCanvas : FrameworkElement
         var pen = GetCachedPen(ellipse.StrokeColor, ellipse.StrokeThickness);
 
         dc.DrawEllipse(fill, pen, centerScreen, screenRadiusX, screenRadiusY);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawPolygon(DrawingContext dc, VPolygon polygon)
     {
-        if (polygon.Points.Count < 3 || polygon.DrawFactor <= 0) return;
+        if (polygon.Points.Count < 3 || polygon.DrawFactor <= 0 || polygon.Opacity <= 0) return;
+
+        var applyOpacity = polygon.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(polygon.Opacity);
 
         // Apply offset for move animation
         var offsetX = polygon.OffsetX;
@@ -664,11 +701,16 @@ public class RenderCanvas : FrameworkElement
         geometry.Freeze();
 
         dc.DrawGeometry(polygon.DrawFactor >= 1.0 ? fill : null, pen, geometry);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawPolyline(DrawingContext dc, VPolyline polyline)
     {
-        if (polyline.Points.Count < 2 || polyline.DrawFactor <= 0) return;
+        if (polyline.Points.Count < 2 || polyline.DrawFactor <= 0 || polyline.Opacity <= 0) return;
+
+        var applyOpacity = polyline.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(polyline.Opacity);
 
         // Apply offset for move animation
         var offsetX = polyline.OffsetX;
@@ -709,12 +751,17 @@ public class RenderCanvas : FrameworkElement
         geometry.Freeze();
 
         dc.DrawGeometry(null, pen, geometry);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawText(DrawingContext dc, VText text)
     {
-        if (string.IsNullOrEmpty(text.Content))
+        if (string.IsNullOrEmpty(text.Content) || text.Opacity <= 0)
             return;
+
+        var applyOpacity = text.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(text.Opacity);
 
         var screenPos = WorldToScreen(text.Location.X, text.Location.Y);
         var brush = GetCachedBrush(text.StrokeColor);
@@ -735,11 +782,16 @@ public class RenderCanvas : FrameworkElement
 
         // Draw text with origin at bottom-left (mathematical coordinate style)
         dc.DrawText(formattedText, new Point(screenPos.X, screenPos.Y - formattedText.Height));
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawBezier(DrawingContext dc, VBezier bezier)
     {
-        if (bezier.DrawFactor <= 0) return;
+        if (bezier.DrawFactor <= 0 || bezier.Opacity <= 0) return;
+
+        var applyOpacity = bezier.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(bezier.Opacity);
 
         // Apply offset for move animation
         var offsetX = bezier.OffsetX;
@@ -747,7 +799,11 @@ public class RenderCanvas : FrameworkElement
 
         var pen = GetCachedPen(bezier.StrokeColor, bezier.StrokeThickness);
         var points = bezier.GetRenderPoints();
-        if (points.Count < 2) return;
+        if (points.Count < 2)
+        {
+            if (applyOpacity) dc.Pop();
+            return;
+        }
 
         // Apply DrawFactor - draw partial bezier
         var pointsToDraw = (int)Math.Ceiling(points.Count * bezier.DrawFactor);
@@ -766,13 +822,24 @@ public class RenderCanvas : FrameworkElement
         }
         geometry.Freeze();
         dc.DrawGeometry(null, pen, geometry);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawSpline(DrawingContext dc, VSpline spline)
     {
+        if (spline.Opacity <= 0) return;
+
+        var applyOpacity = spline.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(spline.Opacity);
+
         var pen = GetCachedPen(spline.StrokeColor, spline.StrokeThickness);
         var points = spline.GetRenderPoints();
-        if (points.Count < 2) return;
+        if (points.Count < 2)
+        {
+            if (applyOpacity) dc.Pop();
+            return;
+        }
 
         var geometry = new StreamGeometry();
         using (var ctx = geometry.Open())
@@ -787,10 +854,17 @@ public class RenderCanvas : FrameworkElement
         }
         geometry.Freeze();
         dc.DrawGeometry(null, pen, geometry);
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawArrow(DrawingContext dc, VArrow arrow)
     {
+        if (arrow.Opacity <= 0) return;
+
+        var applyOpacity = arrow.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(arrow.Opacity);
+
         var pen = GetCachedPen(arrow.StrokeColor, arrow.StrokeThickness);
         var brush = GetCachedBrush(arrow.StrokeColor);  // Use stroke color for filled arrowhead
         var start = WorldToScreen(arrow.Start.X, arrow.Start.Y);
@@ -829,10 +903,17 @@ public class RenderCanvas : FrameworkElement
             startHead.Freeze();
             dc.DrawGeometry(brush, pen, startHead);
         }
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawDimension(DrawingContext dc, VDimension dim)
     {
+        if (dim.Opacity <= 0) return;
+
+        var applyOpacity = dim.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(dim.Opacity);
+
         var pen = GetCachedPen(dim.StrokeColor, dim.StrokeThickness);
         var (dimStart, dimEnd, textPos, ext1Start, ext1End, ext2Start, ext2End) = dim.GetDimensionGeometry();
 
@@ -861,6 +942,8 @@ public class RenderCanvas : FrameworkElement
 
         var tp = WorldToScreen(textPos.X, textPos.Y);
         dc.DrawText(formattedText, new Point(tp.X - formattedText.Width / 2, tp.Y - formattedText.Height / 2));
+
+        if (applyOpacity) dc.Pop();
     }
 
     private void DrawGroup(DrawingContext dc, VGroup group)

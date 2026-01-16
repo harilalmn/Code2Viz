@@ -59,6 +59,11 @@ public abstract class Shape : IDrawable
     /// </summary>
     public VLine? FlipAxis { get; set; }
 
+    /// <summary>
+    /// Opacity for fade animation (0 = fully transparent, 1 = fully opaque).
+    /// </summary>
+    public double Opacity { get; set; } = 1.0;
+
     public abstract void Draw();
 
     /// <summary>
