@@ -55,6 +55,16 @@ namespace Code2Viz.Documentation
                 { "VPlane", "Represents a plane in 3D space defined by origin and basis vectors." },
                 { "VTransform", "Represents a 3D transformation (rotation, reflection)." },
                 { "VBox", "Represents an oriented box in 3D space." },
+
+                // Animation
+                { "Code2Viz.Animation", "Contains classes for animating shapes over time." },
+                { "Timeline", "Manages a collection of shapes and animations, controlling playback timing and state." },
+                { "Animation", "Abstract base class for all animations. Defines timing, easing, and the Apply method." },
+                { "DrawAnimation", "Animates the DrawFactor property to progressively draw a shape from 0% to 100%." },
+                { "MoveAnimation", "Animates moving a shape by a specified vector over time." },
+                { "RotateAnimation", "Animates rotating a shape around a pivot point by a specified angle." },
+                { "FlipAnimation", "Animates flipping (mirroring) a shape across a specified axis line." },
+                { "EasingFunctions", "Provides common easing functions: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad." },
             };
         }
 
@@ -68,8 +78,12 @@ namespace Code2Viz.Documentation
         public List<Type> GetDocumentableTypes()
         {
             return _assembly.GetTypes()
-                .Where(t => t.IsPublic && t.IsClass && t.Namespace != null && (t.Namespace.StartsWith("Code2Viz.Geometry") || t.Name.Contains("Helper")))
-                .OrderBy(t => t.Name)
+                .Where(t => t.IsPublic && (t.IsClass || t.IsAbstract) && t.Namespace != null &&
+                    (t.Namespace.StartsWith("Code2Viz.Geometry") ||
+                     t.Namespace.StartsWith("Code2Viz.Animation") ||
+                     t.Name.Contains("Helper")))
+                .OrderBy(t => t.Namespace)
+                .ThenBy(t => t.Name)
                 .ToList();
         }
 
@@ -308,7 +322,60 @@ namespace Code2Viz.Documentation
                 { "VBox", "// VBox is abstract and cannot be instantiated directly.\n// Inherit from VBox to create concrete box types." },
 
                 { "CanvasRenderer", "CanvasRenderer.Instance.Clear()\nCanvasRenderer.Instance.AddShape(someShape)" },
-                { "VizConsole", "VizConsole.Log(\"Debug info\")\nVizConsole.Clear()" }
+                { "VizConsole", "VizConsole.Log(\"Debug info\")\nVizConsole.Clear()" },
+
+                // Animation
+                { "Timeline", @"// Create shapes
+let line = VLine(0.0, 0.0, 100.0, 50.0)
+let circle = VCircle(50.0, 50.0, 30.0)
+
+// Create timeline with shapes (use array for F#)
+let shapes = [| line :> Shape; circle :> Shape |]
+let timeline = Timeline(shapes)
+timeline.Duration <- 5.0
+timeline.Repeat <- true
+
+// Add animations
+timeline.AddAnimation(DrawAnimation(line, 0.0, 2.0))
+timeline.AddAnimation(DrawAnimation(circle, 0.5, 2.0))
+timeline.AddAnimation(MoveAnimation(line, VXYZ(0.0, 50.0, 0.0), 2.0, 2.0))
+
+// Start playback
+timeline.Play()" },
+
+                { "DrawAnimation", @"// Animates shape drawing from 0% to 100%
+let line = VLine(0.0, 0.0, 100.0, 0.0)
+let timeline = Timeline([| line :> Shape |])
+
+// Draw the line over 2 seconds starting at t=0
+timeline.AddAnimation(DrawAnimation(line, 0.0, 2.0))
+timeline.Play()" },
+
+                { "MoveAnimation", @"// Animates moving a shape by a vector
+let circle = VCircle(0.0, 0.0, 30.0)
+let timeline = Timeline([| circle :> Shape |])
+
+// Move circle by (100, 50) over 3 seconds, starting at t=1
+timeline.AddAnimation(MoveAnimation(circle, VXYZ(100.0, 50.0, 0.0), 1.0, 3.0))
+timeline.Play()" },
+
+                { "RotateAnimation", @"// Animates rotating a shape around a pivot
+let rect = VRectangle(0.0, 0.0, 50.0, 30.0)
+let pivot = VPoint(25.0, 15.0)
+let timeline = Timeline([| rect :> Shape |])
+
+// Rotate 360 degrees over 4 seconds
+timeline.AddAnimation(RotateAnimation(rect, pivot, 360.0, 0.0, 4.0))
+timeline.Play()" },
+
+                { "FlipAnimation", @"// Animates flipping a shape across a mirror axis
+let triangle = VPolygon(VPoint(0.0,0.0), VPoint(50.0,0.0), VPoint(25.0,50.0))
+let mirrorAxis = VLine(25.0, -10.0, 25.0, 60.0)
+let timeline = Timeline([| triangle :> Shape |])
+
+// Flip across the axis over 2 seconds
+timeline.AddAnimation(FlipAnimation(triangle, mirrorAxis, 0.0, 2.0))
+timeline.Play()" }
             };
         }
 
@@ -446,7 +513,60 @@ namespace Code2Viz.Documentation
                 { "VArrow", "// From two points\nVArrow a = new VArrow(new VPoint(10, 10), new VPoint(100, 10));\na.Draw();\n\n// From start point, direction, and length\nVArrow a2 = new VArrow(new VPoint(0, 0), VXYZ.BasisX, 50);\na2.Draw();" },
 
                 { "CanvasRenderer", "CanvasRenderer.Instance.Clear();\nCanvasRenderer.Instance.AddShape(someShape);" },
-                { "VizConsole", "VizConsole.Log(\"Debug info\");\nVizConsole.Clear();" }
+                { "VizConsole", "VizConsole.Log(\"Debug info\");\nVizConsole.Clear();" },
+
+                // Animation
+                { "Timeline", @"// Create shapes
+var line = new VLine(0, 0, 100, 50);
+var circle = new VCircle(50, 50, 30);
+
+// Create timeline with shapes
+var shapes = new List<Shape> { line, circle };
+var timeline = new Timeline(shapes);
+timeline.Duration = 5.0;
+timeline.Repeat = true;
+
+// Add animations
+timeline.AddAnimation(new DrawAnimation(line, 0.0, 2.0));
+timeline.AddAnimation(new DrawAnimation(circle, 0.5, 2.0));
+timeline.AddAnimation(new MoveAnimation(line, new VXYZ(0, 50, 0), 2.0, 2.0));
+
+// Start playback
+timeline.Play();" },
+
+                { "DrawAnimation", @"// Animates shape drawing from 0% to 100%
+var line = new VLine(0, 0, 100, 0);
+var timeline = new Timeline(new[] { line });
+
+// Draw the line over 2 seconds starting at t=0
+timeline.AddAnimation(new DrawAnimation(line, startTime: 0.0, duration: 2.0));
+timeline.Play();" },
+
+                { "MoveAnimation", @"// Animates moving a shape by a vector
+var circle = new VCircle(0, 0, 30);
+var timeline = new Timeline(new[] { circle });
+
+// Move circle by (100, 50) over 3 seconds, starting at t=1
+timeline.AddAnimation(new MoveAnimation(circle, new VXYZ(100, 50, 0), startTime: 1.0, duration: 3.0));
+timeline.Play();" },
+
+                { "RotateAnimation", @"// Animates rotating a shape around a pivot
+var rect = new VRectangle(0, 0, 50, 30);
+var pivot = new VPoint(25, 15); // center of rectangle
+var timeline = new Timeline(new[] { rect });
+
+// Rotate 360 degrees over 4 seconds
+timeline.AddAnimation(new RotateAnimation(rect, pivot, angleDegrees: 360.0, startTime: 0.0, duration: 4.0));
+timeline.Play();" },
+
+                { "FlipAnimation", @"// Animates flipping a shape across a mirror axis
+var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,50));
+var mirrorAxis = new VLine(25, -10, 25, 60); // vertical line
+var timeline = new Timeline(new[] { triangle });
+
+// Flip across the axis over 2 seconds
+timeline.AddAnimation(new FlipAnimation(triangle, mirrorAxis, startTime: 0.0, duration: 2.0));
+timeline.Play();" }
             };
         }
     }
