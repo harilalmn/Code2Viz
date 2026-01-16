@@ -53,6 +53,10 @@ public partial class MainWindow : Window
     private DispatcherTimer? _syntaxCheckTimer;
     private bool _textChangedSinceLastCheck;
 
+    // Animation
+    private DispatcherTimer? _animationTimer;
+    private System.Diagnostics.Stopwatch _animationStopwatch = new();
+
     public static RoutedCommand RenameCommand = new RoutedCommand();
 
     public MainWindow(VizCodeProject? project = null)
@@ -101,6 +105,42 @@ public partial class MainWindow : Window
         {
             CoordinatesText.Text = $"X: {pos.X:F2}  Y: {pos.Y:F2}";
         };
+
+        // Animation Loop
+        _animationTimer = new DispatcherTimer();
+        _animationTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60 FPS
+        bool _needsInitialZoom = true;
+        _animationTimer.Tick += (s, e) =>
+        {
+            var timeline = CanvasRenderer.Instance.ActiveTimeline;
+            if (timeline != null)
+            {
+                // Update animation state (sets DrawFactor, positions, etc.)
+                timeline.Update(_animationStopwatch.Elapsed.TotalSeconds);
+
+                // Clear and regenerate shapes to reflect DrawFactor changes
+                CanvasRenderer.Instance.Clear();
+                foreach (var shape in timeline.Shapes)
+                {
+                    shape.Draw();
+                }
+
+                var shapes = CanvasRenderer.Instance.GetShapes();
+                RenderCanvas.Render(shapes);
+
+                // Zoom to fit on first frame that has visible shapes
+                if (_needsInitialZoom && shapes.Count > 0)
+                {
+                    RenderCanvas.ZoomExtents(shapes);
+                    _needsInitialZoom = false;
+                }
+            }
+            else
+            {
+                _needsInitialZoom = true; // Reset for next timeline
+            }
+        };
+        _animationTimer.Start();
     }
 
     private void InitializeConsole()
@@ -2602,6 +2642,9 @@ public partial class MainWindow : Window
 
             if (result.Success)
             {
+                // Reset animation time
+                _animationStopwatch.Restart();
+
                 var shapes = CanvasRenderer.Instance.GetShapes();
                 var count = shapes.Count;
 
@@ -2621,7 +2664,9 @@ public partial class MainWindow : Window
                 else if (!string.IsNullOrEmpty(result.Error))
                 {
                     // Show the error message if no diagnostics but compilation failed
-                    SetStatus(result.Error, isError: true);
+                    SetStatus("Compilation Error", isError: true);
+                    // Also write full error to console
+                    Console.ConsoleOutput.Instance.WriteLine("Compiler", 0, result.Error);
                 }
                 else
                 {
