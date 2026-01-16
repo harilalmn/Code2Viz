@@ -115,25 +115,18 @@ public partial class MainWindow : Window
         _animationTimer.Tick += (s, e) =>
         {
             var timeline = CanvasRenderer.Instance.ActiveTimeline;
-            if (timeline != null)
+            if (timeline != null && timeline.IsPlaying)
             {
                 // Update animation state (sets DrawFactor, positions, etc.)
                 timeline.Update(_animationStopwatch.Elapsed.TotalSeconds);
 
-                // Clear and regenerate shapes to reflect DrawFactor changes
-                CanvasRenderer.Instance.Clear();
-                foreach (var shape in timeline.Shapes)
-                {
-                    shape.Draw();
-                }
-
-                var shapes = CanvasRenderer.Instance.GetShapes();
-                RenderCanvas.Render(shapes);
+                // Redraw canvas with updated shape properties
+                RenderCanvas.Refresh();
 
                 // Zoom to fit on first frame that has visible shapes
-                if (_needsInitialZoom && shapes.Count > 0)
+                if (_needsInitialZoom && timeline.Shapes.Count > 0)
                 {
-                    RenderCanvas.ZoomExtents(shapes);
+                    RenderCanvas.ZoomExtents(CanvasRenderer.Instance.GetShapes());
                     _needsInitialZoom = false;
                 }
             }
@@ -3001,9 +2994,8 @@ public partial class MainWindow : Window
                 double time = i * timeStep;
                 timeline.Update(time);
 
-                // Force visual update
-                RenderCanvas.InvalidateVisual();
-                RenderCanvas.UpdateLayout();
+                // Force canvas to redraw with updated animation state
+                RenderCanvas.Refresh();
 
                 // Force the dispatcher to process rendering and UI updates
                 Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
@@ -3027,8 +3019,7 @@ public partial class MainWindow : Window
                 timeline.Update(timeline.Duration);
             }
 
-            RenderCanvas.InvalidateVisual();
-            RenderCanvas.UpdateLayout();
+            RenderCanvas.Refresh();
         }
     }
 

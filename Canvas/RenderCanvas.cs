@@ -114,6 +114,14 @@ public class RenderCanvas : FrameworkElement
         RedrawAll();
     }
 
+    /// <summary>
+    /// Forces an immediate redraw of the canvas.
+    /// </summary>
+    public void Refresh()
+    {
+        RedrawAll();
+    }
+
     // Convert world coordinates to screen coordinates
     private Point WorldToScreen(double worldX, double worldY)
     {
@@ -629,26 +637,28 @@ public class RenderCanvas : FrameworkElement
             var firstPoint = WorldToScreen(polygon.Points[0].X + offsetX, polygon.Points[0].Y + offsetY);
             ctx.BeginFigure(firstPoint, polygon.DrawFactor >= 1.0, polygon.DrawFactor >= 1.0);
 
-            for (int i = 1; i <= polygon.Points.Count && i <= segmentsToDraw; i++)
+            int fullSegments = (int)segmentsToDraw;
+            double partialFraction = segmentsToDraw - fullSegments;
+
+            // Draw full segments
+            for (int i = 1; i <= fullSegments && i <= polygon.Points.Count; i++)
             {
                 var idx = i % polygon.Points.Count;
                 var pt = WorldToScreen(polygon.Points[idx].X + offsetX, polygon.Points[idx].Y + offsetY);
+                ctx.LineTo(pt, true, false);
+            }
 
-                // Partial last segment
-                if (i > segmentsToDraw - 1 && i <= segmentsToDraw)
-                {
-                    var prevIdx = (i - 1) % polygon.Points.Count;
-                    var prevPt = WorldToScreen(polygon.Points[prevIdx].X + offsetX, polygon.Points[prevIdx].Y + offsetY);
-                    var fraction = segmentsToDraw - (i - 1);
-                    var partialPt = new Point(
-                        prevPt.X + (pt.X - prevPt.X) * fraction,
-                        prevPt.Y + (pt.Y - prevPt.Y) * fraction);
-                    ctx.LineTo(partialPt, true, false);
-                }
-                else if (i <= segmentsToDraw)
-                {
-                    ctx.LineTo(pt, true, false);
-                }
+            // Draw partial segment if needed
+            if (partialFraction > 0 && fullSegments < polygon.Points.Count)
+            {
+                var prevIdx = fullSegments % polygon.Points.Count;
+                var nextIdx = (fullSegments + 1) % polygon.Points.Count;
+                var prevPt = WorldToScreen(polygon.Points[prevIdx].X + offsetX, polygon.Points[prevIdx].Y + offsetY);
+                var nextPt = WorldToScreen(polygon.Points[nextIdx].X + offsetX, polygon.Points[nextIdx].Y + offsetY);
+                var partialPt = new Point(
+                    prevPt.X + (nextPt.X - prevPt.X) * partialFraction,
+                    prevPt.Y + (nextPt.Y - prevPt.Y) * partialFraction);
+                ctx.LineTo(partialPt, true, false);
             }
         }
         geometry.Freeze();

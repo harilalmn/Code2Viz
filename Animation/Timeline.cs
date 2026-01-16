@@ -30,6 +30,12 @@ namespace Code2Viz.Animation
         {
             IsPlaying = true;
             CanvasRenderer.Instance.ActiveTimeline = this;
+
+            // Draw all shapes to the canvas
+            foreach (var shape in Shapes)
+            {
+                shape.Draw();
+            }
         }
 
         /// <summary>

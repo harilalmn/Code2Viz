@@ -42,6 +42,8 @@ public class CanvasRenderer
     public void Clear()
     {
         _shapes.Clear();
+        ActiveTimeline?.Stop();
+        ActiveTimeline = null;
     }
 
     public void RenderTo(RenderCanvas canvas)
