@@ -23,6 +23,42 @@ public abstract class Shape : IDrawable
     public string FillColor { get; set; } = ShapeDefaults.GlobalFillColor ?? "Transparent";
     public double StrokeThickness { get; set; } = ShapeDefaults.GlobalStrokeThickness ?? 2;
 
+    // Animation properties
+    /// <summary>
+    /// Draw factor for progressive drawing animation (0 = invisible, 1 = fully drawn).
+    /// </summary>
+    public double DrawFactor { get; set; } = 1.0;
+
+    /// <summary>
+    /// X offset for translation animation.
+    /// </summary>
+    public double OffsetX { get; set; } = 0;
+
+    /// <summary>
+    /// Y offset for translation animation.
+    /// </summary>
+    public double OffsetY { get; set; } = 0;
+
+    /// <summary>
+    /// Rotation angle in degrees for rotation animation.
+    /// </summary>
+    public double RotationAngle { get; set; } = 0;
+
+    /// <summary>
+    /// Pivot point for rotation animation.
+    /// </summary>
+    public VPoint? RotationPivot { get; set; }
+
+    /// <summary>
+    /// Progress for flip animation (0 = original, 1 = fully flipped).
+    /// </summary>
+    public double FlipProgress { get; set; } = 0;
+
+    /// <summary>
+    /// Axis line for flip animation.
+    /// </summary>
+    public VLine? FlipAxis { get; set; }
+
     public abstract void Draw();
 
     /// <summary>

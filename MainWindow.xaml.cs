@@ -17,10 +17,12 @@ using ICSharpCode.AvalonEdit.Search;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
+using Code2Viz.Animation;
 using Code2Viz.Canvas;
 using Code2Viz.Console;
 using Code2Viz.Editor;
 using Code2Viz.Execution;
+using Code2Viz.Export;
 using Code2Viz.Project;
 using ICSharpCode.AvalonEdit.Rendering;
 
@@ -2905,8 +2907,130 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ExportGifButton_Click(object sender, RoutedEventArgs e)
+    {
+        var timeline = CanvasRenderer.Instance.ActiveTimeline;
+        if (timeline == null)
+        {
+            MessageBox.Show(
+                "No active animation timeline found.\n\nPlease run code that creates and plays a Timeline before exporting a GIF.",
+                "No Animation",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
 
+        var optionsDialog = new GifExportOptionsWindow();
+        optionsDialog.Owner = this;
+        optionsDialog.SetDuration(timeline.Duration);
 
+        if (optionsDialog.ShowDialog() != true) return;
+
+        var dialog = new SaveFileDialog
+        {
+            Filter = "GIF Animation (*.gif)|*.gif",
+            DefaultExt = ".gif",
+            FileName = "animation_export"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            // Show progress dialog
+            var progressDialog = new ProgressDialog("Exporting GIF animation...");
+            progressDialog.Owner = this;
+            progressDialog.Show();
+
+            // Set hourglass cursor on main window too
+            var originalCursor = Cursor;
+            Cursor = System.Windows.Input.Cursors.Wait;
+
+            try
+            {
+                ExportCanvasToGif(dialog.FileName, timeline, optionsDialog.Duration, optionsDialog.Fps,
+                    optionsDialog.SelectedBackground, optionsDialog.IncludeGrid, progressDialog);
+                SetStatus($"Exported: {Path.GetFileName(dialog.FileName)}", isError: false);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"Export error: {ex.Message}", isError: true);
+            }
+            finally
+            {
+                progressDialog.Close();
+                Cursor = originalCursor;
+            }
+        }
+    }
+
+    private void ExportCanvasToGif(string filePath, Timeline timeline, double duration, int fps,
+        Brush? overrideBackground, bool includeGrid, ProgressDialog? progressDialog = null)
+    {
+        // Save current state
+        bool wasGridShown = RenderCanvas.ShowGrid;
+        var originalBackground = RenderCanvas.CanvasBackground;
+        bool wasPlaying = timeline.IsPlaying;
+
+        try
+        {
+            // Apply export settings
+            RenderCanvas.ShowGrid = includeGrid;
+            if (overrideBackground != null)
+            {
+                RenderCanvas.CanvasBackground = overrideBackground;
+            }
+
+            var width = (int)RenderCanvas.ActualWidth;
+            var height = (int)RenderCanvas.ActualHeight;
+
+            if (width <= 0 || height <= 0)
+                throw new InvalidOperationException($"Invalid Canvas Dimensions: {width}x{height}");
+
+            int totalFrames = (int)(duration * fps);
+            int frameDelayMs = 1000 / fps;
+            double timeStep = duration / totalFrames;
+
+            using var fs = new FileStream(filePath, FileMode.Create);
+            using var encoder = new GifEncoder(fs, width, height, frameDelayMs, repeat: true);
+
+            for (int i = 0; i < totalFrames; i++)
+            {
+                // Update progress dialog
+                progressDialog?.SetProgress(i + 1, totalFrames);
+
+                // Update timeline to this frame's time
+                double time = i * timeStep;
+                timeline.Update(time);
+
+                // Force visual update
+                RenderCanvas.InvalidateVisual();
+                RenderCanvas.UpdateLayout();
+
+                // Force the dispatcher to process rendering and UI updates
+                Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+
+                // Capture frame
+                var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+                rtb.Render(RenderCanvas);
+
+                encoder.AddFrame(rtb);
+            }
+        }
+        finally
+        {
+            // Restore original state
+            RenderCanvas.CanvasBackground = originalBackground;
+            RenderCanvas.ShowGrid = wasGridShown;
+
+            // Restore timeline to end if it was playing
+            if (wasPlaying)
+            {
+                timeline.Update(timeline.Duration);
+            }
+
+            RenderCanvas.InvalidateVisual();
+            RenderCanvas.UpdateLayout();
+        }
+    }
 
     private void GridMenuItem_Click(object sender, RoutedEventArgs e)
     {

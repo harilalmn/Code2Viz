@@ -1,0 +1,13 @@
+{
+  "Name": "CSharpSample",
+  "Language": 0,
+  "Packages": [],
+  "References": [],
+  "Settings": {
+    "DefaultStrokeColor": "Cyan",
+    "DefaultFillColor": null,
+    "DefaultCanvasBackgroundColor": null,
+    "DefaultExportBackground": null,
+    "DefaultStrokeThickness": 2
+  }
+}

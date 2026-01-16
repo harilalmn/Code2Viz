@@ -6,76 +6,80 @@ using Code2Viz.Canvas;
 
 namespace CSharpSample
 {
+    /// <summary>
+    /// Demonstrates various animation capabilities.
+    /// </summary>
     public class AnimationSample
     {
         public static void Run()
         {
-            Console.WriteLine("Running C# Animation Sample...");
+            Console.WriteLine("Running Animation Sample...");
 
-            // 1. Define Shapes
-            
-            // Line
-            var line = new VLine(0, 0, 100, 0);
+            // 1. Create shapes
+
+            // A line that will be drawn progressively
+            var line = new VLine(0, 0, 150, 0);
             line.StrokeColor = "Cyan";
+            line.StrokeThickness = 3;
 
-            // Circle
-            var circle = new VCircle(50, 50, 30);
+            // A circle that will move
+            var circle = new VCircle(50, 50, 25);
             circle.StrokeColor = "Yellow";
-            circle.FillColor = "Green";
+            circle.FillColor = "#4000FFFF";
 
-            // Arc
-            var arc = new VArc(150, 50, 30, 0, 180);
+            // An arc that will be drawn
+            var arc = new VArc(150, 50, 30, 0, 270);
             arc.StrokeColor = "Orange";
+            arc.StrokeThickness = 4;
 
-            // Polyline
-            var polyline = new VPolyline(
+            // A triangle that will rotate
+            var triangle = new VPolygon(
                 new VPoint(200, 0),
-                new VPoint(250, 80),
-                new VPoint(150, 80),
-                new VPoint(200, 0)
+                new VPoint(260, 0),
+                new VPoint(230, 60)
             );
-            polyline.StrokeColor = "LightGreen";
+            triangle.StrokeColor = "LimeGreen";
+            triangle.FillColor = "#4000FF00";
 
-            // Bezier
+            // A bezier curve
             var bezier = new VBezier(
-                new VPoint(300, 50),
-                new VPoint(320, 100),
-                new VPoint(380, 0),
-                new VPoint(400, 50)
+                new VPoint(-100, 50),
+                new VPoint(-80, 120),
+                new VPoint(-20, -20),
+                new VPoint(0, 50)
             );
             bezier.StrokeColor = "Magenta";
+            bezier.StrokeThickness = 2;
 
-            var shapes = new List<Shape> { line, circle, arc, polyline, bezier };
+            // 2. Create timeline
+            var shapes = new List<Shape> { line, circle, arc, triangle, bezier };
             var timeline = new Timeline(shapes);
             timeline.Duration = 10.0;
             timeline.Repeat = true;
 
-            // 2. Define Animations
+            // 3. Add animations
 
-            // Draw Animations
-            foreach (var shape in shapes)
-            {
-                timeline.AddAnimation(new DrawAnimation(shape, 0.0, 2.0));
-            }
+            // Draw animations - shapes appear progressively
+            timeline.AddAnimation(new DrawAnimation(line, 0.0, 2.0));
+            timeline.AddAnimation(new DrawAnimation(circle, 0.5, 2.0));
+            timeline.AddAnimation(new DrawAnimation(arc, 1.0, 2.0));
+            timeline.AddAnimation(new DrawAnimation(triangle, 1.5, 2.0));
+            timeline.AddAnimation(new DrawAnimation(bezier, 2.0, 2.0));
 
-            // Move Animations
-            timeline.AddAnimation(new MoveAnimation(line, new VXYZ(0, 50, 0), 4.0, 3.0));
-            timeline.AddAnimation(new MoveAnimation(circle, new VXYZ(20, 0, 0), 2.0, 2.0));
+            // Move animations - shapes translate
+            timeline.AddAnimation(new MoveAnimation(line, new VXYZ(0, 80, 0), 3.0, 2.0));
+            timeline.AddAnimation(new MoveAnimation(circle, new VXYZ(100, 0, 0), 3.5, 2.5));
 
-            // // Rotate Animations
-            // var triCenter = new VPoint(200, 53);
-            // timeline.AddAnimation(new RotateAnimation(polyline, triCenter, 360, 4.0, 3.0));
-            // timeline.AddAnimation(new RotateAnimation(bezier, bezier.P0, 45, 4.0, 3.0));
-// 
-            // // Flip Animation
-            // var mirrorAxis = new VLine(150, 0, 150, 100);
-            // timeline.AddAnimation(new FlipAnimation(arc, mirrorAxis, 7.0, 2.0));
-// 
-            // 3. Start the animation
+            // Rotate animations - shapes spin
+            var triangleCenter = new VPoint(230, 20);
+            timeline.AddAnimation(new RotateAnimation(triangle, triangleCenter, 360, 5.0, 3.0));
+
+            // 4. Start playback
             timeline.Play();
             Console.WriteLine("Animation timeline started.");
+            Console.WriteLine("Duration: 10 seconds, Repeating: true");
 
-            Console.WriteLine("\nC# Animation Sample Completed.");
+            Console.WriteLine("\nAnimation Sample Completed.");
         }
     }
 }

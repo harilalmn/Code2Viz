@@ -430,27 +430,50 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawLine(DrawingContext dc, VLine line)
     {
-        var start = WorldToScreen(line.Start.X, line.Start.Y);
-        var end = WorldToScreen(line.End.X, line.End.Y);
+        if (line.DrawFactor <= 0) return;
+
+        // Apply offset for move animation
+        var offsetX = line.OffsetX;
+        var offsetY = line.OffsetY;
+
+        var start = WorldToScreen(line.Start.X + offsetX, line.Start.Y + offsetY);
+        var end = WorldToScreen(line.End.X + offsetX, line.End.Y + offsetY);
         var pen = GetCachedPen(line.StrokeColor, line.StrokeThickness);
+
+        // Apply DrawFactor for animation (partial line drawing)
+        if (line.DrawFactor < 1.0)
+        {
+            var dx = end.X - start.X;
+            var dy = end.Y - start.Y;
+            end = new Point(start.X + dx * line.DrawFactor, start.Y + dy * line.DrawFactor);
+        }
 
         dc.DrawLine(pen, start, end);
     }
 
     private void DrawArc(DrawingContext dc, VArc arc)
     {
-        var startAngleRad = arc.StartAngle * Math.PI / 180;
-        var endAngleRad = arc.EndAngle * Math.PI / 180;
+        if (arc.DrawFactor <= 0) return;
 
-        var startWorldX = arc.Center.X + arc.Radius * Math.Cos(startAngleRad);
-        var startWorldY = arc.Center.Y + arc.Radius * Math.Sin(startAngleRad);
-        var endWorldX = arc.Center.X + arc.Radius * Math.Cos(endAngleRad);
-        var endWorldY = arc.Center.Y + arc.Radius * Math.Sin(endAngleRad);
+        // Apply offset for move animation
+        var offsetX = arc.OffsetX;
+        var offsetY = arc.OffsetY;
+
+        var startAngleRad = arc.StartAngle * Math.PI / 180;
+
+        // Apply DrawFactor - draw partial arc
+        var effectiveEndAngle = arc.StartAngle + (arc.EndAngle - arc.StartAngle) * arc.DrawFactor;
+        var endAngleRad = effectiveEndAngle * Math.PI / 180;
+
+        var startWorldX = arc.Center.X + offsetX + arc.Radius * Math.Cos(startAngleRad);
+        var startWorldY = arc.Center.Y + offsetY + arc.Radius * Math.Sin(startAngleRad);
+        var endWorldX = arc.Center.X + offsetX + arc.Radius * Math.Cos(endAngleRad);
+        var endWorldY = arc.Center.Y + offsetY + arc.Radius * Math.Sin(endAngleRad);
 
         var startScreen = WorldToScreen(startWorldX, startWorldY);
         var endScreen = WorldToScreen(endWorldX, endWorldY);
 
-        var angleDiff = arc.EndAngle - arc.StartAngle;
+        var angleDiff = effectiveEndAngle - arc.StartAngle;
         if (angleDiff < 0) angleDiff += 360;
         var isLargeArc = angleDiff > 180;
 
@@ -471,23 +494,107 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawCircle(DrawingContext dc, VCircle circle)
     {
-        var centerScreen = WorldToScreen(circle.Center.X, circle.Center.Y);
+        if (circle.DrawFactor <= 0) return;
+
+        // Apply offset for move animation
+        var offsetX = circle.OffsetX;
+        var offsetY = circle.OffsetY;
+
+        var centerScreen = WorldToScreen(circle.Center.X + offsetX, circle.Center.Y + offsetY);
         var screenRadius = circle.Radius * _scale;
         var fill = GetCachedBrush(circle.FillColor);
         var pen = GetCachedPen(circle.StrokeColor, circle.StrokeThickness);
 
-        dc.DrawEllipse(fill, pen, centerScreen, screenRadius, screenRadius);
+        // Apply DrawFactor - draw as arc from 0 to DrawFactor*360 degrees
+        if (circle.DrawFactor < 1.0)
+        {
+            var endAngle = 360.0 * circle.DrawFactor;
+            var endAngleRad = endAngle * Math.PI / 180;
+
+            var startWorldX = circle.Center.X + offsetX + circle.Radius;
+            var startWorldY = circle.Center.Y + offsetY;
+            var endWorldX = circle.Center.X + offsetX + circle.Radius * Math.Cos(endAngleRad);
+            var endWorldY = circle.Center.Y + offsetY + circle.Radius * Math.Sin(endAngleRad);
+
+            var startScreen = WorldToScreen(startWorldX, startWorldY);
+            var endScreen = WorldToScreen(endWorldX, endWorldY);
+
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                ctx.BeginFigure(startScreen, false, false);
+                ctx.ArcTo(endScreen, new Size(screenRadius, screenRadius), 0, endAngle > 180, SweepDirection.Counterclockwise, true, false);
+            }
+            geometry.Freeze();
+            dc.DrawGeometry(null, pen, geometry);
+        }
+        else
+        {
+            dc.DrawEllipse(fill, pen, centerScreen, screenRadius, screenRadius);
+        }
     }
 
     private void DrawRectangle(DrawingContext dc, VRectangle rect)
     {
-        var corner = WorldToScreen(rect.Corner.X, rect.Corner.Y + rect.Height);
+        if (rect.DrawFactor <= 0) return;
+
+        // Apply offset for move animation
+        var offsetX = rect.OffsetX;
+        var offsetY = rect.OffsetY;
+
+        var corner = WorldToScreen(rect.Corner.X + offsetX, rect.Corner.Y + rect.Height + offsetY);
         var screenWidth = rect.Width * _scale;
         var screenHeight = rect.Height * _scale;
         var fill = GetCachedBrush(rect.FillColor);
         var pen = GetCachedPen(rect.StrokeColor, rect.StrokeThickness);
 
-        dc.DrawRectangle(fill, pen, new Rect(corner.X, corner.Y, screenWidth, screenHeight));
+        // Apply DrawFactor - draw partial rectangle outline
+        if (rect.DrawFactor < 1.0)
+        {
+            var perimeter = 2 * (rect.Width + rect.Height);
+            var drawLength = perimeter * rect.DrawFactor;
+
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                ctx.BeginFigure(corner, false, false);
+                var remaining = drawLength;
+
+                // Right edge
+                if (remaining > 0)
+                {
+                    var len = Math.Min(remaining, screenWidth);
+                    ctx.LineTo(new Point(corner.X + len, corner.Y), true, false);
+                    remaining -= rect.Width;
+                }
+                // Bottom edge
+                if (remaining > 0)
+                {
+                    var len = Math.Min(remaining, screenHeight);
+                    ctx.LineTo(new Point(corner.X + screenWidth, corner.Y + len), true, false);
+                    remaining -= rect.Height;
+                }
+                // Left edge
+                if (remaining > 0)
+                {
+                    var len = Math.Min(remaining, screenWidth);
+                    ctx.LineTo(new Point(corner.X + screenWidth - len, corner.Y + screenHeight), true, false);
+                    remaining -= rect.Width;
+                }
+                // Top edge
+                if (remaining > 0)
+                {
+                    var len = Math.Min(remaining, screenHeight);
+                    ctx.LineTo(new Point(corner.X, corner.Y + screenHeight - len), true, false);
+                }
+            }
+            geometry.Freeze();
+            dc.DrawGeometry(null, pen, geometry);
+        }
+        else
+        {
+            dc.DrawRectangle(fill, pen, new Rect(corner.X, corner.Y, screenWidth, screenHeight));
+        }
     }
 
     private void DrawEllipse(DrawingContext dc, VEllipse ellipse)
@@ -503,46 +610,90 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawPolygon(DrawingContext dc, VPolygon polygon)
     {
-        if (polygon.Points.Count < 3) return;
+        if (polygon.Points.Count < 3 || polygon.DrawFactor <= 0) return;
+
+        // Apply offset for move animation
+        var offsetX = polygon.OffsetX;
+        var offsetY = polygon.OffsetY;
 
         var fill = GetCachedBrush(polygon.FillColor);
         var pen = GetCachedPen(polygon.StrokeColor, polygon.StrokeThickness);
 
-        // Use StreamGeometry for better performance
+        // Apply DrawFactor - draw partial polygon outline
+        var totalSegments = polygon.Points.Count; // includes closing segment
+        var segmentsToDraw = polygon.DrawFactor * totalSegments;
+
         var geometry = new StreamGeometry();
         using (var ctx = geometry.Open())
         {
-            var firstPoint = WorldToScreen(polygon.Points[0].X, polygon.Points[0].Y);
-            ctx.BeginFigure(firstPoint, true, true);
+            var firstPoint = WorldToScreen(polygon.Points[0].X + offsetX, polygon.Points[0].Y + offsetY);
+            ctx.BeginFigure(firstPoint, polygon.DrawFactor >= 1.0, polygon.DrawFactor >= 1.0);
 
-            for (int i = 1; i < polygon.Points.Count; i++)
+            for (int i = 1; i <= polygon.Points.Count && i <= segmentsToDraw; i++)
             {
-                var pt = WorldToScreen(polygon.Points[i].X, polygon.Points[i].Y);
-                ctx.LineTo(pt, true, false);
+                var idx = i % polygon.Points.Count;
+                var pt = WorldToScreen(polygon.Points[idx].X + offsetX, polygon.Points[idx].Y + offsetY);
+
+                // Partial last segment
+                if (i > segmentsToDraw - 1 && i <= segmentsToDraw)
+                {
+                    var prevIdx = (i - 1) % polygon.Points.Count;
+                    var prevPt = WorldToScreen(polygon.Points[prevIdx].X + offsetX, polygon.Points[prevIdx].Y + offsetY);
+                    var fraction = segmentsToDraw - (i - 1);
+                    var partialPt = new Point(
+                        prevPt.X + (pt.X - prevPt.X) * fraction,
+                        prevPt.Y + (pt.Y - prevPt.Y) * fraction);
+                    ctx.LineTo(partialPt, true, false);
+                }
+                else if (i <= segmentsToDraw)
+                {
+                    ctx.LineTo(pt, true, false);
+                }
             }
         }
         geometry.Freeze();
 
-        dc.DrawGeometry(fill, pen, geometry);
+        dc.DrawGeometry(polygon.DrawFactor >= 1.0 ? fill : null, pen, geometry);
     }
 
     private void DrawPolyline(DrawingContext dc, VPolyline polyline)
     {
-        if (polyline.Points.Count < 2) return;
+        if (polyline.Points.Count < 2 || polyline.DrawFactor <= 0) return;
+
+        // Apply offset for move animation
+        var offsetX = polyline.OffsetX;
+        var offsetY = polyline.OffsetY;
 
         var pen = GetCachedPen(polyline.StrokeColor, polyline.StrokeThickness);
 
-        // Use StreamGeometry for better performance
+        // Apply DrawFactor - draw partial polyline
+        var totalSegments = polyline.Points.Count - 1;
+        var segmentsToDraw = polyline.DrawFactor * totalSegments;
+
         var geometry = new StreamGeometry();
         using (var ctx = geometry.Open())
         {
-            var firstPoint = WorldToScreen(polyline.Points[0].X, polyline.Points[0].Y);
+            var firstPoint = WorldToScreen(polyline.Points[0].X + offsetX, polyline.Points[0].Y + offsetY);
             ctx.BeginFigure(firstPoint, false, false);
 
-            for (int i = 1; i < polyline.Points.Count; i++)
+            for (int i = 1; i < polyline.Points.Count && i <= segmentsToDraw + 1; i++)
             {
-                var pt = WorldToScreen(polyline.Points[i].X, polyline.Points[i].Y);
-                ctx.LineTo(pt, true, false);
+                var pt = WorldToScreen(polyline.Points[i].X + offsetX, polyline.Points[i].Y + offsetY);
+
+                // Partial last segment
+                if (i > segmentsToDraw && i <= segmentsToDraw + 1)
+                {
+                    var prevPt = WorldToScreen(polyline.Points[i - 1].X + offsetX, polyline.Points[i - 1].Y + offsetY);
+                    var fraction = segmentsToDraw - (i - 1);
+                    var partialPt = new Point(
+                        prevPt.X + (pt.X - prevPt.X) * fraction,
+                        prevPt.Y + (pt.Y - prevPt.Y) * fraction);
+                    ctx.LineTo(partialPt, true, false);
+                }
+                else
+                {
+                    ctx.LineTo(pt, true, false);
+                }
             }
         }
         geometry.Freeze();
@@ -578,18 +729,28 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawBezier(DrawingContext dc, VBezier bezier)
     {
+        if (bezier.DrawFactor <= 0) return;
+
+        // Apply offset for move animation
+        var offsetX = bezier.OffsetX;
+        var offsetY = bezier.OffsetY;
+
         var pen = GetCachedPen(bezier.StrokeColor, bezier.StrokeThickness);
         var points = bezier.GetRenderPoints();
         if (points.Count < 2) return;
 
+        // Apply DrawFactor - draw partial bezier
+        var pointsToDraw = (int)Math.Ceiling(points.Count * bezier.DrawFactor);
+        pointsToDraw = Math.Max(2, Math.Min(pointsToDraw, points.Count));
+
         var geometry = new StreamGeometry();
         using (var ctx = geometry.Open())
         {
-            var first = WorldToScreen(points[0].X, points[0].Y);
+            var first = WorldToScreen(points[0].X + offsetX, points[0].Y + offsetY);
             ctx.BeginFigure(first, false, false);
-            for (int i = 1; i < points.Count; i++)
+            for (int i = 1; i < pointsToDraw; i++)
             {
-                var pt = WorldToScreen(points[i].X, points[i].Y);
+                var pt = WorldToScreen(points[i].X + offsetX, points[i].Y + offsetY);
                 ctx.LineTo(pt, true, false);
             }
         }

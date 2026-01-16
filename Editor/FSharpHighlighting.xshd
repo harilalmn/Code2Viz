@@ -162,19 +162,11 @@
       <Word>VDimension</Word>
       <Word>VGroup</Word>
       <Word>VizConsole</Word>
-      <!-- 3D Types -->
+      <!-- Support Types -->
       <Word>VXYZ</Word>
-      <Word>VLine3D</Word>
       <Word>VPlane</Word>
       <Word>VTransform</Word>
-      <Word>VBox</Word>
       <Word>VCoordinateSystem</Word>
-      <Word>VSolid</Word>
-      <Word>VMesh</Word>
-      <Word>VCuboid</Word>
-      <Word>VCylinder</Word>
-      <Word>VSphere</Word>
-      <Word>VCone</Word>
       <!-- Animation -->
       <Word>Timeline</Word>
       <Word>Animation</Word>

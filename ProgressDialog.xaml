@@ -1,0 +1,19 @@
+<Window x:Class="Code2Viz.ProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Exporting..." Width="350" Height="120"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        Background="{StaticResource BackgroundBrush}">
+
+    <Grid Margin="20">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock x:Name="MessageText" Text="Exporting GIF animation..."
+                       Foreground="{StaticResource ForegroundBrush}"
+                       FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+            <ProgressBar x:Name="ProgressBar" IsIndeterminate="True"
+                         Width="280" Height="20"/>
+        </StackPanel>
+    </Grid>
+</Window>

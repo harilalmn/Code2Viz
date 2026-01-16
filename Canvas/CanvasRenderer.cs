@@ -1,4 +1,5 @@
 using Code2Viz.Geometry;
+using Code2Viz.Animation;
 
 namespace Code2Viz.Canvas;
 
@@ -8,6 +9,11 @@ public class CanvasRenderer
     private static readonly object _lock = new();
 
     private readonly List<IDrawable> _shapes = new();
+
+    /// <summary>
+    /// The currently active timeline for animation playback.
+    /// </summary>
+    public Timeline? ActiveTimeline { get; set; }
 
     public static CanvasRenderer Instance
     {

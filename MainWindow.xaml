@@ -88,6 +88,7 @@
                         <MenuItem Header="_Save" Click="SaveButton_Click" InputGestureText="Ctrl+S" Style="{StaticResource MenuItemStyle}" />
                         <Separator />
                         <MenuItem Header="_Export PNG..." Click="ExportButton_Click" Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem Header="Export _GIF Animation..." Click="ExportGifButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <MenuItem Header="Export _Console..." Click="ExportConsoleButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <Separator />
                         <MenuItem Header="E_xit" Click="ExitMenuItem_Click" InputGestureText="Alt+F4" Style="{StaticResource MenuItemStyle}" />
