@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="img/logo.png" alt="Code2Viz Logo" width="200">
+</p>
+
 # Code2Viz - 2D Geometry Visualizer
 
 A WPF application for visualizing 2D geometric shapes through C# or F# code execution with animation support.
