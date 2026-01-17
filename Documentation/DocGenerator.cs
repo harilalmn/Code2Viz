@@ -882,6 +882,7 @@ timeline.Play();" }
             };
             AddListItem(featuresList, "Multi-language Support", "Write code in C# or F# with full IntelliSense-like syntax highlighting");
             AddListItem(featuresList, "Rich Shape Library", "Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, text, arrows, and dimensions");
+            AddListItem(featuresList, "Drawing Tools", "Draw shapes directly on the canvas with automatic code generation");
             AddListItem(featuresList, "Animation System", "Create timeline-based animations with draw, move, rotate, and flip effects");
             AddListItem(featuresList, "Interactive Canvas", "Zoom with mouse wheel, pan with middle-click, toggle grid display");
             AddListItem(featuresList, "Export Options", "Save your visualizations as PNG images or animated GIFs");
@@ -934,6 +935,58 @@ namespace StartViz
             };
             doc.Blocks.Add(codeP);
 
+            // Drawing Tools
+            AddWelcomeSectionHeader(doc, "Drawing Tools");
+            doc.Blocks.Add(new Paragraph(new Run(
+                "Draw shapes directly on the canvas using the toolbar below the menu bar. " +
+                "Click to place points, and the corresponding C#/F# code is automatically generated and inserted into your Main() method."))
+            { FontSize = 14, Margin = new Thickness(0, 0, 0, 10) });
+
+            // Drawing tools table
+            var drawingTable = new Table();
+            drawingTable.CellSpacing = 0;
+            drawingTable.BorderBrush = Brushes.LightGray;
+            drawingTable.BorderThickness = new Thickness(1);
+            drawingTable.Columns.Add(new TableColumn { Width = new GridLength(100) });
+            drawingTable.Columns.Add(new TableColumn { Width = new GridLength(250) });
+            drawingTable.Columns.Add(new TableColumn { Width = new GridLength(100) });
+
+            var drawingRowGroup = new TableRowGroup();
+            // Header
+            var drawingHeaderRow = new TableRow();
+            drawingHeaderRow.Background = Brushes.AliceBlue;
+            drawingHeaderRow.Cells.Add(CreateHelpHeaderCell("Shape"));
+            drawingHeaderRow.Cells.Add(CreateHelpHeaderCell("Method"));
+            drawingHeaderRow.Cells.Add(CreateHelpHeaderCell("Clicks"));
+            drawingRowGroup.Rows.Add(drawingHeaderRow);
+
+            AddDrawingToolRow(drawingRowGroup, "Point", "Single click", "1", false);
+            AddDrawingToolRow(drawingRowGroup, "Line", "Click start, click end", "2", true);
+            AddDrawingToolRow(drawingRowGroup, "Circle", "Click center, click radius", "2", false);
+            AddDrawingToolRow(drawingRowGroup, "Rectangle", "Click corner, click opposite", "2", true);
+            AddDrawingToolRow(drawingRowGroup, "Arc", "Click center, start, end", "3", false);
+            AddDrawingToolRow(drawingRowGroup, "Polygon", "Click vertices, double-click", "N", true);
+            AddDrawingToolRow(drawingRowGroup, "Polyline", "Click points, double-click", "N", false);
+            AddDrawingToolRow(drawingRowGroup, "Bezier", "Click start, ctrl1, ctrl2, end", "4", true);
+
+            drawingTable.RowGroups.Add(drawingRowGroup);
+            doc.Blocks.Add(drawingTable);
+
+            // Snap support
+            doc.Blocks.Add(new Paragraph(new Run("\nSnap Support: ") { FontWeight = FontWeights.SemiBold })
+            { FontSize = 14, Margin = new Thickness(0, 10, 0, 5) });
+            var snapList = new List
+            {
+                MarkerStyle = TextMarkerStyle.Disc,
+                Margin = new Thickness(20, 0, 0, 15)
+            };
+            AddListItem(snapList, "Endpoints", "Start/end points of lines, arcs, polylines");
+            AddListItem(snapList, "Midpoints", "Middle point of lines and curves");
+            AddListItem(snapList, "Centers", "Center of circles, arcs, ellipses");
+            AddListItem(snapList, "Intersections", "Where two shapes cross");
+            AddListItem(snapList, "Nearest", "Closest point on any curve");
+            doc.Blocks.Add(snapList);
+
             // Keyboard Shortcuts
             AddWelcomeSectionHeader(doc, "Keyboard Shortcuts");
             var shortcutsTable = new Table();
@@ -968,7 +1021,12 @@ namespace StartViz
             AddShortcutRow(rowGroup, "Middle Click", "Pan canvas", true);
             AddShortcutRow(rowGroup, "Ctrl+G", "Zoom to shape by ID", false);
             AddShortcutRow(rowGroup, "Ctrl+M", "Toggle Measuring Tape tool", true);
-            AddShortcutRow(rowGroup, "Esc", "Cancel current tool/operation", false);
+            // Drawing Tools
+            AddShortcutRow(rowGroup, "P", "Point drawing tool", false);
+            AddShortcutRow(rowGroup, "L", "Line drawing tool", true);
+            AddShortcutRow(rowGroup, "C", "Circle drawing tool", false);
+            AddShortcutRow(rowGroup, "R", "Rectangle drawing tool", true);
+            AddShortcutRow(rowGroup, "Esc", "Cancel drawing / Return to select", false);
             shortcutsTable.RowGroups.Add(rowGroup);
             doc.Blocks.Add(shortcutsTable);
 
@@ -991,6 +1049,7 @@ namespace StartViz
             AddListItem(tipsList, "VizConsole", "Use VizConsole.Log() to output debug messages to the console panel");
             AddListItem(tipsList, "ShapeDefaults", "Set ShapeDefaults.GlobalStrokeColor to apply colors to all new shapes");
             AddListItem(tipsList, "Animation", "Create a Timeline, add animations, and call .Play() to animate shapes");
+            AddListItem(tipsList, "Drawing Tools", "Use the toolbar or press P/L/C/R to draw shapes directly on canvas with auto-generated code");
             AddListItem(tipsList, "Help Browser", "Select any class from the tree on the left to see its documentation");
             AddListItem(tipsList, "NuGet Packages", "Use Tools > NuGet Package Manager to add external libraries like Newtonsoft.Json");
             AddListItem(tipsList, "Shape IDs", "Every shape has a unique Id property. Use Ctrl+G to zoom to a shape by its ID");
@@ -1060,6 +1119,48 @@ namespace StartViz
 
             row.Cells.Add(keyCell);
             row.Cells.Add(descCell);
+            group.Rows.Add(row);
+        }
+
+        private TableCell CreateHelpHeaderCell(string text)
+        {
+            return new TableCell(new Paragraph(new Run(text)) { FontWeight = FontWeights.Bold })
+            {
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                Padding = new Thickness(8, 4, 8, 4)
+            };
+        }
+
+        private void AddDrawingToolRow(TableRowGroup group, string shape, string method, string clicks, bool isAlt)
+        {
+            var row = new TableRow();
+            if (isAlt) row.Background = Brushes.WhiteSmoke;
+
+            var shapeCell = new TableCell(new Paragraph(new Run(shape) { FontWeight = FontWeights.SemiBold }))
+            {
+                Padding = new Thickness(8, 4, 8, 4),
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1)
+            };
+
+            var methodCell = new TableCell(new Paragraph(new Run(method)))
+            {
+                Padding = new Thickness(8, 4, 8, 4),
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1)
+            };
+
+            var clicksCell = new TableCell(new Paragraph(new Run(clicks)) { TextAlignment = TextAlignment.Center })
+            {
+                Padding = new Thickness(8, 4, 8, 4),
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1)
+            };
+
+            row.Cells.Add(shapeCell);
+            row.Cells.Add(methodCell);
+            row.Cells.Add(clicksCell);
             group.Rows.Add(row);
         }
     }

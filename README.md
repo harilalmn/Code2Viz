@@ -214,6 +214,63 @@ Code2Viz uses a **mathematical coordinate system**:
 
 ---
 
+## Drawing Tools
+
+Code2Viz includes an interactive drawing toolbar that lets you create shapes directly on the canvas with automatic C#/F# code generation.
+
+### Toolbar Location
+The drawing toolbar appears below the menu bar with buttons for all shape types.
+
+### Drawing Methods
+
+| Shape | Method | Clicks |
+|-------|--------|--------|
+| **Point** | Single click | 1 |
+| **Line** | Click start, click end | 2 |
+| **Circle** | Click center, click radius point | 2 |
+| **Rectangle** | Click corner, click opposite corner | 2 |
+| **Ellipse** | Click center, drag for radii | 2 |
+| **Arc** | Click center, click start, click end | 3 |
+| **Polygon** | Click vertices, double-click to close | N + double-click |
+| **Polyline** | Click points, double-click to finish | N + double-click |
+| **Bezier** | Click start, ctrl1, ctrl2, end | 4 |
+| **Spline** | Click control points, double-click | N + double-click |
+| **Arrow** | Click start, click end | 2 |
+| **Text** | Click position | 1 |
+
+### Snap Support
+While drawing, the tool automatically snaps to:
+- **Endpoints** - Start/end points of existing shapes
+- **Midpoints** - Middle points of lines and curves
+- **Centers** - Center of circles, arcs, ellipses
+- **Intersections** - Where two shapes cross
+- **Nearest** - Closest point on any curve
+
+Visual indicators show snap points as you move the cursor.
+
+### Automatic Code Generation
+When you complete drawing a shape, the corresponding code is automatically inserted into the `Main()` method of your entry point file:
+
+```csharp
+// Generated when you draw a line from (100, 50) to (200, 150)
+new VLine(100.00, 50.00, 200.00, 150.00).Draw();
+
+// Generated when you draw a circle at (150, 100) with radius 75.5
+new VCircle(150.00, 100.00, 75.50).Draw();
+```
+
+### Drawing Tool Shortcuts
+When the editor is not focused:
+| Shortcut | Action |
+|----------|--------|
+| `P` | Point tool |
+| `L` | Line tool |
+| `C` | Circle tool |
+| `R` | Rectangle tool |
+| `Esc` | Cancel drawing / Return to select mode |
+
+---
+
 ## Shape IDs and Outliner
 
 ### Unique Shape IDs
