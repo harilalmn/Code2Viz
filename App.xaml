@@ -68,6 +68,46 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
+        <!--  Toolbar Button Style (smaller, for drawing tools)  -->
+        <Style x:Key="ToolbarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource TertiaryBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="MinWidth" Value="50" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="border"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Active">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!--  GridSplitter Style  -->
         <Style TargetType="GridSplitter">
             <Setter Property="Background" Value="{StaticResource BorderBrush}" />

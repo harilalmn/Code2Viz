@@ -71,6 +71,10 @@ public class RenderCanvas : FrameworkElement
     private MeasuringTool? _measuringTool;
     public MeasuringTool MeasuringTool => _measuringTool ??= new MeasuringTool();
 
+    // Drawing Tool
+    private DrawingTool? _drawingTool;
+    public DrawingTool DrawingTool => _drawingTool ??= new DrawingTool();
+
     // Shape highlighting (for Outliner hover)
     private long? _highlightedShapeId;
     public long? HighlightedShapeId
@@ -93,7 +97,8 @@ public class RenderCanvas : FrameworkElement
     // Pre-frozen brushes for common colors
     // Removed static BackgroundBrush to allow dynamic changes
     private static readonly Brush GridBrush;
-    private static readonly Brush AxisBrush;
+    private static readonly Brush XAxisBrush;  // Red for X-axis
+    private static readonly Brush YAxisBrush;  // Green for Y-axis
 
     private Brush _backgroundBrush;
 
@@ -102,8 +107,11 @@ public class RenderCanvas : FrameworkElement
         GridBrush = new SolidColorBrush(Color.FromRgb(50, 50, 50));
         GridBrush.Freeze();
 
-        AxisBrush = new SolidColorBrush(Color.FromRgb(100, 100, 100));
-        AxisBrush.Freeze();
+        XAxisBrush = new SolidColorBrush(Color.FromRgb(180, 60, 60));  // Red
+        XAxisBrush.Freeze();
+
+        YAxisBrush = new SolidColorBrush(Color.FromRgb(60, 180, 60));  // Green
+        YAxisBrush.Freeze();
     }
 
     public event EventHandler<Point>? MouseWorldPositionChanged;
@@ -223,13 +231,45 @@ public class RenderCanvas : FrameworkElement
             CaptureMouse();
             Cursor = Cursors.Hand;
         }
-        else if (e.LeftButton == MouseButtonState.Pressed && _measuringTool?.Mode == ToolMode.Measuring)
+        else if (e.LeftButton == MouseButtonState.Pressed)
         {
             var screenPos = e.GetPosition(this);
             var worldPos = ScreenToWorld(screenPos.X, screenPos.Y);
-            _measuringTool.OnLeftClick(new VPoint(worldPos.X, worldPos.Y));
-            RedrawAll();
-            e.Handled = true;
+            var vPoint = new VPoint(worldPos.X, worldPos.Y);
+
+            // Handle drawing tool clicks
+            if (_drawingTool != null && _drawingTool.Mode != DrawingMode.None)
+            {
+                if (e.ClickCount == 2)
+                {
+                    _drawingTool.OnDoubleClick(vPoint);
+                }
+                else
+                {
+                    _drawingTool.OnLeftClick(vPoint);
+                }
+                RedrawAll();
+                e.Handled = true;
+                return;
+            }
+
+            // Handle measuring tool clicks
+            if (_measuringTool?.Mode == ToolMode.Measuring)
+            {
+                _measuringTool.OnLeftClick(vPoint);
+                RedrawAll();
+                e.Handled = true;
+            }
+        }
+        else if (e.RightButton == MouseButtonState.Pressed)
+        {
+            // Handle drawing tool right-click (cancel)
+            if (_drawingTool != null && _drawingTool.Mode != DrawingMode.None)
+            {
+                _drawingTool.OnRightClick();
+                RedrawAll();
+                e.Handled = true;
+            }
         }
     }
 
@@ -256,6 +296,12 @@ public class RenderCanvas : FrameworkElement
             _lastMousePosition = screenPos;
             RedrawAll();
         }
+        else if (_drawingTool != null && _drawingTool.Mode != DrawingMode.None)
+        {
+            // Update drawing tool with cursor position
+            _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
+            RedrawAll();
+        }
         else if (_measuringTool?.Mode == ToolMode.Measuring)
         {
             // Update measuring tool with cursor position
@@ -276,6 +322,15 @@ public class RenderCanvas : FrameworkElement
     public void Render(IEnumerable<IDrawable> shapes)
     {
         _currentShapes = shapes.ToList();
+        RedrawAll();
+    }
+
+    /// <summary>
+    /// Adds a shape to the current canvas display without requiring code execution.
+    /// </summary>
+    public void AddShape(IDrawable shape)
+    {
+        _currentShapes.Add(shape);
         RedrawAll();
     }
 
@@ -432,6 +487,221 @@ public class RenderCanvas : FrameworkElement
         {
             DrawMeasuringOverlay(dc);
         }
+
+        // Draw drawing tool overlay
+        if (_drawingTool?.Mode != DrawingMode.None)
+        {
+            DrawDrawingToolOverlay(dc);
+        }
+    }
+
+    private void DrawDrawingToolOverlay(DrawingContext dc)
+    {
+        if (_drawingTool == null) return;
+
+        // Draw snap indicator
+        if (_drawingTool.CurrentSnap != null)
+        {
+            DrawSnapIndicator(dc, _drawingTool.CurrentSnap);
+        }
+
+        // Draw collected points as markers
+        foreach (var point in _drawingTool.Points)
+        {
+            var screenPos = WorldToScreen(point.X, point.Y);
+            dc.DrawEllipse(SnapMarkerBrushes.EndpointBrush, null, screenPos, 5, 5);
+        }
+
+        // Draw preview shape
+        var previewShape = _drawingTool.GetPreviewShape();
+        if (previewShape != null)
+        {
+            DrawPreviewShape(dc, previewShape);
+        }
+    }
+
+    private void DrawPreviewShape(DrawingContext dc, Geometry.Shape shape)
+    {
+        // Use dashed gray pen for preview
+        var previewBrush = new SolidColorBrush(Colors.Gray);
+        previewBrush.Freeze();
+        var previewPen = new Pen(previewBrush, 1.5) { DashStyle = DashStyles.Dash };
+        previewPen.Freeze();
+
+        switch (shape)
+        {
+            case VPoint point:
+                var screenPoint = WorldToScreen(point.X, point.Y);
+                dc.DrawEllipse(previewBrush, previewPen, screenPoint, PointRadius, PointRadius);
+                break;
+
+            case VLine line:
+                var lineStart = WorldToScreen(line.Start.X, line.Start.Y);
+                var lineEnd = WorldToScreen(line.End.X, line.End.Y);
+                dc.DrawLine(previewPen, lineStart, lineEnd);
+                break;
+
+            case VCircle circle:
+                var circleCenter = WorldToScreen(circle.Center.X, circle.Center.Y);
+                var circleRadius = circle.Radius * _scale;
+                dc.DrawEllipse(null, previewPen, circleCenter, circleRadius, circleRadius);
+                break;
+
+            case VRectangle rect:
+                var rectTopLeft = WorldToScreen(rect.Corner.X, rect.Corner.Y + rect.Height);
+                var rectWidth = rect.Width * _scale;
+                var rectHeight = rect.Height * _scale;
+                dc.DrawRectangle(null, previewPen, new Rect(rectTopLeft.X, rectTopLeft.Y, rectWidth, rectHeight));
+                break;
+
+            case VEllipse ellipse:
+                var ellipseCenter = WorldToScreen(ellipse.Center.X, ellipse.Center.Y);
+                var radiusX = ellipse.RadiusX * _scale;
+                var radiusY = ellipse.RadiusY * _scale;
+                dc.DrawEllipse(null, previewPen, ellipseCenter, radiusX, radiusY);
+                break;
+
+            case VArc arc:
+                DrawArcPreview(dc, arc, previewPen);
+                break;
+
+            case VPolygon polygon:
+                if (polygon.Points.Count > 1)
+                {
+                    var polyGeom = new StreamGeometry();
+                    using (var ctx = polyGeom.Open())
+                    {
+                        var firstPt = WorldToScreen(polygon.Points[0].X, polygon.Points[0].Y);
+                        ctx.BeginFigure(firstPt, false, true);
+                        for (int i = 1; i < polygon.Points.Count; i++)
+                        {
+                            var pt = WorldToScreen(polygon.Points[i].X, polygon.Points[i].Y);
+                            ctx.LineTo(pt, true, false);
+                        }
+                    }
+                    polyGeom.Freeze();
+                    dc.DrawGeometry(null, previewPen, polyGeom);
+                }
+                break;
+
+            case VPolyline polyline:
+                if (polyline.Points.Count > 1)
+                {
+                    var plGeom = new StreamGeometry();
+                    using (var ctx = plGeom.Open())
+                    {
+                        var firstPt = WorldToScreen(polyline.Points[0].X, polyline.Points[0].Y);
+                        ctx.BeginFigure(firstPt, false, false);
+                        for (int i = 1; i < polyline.Points.Count; i++)
+                        {
+                            var pt = WorldToScreen(polyline.Points[i].X, polyline.Points[i].Y);
+                            ctx.LineTo(pt, true, false);
+                        }
+                    }
+                    plGeom.Freeze();
+                    dc.DrawGeometry(null, previewPen, plGeom);
+                }
+                break;
+
+            case VBezier bezier:
+                var bezierPts = bezier.GetRenderPoints();
+                if (bezierPts.Count > 1)
+                {
+                    var bezGeom = new StreamGeometry();
+                    using (var ctx = bezGeom.Open())
+                    {
+                        var firstPt = WorldToScreen(bezierPts[0].X, bezierPts[0].Y);
+                        ctx.BeginFigure(firstPt, false, false);
+                        for (int i = 1; i < bezierPts.Count; i++)
+                        {
+                            var pt = WorldToScreen(bezierPts[i].X, bezierPts[i].Y);
+                            ctx.LineTo(pt, true, false);
+                        }
+                    }
+                    bezGeom.Freeze();
+                    dc.DrawGeometry(null, previewPen, bezGeom);
+                }
+                // Also draw control point indicators
+                var cp1 = WorldToScreen(bezier.P1.X, bezier.P1.Y);
+                var cp2 = WorldToScreen(bezier.P2.X, bezier.P2.Y);
+                dc.DrawEllipse(previewBrush, null, cp1, 4, 4);
+                dc.DrawEllipse(previewBrush, null, cp2, 4, 4);
+                break;
+
+            case VSpline spline:
+                var splinePts = spline.GetRenderPoints();
+                if (splinePts.Count > 1)
+                {
+                    var spGeom = new StreamGeometry();
+                    using (var ctx = spGeom.Open())
+                    {
+                        var firstPt = WorldToScreen(splinePts[0].X, splinePts[0].Y);
+                        ctx.BeginFigure(firstPt, false, false);
+                        for (int i = 1; i < splinePts.Count; i++)
+                        {
+                            var pt = WorldToScreen(splinePts[i].X, splinePts[i].Y);
+                            ctx.LineTo(pt, true, false);
+                        }
+                    }
+                    spGeom.Freeze();
+                    dc.DrawGeometry(null, previewPen, spGeom);
+                }
+                break;
+
+            case VArrow arrow:
+                var arrowStart = WorldToScreen(arrow.Start.X, arrow.Start.Y);
+                var arrowEnd = WorldToScreen(arrow.End.X, arrow.End.Y);
+                dc.DrawLine(previewPen, arrowStart, arrowEnd);
+                // Draw arrowhead
+                var (wing1, wing2) = arrow.GetEndArrowhead();
+                var screenWing1 = WorldToScreen(wing1.X, wing1.Y);
+                var screenWing2 = WorldToScreen(wing2.X, wing2.Y);
+                dc.DrawLine(previewPen, arrowEnd, screenWing1);
+                dc.DrawLine(previewPen, arrowEnd, screenWing2);
+                break;
+
+            case VText text:
+                var textPos = WorldToScreen(text.Location.X, text.Location.Y);
+                var formattedText = new FormattedText(
+                    text.Content,
+                    CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("Consolas"),
+                    text.Height * _scale,
+                    previewBrush,
+                    1.0);
+                dc.DrawText(formattedText, new Point(textPos.X, textPos.Y - text.Height * _scale));
+                break;
+        }
+    }
+
+    private void DrawArcPreview(DrawingContext dc, VArc arc, Pen pen)
+    {
+        var center = WorldToScreen(arc.Center.X, arc.Center.Y);
+        var radius = arc.Radius * _scale;
+
+        var startAngle = arc.StartAngle * Math.PI / 180;
+        var endAngle = arc.EndAngle * Math.PI / 180;
+
+        var startPoint = new Point(
+            center.X + radius * Math.Cos(-startAngle),
+            center.Y + radius * Math.Sin(-startAngle));
+        var endPoint = new Point(
+            center.X + radius * Math.Cos(-endAngle),
+            center.Y + radius * Math.Sin(-endAngle));
+
+        var sweepAngle = endAngle - startAngle;
+        while (sweepAngle < 0) sweepAngle += 2 * Math.PI;
+        var isLargeArc = sweepAngle > Math.PI;
+
+        var geometry = new StreamGeometry();
+        using (var ctx = geometry.Open())
+        {
+            ctx.BeginFigure(startPoint, false, false);
+            ctx.ArcTo(endPoint, new Size(radius, radius), 0, isLargeArc, SweepDirection.Clockwise, true, false);
+        }
+        geometry.Freeze();
+        dc.DrawGeometry(null, pen, geometry);
     }
 
     private void DrawMeasuringOverlay(DrawingContext dc)
@@ -695,19 +965,24 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawAxes(DrawingContext dc)
     {
-        var axisPen = new Pen(AxisBrush, 1.5);
-        axisPen.Freeze();
+        var xAxisPen = new Pen(XAxisBrush, 1.5);
+        xAxisPen.Freeze();
 
+        var yAxisPen = new Pen(YAxisBrush, 1.5);
+        yAxisPen.Freeze();
+
+        // X-axis (horizontal, red)
         var xAxisY = WorldToScreen(0, 0).Y;
         if (xAxisY >= 0 && xAxisY <= ActualHeight)
         {
-            dc.DrawLine(axisPen, new Point(0, xAxisY), new Point(ActualWidth, xAxisY));
+            dc.DrawLine(xAxisPen, new Point(0, xAxisY), new Point(ActualWidth, xAxisY));
         }
 
+        // Y-axis (vertical, green)
         var yAxisX = WorldToScreen(0, 0).X;
         if (yAxisX >= 0 && yAxisX <= ActualWidth)
         {
-            dc.DrawLine(axisPen, new Point(yAxisX, 0), new Point(yAxisX, ActualHeight));
+            dc.DrawLine(yAxisPen, new Point(yAxisX, 0), new Point(yAxisX, ActualHeight));
         }
     }
 

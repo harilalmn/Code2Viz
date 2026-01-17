@@ -99,6 +99,11 @@ public partial class MainWindow : Window
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         RenderCanvas.CenterOrigin();
+
+        // Apply application settings
+        var settings = ApplicationSettings.Instance;
+        RenderCanvas.ShowGrid = settings.ShowGrid;
+        GridMenuItem.IsChecked = settings.ShowGrid;
     }
 
     private void InitializeCanvas()
@@ -3320,6 +3325,10 @@ public partial class MainWindow : Window
         if (RenderCanvas != null)
         {
             RenderCanvas.ShowGrid = GridMenuItem.IsChecked;
+
+            // Save to application settings
+            ApplicationSettings.Instance.ShowGrid = GridMenuItem.IsChecked;
+            ApplicationSettings.Save();
         }
     }
 
@@ -3551,13 +3560,42 @@ public partial class MainWindow : Window
         }
         else if (e.Key == Key.Escape)
         {
+            // Cancel drawing tool if active
+            if (RenderCanvas.DrawingTool.Mode != Canvas.DrawingMode.None)
+            {
+                CancelDrawingTool();
+                e.Handled = true;
+            }
             // Cancel measuring tool if active
-            if (RenderCanvas.MeasuringTool.Mode == Canvas.ToolMode.Measuring)
+            else if (RenderCanvas.MeasuringTool.Mode == Canvas.ToolMode.Measuring)
             {
                 RenderCanvas.MeasuringTool.CancelMeasuring();
                 RenderCanvas.Refresh();
                 SetStatus("Measuring cancelled", isError: false);
                 e.Handled = true;
+            }
+        }
+        // Drawing tool shortcuts (only when editor is not focused)
+        else if (!CodeEditor.IsKeyboardFocusWithin && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            switch (e.Key)
+            {
+                case Key.P:
+                    SetDrawingMode(Canvas.DrawingMode.Point);
+                    e.Handled = true;
+                    break;
+                case Key.L:
+                    SetDrawingMode(Canvas.DrawingMode.Line);
+                    e.Handled = true;
+                    break;
+                case Key.C:
+                    SetDrawingMode(Canvas.DrawingMode.Circle);
+                    e.Handled = true;
+                    break;
+                case Key.R:
+                    SetDrawingMode(Canvas.DrawingMode.Rectangle);
+                    e.Handled = true;
+                    break;
             }
         }
     }
@@ -3605,6 +3643,347 @@ public partial class MainWindow : Window
         else
         {
             SetStatus("Ready", isError: false);
+        }
+    }
+
+    #endregion
+
+    #region Drawing Tools
+
+    private void SelectTool_Click(object sender, RoutedEventArgs e)
+    {
+        CancelDrawingTool();
+    }
+
+    private void DrawPoint_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Point);
+    }
+
+    private void DrawLine_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Line);
+    }
+
+    private void DrawCircle_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Circle);
+    }
+
+    private void DrawRect_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Rectangle);
+    }
+
+    private void DrawEllipse_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Ellipse);
+    }
+
+    private void DrawArc_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+    }
+
+    private void DrawPolygon_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Polygon);
+    }
+
+    private void DrawPolyline_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Polyline);
+    }
+
+    private void DrawBezier_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Bezier);
+    }
+
+    private void DrawSpline_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Spline);
+    }
+
+    private void DrawArrow_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arrow);
+    }
+
+    private void DrawText_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Text);
+    }
+
+    private void SetDrawingMode(Canvas.DrawingMode mode)
+    {
+        // Cancel measuring tool if active
+        if (RenderCanvas.MeasuringTool.Mode == Canvas.ToolMode.Measuring)
+        {
+            RenderCanvas.MeasuringTool.CancelMeasuring();
+        }
+
+        var tool = RenderCanvas.DrawingTool;
+        tool.SetMode(mode);
+
+        // Update UI
+        UpdateDrawingToolbarButtons();
+        SetStatus(tool.StatusMessage, isError: false);
+
+        // Set crosshair cursor on canvas
+        RenderCanvas.Cursor = Cursors.Cross;
+
+        // Subscribe to events
+        tool.ShapeCompleted -= OnShapeCompleted;
+        tool.ModeChanged -= OnDrawingModeChanged;
+        tool.TextPlacementRequested -= OnTextPlacementRequested;
+        tool.ShapeCompleted += OnShapeCompleted;
+        tool.ModeChanged += OnDrawingModeChanged;
+        tool.TextPlacementRequested += OnTextPlacementRequested;
+        tool.RefreshSnapSettings();
+
+        RenderCanvas.Refresh();
+    }
+
+    private void CancelDrawingTool()
+    {
+        var tool = RenderCanvas.DrawingTool;
+        tool.Cancel();
+        UpdateDrawingToolbarButtons();
+        SetStatus("Ready", isError: false);
+
+        // Reset cursor to normal
+        RenderCanvas.Cursor = Cursors.Arrow;
+
+        RenderCanvas.Refresh();
+    }
+
+    private void OnShapeCompleted(object? sender, Geometry.Shape shape)
+    {
+        // Generate code based on project language
+        var language = _currentProject?.ProjectFile?.Language ?? Project.ProjectLanguage.CSharp;
+        var code = Canvas.CodeGenerator.GenerateCode(shape, language);
+        InsertShapeCode(code);
+
+        // Add the shape directly to the canvas (no need to run code)
+        RenderCanvas.AddShape(shape);
+
+        // Update status
+        var tool = RenderCanvas.DrawingTool;
+        SetStatus(tool.StatusMessage, isError: false);
+    }
+
+    private void OnTextPlacementRequested(object? sender, Geometry.VPoint location)
+    {
+        // Show dialog to get text content
+        var dialog = new System.Windows.Window
+        {
+            Title = "Enter Text",
+            Width = 350,
+            Height = 180,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            Background = (Brush)FindResource("BackgroundBrush"),
+            WindowStyle = WindowStyle.ToolWindow
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(15) };
+        var label = new TextBlock
+        {
+            Text = "Enter text content:",
+            Foreground = (Brush)FindResource("ForegroundBrush"),
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var textBox = new System.Windows.Controls.TextBox
+        {
+            Background = (Brush)FindResource("SecondaryBackgroundBrush"),
+            Foreground = (Brush)FindResource("ForegroundBrush"),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            Padding = new Thickness(8, 6, 8, 6),
+            FontSize = 14
+        };
+        var buttonPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 12, 0, 0)
+        };
+        var okButton = new Button
+        {
+            Content = "OK",
+            Width = 80,
+            Margin = new Thickness(0, 0, 8, 0),
+            Style = (Style)FindResource("RibbonButtonStyle"),
+            IsDefault = true
+        };
+        var cancelButton = new Button
+        {
+            Content = "Cancel",
+            Width = 80,
+            Style = (Style)FindResource("RibbonButtonStyle"),
+            IsCancel = true
+        };
+
+        okButton.Click += (s, e) => { dialog.DialogResult = true; dialog.Close(); };
+        cancelButton.Click += (s, e) => { dialog.DialogResult = false; dialog.Close(); };
+
+        buttonPanel.Children.Add(okButton);
+        buttonPanel.Children.Add(cancelButton);
+        panel.Children.Add(label);
+        panel.Children.Add(textBox);
+        panel.Children.Add(buttonPanel);
+        dialog.Content = panel;
+
+        dialog.Loaded += (s, e) => textBox.Focus();
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(textBox.Text))
+        {
+            // Complete the text shape
+            var tool = RenderCanvas.DrawingTool;
+            tool.CompleteText(location, textBox.Text);
+        }
+    }
+
+    private void OnDrawingModeChanged(object? sender, Canvas.DrawingMode mode)
+    {
+        UpdateDrawingToolbarButtons();
+        if (mode == Canvas.DrawingMode.None)
+        {
+            SetStatus("Ready", isError: false);
+        }
+        else
+        {
+            var tool = RenderCanvas.DrawingTool;
+            SetStatus(tool.StatusMessage, isError: false);
+        }
+    }
+
+    private void UpdateDrawingToolbarButtons()
+    {
+        var mode = RenderCanvas.DrawingTool.Mode;
+
+        SelectToolBtn.Tag = mode == Canvas.DrawingMode.None ? "Active" : null;
+        DrawPointBtn.Tag = mode == Canvas.DrawingMode.Point ? "Active" : null;
+        DrawLineBtn.Tag = mode == Canvas.DrawingMode.Line ? "Active" : null;
+        DrawCircleBtn.Tag = mode == Canvas.DrawingMode.Circle ? "Active" : null;
+        DrawRectBtn.Tag = mode == Canvas.DrawingMode.Rectangle ? "Active" : null;
+        DrawEllipseBtn.Tag = mode == Canvas.DrawingMode.Ellipse ? "Active" : null;
+        DrawArcBtn.Tag = mode == Canvas.DrawingMode.Arc ? "Active" : null;
+        DrawPolygonBtn.Tag = mode == Canvas.DrawingMode.Polygon ? "Active" : null;
+        DrawPolylineBtn.Tag = mode == Canvas.DrawingMode.Polyline ? "Active" : null;
+        DrawBezierBtn.Tag = mode == Canvas.DrawingMode.Bezier ? "Active" : null;
+        DrawSplineBtn.Tag = mode == Canvas.DrawingMode.Spline ? "Active" : null;
+        DrawArrowBtn.Tag = mode == Canvas.DrawingMode.Arrow ? "Active" : null;
+        DrawTextBtn.Tag = mode == Canvas.DrawingMode.Text ? "Active" : null;
+    }
+
+    private void InsertShapeCode(string code)
+    {
+        var entryFile = _currentProject?.EntryPointFile;
+        if (entryFile == null) return;
+
+        var content = entryFile.Content;
+        var insertPos = FindMainMethodInsertPosition(content);
+        if (insertPos < 0) return;
+
+        // Insert the code with proper indentation (8 spaces for F#, 12 for C#)
+        var isFSharp = _currentProject?.ProjectFile?.Language == Project.ProjectLanguage.FSharp;
+        var indent = isFSharp ? "        " : "            ";
+        var indentedCode = indent + code + Environment.NewLine;
+        var newContent = content.Insert(insertPos, indentedCode);
+
+        // Update the file content
+        entryFile.Content = newContent;
+        entryFile.HasUnsavedChanges = true;
+
+        // Update the editor if this is the active file
+        if (_activeFile == entryFile)
+        {
+            var caretPos = CodeEditor.CaretOffset;
+            CodeEditor.Text = newContent;
+            // Try to restore caret position
+            if (caretPos <= insertPos)
+            {
+                CodeEditor.CaretOffset = caretPos;
+            }
+            else
+            {
+                CodeEditor.CaretOffset = caretPos + indentedCode.Length;
+            }
+        }
+    }
+
+    private int FindMainMethodInsertPosition(string content)
+    {
+        var isFSharp = _currentProject?.ProjectFile?.Language == Project.ProjectLanguage.FSharp;
+
+        if (isFSharp)
+        {
+            // F# syntax: "let Main() ="
+            var mainIndex = content.IndexOf("let Main()");
+            if (mainIndex < 0) return -1;
+
+            // Find the '=' after Main()
+            var eqIndex = content.IndexOf('=', mainIndex);
+            if (eqIndex < 0) return -1;
+
+            // Find the end of the file or next top-level declaration
+            // In F#, we insert at the end of the Main function (before any following module/type)
+            // For simplicity, find the last non-empty line before end of module or file
+            var insertPos = content.Length;
+
+            // Look for next module, type, or let at same indentation level
+            var lines = content.Substring(eqIndex + 1).Split('\n');
+            var currentPos = eqIndex + 1;
+            var lastContentLine = currentPos;
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.TrimStart();
+                // Check if this is a new top-level declaration (not indented content)
+                if (trimmed.Length > 0 && !char.IsWhiteSpace(line[0]) &&
+                    (trimmed.StartsWith("module ") || trimmed.StartsWith("type ") ||
+                     trimmed.StartsWith("let ") || trimmed.StartsWith("open ") ||
+                     trimmed.StartsWith("//")))
+                {
+                    break;
+                }
+                if (trimmed.Length > 0 && !trimmed.StartsWith("//"))
+                {
+                    lastContentLine = currentPos + line.Length;
+                }
+                currentPos += line.Length + 1; // +1 for \n
+            }
+
+            // Insert after the last content line in Main
+            return lastContentLine + 1;
+        }
+        else
+        {
+            // C# syntax: "public static void Main()"
+            var mainIndex = content.IndexOf("public static void Main");
+            if (mainIndex < 0) return -1;
+
+            // Find the opening brace of Main()
+            var braceStart = content.IndexOf('{', mainIndex);
+            if (braceStart < 0) return -1;
+
+            // Find matching closing brace
+            int braceCount = 1;
+            int pos = braceStart + 1;
+            int lastNewline = pos;
+
+            while (pos < content.Length && braceCount > 0)
+            {
+                if (content[pos] == '{') braceCount++;
+                else if (content[pos] == '}') braceCount--;
+                if (content[pos] == '\n') lastNewline = pos + 1;
+                pos++;
+            }
+
+            // Insert before the closing brace line
+            return lastNewline;
         }
     }
 
