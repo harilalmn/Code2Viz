@@ -15,6 +15,10 @@ public class AppSettingsData
     public bool SnapIntersectionEnabled { get; set; } = true;
     public bool SnapNearestEnabled { get; set; } = true;
     public bool SnapPerpendicularEnabled { get; set; } = true;
+
+    // Highlight Settings (for Outliner hover)
+    public string HighlightColor { get; set; } = "Yellow";
+    public int HighlightOpacity { get; set; } = 40; // 0-100 percentage
 }
 
 public static class ApplicationSettings

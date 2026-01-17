@@ -963,10 +963,12 @@ namespace StartViz
             AddShortcutRow(rowGroup, "Shift+Alt+Left", "Shrink selection", true);
             AddShortcutRow(rowGroup, "Ctrl+D", "Add next occurrence", false);
             AddShortcutRow(rowGroup, "Ctrl+Shift+L", "Select all occurrences", true);
-            // Canvas
+            // Canvas & Tools
             AddShortcutRow(rowGroup, "Mouse Wheel", "Zoom canvas", false);
             AddShortcutRow(rowGroup, "Middle Click", "Pan canvas", true);
             AddShortcutRow(rowGroup, "Ctrl+G", "Zoom to shape by ID", false);
+            AddShortcutRow(rowGroup, "Ctrl+M", "Toggle Measuring Tape tool", true);
+            AddShortcutRow(rowGroup, "Esc", "Cancel current tool/operation", false);
             shortcutsTable.RowGroups.Add(rowGroup);
             doc.Blocks.Add(shortcutsTable);
 
@@ -993,6 +995,10 @@ namespace StartViz
             AddListItem(tipsList, "NuGet Packages", "Use Tools > NuGet Package Manager to add external libraries like Newtonsoft.Json");
             AddListItem(tipsList, "Shape IDs", "Every shape has a unique Id property. Use Ctrl+G to zoom to a shape by its ID");
             AddListItem(tipsList, "Outliner", "The Outliner panel shows all shapes grouped by type. Click an ID to zoom to that shape");
+            AddListItem(tipsList, "Outliner Hover", "Hover over shapes in the Outliner to highlight them on the canvas");
+            AddListItem(tipsList, "Measuring Tool", "Press Ctrl+M to activate the Measuring Tape with AutoCAD-style snap points");
+            AddListItem(tipsList, "Snap Settings", "Configure snap types (Endpoint, Midpoint, Center, etc.) in Settings > Application Settings");
+            AddListItem(tipsList, "Highlight Settings", "Customize Outliner hover highlight color and opacity in Settings > Application Settings");
             AddListItem(tipsList, "Circumcircle", "Create a circle through 3 points: new VCircle(p1, p2, p3)");
             doc.Blocks.Add(tipsList);
 

@@ -161,6 +161,11 @@ Due to naming conflicts with WPF types:
 - `Ctrl+D` - Add next occurrence
 - `Ctrl+Shift+L` - Select all occurrences
 
+### Canvas & Tools
+- `Ctrl+M` - Toggle Measuring Tape tool
+- `Ctrl+G` - Zoom to shape by ID
+- `Esc` - Cancel current tool/operation
+
 ### Built-in AvalonEdit
 - `Ctrl+C/V/X` - Copy/Paste/Cut
 - `Ctrl+Z/Y` - Undo/Redo

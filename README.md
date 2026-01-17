@@ -231,10 +231,50 @@ The Outliner panel (below the Explorer) displays all shapes grouped by type:
 - Shows shape count per type: "VCircle (3)"
 - Each shape displays its name and clickable ID
 - Click an ID to zoom the canvas to that shape
+- **Hover over any shape** to highlight it on the canvas with a colored overlay
 - Right-click for **Expand All** / **Collapse All** options
+
+### Highlight Settings
+The Outliner hover highlight can be customized in the Settings tab (Application Settings):
+- **Highlight Color**: Choose any color for the highlight overlay (default: Yellow)
+- **Highlight Opacity**: Adjust transparency from 10% to 100% (default: 40%)
 
 ### Zoom To Shape
 Use **View > Zoom To Shape** (or `Ctrl+G`) to zoom to a specific shape by entering its ID.
+
+---
+
+## Measuring Tape Tool
+
+Code2Viz includes a precision measuring tool with AutoCAD-style snap features.
+
+### Activating the Tool
+Press **Ctrl+M** to toggle the Measuring Tape tool. Press **Esc** to cancel.
+
+### How to Measure
+1. Press **Ctrl+M** to activate the tool
+2. Move the mouse - snap indicators appear near snap points
+3. **Click first point** (snaps if within tolerance)
+4. Move mouse - a dashed measuring line shows with live distance
+5. **Click second point** - measurement displayed in status bar
+6. Tool stays active for additional measurements; press **Esc** to exit
+
+### Snap Types
+The measuring tool supports 6 snap types (configurable in Settings):
+
+| Snap Type | Marker | Description |
+|-----------|--------|-------------|
+| **Endpoint** | Yellow square | Start/end points of lines, arcs, polylines |
+| **Midpoint** | Cyan triangle | Middle point of lines and curves |
+| **Center** | Magenta circle | Center of circles, arcs, ellipses |
+| **Intersection** | Red X | Where two shapes cross |
+| **Nearest** | Green diamond | Closest point on any curve |
+| **Perpendicular** | Orange right-angle | Perpendicular from first click point |
+
+### Snap Settings
+Configure snap behavior in the Settings tab (Application Settings > Snap Settings):
+- Toggle each snap type on/off individually
+- Settings are saved globally and persist across sessions
 
 ---
 
@@ -292,12 +332,14 @@ File > Export > GIF exports animations as animated GIF files with options:
 | `Ctrl+D` | Add next occurrence (select word, then find next) |
 | `Ctrl+Shift+L` | Select all occurrences |
 
-### Canvas
+### Canvas & Tools
 | Shortcut | Action |
 |----------|--------|
 | `Mouse Wheel` | Zoom |
 | `Middle Click` | Pan |
 | `Ctrl+G` | Zoom to shape by ID |
+| `Ctrl+M` | Toggle Measuring Tape tool |
+| `Esc` | Cancel current tool/operation |
 
 ---
 

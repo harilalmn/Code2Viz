@@ -363,7 +363,9 @@
                         </TreeView.Resources>
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <StackPanel Orientation="Horizontal" Margin="0,2"
+                                            MouseEnter="OutlinerItem_MouseEnter"
+                                            MouseLeave="OutlinerItem_MouseLeave">
                                     <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource ForegroundBrush}" VerticalAlignment="Center"/>
                                     <TextBlock Text=" [" Foreground="Gray" VerticalAlignment="Center" Visibility="{Binding IsShape, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                     <TextBlock x:Name="IdLink"
@@ -796,296 +798,398 @@
                         <Grid Background="{StaticResource BackgroundBrush}">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="24">
-                                    <TextBlock Text="Project Settings" 
-                                               FontSize="24" 
-                                               FontWeight="Bold" 
-                                               Foreground="{StaticResource AccentBrush}"
-                                               Margin="0,0,0,8" />
-                                    
-                                    <TextBlock Text="These value control the default appearance of new shapes. Leave them empty to use shape-specific defaults (e.g. Cyan for Lines, White for Points)." 
-                                               Foreground="{StaticResource ForegroundBrush}" 
-                                               TextWrapping="Wrap"
-                                               Margin="0,0,0,24" />
 
-                                    <!-- Settings Form -->
-                                    <Border Background="{StaticResource TertiaryBackgroundBrush}" 
-                                            CornerRadius="8" 
+                                    <!-- PROJECT SETTINGS SECTION -->
+                                    <Border Background="{StaticResource TertiaryBackgroundBrush}"
+                                            CornerRadius="8"
                                             Padding="20"
-                                            BorderBrush="{StaticResource BorderBrush}"
-                                            BorderThickness="1">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="200" />
-                                                <ColumnDefinition Width="300" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
+                                            BorderBrush="{StaticResource AccentBrush}"
+                                            BorderThickness="2"
+                                            Margin="0,0,0,24">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <TextBlock Text="Project Settings"
+                                                           FontSize="20"
+                                                           FontWeight="Bold"
+                                                           Foreground="{StaticResource AccentBrush}"/>
+                                                <Border Background="#2D5A2D" CornerRadius="4" Padding="8,2" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="Saved per project" FontSize="11" Foreground="#90EE90"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="These values control the default appearance of new shapes. Leave them empty to use shape-specific defaults."
+                                                       Foreground="Gray"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,16"
+                                                       FontSize="12"/>
 
-                                            <!-- Stroke Color -->
-                                            <TextBlock Grid.Row="0" Grid.Column="0" 
-                                                       Text="Global Default Stroke Color:" 
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <TextBox x:Name="SettingsStrokeColorBox"
-                                                     Grid.Row="0" Grid.Column="1"
-                                                     Padding="6"
-                                                     Margin="0,0,0,16"
-                                                     Background="{StaticResource BackgroundBrush}"
-                                                     Foreground="{StaticResource ForegroundBrush}"
-                                                     BorderBrush="{StaticResource BorderBrush}"
-                                                     TextChanged="ColorBox_TextChanged" />
-                                            <Button x:Name="SettingsStrokeColorBtn"
-                                                    Grid.Row="0" Grid.Column="2"
-                                                    Click="PickColorButton_Click"
-                                                    Tag="Stroke"
-                                                    Content="..."
-                                                    Background="#444444"
-                                                    Foreground="White"
-                                                    BorderBrush="{StaticResource BorderBrush}"
-                                                    BorderThickness="1"
-                                                    Margin="8,0,0,16"
-                                                    Width="30"
-                                                    Height="30"
-                                                    VerticalAlignment="Top"
-                                                    ToolTip="Pick Stroke Color"/>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200" />
+                                                    <ColumnDefinition Width="300" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
 
-                                            <!-- Fill Color -->
-                                            <TextBlock Grid.Row="1" Grid.Column="0" 
-                                                       Text="Global Default Fill Color:" 
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <TextBox x:Name="SettingsFillColorBox"
-                                                     Grid.Row="1" Grid.Column="1"
-                                                     Padding="6"
-                                                     Margin="0,0,0,16"
-                                                     Background="{StaticResource BackgroundBrush}"
-                                                     Foreground="{StaticResource ForegroundBrush}"
-                                                     BorderBrush="{StaticResource BorderBrush}"
-                                                     TextChanged="ColorBox_TextChanged" />
-                                            <Button x:Name="SettingsFillColorBtn"
-                                                    Grid.Row="1" Grid.Column="2"
-                                                    Click="PickColorButton_Click"
-                                                    Tag="Fill"
-                                                    Content="..."
-                                                    Background="#444444"
-                                                    Foreground="White"
-                                                    BorderBrush="{StaticResource BorderBrush}"
-                                                    BorderThickness="1"
-                                                    Margin="8,0,0,16"
-                                                    Width="30"
-                                                    Height="30"
-                                                    VerticalAlignment="Top"
-                                                    ToolTip="Pick Fill Color"/>
+                                                <!-- Stroke Color -->
+                                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                                           Text="Default Stroke Color:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,12"/>
+                                                <TextBox x:Name="SettingsStrokeColorBox"
+                                                         Grid.Row="0" Grid.Column="1"
+                                                         Padding="6"
+                                                         Margin="0,0,0,12"
+                                                         Background="{StaticResource BackgroundBrush}"
+                                                         Foreground="{StaticResource ForegroundBrush}"
+                                                         BorderBrush="{StaticResource BorderBrush}"
+                                                         TextChanged="ColorBox_TextChanged" />
+                                                <Button x:Name="SettingsStrokeColorBtn"
+                                                        Grid.Row="0" Grid.Column="2"
+                                                        Click="PickColorButton_Click"
+                                                        Tag="Stroke"
+                                                        Content="..."
+                                                        Background="#444444"
+                                                        Foreground="White"
+                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="8,0,0,12"
+                                                        Width="30"
+                                                        Height="30"
+                                                        VerticalAlignment="Top"
+                                                        ToolTip="Pick Stroke Color"/>
 
-                                            <!-- Canvas Background -->
-                                            <TextBlock Grid.Row="2" Grid.Column="0" 
-                                                       Text="Canvas Background Color:" 
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <TextBox x:Name="SettingsCanvasColorBox"
-                                                     Grid.Row="2" Grid.Column="1"
-                                                     Padding="6"
-                                                     Margin="0,0,0,16"
-                                                     Background="{StaticResource BackgroundBrush}"
-                                                     Foreground="{StaticResource ForegroundBrush}"
-                                                     BorderBrush="{StaticResource BorderBrush}"
-                                                     TextChanged="ColorBox_TextChanged" />
-                                            <Button x:Name="SettingsCanvasColorBtn"
-                                                    Grid.Row="2" Grid.Column="2"
-                                                    Click="PickColorButton_Click"
-                                                    Tag="Canvas"
-                                                    Content="..."
-                                                    Background="#444444"
-                                                    Foreground="White"
-                                                    BorderBrush="{StaticResource BorderBrush}"
-                                                    BorderThickness="1"
-                                                    Margin="8,0,0,16"
-                                                    Width="30"
-                                                    Height="30"
-                                                    VerticalAlignment="Top"
-                                                    ToolTip="Pick Canvas Background"/>
+                                                <!-- Fill Color -->
+                                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                                           Text="Default Fill Color:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,12"/>
+                                                <TextBox x:Name="SettingsFillColorBox"
+                                                         Grid.Row="1" Grid.Column="1"
+                                                         Padding="6"
+                                                         Margin="0,0,0,12"
+                                                         Background="{StaticResource BackgroundBrush}"
+                                                         Foreground="{StaticResource ForegroundBrush}"
+                                                         BorderBrush="{StaticResource BorderBrush}"
+                                                         TextChanged="ColorBox_TextChanged" />
+                                                <Button x:Name="SettingsFillColorBtn"
+                                                        Grid.Row="1" Grid.Column="2"
+                                                        Click="PickColorButton_Click"
+                                                        Tag="Fill"
+                                                        Content="..."
+                                                        Background="#444444"
+                                                        Foreground="White"
+                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="8,0,0,12"
+                                                        Width="30"
+                                                        Height="30"
+                                                        VerticalAlignment="Top"
+                                                        ToolTip="Pick Fill Color"/>
 
-                                            <!-- Thickness (Moved to Row 3) -->
-                                            <TextBlock Grid.Row="3" Grid.Column="0" 
-                                                       Text="Global Default Stroke Thickness:" 
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <TextBox x:Name="SettingsThicknessBox"
-                                                     Grid.Row="3" Grid.Column="1"
-                                                     Padding="6"
-                                                     Margin="0,0,0,16"
-                                                     Background="{StaticResource BackgroundBrush}"
-                                                     Foreground="{StaticResource ForegroundBrush}"
-                                                     BorderBrush="{StaticResource BorderBrush}" />
+                                                <!-- Canvas Background -->
+                                                <TextBlock Grid.Row="2" Grid.Column="0"
+                                                           Text="Canvas Background:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,12"/>
+                                                <TextBox x:Name="SettingsCanvasColorBox"
+                                                         Grid.Row="2" Grid.Column="1"
+                                                         Padding="6"
+                                                         Margin="0,0,0,12"
+                                                         Background="{StaticResource BackgroundBrush}"
+                                                         Foreground="{StaticResource ForegroundBrush}"
+                                                         BorderBrush="{StaticResource BorderBrush}"
+                                                         TextChanged="ColorBox_TextChanged" />
+                                                <Button x:Name="SettingsCanvasColorBtn"
+                                                        Grid.Row="2" Grid.Column="2"
+                                                        Click="PickColorButton_Click"
+                                                        Tag="Canvas"
+                                                        Content="..."
+                                                        Background="#444444"
+                                                        Foreground="White"
+                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="8,0,0,12"
+                                                        Width="30"
+                                                        Height="30"
+                                                        VerticalAlignment="Top"
+                                                        ToolTip="Pick Canvas Background"/>
 
-                                            <!-- Header for App Settings -->
-                                            <Border Grid.Row="4" Grid.ColumnSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,10,0,15" Padding="0,0,0,5">
-                                                <TextBlock Text="Application Settings" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
-                                            </Border>
+                                                <!-- Thickness -->
+                                                <TextBlock Grid.Row="3" Grid.Column="0"
+                                                           Text="Default Stroke Thickness:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,16"/>
+                                                <TextBox x:Name="SettingsThicknessBox"
+                                                         Grid.Row="3" Grid.Column="1"
+                                                         Padding="6"
+                                                         Margin="0,0,0,16"
+                                                         Background="{StaticResource BackgroundBrush}"
+                                                         Foreground="{StaticResource ForegroundBrush}"
+                                                         BorderBrush="{StaticResource BorderBrush}" />
 
-                                            <!-- Export Background (Moved to Row 5) -->
-                                            <TextBlock Grid.Row="5" Grid.Column="0" 
-                                                       Text="Default Export Background:" 
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <ComboBox x:Name="SettingsExportBackgroundCombo"
-                                                      Grid.Row="5" Grid.Column="1"
-                                                      Padding="6"
-                                                      Margin="0,0,0,16"
-                                                      Foreground="Black"
-                                                      BorderBrush="{StaticResource BorderBrush}">
-                                                <ComboBox.ItemContainerStyle>
-                                                    <Style TargetType="ComboBoxItem">
-                                                        <Setter Property="Foreground" Value="Black"/>
-                                                    </Style>
-                                                </ComboBox.ItemContainerStyle>
-                                                <ComboBoxItem Content="Transparent" />
-                                                <ComboBoxItem Content="Canvas Background" />
-                                                <ComboBoxItem Content="White" />
-                                                <ComboBoxItem Content="Black" />
-                                                <ComboBoxItem Content="Light (White Smoke)" />
-                                                <ComboBoxItem Content="Light" Visibility="Collapsed" />
-                                            </ComboBox>
-
-                                            <!-- Include Grid (New Row 6) -->
-                                            <TextBlock Grid.Row="6" Grid.Column="0"
-                                                       Text="Include Grid &amp; Axes in Export:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <CheckBox x:Name="SettingsIncludeGridCheck"
-                                                      Grid.Row="6" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,16"/>
-
-                                            <!-- Header for Snap Settings (Row 7) -->
-                                            <Border Grid.Row="7" Grid.ColumnSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,10,0,15" Padding="0,0,0,5">
-                                                <TextBlock Text="Snap Settings (Ctrl+M to Measure)" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
-                                            </Border>
-
-                                            <!-- Snap Endpoints (Row 8) -->
-                                            <TextBlock Grid.Row="8" Grid.Column="0"
-                                                       Text="Snap to Endpoints:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,8"/>
-                                            <CheckBox x:Name="SnapEndpointCheck"
-                                                      Grid.Row="8" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      IsChecked="True"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,8"/>
-
-                                            <!-- Snap Midpoints (Row 9) -->
-                                            <TextBlock Grid.Row="9" Grid.Column="0"
-                                                       Text="Snap to Midpoints:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,8"/>
-                                            <CheckBox x:Name="SnapMidpointCheck"
-                                                      Grid.Row="9" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      IsChecked="True"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,8"/>
-
-                                            <!-- Snap Centers (Row 10) -->
-                                            <TextBlock Grid.Row="10" Grid.Column="0"
-                                                       Text="Snap to Centers:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,8"/>
-                                            <CheckBox x:Name="SnapCenterCheck"
-                                                      Grid.Row="10" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      IsChecked="True"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,8"/>
-
-                                            <!-- Snap Intersections (Row 11) -->
-                                            <TextBlock Grid.Row="11" Grid.Column="0"
-                                                       Text="Snap to Intersections:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,8"/>
-                                            <CheckBox x:Name="SnapIntersectionCheck"
-                                                      Grid.Row="11" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      IsChecked="True"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,8"/>
-
-                                            <!-- Snap Nearest (Row 12) -->
-                                            <TextBlock Grid.Row="12" Grid.Column="0"
-                                                       Text="Snap to Nearest:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,8"/>
-                                            <CheckBox x:Name="SnapNearestCheck"
-                                                      Grid.Row="12" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      IsChecked="True"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,8"/>
-
-                                            <!-- Snap Perpendicular (Row 13) -->
-                                            <TextBlock Grid.Row="13" Grid.Column="0"
-                                                       Text="Snap to Perpendicular:"
-                                                       Foreground="{StaticResource ForegroundBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,0,16"/>
-                                            <CheckBox x:Name="SnapPerpendicularCheck"
-                                                      Grid.Row="13" Grid.Column="1"
-                                                      Content="Enabled"
-                                                      IsChecked="True"
-                                                      Foreground="{StaticResource ForegroundBrush}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,0,16"/>
-
-                                            <!-- Actions (Row 14) -->
-                                            <StackPanel Grid.Row="14" Grid.Column="0" Grid.ColumnSpan="2"
-                                                        Orientation="Horizontal"
-                                                        Margin="0,8,0,0">
-                                                <Button Content="Save Settings"
+                                                <!-- Save Project Settings Button -->
+                                                <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                                                        Content="Save Project Settings"
                                                         Click="SaveSettingsButton_Click"
                                                         Style="{StaticResource RunButtonStyle}"
                                                         Padding="20,8"
-                                                        Margin="0,0,12,0"/>
+                                                        HorizontalAlignment="Left"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
 
-                                                <TextBlock Text="(Saved per project)"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="Gray"
-                                                           FontStyle="Italic"/>
+                                    <!-- APPLICATION SETTINGS SECTION -->
+                                    <Border Background="{StaticResource TertiaryBackgroundBrush}"
+                                            CornerRadius="8"
+                                            Padding="20"
+                                            BorderBrush="#666666"
+                                            BorderThickness="1">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <TextBlock Text="Application Settings"
+                                                           FontSize="20"
+                                                           FontWeight="Bold"
+                                                           Foreground="#CCCCCC"/>
+                                                <Border Background="#4A3A2D" CornerRadius="4" Padding="8,2" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="Saved globally" FontSize="11" Foreground="#FFB347"/>
+                                                </Border>
                                             </StackPanel>
-                                        </Grid>
+                                            <TextBlock Text="These settings apply to all projects and are saved to your user profile."
+                                                       Foreground="Gray"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,16"
+                                                       FontSize="12"/>
+
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200" />
+                                                    <ColumnDefinition Width="300" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Export Settings Sub-header -->
+                                                <TextBlock Grid.Row="0" Grid.ColumnSpan="3"
+                                                           Text="Export Settings"
+                                                           FontSize="14" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           Margin="0,0,0,12"/>
+
+                                                <!-- Export Background -->
+                                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                                           Text="Default Export Background:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,12"/>
+                                                <ComboBox x:Name="SettingsExportBackgroundCombo"
+                                                          Grid.Row="1" Grid.Column="1"
+                                                          Padding="6"
+                                                          Margin="0,0,0,12"
+                                                          Foreground="Black"
+                                                          BorderBrush="{StaticResource BorderBrush}">
+                                                    <ComboBox.ItemContainerStyle>
+                                                        <Style TargetType="ComboBoxItem">
+                                                            <Setter Property="Foreground" Value="Black"/>
+                                                        </Style>
+                                                    </ComboBox.ItemContainerStyle>
+                                                    <ComboBoxItem Content="Transparent" />
+                                                    <ComboBoxItem Content="Canvas Background" />
+                                                    <ComboBoxItem Content="White" />
+                                                    <ComboBoxItem Content="Black" />
+                                                    <ComboBoxItem Content="Light (White Smoke)" />
+                                                    <ComboBoxItem Content="Light" Visibility="Collapsed" />
+                                                </ComboBox>
+
+                                                <!-- Include Grid -->
+                                                <TextBlock Grid.Row="2" Grid.Column="0"
+                                                           Text="Include Grid in Export:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,16"/>
+                                                <CheckBox x:Name="SettingsIncludeGridCheck"
+                                                          Grid.Row="2" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,16"/>
+
+                                                <!-- Snap Settings Sub-header -->
+                                                <TextBlock Grid.Row="3" Grid.ColumnSpan="3"
+                                                           Text="Snap Settings (Ctrl+M to Measure)"
+                                                           FontSize="14" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           Margin="0,8,0,12"/>
+
+                                                <!-- Snap Endpoints -->
+                                                <TextBlock Grid.Row="4" Grid.Column="0"
+                                                           Text="Snap to Endpoints:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                                <CheckBox x:Name="SnapEndpointCheck"
+                                                          Grid.Row="4" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          IsChecked="True"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,8"/>
+
+                                                <!-- Snap Midpoints -->
+                                                <TextBlock Grid.Row="5" Grid.Column="0"
+                                                           Text="Snap to Midpoints:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                                <CheckBox x:Name="SnapMidpointCheck"
+                                                          Grid.Row="5" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          IsChecked="True"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,8"/>
+
+                                                <!-- Snap Centers -->
+                                                <TextBlock Grid.Row="6" Grid.Column="0"
+                                                           Text="Snap to Centers:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                                <CheckBox x:Name="SnapCenterCheck"
+                                                          Grid.Row="6" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          IsChecked="True"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,8"/>
+
+                                                <!-- Snap Intersections -->
+                                                <TextBlock Grid.Row="7" Grid.Column="0"
+                                                           Text="Snap to Intersections:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                                <CheckBox x:Name="SnapIntersectionCheck"
+                                                          Grid.Row="7" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          IsChecked="True"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,8"/>
+
+                                                <!-- Snap Nearest -->
+                                                <TextBlock Grid.Row="8" Grid.Column="0"
+                                                           Text="Snap to Nearest:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                                <CheckBox x:Name="SnapNearestCheck"
+                                                          Grid.Row="8" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          IsChecked="True"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,8"/>
+
+                                                <!-- Snap Perpendicular -->
+                                                <TextBlock Grid.Row="9" Grid.Column="0"
+                                                           Text="Snap to Perpendicular:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,16"/>
+                                                <CheckBox x:Name="SnapPerpendicularCheck"
+                                                          Grid.Row="9" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          IsChecked="True"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,16"/>
+
+                                                <!-- Highlight Settings Sub-header -->
+                                                <TextBlock Grid.Row="10" Grid.ColumnSpan="3"
+                                                           Text="Highlight Settings (Outliner Hover)"
+                                                           FontSize="14" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           Margin="0,8,0,12"/>
+
+                                                <!-- Highlight Color -->
+                                                <TextBlock Grid.Row="11" Grid.Column="0"
+                                                           Text="Highlight Color:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                                <TextBox x:Name="HighlightColorBox"
+                                                         Grid.Row="11" Grid.Column="1"
+                                                         Padding="6"
+                                                         Margin="0,0,0,8"
+                                                         Background="{StaticResource BackgroundBrush}"
+                                                         Foreground="{StaticResource ForegroundBrush}"
+                                                         BorderBrush="{StaticResource BorderBrush}"
+                                                         Text="Yellow"
+                                                         TextChanged="HighlightColorBox_TextChanged"/>
+                                                <Button x:Name="HighlightColorBtn"
+                                                        Grid.Row="11" Grid.Column="2"
+                                                        Click="PickHighlightColorButton_Click"
+                                                        Width="30" Height="30"
+                                                        Margin="8,0,0,8"
+                                                        Background="Yellow"
+                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        ToolTip="Pick Color"/>
+
+                                                <!-- Highlight Opacity -->
+                                                <TextBlock Grid.Row="12" Grid.Column="0"
+                                                           Text="Highlight Opacity:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,0"/>
+                                                <StackPanel Grid.Row="12" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,0">
+                                                    <Slider x:Name="HighlightOpacitySlider"
+                                                            Width="200"
+                                                            Minimum="10"
+                                                            Maximum="100"
+                                                            Value="40"
+                                                            VerticalAlignment="Center"
+                                                            ValueChanged="HighlightOpacitySlider_ValueChanged"/>
+                                                    <TextBlock x:Name="HighlightOpacityText"
+                                                               Text="40%"
+                                                               Foreground="{StaticResource ForegroundBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="10,0,0,0"
+                                                               Width="40"/>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <!-- Note about auto-save -->
+                                            <TextBlock Text="Application settings are saved automatically when changed."
+                                                       Foreground="Gray"
+                                                       FontSize="11"
+                                                       FontStyle="Italic"
+                                                       Margin="0,16,0,0"/>
+                                        </StackPanel>
                                     </Border>
                                 </StackPanel>
                             </ScrollViewer>

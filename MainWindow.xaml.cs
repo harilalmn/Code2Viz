@@ -2662,6 +2662,12 @@ public partial class MainWindow : Window
         SnapNearestCheck.IsChecked = appSettings.SnapNearestEnabled;
         SnapPerpendicularCheck.IsChecked = appSettings.SnapPerpendicularEnabled;
 
+        // Highlight Settings
+        HighlightColorBox.Text = appSettings.HighlightColor ?? "Yellow";
+        HighlightOpacitySlider.Value = appSettings.HighlightOpacity;
+        HighlightOpacityText.Text = $"{appSettings.HighlightOpacity}%";
+        UpdateColorButton(HighlightColorBtn, HighlightColorBox.Text);
+
         // Update Button colors
         UpdateColorButton(SettingsStrokeColorBtn, SettingsStrokeColorBox.Text);
         UpdateColorButton(SettingsFillColorBtn, SettingsFillColorBox.Text);
@@ -2680,7 +2686,9 @@ public partial class MainWindow : Window
     
     private void UpdateColorButton(Button btn, string colorText)
     {
-        try 
+        if (btn == null) return;
+
+        try
         {
             if (string.IsNullOrWhiteSpace(colorText))
                 btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#444444"));
@@ -2690,8 +2698,8 @@ public partial class MainWindow : Window
                  btn.Background = new SolidColorBrush(color);
             }
         }
-        catch 
-        { 
+        catch
+        {
             // Keep previous or set to default on error
             btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#444444"));
         }
@@ -2705,13 +2713,37 @@ public partial class MainWindow : Window
             if (tag == "Stroke") targetBox = SettingsStrokeColorBox;
             else if (tag == "Fill") targetBox = SettingsFillColorBox;
             else targetBox = SettingsCanvasColorBox;
-            
+
             var dialog = new ColorPickerDialog(targetBox.Text);
             dialog.Owner = this;
             if (dialog.ShowDialog() == true)
             {
                 targetBox.Text = dialog.SelectedColor;
             }
+        }
+    }
+
+    private void HighlightColorBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (HighlightColorBtn != null && HighlightColorBox != null)
+            UpdateColorButton(HighlightColorBtn, HighlightColorBox.Text);
+    }
+
+    private void PickHighlightColorButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ColorPickerDialog(HighlightColorBox.Text);
+        dialog.Owner = this;
+        if (dialog.ShowDialog() == true)
+        {
+            HighlightColorBox.Text = dialog.SelectedColor;
+        }
+    }
+
+    private void HighlightOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (HighlightOpacityText != null)
+        {
+            HighlightOpacityText.Text = $"{(int)e.NewValue}%";
         }
     }
 
@@ -2773,6 +2805,10 @@ public partial class MainWindow : Window
         ApplicationSettings.Instance.SnapIntersectionEnabled = SnapIntersectionCheck.IsChecked == true;
         ApplicationSettings.Instance.SnapNearestEnabled = SnapNearestCheck.IsChecked == true;
         ApplicationSettings.Instance.SnapPerpendicularEnabled = SnapPerpendicularCheck.IsChecked == true;
+
+        // Save Highlight Settings
+        ApplicationSettings.Instance.HighlightColor = HighlightColorBox.Text.Trim();
+        ApplicationSettings.Instance.HighlightOpacity = (int)HighlightOpacitySlider.Value;
 
         ApplicationSettings.Save();
 
@@ -5379,6 +5415,19 @@ public partial class MainWindow : Window
                 SetStatus($"Shape with ID {item.Id} not found", isError: true);
             }
         }
+    }
+
+    private void OutlinerItem_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is Project.OutlinerItem item && item.IsShape)
+        {
+            RenderCanvas.HighlightedShapeId = item.Id;
+        }
+    }
+
+    private void OutlinerItem_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        RenderCanvas.HighlightedShapeId = null;
     }
 
     #endregion

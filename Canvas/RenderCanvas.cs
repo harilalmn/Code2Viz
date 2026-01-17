@@ -71,6 +71,21 @@ public class RenderCanvas : FrameworkElement
     private MeasuringTool? _measuringTool;
     public MeasuringTool MeasuringTool => _measuringTool ??= new MeasuringTool();
 
+    // Shape highlighting (for Outliner hover)
+    private long? _highlightedShapeId;
+    public long? HighlightedShapeId
+    {
+        get => _highlightedShapeId;
+        set
+        {
+            if (_highlightedShapeId != value)
+            {
+                _highlightedShapeId = value;
+                RedrawAll();
+            }
+        }
+    }
+
     // Brush cache for performance
     private static readonly Dictionary<string, Brush> _brushCache = new();
     private static readonly Dictionary<(string color, double thickness), Pen> _penCache = new();
@@ -406,6 +421,12 @@ public class RenderCanvas : FrameworkElement
             }
         }
 
+        // Draw shape highlight (for Outliner hover)
+        if (_highlightedShapeId.HasValue)
+        {
+            DrawShapeHighlight(dc, _highlightedShapeId.Value);
+        }
+
         // Draw measuring tool overlay
         if (_measuringTool?.Mode == ToolMode.Measuring)
         {
@@ -566,6 +587,52 @@ public class RenderCanvas : FrameworkElement
         dc.DrawText(formattedText, new Point(
             screenPos.X - formattedText.Width / 2,
             screenPos.Y - formattedText.Height / 2));
+    }
+
+    private void DrawShapeHighlight(DrawingContext dc, long shapeId)
+    {
+        // Find the shape by ID
+        var shape = _currentShapes.OfType<Shape>().FirstOrDefault(s => s.Id == shapeId);
+        if (shape == null) return;
+
+        // Get bounding box
+        var bounds = shape.GetBounds();
+        var minScreen = WorldToScreen(bounds.min.X, bounds.max.Y); // Y is inverted
+        var maxScreen = WorldToScreen(bounds.max.X, bounds.min.Y);
+
+        // Add padding in screen coordinates
+        const double padding = 8;
+        var highlightRect = new Rect(
+            minScreen.X - padding,
+            minScreen.Y - padding,
+            (maxScreen.X - minScreen.X) + padding * 2,
+            (maxScreen.Y - minScreen.Y) + padding * 2);
+
+        // Create highlight brush from settings
+        var highlightBrush = CreateHighlightBrush();
+
+        // Draw highlight fill only (no stroke)
+        dc.DrawRectangle(highlightBrush, null, highlightRect);
+    }
+
+    private Brush CreateHighlightBrush()
+    {
+        var settings = ApplicationSettings.Instance;
+        try
+        {
+            var baseColor = (Color)ColorConverter.ConvertFromString(settings.HighlightColor);
+            var alpha = (byte)(settings.HighlightOpacity * 255 / 100);
+            var brush = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
+            brush.Freeze();
+            return brush;
+        }
+        catch
+        {
+            // Fallback to yellow with 40% opacity
+            var brush = new SolidColorBrush(Color.FromArgb(102, 255, 255, 0));
+            brush.Freeze();
+            return brush;
+        }
     }
 
     private void DrawGrid(DrawingContext dc)
