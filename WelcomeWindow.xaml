@@ -15,8 +15,8 @@
         <!-- Left Side: Branding/Recent -->
         <Border Grid.Column="0" Background="#252526">
             <StackPanel Margin="40">
-                <Image Source="/img/logo.png" Width="200" Height="200" HorizontalAlignment="Left" Margin="0,0,0,10"/>
-                <TextBlock Text="Visual Geometry Environment" FontSize="18" Foreground="#888888" Margin="0,0,0,40"/>
+                <Image Source="/img/logo.png" Width="120" Height="120" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+                <TextBlock Text="Visual Geometry Environment" FontSize="18" Foreground="#888888" Margin="0,0,0,20"/>
                 
                 <TextBlock Text="Recent Projects" FontSize="16" Foreground="#E0E0E0" Margin="0,0,0,10"/>
                 <TextBlock x:Name="NoRecentProjectsText" Text="No recent projects" FontSize="13" Foreground="#666666" FontStyle="Italic" Visibility="Collapsed"/>
