@@ -64,6 +64,11 @@ public abstract class Shape : IDrawable
     /// </summary>
     public double Opacity { get; set; } = 1.0;
 
+    /// <summary>
+    /// Indicates whether this shape has been added to the canvas via Draw().
+    /// </summary>
+    public bool IsPlaced { get; internal set; } = false;
+
     public abstract void Draw();
 
     /// <summary>

@@ -34,6 +34,12 @@ public class CanvasRenderer
 
     public void AddShape(IDrawable shape)
     {
+        // Prevent duplicate adds - check if shape is already placed
+        if (shape is Shape s)
+        {
+            if (s.IsPlaced) return;
+            s.IsPlaced = true;
+        }
         _shapes.Add(shape);
     }
 
@@ -41,6 +47,14 @@ public class CanvasRenderer
 
     public void Clear()
     {
+        // Reset IsPlaced for all shapes so they can be re-added in next run
+        foreach (var shape in _shapes)
+        {
+            if (shape is Shape s)
+            {
+                s.IsPlaced = false;
+            }
+        }
         _shapes.Clear();
         ActiveTimeline?.Stop();
         ActiveTimeline = null;

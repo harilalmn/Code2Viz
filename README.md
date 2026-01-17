@@ -166,7 +166,17 @@ var anim = new MoveAnimation(shape, displacement, start, duration);
 anim.EasingFunction = EasingFunctions.EaseInOutQuad;  // Smooth start and end
 ```
 
-Available: `Linear`, `EaseInQuad`, `EaseOutQuad`, `EaseInOutQuad`, `EaseInCubic`, `EaseOutCubic`, `EaseInOutCubic`
+#### Available Easing Functions
+
+| Function | Formula | Effect |
+|----------|---------|--------|
+| `Linear` | t | Constant speed |
+| `EaseInQuad` | t² | Slow start, accelerates |
+| `EaseOutQuad` | t(2-t) | Fast start, decelerates |
+| `EaseInOutQuad` | Piecewise | Slow start & end |
+| `EaseInCubic` | t³ | Slower start |
+| `EaseOutCubic` | (t-1)³+1 | Slower end |
+| `EaseInOutCubic` | Piecewise | Smooth start & end |
 
 ---
 

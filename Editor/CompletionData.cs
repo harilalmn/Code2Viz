@@ -13,6 +13,11 @@ public class CompletionData : ICompletionData
     private readonly string _text;
     private readonly string _description;
 
+    /// <summary>
+    /// Callback invoked when a method completion is performed, to trigger signature help.
+    /// </summary>
+    public static Action? OnMethodCompleted { get; set; }
+
     public CompletionData(string text, string description, CompletionKind kind)
     {
         _text = text;
@@ -124,10 +129,13 @@ public class CompletionData : ICompletionData
 
         textArea.Document.Replace(completionSegment, textToInsert);
 
-        // Position cursor inside parentheses for methods
+        // Position cursor inside parentheses for methods and trigger signature help
         if (Kind == CompletionKind.Method)
         {
             textArea.Caret.Offset = completionSegment.Offset + textToInsert.Length - 1;
+
+            // Dispatch signature help trigger (deferred to allow completion window to close first)
+            textArea.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, OnMethodCompleted);
         }
     }
 }

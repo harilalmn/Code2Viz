@@ -423,6 +423,90 @@ public static class CompletionProvider
         return completions;
     }
 
+    /// <summary>
+    /// Gets completions appropriate for method arguments - local variables, parameters, types, and relevant keywords.
+    /// </summary>
+    public static IEnumerable<ICompletionData> GetArgumentCompletions(string prefix, string? allCode = null, string? textBeforeCursor = null)
+    {
+        var completions = new List<ICompletionData>();
+        var seenNames = new HashSet<string>();
+
+        // Extract custom classes first (needed for type completions)
+        if (!string.IsNullOrEmpty(allCode))
+        {
+            UpdateCustomClasses(allCode);
+        }
+
+        if (!string.IsNullOrEmpty(textBeforeCursor))
+        {
+            // Add local variables (highest priority for arguments)
+            var locals = FindLocalVariables(textBeforeCursor);
+            foreach (var (varName, varType) in locals)
+            {
+                if (seenNames.Add(varName) && (string.IsNullOrEmpty(prefix) || varName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                {
+                    completions.Add(new CompletionData(varName, $"{varType} (local)", CompletionKind.Property) { Priority = 100 });
+                }
+            }
+
+            // Add method parameters
+            var parameters = FindCurrentMethodParameters(textBeforeCursor);
+            foreach (var (paramName, paramType) in parameters)
+            {
+                if (seenNames.Add(paramName) && (string.IsNullOrEmpty(prefix) || paramName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                {
+                    completions.Add(new CompletionData(paramName, $"{paramType} (parameter)", CompletionKind.Property) { Priority = 90 });
+                }
+            }
+
+            // Add class members if inside a class
+            var currentClass = FindCurrentClass(textBeforeCursor);
+            if (!string.IsNullOrEmpty(currentClass))
+            {
+                if (_customClasses.TryGetValue(currentClass, out var classMembers))
+                {
+                    foreach (var member in classMembers)
+                    {
+                        if (seenNames.Add(member.Name) && (string.IsNullOrEmpty(prefix) || member.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            completions.Add(new CompletionData(member.Name, member.Description, member.Kind) { Priority = 80 });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add argument-relevant keywords
+        var argKeywords = new[] { "true", "false", "null", "new", "this", "typeof", "nameof", "default" };
+        foreach (var keyword in argKeywords)
+        {
+            if (seenNames.Add(keyword) && (string.IsNullOrEmpty(prefix) || keyword.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            {
+                completions.Add(new CompletionData(keyword, $"C# keyword: {keyword}", CompletionKind.Keyword) { Priority = 50 });
+            }
+        }
+
+        // Add types (for new expressions or type arguments)
+        foreach (var (name, desc) in TypeInspector.GetCommonTypes())
+        {
+            if (seenNames.Add(name) && (string.IsNullOrEmpty(prefix) || name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            {
+                completions.Add(new CompletionData(name, desc, CompletionKind.Type) { Priority = 40 });
+            }
+        }
+
+        // Add custom class names
+        foreach (var className in _customClasses.Keys)
+        {
+            if (seenNames.Add(className) && (string.IsNullOrEmpty(prefix) || className.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            {
+                completions.Add(new CompletionData(className, $"Custom class: {className}", CompletionKind.Type) { Priority = 40 });
+            }
+        }
+
+        return completions.OrderByDescending(c => ((CompletionData)c).Priority).ThenBy(c => c.Text);
+    }
+
     public static IEnumerable<ICompletionData> GetMemberCompletions(string typeName, string? allCode = null)
     {
         // Safety check for null/empty type name

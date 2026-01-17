@@ -390,6 +390,31 @@ let timeline = Timeline([| triangle :> Shape |])
 
 // Flip across the axis over 2 seconds
 timeline.AddAnimation(FlipAnimation(triangle, mirrorAxis, 0.0, 2.0))
+timeline.Play()" },
+
+                { "EasingFunctions", @"// Apply easing to any animation for smooth motion
+let circle = VCircle(0.0, 0.0, 30.0)
+let timeline = Timeline()
+
+let moveAnim = MoveAnimation(circle, VXYZ(200.0, 0.0, 0.0), 0.0, 3.0)
+
+// Available Easing Functions:
+// ┌─────────────────┬───────────┬──────────────────────────┐
+// │ Function        │ Formula   │ Effect                   │
+// ├─────────────────┼───────────┼──────────────────────────┤
+// │ Linear          │ t         │ Constant speed           │
+// │ EaseInQuad      │ t²        │ Slow start, accelerates  │
+// │ EaseOutQuad     │ t(2-t)    │ Fast start, decelerates  │
+// │ EaseInOutQuad   │ Piecewise │ Slow start & end         │
+// │ EaseInCubic     │ t³        │ Slower start             │
+// │ EaseOutCubic    │ (t-1)³+1  │ Slower end               │
+// │ EaseInOutCubic  │ Piecewise │ Smooth start & end       │
+// └─────────────────┴───────────┴──────────────────────────┘
+
+// Set the easing function
+moveAnim.EasingFunction <- EasingFunctions.EaseInOutCubic
+
+timeline.AddAnimation(moveAnim)
 timeline.Play()" }
             };
         }
@@ -775,6 +800,31 @@ var timeline = new Timeline(new[] { triangle });
 
 // Flip across the axis over 2 seconds
 timeline.AddAnimation(new FlipAnimation(triangle, mirrorAxis, startTime: 0.0, duration: 2.0));
+timeline.Play();" },
+
+                { "EasingFunctions", @"// Apply easing to any animation for smooth motion
+var circle = new VCircle(0, 0, 30);
+var timeline = new Timeline();
+
+var moveAnim = new MoveAnimation(circle, new VXYZ(200, 0, 0), 0, 3);
+
+// Available Easing Functions:
+// ┌─────────────────┬───────────┬──────────────────────────┐
+// │ Function        │ Formula   │ Effect                   │
+// ├─────────────────┼───────────┼──────────────────────────┤
+// │ Linear          │ t         │ Constant speed           │
+// │ EaseInQuad      │ t²        │ Slow start, accelerates  │
+// │ EaseOutQuad     │ t(2-t)    │ Fast start, decelerates  │
+// │ EaseInOutQuad   │ Piecewise │ Slow start & end         │
+// │ EaseInCubic     │ t³        │ Slower start             │
+// │ EaseOutCubic    │ (t-1)³+1  │ Slower end               │
+// │ EaseInOutCubic  │ Piecewise │ Smooth start & end       │
+// └─────────────────┴───────────┴──────────────────────────┘
+
+// Set the easing function
+moveAnim.EasingFunction = EasingFunctions.EaseInOutCubic;
+
+timeline.AddAnimation(moveAnim);
 timeline.Play();" }
             };
         }

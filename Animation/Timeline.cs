@@ -16,6 +16,20 @@ namespace Code2Viz.Animation
         public bool Repeat { get; set; }
         public double Speed { get; set; } = 1.0;
 
+        /// <summary>
+        /// Creates a new timeline with no shapes. Shapes will be auto-drawn when animations are added.
+        /// </summary>
+        public Timeline()
+        {
+            Shapes = new List<Shape>();
+            Animations = new List<Animation>();
+            CurrentTime = 0;
+        }
+
+        /// <summary>
+        /// Creates a new timeline with the specified shapes.
+        /// </summary>
+        [Obsolete("Use parameterless constructor instead. Shapes are now auto-drawn when animations are added.")]
         public Timeline(IEnumerable<Shape> shapes)
         {
             Shapes = shapes?.ToList() ?? new List<Shape>();
@@ -31,7 +45,9 @@ namespace Code2Viz.Animation
             IsPlaying = true;
             CanvasRenderer.Instance.ActiveTimeline = this;
 
-            // Draw all shapes to the canvas
+            // Draw shapes from constructor (backward compatibility).
+            // For new flow, shapes are auto-drawn in AddAnimation and this loop is a no-op
+            // due to IsPlaced check in CanvasRenderer.AddShape.
             foreach (var shape in Shapes)
             {
                 shape.Draw();
@@ -53,6 +69,18 @@ namespace Code2Viz.Animation
         public void AddAnimation(Animation animation)
         {
             Animations.Add(animation);
+
+            // Auto-draw shape if not already placed
+            if (!animation.Target.IsPlaced)
+            {
+                // For DrawAnimation, set DrawFactor=0 so shape starts invisible
+                if (animation is DrawAnimation)
+                {
+                    animation.Target.DrawFactor = 0;
+                }
+                animation.Target.Draw();
+            }
+
             // Auto-extend duration if needed
             if (animation.StartTime + animation.Duration > Duration)
             {

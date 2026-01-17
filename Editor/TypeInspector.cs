@@ -53,6 +53,14 @@ public static class TypeInspector
         // Add VizConsole
         _knownTypes["VizConsole"] = typeof(Console.VizConsole);
 
+        // Scan Code2Viz.Animation namespace for Timeline and Animation types
+        var animationTypes = geometryAssembly.GetExportedTypes()
+            .Where(t => t.Namespace == "Code2Viz.Animation" && t.IsPublic && !t.IsNested);
+        foreach (var type in animationTypes)
+        {
+            _knownTypes[type.Name] = type;
+        }
+
         // Scan common System namespaces
         var systemTypes = new[]
         {
@@ -115,6 +123,16 @@ public static class TypeInspector
 
         // Add VizConsole
         _commonTypes.Add(("VizConsole", "Console output with line tracking"));
+
+        // Add Animation types (include abstract classes like Animation for type declarations)
+        var animationTypes = geometryAssembly.GetExportedTypes()
+            .Where(t => t.Namespace == "Code2Viz.Animation" && t.IsPublic && !t.IsNested);
+        foreach (var type in animationTypes)
+        {
+            var suffix = type.IsAbstract ? " (abstract)" : "";
+            var description = $"{type.Namespace}.{type.Name}{suffix}";
+            _commonTypes.Add((type.Name, description));
+        }
 
         // Add common System types
         var systemTypes = new (Type Type, string Desc)[]

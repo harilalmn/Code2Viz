@@ -390,6 +390,9 @@ public partial class MainWindow : Window
         CodeEditor.TextArea.TextEntered += TextArea_TextEntered;
         CodeEditor.TextArea.TextEntering += TextArea_TextEntering;
 
+        // Subscribe to method completion callback for signature help
+        CompletionData.OnMethodCompleted = ShowSignatureHelp;
+
         // Setup auto-indentation on Enter key
         CodeEditor.TextArea.PreviewKeyDown += TextArea_PreviewKeyDown;
 
@@ -489,10 +492,19 @@ public partial class MainWindow : Window
 
         if (e.Text.Length > 0 && _completionWindow != null)
         {
-            if (!char.IsLetterOrDigit(e.Text[0]))
+            var ch = e.Text[0];
+            if (!char.IsLetterOrDigit(ch))
             {
-                // Commit completion on non-letter/digit
-                _completionWindow.CompletionList.RequestInsertion(e);
+                // Space should close completion without committing (allows typing variable names)
+                if (ch == ' ')
+                {
+                    _completionWindow.Close();
+                }
+                else
+                {
+                    // Commit completion on punctuation (.;,() etc.)
+                    _completionWindow.CompletionList.RequestInsertion(e);
+                }
             }
         }
     }
@@ -555,6 +567,171 @@ public partial class MainWindow : Window
         {
             e.Handled = HandleAutoIndentEnter();
         }
+    }
+
+    /// <summary>
+    /// Triggers completion based on context (Ctrl+Space).
+    /// </summary>
+    private void TriggerManualCompletion()
+    {
+        if (_completionWindow != null)
+            return;
+
+        var offset = CodeEditor.CaretOffset;
+        if (offset <= 0)
+        {
+            ShowGeneralCompletion();
+            return;
+        }
+
+        // Check if we're right after a dot - show member completion
+        var charBefore = CodeEditor.Document.GetCharAt(offset - 1);
+        if (charBefore == '.')
+        {
+            ShowMemberCompletion();
+            return;
+        }
+
+        // Check if we're inside method arguments - show argument completion
+        if (IsInsideMethodArguments(offset))
+        {
+            ShowArgumentCompletion();
+            return;
+        }
+
+        // Check if we're completing an identifier after a dot
+        var identifierStart = FindIdentifierStart(CodeEditor.Document, offset);
+        if (identifierStart > 0 && CodeEditor.Document.GetCharAt(identifierStart - 1) == '.')
+        {
+            // We're completing a partial member name (e.g., "tl.AddAni|")
+            ShowMemberCompletionWithPrefix(identifierStart);
+            return;
+        }
+
+        // Default: show general completion
+        ShowGeneralCompletion();
+    }
+
+    /// <summary>
+    /// Shows member completion with a prefix filter (for partial member names).
+    /// </summary>
+    private void ShowMemberCompletionWithPrefix(int identifierStart)
+    {
+        try
+        {
+            var offset = CodeEditor.CaretOffset;
+            var prefix = CodeEditor.Document.GetText(identifierStart, offset - identifierStart);
+            var dotOffset = identifierStart - 1;
+
+            if (dotOffset < 0)
+                return;
+
+            var allCode = GetAllProjectCode();
+            string? typeName = null;
+
+            // Find the identifier before the dot
+            var beforeDotStart = FindDottedIdentifierStart(CodeEditor.Document, dotOffset);
+            if (beforeDotStart >= dotOffset)
+                return;
+
+            var fullIdentifier = CodeEditor.Document.GetText(beforeDotStart, dotOffset - beforeDotStart);
+            if (string.IsNullOrEmpty(fullIdentifier))
+                return;
+
+            // Resolve variable type
+            if (!fullIdentifier.Contains('.'))
+            {
+                var textBefore = CodeEditor.Document.GetText(0, beforeDotStart);
+                typeName = CompletionProvider.FindVariableType(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
+            }
+            else
+            {
+                typeName = fullIdentifier;
+            }
+
+            if (string.IsNullOrEmpty(typeName))
+                return;
+
+            var completions = CompletionProvider.GetMemberCompletions(typeName, allCode)
+                .Where(c => c.Text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (completions.Count == 0)
+                return;
+
+            _completionWindow = new CompletionWindow(CodeEditor.TextArea);
+            _completionWindow.StartOffset = identifierStart;
+            StyleCompletionWindow(_completionWindow);
+
+            var data = _completionWindow.CompletionList.CompletionData;
+            foreach (var item in completions)
+            {
+                data.Add(item);
+            }
+
+            ShowCompletionWindowWithSelection();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ShowMemberCompletionWithPrefix error: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Checks if the caret is inside method arguments (between parentheses of a method call).
+    /// </summary>
+    private bool IsInsideMethodArguments(int offset)
+    {
+        var text = CodeEditor.Document.Text;
+        var parenDepth = 0;
+
+        // Scan backwards to find if we're inside parentheses
+        for (int i = offset - 1; i >= 0; i--)
+        {
+            var c = text[i];
+            if (c == ')')
+                parenDepth++;
+            else if (c == '(')
+            {
+                if (parenDepth == 0)
+                {
+                    // Found unmatched opening paren - check if it's a method call
+                    if (i > 0)
+                    {
+                        var beforeParen = i - 1;
+                        while (beforeParen >= 0 && char.IsWhiteSpace(text[beforeParen]))
+                            beforeParen--;
+
+                        if (beforeParen >= 0 && (char.IsLetterOrDigit(text[beforeParen]) || text[beforeParen] == '_'))
+                            return true;
+                    }
+                    return false;
+                }
+                parenDepth--;
+            }
+            else if (c == ';' || c == '{' || c == '}')
+            {
+                // Statement boundary - not in method arguments
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Finds the start of an identifier (letters, digits, underscore).
+    /// </summary>
+    private static int FindIdentifierStart(ICSharpCode.AvalonEdit.Document.TextDocument document, int offset)
+    {
+        while (offset > 0)
+        {
+            var c = document.GetCharAt(offset - 1);
+            if (char.IsLetterOrDigit(c) || c == '_')
+                offset--;
+            else
+                break;
+        }
+        return offset;
     }
 
     private bool HandleAutoIndentEnter()
@@ -720,6 +897,12 @@ public partial class MainWindow : Window
                 // Reshow signature help to update parameter highlighting
                 _insightWindow.Close();
                 ShowSignatureHelp();
+            }
+
+            // Show argument completion if inside method arguments
+            if (IsInsideMethodArguments(CodeEditor.CaretOffset))
+            {
+                ShowArgumentCompletion();
             }
         }
         else if (e.Text == " ")
@@ -1074,12 +1257,51 @@ public partial class MainWindow : Window
                 data.Add(item);
             }
 
-            _completionWindow.Show();
-            _completionWindow.Closed += (s, e) => _completionWindow = null;
+            ShowCompletionWindowWithSelection();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"ShowGeneralCompletion error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows completion for method arguments - variables, types, and expressions.
+    /// </summary>
+    private void ShowArgumentCompletion()
+    {
+        if (_completionWindow != null)
+            return;
+
+        try
+        {
+            var offset = CodeEditor.CaretOffset;
+            var wordStart = FindWordStart(CodeEditor.Document, offset);
+            var prefix = CodeEditor.Document.GetText(wordStart, offset - wordStart);
+
+            var allCode = GetAllProjectCode();
+            var textBeforeCursor = CodeEditor.Document.GetText(0, wordStart);
+
+            // Get argument-appropriate completions (variables, types, no keywords except true/false/null)
+            var completions = CompletionProvider.GetArgumentCompletions(prefix, allCode, textBeforeCursor).ToList();
+            if (completions.Count == 0)
+                return;
+
+            _completionWindow = new CompletionWindow(CodeEditor.TextArea);
+            _completionWindow.StartOffset = wordStart;
+            StyleCompletionWindow(_completionWindow);
+
+            var data = _completionWindow.CompletionList.CompletionData;
+            foreach (var item in completions)
+            {
+                data.Add(item);
+            }
+
+            ShowCompletionWindowWithSelection();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ShowArgumentCompletion error: {ex.Message}");
         }
     }
 
@@ -1092,7 +1314,7 @@ public partial class MainWindow : Window
         {
             var allCode = GetAllProjectCode();
             var textBeforeCursor = CodeEditor.Document.GetText(0, CodeEditor.CaretOffset);
-            
+
             // Get only type completions (no keywords) since we're after 'new'
             var completions = CompletionProvider.GetTypeCompletions(allCode, textBeforeCursor).ToList();
             if (completions.Count == 0)
@@ -1108,8 +1330,7 @@ public partial class MainWindow : Window
                 data.Add(item);
             }
 
-            _completionWindow.Show();
-            _completionWindow.Closed += (s, e) => _completionWindow = null;
+            ShowCompletionWindowWithSelection();
         }
         catch (Exception ex)
         {
@@ -1208,8 +1429,7 @@ public partial class MainWindow : Window
                 data.Add(item);
             }
 
-            _completionWindow.Show();
-            _completionWindow.Closed += (s, e) => _completionWindow = null;
+            ShowCompletionWindowWithSelection();
         }
         catch (Exception ex)
         {
@@ -1776,6 +1996,21 @@ public partial class MainWindow : Window
         // Set minimum width for better readability
         window.MinWidth = 400;
         window.MaxWidth = 800;
+    }
+
+    /// <summary>
+    /// Shows the completion window with the first item selected.
+    /// </summary>
+    private void ShowCompletionWindowWithSelection()
+    {
+        if (_completionWindow == null || _completionWindow.CompletionList.CompletionData.Count == 0)
+            return;
+
+        // Select the first item
+        _completionWindow.CompletionList.SelectedItem = _completionWindow.CompletionList.CompletionData[0];
+
+        _completionWindow.Show();
+        _completionWindow.Closed += (s, e) => _completionWindow = null;
     }
 
     private void StyleInsightWindow(OverloadInsightWindow window)
@@ -3142,7 +3377,7 @@ public partial class MainWindow : Window
                     e.Handled = true;
                     break;
                 case Key.Space:
-                    ShowCompletionWindow();
+                    TriggerManualCompletion();
                     e.Handled = true;
                     break;
                 case Key.Enter:
