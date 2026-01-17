@@ -97,13 +97,10 @@ namespace Code2Viz.Animation
                 else if (isPast)
                 {
                     // Apply end state to ensure we don't glitch when moving fast
-                    anim.Apply(1.0); 
+                    anim.Apply(1.0);
                 }
-                else if (isFuture)
-                {
-                    // Apply start state
-                    anim.Apply(0.0);
-                }
+                // Don't apply future animations - they haven't started yet
+                // and applying them would overwrite other active animations
             }
         }
     }

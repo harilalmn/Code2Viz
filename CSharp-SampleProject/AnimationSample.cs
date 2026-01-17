@@ -55,7 +55,7 @@ namespace CSharpSample
             var rect = new VRectangle(-150, -50, 60, 40);
             rect.StrokeColor = "Red";
             rect.FillColor = "#40FF0000";
-            rect.Opacity = 0; // Start invisible for fade in
+            rect.Opacity = 0;  // Start invisible so FadeIn can animate to visible
 
             // 2. Create timeline
             var shapes = new List<Shape> { line, circle, arc, triangle, bezier, rect };
@@ -81,8 +81,8 @@ namespace CSharpSample
             timeline.AddAnimation(new RotateAnimation(triangle, triangleCenter, 360, 5.0, 3.0));
 
             // Fade animations - shapes appear/disappear smoothly
-            timeline.AddAnimation(new FadeInAnimation(rect, 3.0, 2.0));  // Fade in from t=1 to t=3
-            timeline.AddAnimation(new FadeOutAnimation(rect, 6.0, 2.0)); // Fade out from t=7 to t=9
+            timeline.AddAnimation(new FadeInAnimation(rect, 3.0, 3.0));   // Fade in from t=3 to t=6
+            timeline.AddAnimation(new FadeOutAnimation(rect, 6.0, 3.0));  // Fade out from t=6 to t=9, then stay invisible
 
             // 4. Start playback
             timeline.Play();
