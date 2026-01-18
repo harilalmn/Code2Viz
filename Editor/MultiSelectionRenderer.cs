@@ -90,7 +90,17 @@ public class MultiSelectionRenderer : IBackgroundRenderer
         {
             allSelections.Add((sel.StartOffset, sel.Length));
         }
-        allSelections.Add((mainSegment.Offset, mainSegment.Length));
+
+        // Add main selection/caret position (SurroundingSegment can be null if no selection)
+        if (mainSegment != null)
+        {
+            allSelections.Add((mainSegment.Offset, mainSegment.Length));
+        }
+        else
+        {
+            // No selection, use caret position
+            allSelections.Add((_textArea.Caret.Offset, 0));
+        }
 
         // Sort by offset descending
         allSelections = allSelections.OrderByDescending(s => s.Offset).ToList();
@@ -156,7 +166,16 @@ public class MultiSelectionRenderer : IBackgroundRenderer
         {
             allSelections.Add((sel.StartOffset, sel.Length));
         }
-        allSelections.Add((mainSegment.Offset, mainSegment.Length));
+
+        // Add main selection/caret position
+        if (mainSegment != null)
+        {
+            allSelections.Add((mainSegment.Offset, mainSegment.Length));
+        }
+        else
+        {
+            allSelections.Add((_textArea.Caret.Offset, 0));
+        }
 
         // Sort by offset descending
         allSelections = allSelections.OrderByDescending(s => s.Offset).ToList();
@@ -230,7 +249,16 @@ public class MultiSelectionRenderer : IBackgroundRenderer
         {
             allSelections.Add((sel.StartOffset, sel.Length));
         }
-        allSelections.Add((mainSegment.Offset, mainSegment.Length));
+
+        // Add main selection/caret position
+        if (mainSegment != null)
+        {
+            allSelections.Add((mainSegment.Offset, mainSegment.Length));
+        }
+        else
+        {
+            allSelections.Add((_textArea.Caret.Offset, 0));
+        }
 
         allSelections = allSelections.OrderByDescending(s => s.Offset).ToList();
 
