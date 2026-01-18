@@ -43,6 +43,12 @@ public class DrawingTool
     public VPoint? CurrentPoint { get; private set; }
 
     /// <summary>
+    /// Whether orthogonal constraint is active (Shift key held).
+    /// When active, lines are constrained to horizontal or vertical.
+    /// </summary>
+    public bool IsOrthoMode { get; set; }
+
+    /// <summary>
     /// Current snap result (if any).
     /// </summary>
     public SnapResult? CurrentSnap { get; private set; }
@@ -117,8 +123,37 @@ public class DrawingTool
         if (Mode == DrawingMode.None)
             return;
 
-        CurrentPoint = worldPos;
-        CurrentSnap = SnapEngine.FindSnapPoint(worldPos, shapes, scale);
+        // Apply orthogonal constraint if Shift is held and we have a reference point
+        var constrainedPos = worldPos;
+        if (IsOrthoMode && Points.Count > 0)
+        {
+            constrainedPos = ApplyOrthoConstraint(worldPos, Points[^1]);
+        }
+
+        CurrentPoint = constrainedPos;
+        CurrentSnap = SnapEngine.FindSnapPoint(constrainedPos, shapes, scale);
+    }
+
+    /// <summary>
+    /// Applies orthogonal constraint to a point relative to a reference point.
+    /// The point is constrained to be either horizontal or vertical from the reference.
+    /// </summary>
+    private VPoint ApplyOrthoConstraint(VPoint point, VPoint reference)
+    {
+        var dx = Math.Abs(point.X - reference.X);
+        var dy = Math.Abs(point.Y - reference.Y);
+
+        // Constrain to the axis with the larger delta
+        if (dx >= dy)
+        {
+            // Horizontal constraint (keep X, lock Y to reference Y)
+            return new VPoint(point.X, reference.Y);
+        }
+        else
+        {
+            // Vertical constraint (keep Y, lock X to reference X)
+            return new VPoint(reference.X, point.Y);
+        }
     }
 
     /// <summary>
@@ -130,7 +165,14 @@ public class DrawingTool
         if (Mode == DrawingMode.None)
             return false;
 
-        var clickPoint = CurrentSnap?.Point ?? worldPos;
+        // Apply orthogonal constraint if active and we have a reference point
+        var constrainedPos = worldPos;
+        if (IsOrthoMode && Points.Count > 0)
+        {
+            constrainedPos = ApplyOrthoConstraint(worldPos, Points[^1]);
+        }
+
+        var clickPoint = CurrentSnap?.Point ?? constrainedPos;
 
         // Special handling for Text mode - request text input via event
         if (Mode == DrawingMode.Text)
@@ -281,10 +323,13 @@ public class DrawingTool
 
         var modeName = Mode.ToString();
 
+        // Add ortho hint for modes where it's useful (when we have a reference point)
+        var orthoHint = Points.Count > 0 ? " (Shift: ortho)" : "";
+
         return Mode switch
         {
             DrawingMode.Point => "Point: Click to place",
-            DrawingMode.Line => Points.Count == 0 ? "Line: Click start point" : "Line: Click end point",
+            DrawingMode.Line => Points.Count == 0 ? "Line: Click start point" : $"Line: Click end point{orthoHint}",
             DrawingMode.Circle => Points.Count == 0 ? "Circle: Click center" : "Circle: Click radius point",
             DrawingMode.Rectangle => Points.Count == 0 ? "Rectangle: Click first corner" : "Rectangle: Click opposite corner",
             DrawingMode.Ellipse => Points.Count == 0 ? "Ellipse: Click center" : "Ellipse: Drag to set radii",
@@ -294,17 +339,17 @@ public class DrawingTool
                 1 => "Arc: Click start point",
                 _ => "Arc: Click end point"
             },
-            DrawingMode.Polygon => Points.Count < 3 ? $"Polygon: Click point {Points.Count + 1}" : $"Polygon: Click point {Points.Count + 1} (double-click to finish)",
-            DrawingMode.Polyline => Points.Count < 2 ? $"Polyline: Click point {Points.Count + 1}" : $"Polyline: Click point {Points.Count + 1} (double-click to finish)",
+            DrawingMode.Polygon => Points.Count == 0 ? "Polygon: Click point 1" : Points.Count < 3 ? $"Polygon: Click point {Points.Count + 1}{orthoHint}" : $"Polygon: Click point {Points.Count + 1} (double-click to finish){orthoHint}",
+            DrawingMode.Polyline => Points.Count == 0 ? "Polyline: Click point 1" : Points.Count < 2 ? $"Polyline: Click point {Points.Count + 1}{orthoHint}" : $"Polyline: Click point {Points.Count + 1} (double-click to finish){orthoHint}",
             DrawingMode.Bezier => Points.Count switch
             {
                 0 => "Bezier: Click start point",
-                1 => "Bezier: Click control point 1",
-                2 => "Bezier: Click control point 2",
-                _ => "Bezier: Click end point"
+                1 => $"Bezier: Click control point 1{orthoHint}",
+                2 => $"Bezier: Click control point 2{orthoHint}",
+                _ => $"Bezier: Click end point{orthoHint}"
             },
-            DrawingMode.Spline => Points.Count < 2 ? $"Spline: Click point {Points.Count + 1}" : $"Spline: Click point {Points.Count + 1} (double-click to finish)",
-            DrawingMode.Arrow => Points.Count == 0 ? "Arrow: Click start point" : "Arrow: Click end point",
+            DrawingMode.Spline => Points.Count == 0 ? "Spline: Click point 1" : Points.Count < 2 ? $"Spline: Click point {Points.Count + 1}{orthoHint}" : $"Spline: Click point {Points.Count + 1} (double-click to finish){orthoHint}",
+            DrawingMode.Arrow => Points.Count == 0 ? "Arrow: Click start point" : $"Arrow: Click end point{orthoHint}",
             DrawingMode.Text => "Text: Click to place",
             _ => $"{modeName}: Drawing..."
         };

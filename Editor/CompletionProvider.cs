@@ -33,21 +33,13 @@ public static class CompletionProvider
         // Try to infer expected type from context: Type variable = new ...
         if (!string.IsNullOrEmpty(textBeforeCursor))
         {
-            var match = Regex.Match(textBeforeCursor, @"(?:\b|^)([\w<>\[\]?]+)\s+(\w+)\s*=\s*new\s*$");
-            if (match.Success)
-            {
-                var typeName = match.Groups[1].Value;
-                if (typeName != "var" && !Keywords.Contains(typeName))
-                {
-                    expectedType = typeName;
-                }
-            }
+            expectedType = ExtractExpectedTypeFromNewExpression(textBeforeCursor);
         }
 
-        // Add matching type first if found
+        // Add matching type first if found (prioritized completion)
         if (expectedType != null)
         {
-            // Check common types
+            // Check common types for description
             var common = TypeInspector.GetCommonTypes().FirstOrDefault(t => t.Name == expectedType);
             if (common.Name != null)
             {
@@ -57,6 +49,13 @@ public static class CompletionProvider
             else if (_customClasses.ContainsKey(expectedType))
             {
                 completions.Add(new CompletionData(expectedType, $"Custom class: {expectedType}", CompletionKind.Type) { Priority = 1000 });
+            }
+            // For generic types or other types, add anyway with inferred description
+            else
+            {
+                // Extract base type name for description (e.g., "Tuple" from "Tuple<int, int>")
+                var baseTypeName = expectedType.Contains('<') ? expectedType.Substring(0, expectedType.IndexOf('<')) : expectedType;
+                completions.Add(new CompletionData(expectedType, $"Expected type: {baseTypeName}", CompletionKind.Type) { Priority = 1000 });
             }
         }
 
@@ -370,23 +369,13 @@ public static class CompletionProvider
         // Try to infer expected type from context: Type variable = new ...
         if (!string.IsNullOrEmpty(textBeforeCursor))
         {
-            // Regex to find: Type variable = new $
-            // We look backwards from the end
-            var match = Regex.Match(textBeforeCursor, @"(?:\b|^)([\w<>\[\]?]+)\s+(\w+)\s*=\s*new\s*$");
-            if (match.Success)
-            {
-                var typeName = match.Groups[1].Value;
-                if (typeName != "var" && !Keywords.Contains(typeName))
-                {
-                    expectedType = typeName;
-                }
-            }
+            expectedType = ExtractExpectedTypeFromNewExpression(textBeforeCursor);
         }
 
-        // Add matching type first if found
+        // Add matching type first if found (prioritized completion)
         if (expectedType != null)
         {
-            // Check common types
+            // Check common types for description
             var common = TypeInspector.GetCommonTypes().FirstOrDefault(t => t.Name == expectedType);
             if (common.Name != null)
             {
@@ -396,6 +385,13 @@ public static class CompletionProvider
             else if (_customClasses.ContainsKey(expectedType))
             {
                 completions.Add(new CompletionData(expectedType, $"Custom class: {expectedType}", CompletionKind.Type) { Priority = 1000 });
+            }
+            // For generic types or other types, add anyway with inferred description
+            else
+            {
+                // Extract base type name for description (e.g., "Tuple" from "Tuple<int, int>")
+                var baseTypeName = expectedType.Contains('<') ? expectedType.Substring(0, expectedType.IndexOf('<')) : expectedType;
+                completions.Add(new CompletionData(expectedType, $"Expected type: {baseTypeName}", CompletionKind.Type) { Priority = 1000 });
             }
         }
 
@@ -924,5 +920,84 @@ public static class CompletionProvider
 
         result.Add(paramsStr.Substring(start));
         return result;
+    }
+
+    /// <summary>
+    /// Extracts the expected type from a "Type variable = new " expression.
+    /// Properly handles generic types with commas like Tuple&lt;int, int&gt;.
+    /// </summary>
+    private static string? ExtractExpectedTypeFromNewExpression(string textBeforeCursor)
+    {
+        // Check if we're right after "= new " or "= new"
+        if (!textBeforeCursor.TrimEnd().EndsWith("new"))
+            return null;
+
+        // Work backwards to find the pattern: Type variableName = new
+        // We need to parse backwards handling generics properly
+        var text = textBeforeCursor.TrimEnd();
+
+        // Remove "new" from the end
+        if (text.EndsWith("new"))
+            text = text.Substring(0, text.Length - 3).TrimEnd();
+        else
+            return null;
+
+        // Should now end with "="
+        if (!text.EndsWith("="))
+            return null;
+        text = text.Substring(0, text.Length - 1).TrimEnd();
+
+        // Now extract the variable name (identifier before =)
+        var varNameMatch = Regex.Match(text, @"(\w+)\s*$");
+        if (!varNameMatch.Success)
+            return null;
+
+        text = text.Substring(0, text.Length - varNameMatch.Length).TrimEnd();
+
+        // Now extract the type, handling generics with balanced angle brackets
+        // Work backwards from the end
+        var typeEnd = text.Length;
+        var angleBracketDepth = 0;
+        var typeStart = -1;
+
+        for (int i = text.Length - 1; i >= 0; i--)
+        {
+            var c = text[i];
+
+            if (c == '>')
+            {
+                angleBracketDepth++;
+            }
+            else if (c == '<')
+            {
+                angleBracketDepth--;
+            }
+            else if (angleBracketDepth == 0)
+            {
+                // Outside of generic brackets
+                if (char.IsLetterOrDigit(c) || c == '_' || c == '?' || c == '[' || c == ']')
+                {
+                    // Part of the type
+                    continue;
+                }
+                else
+                {
+                    // Found the start of the type (whitespace or other delimiter)
+                    typeStart = i + 1;
+                    break;
+                }
+            }
+        }
+
+        if (typeStart == -1)
+            typeStart = 0;
+
+        var typeName = text.Substring(typeStart, typeEnd - typeStart).Trim();
+
+        // Validate it's not a keyword or "var"
+        if (string.IsNullOrEmpty(typeName) || typeName == "var" || Keywords.Contains(typeName))
+            return null;
+
+        return typeName;
     }
 }

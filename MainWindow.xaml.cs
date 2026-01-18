@@ -50,6 +50,7 @@ public partial class MainWindow : Window
     private VizTextMarkerService? _textMarkerService;
     private RefactoringProvider? _refactoringProvider;
     private BracketHighlightRenderer? _bracketRenderer;
+    private MultiSelectionRenderer? _multiSelectionRenderer;
 
     // Real-time error checking
     private DispatcherTimer? _syntaxCheckTimer;
@@ -339,10 +340,45 @@ public partial class MainWindow : Window
     private void Caret_PositionChanged(object? sender, EventArgs e)
     {
         if (_bracketRenderer == null) return;
-        
+
         var result = BracketSearcher.SearchBracket(CodeEditor.Document, CodeEditor.CaretOffset);
         _bracketRenderer.Result = result;
         CodeEditor.TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
+    }
+
+    // Flag to prevent clearing multi-selections when AddNextOccurrence changes the selection
+    private bool _isAddingNextOccurrence;
+
+    private void TextArea_SelectionChanged_ClearMultiSelect(object? sender, EventArgs e)
+    {
+        // Don't clear if we're in the middle of AddNextOccurrence or multi-cursor editing
+        if (_isAddingNextOccurrence || _isMultiCursorEditing) return;
+
+        // Clear multi-selections when user manually changes selection
+        _multiSelectionRenderer?.ClearSelections();
+    }
+
+    // Flag to prevent clearing multi-selections during multi-cursor editing
+    private bool _isMultiCursorEditing;
+
+    private void TextArea_TextEntering_MultiCursor(object? sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        // If we have multi-selections and user types, apply to all cursors
+        if (_multiSelectionRenderer != null && _multiSelectionRenderer.HasSelections && !string.IsNullOrEmpty(e.Text))
+        {
+            _isMultiCursorEditing = true;
+            _isAddingNextOccurrence = true;
+            try
+            {
+                _multiSelectionRenderer.InsertTextAtAllCursors(e.Text);
+                e.Handled = true; // Prevent default handling
+            }
+            finally
+            {
+                _isAddingNextOccurrence = false;
+                _isMultiCursorEditing = false;
+            }
+        }
     }
 
     private void ExportConsoleButton_Click(object sender, RoutedEventArgs e)
@@ -435,6 +471,12 @@ public partial class MainWindow : Window
         _bracketRenderer = new BracketHighlightRenderer(CodeEditor.TextArea.TextView);
         CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_bracketRenderer);
         CodeEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+
+        // Initialize Multi-Selection Highlighting (for Ctrl+D)
+        _multiSelectionRenderer = new MultiSelectionRenderer(CodeEditor.TextArea.TextView);
+        CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_multiSelectionRenderer);
+        CodeEditor.TextArea.SelectionChanged += TextArea_SelectionChanged_ClearMultiSelect;
+        CodeEditor.TextArea.TextEntering += TextArea_TextEntering_MultiCursor;
 
         // Initialize Folding
         if (_foldingManager == null)
@@ -563,6 +605,50 @@ public partial class MainWindow : Window
 
     private void TextArea_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // Handle Backspace/Delete for multi-cursor editing
+        if (_multiSelectionRenderer != null && _multiSelectionRenderer.HasSelections)
+        {
+            if (e.Key == Key.Back)
+            {
+                _isMultiCursorEditing = true;
+                _isAddingNextOccurrence = true;
+                try
+                {
+                    _multiSelectionRenderer.BackspaceAtAllCursors();
+                    e.Handled = true;
+                }
+                finally
+                {
+                    _isAddingNextOccurrence = false;
+                    _isMultiCursorEditing = false;
+                }
+                return;
+            }
+            else if (e.Key == Key.Delete)
+            {
+                _isMultiCursorEditing = true;
+                _isAddingNextOccurrence = true;
+                try
+                {
+                    _multiSelectionRenderer.DeleteAtAllCursors();
+                    e.Handled = true;
+                }
+                finally
+                {
+                    _isAddingNextOccurrence = false;
+                    _isMultiCursorEditing = false;
+                }
+                return;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                // Escape clears multi-cursor mode
+                _multiSelectionRenderer.ClearSelections();
+                e.Handled = true;
+                return;
+            }
+        }
+
         // Handle Tab for snippet placeholder navigation
         if (e.Key == Key.Tab && _snippetSession != null && _snippetSession.IsActive)
         {
@@ -4708,6 +4794,7 @@ public partial class MainWindow : Window
     private void AddNextOccurrence()
     {
         if (!CodeEditor.IsKeyboardFocusWithin) return;
+        if (_multiSelectionRenderer == null) return;
 
         var document = CodeEditor.Document;
         var textArea = CodeEditor.TextArea;
@@ -4716,20 +4803,22 @@ public partial class MainWindow : Window
         string searchText;
         int searchFrom;
 
-        if (selection.IsEmpty)
+        if (selection.IsEmpty && !_multiSelectionRenderer.HasSelections)
         {
             // No selection - select current word first
             var (wordStart, wordEnd) = GetWordBounds(document.Text, textArea.Caret.Offset);
             if (wordStart == wordEnd) return;
 
             searchText = document.GetText(wordStart, wordEnd - wordStart);
+            _isAddingNextOccurrence = true;
             textArea.Selection = ICSharpCode.AvalonEdit.Editing.Selection.Create(textArea, wordStart, wordEnd);
             textArea.Caret.Offset = wordEnd;
+            _isAddingNextOccurrence = false;
             _lastSearchText = searchText;
             return;
         }
 
-        // Get selected text
+        // Get selected text (from current selection or last search)
         var segment = selection.SurroundingSegment;
         searchText = document.GetText(segment.Offset, segment.Length);
         _lastSearchText = searchText;
@@ -4743,14 +4832,41 @@ public partial class MainWindow : Window
         if (nextIndex < 0)
         {
             nextIndex = text.IndexOf(searchText, 0, StringComparison.Ordinal);
-            if (nextIndex >= segment.Offset) return; // No other occurrence
         }
 
+        // Check if this occurrence is already selected (in main selection or multi-selections)
         if (nextIndex >= 0)
         {
-            // Add to selection (multi-cursor not supported in basic AvalonEdit, so just move selection)
+            // Check if already in multi-selections
+            bool alreadySelected = false;
+            foreach (var sel in _multiSelectionRenderer.Selections)
+            {
+                if (sel.StartOffset == nextIndex && sel.Length == searchText.Length)
+                {
+                    alreadySelected = true;
+                    break;
+                }
+            }
+            // Also check if it's the current main selection
+            if (segment.Offset == nextIndex && segment.Length == searchText.Length)
+            {
+                alreadySelected = true;
+            }
+
+            if (alreadySelected)
+            {
+                // All occurrences already selected
+                return;
+            }
+
+            // Add current selection to the multi-selection renderer before moving
+            _multiSelectionRenderer.AddSelection(segment.Offset, segment.Length);
+
+            // Move caret selection to the new occurrence
+            _isAddingNextOccurrence = true;
             textArea.Selection = ICSharpCode.AvalonEdit.Editing.Selection.Create(textArea, nextIndex, nextIndex + searchText.Length);
             textArea.Caret.Offset = nextIndex + searchText.Length;
+            _isAddingNextOccurrence = false;
 
             // Scroll to make visible
             textArea.Caret.BringCaretToView();
@@ -6130,6 +6246,9 @@ public partial class MainWindow : Window
         if (timeline != null)
         {
             AnimationControlsPanel.Visibility = Visibility.Visible;
+            TimelinePanel.Visibility = Visibility.Visible;
+            TimelineSplitter.Visibility = Visibility.Visible;
+            TimelineRow.Height = new GridLength(120);
 
             // Update time display
             var currentTime = timeline.CurrentTime;
@@ -6161,6 +6280,9 @@ public partial class MainWindow : Window
         else
         {
             AnimationControlsPanel.Visibility = Visibility.Collapsed;
+            TimelinePanel.Visibility = Visibility.Collapsed;
+            TimelineSplitter.Visibility = Visibility.Collapsed;
+            TimelineRow.Height = new GridLength(0);
             _isPaused = false;
 
             if (_lastTimeline != null)

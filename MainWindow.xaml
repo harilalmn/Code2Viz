@@ -515,7 +515,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition x:Name="CanvasRow" Height="*" MinHeight="200" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition x:Name="TimelineRow" Height="120" MinHeight="80" />
+                    <RowDefinition x:Name="TimelineRow" Height="0" MinHeight="0" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition x:Name="ConsoleRow" Height="200" MinHeight="80" />
                 </Grid.RowDefinitions>
@@ -562,17 +562,19 @@
                 </Border>
 
                 <!-- Splitter between Canvas and Timeline -->
-                <GridSplitter Grid.Row="1"
+                <GridSplitter x:Name="TimelineSplitter"
+                              Grid.Row="1"
                               Height="4"
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Center"
                               ResizeBehavior="PreviousAndNext"
                               Background="{StaticResource BorderBrush}"
                               Cursor="SizeNS"
+                              Visibility="Collapsed"
                               ToolTip="Drag to resize." />
 
                 <!-- Timeline Panel -->
-                <local:TimelinePanel Grid.Row="2" x:Name="TimelinePanel" />
+                <local:TimelinePanel Grid.Row="2" x:Name="TimelinePanel" Visibility="Collapsed" />
 
                 <!-- Splitter between Timeline and Console -->
                 <GridSplitter Grid.Row="3"

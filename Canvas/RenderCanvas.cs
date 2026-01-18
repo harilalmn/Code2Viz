@@ -343,6 +343,8 @@ public class RenderCanvas : FrameworkElement
         else if (_drawingTool != null && _drawingTool.Mode != DrawingMode.None)
         {
             // Update drawing tool with cursor position
+            // Check for Shift key to enable orthogonal constraint
+            _drawingTool.IsOrthoMode = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
             _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
             RedrawAll();
         }
