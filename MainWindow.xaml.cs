@@ -358,6 +358,16 @@ public partial class MainWindow : Window
         _multiSelectionRenderer?.ClearSelections();
     }
 
+    private void TextArea_PreviewMouseDown_ClearMultiSelect(object? sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Clear multi-selections when user clicks in the text area
+        // This handles the case where SelectionChanged doesn't fire (e.g., clicking to place caret)
+        if (_multiSelectionRenderer != null && _multiSelectionRenderer.HasSelections)
+        {
+            _multiSelectionRenderer.ClearSelections();
+        }
+    }
+
     // Flag to prevent clearing multi-selections during multi-cursor editing
     private bool _isMultiCursorEditing;
 
@@ -477,6 +487,7 @@ public partial class MainWindow : Window
         CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_multiSelectionRenderer);
         CodeEditor.TextArea.SelectionChanged += TextArea_SelectionChanged_ClearMultiSelect;
         CodeEditor.TextArea.TextEntering += TextArea_TextEntering_MultiCursor;
+        CodeEditor.TextArea.PreviewMouseDown += TextArea_PreviewMouseDown_ClearMultiSelect;
 
         // Initialize Folding
         if (_foldingManager == null)
