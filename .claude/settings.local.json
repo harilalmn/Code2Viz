@@ -9,7 +9,16 @@
       "Bash(dir:*)",
       "Bash(taskkill:*)",
       "Bash(start \"\" \"bin\\\\Debug\\\\net9.0-windows\\\\Viz2d.exe\")",
-      "Bash(dotnet clean:*)"
+      "Bash(dotnet clean:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash drop:*)",
+      "Bash(powershell -NoProfile -Command:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(dotnet add:*)",
+      "Bash(del \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\Export\\\\SvgExporter.cs\")"
     ]
   }
 }

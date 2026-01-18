@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 C:\Work\Nicety\Projects\Code2Viz\App.xaml
-9-2000454861
+131964661785
 
-67-1084743735
-22573632514
-AddReferenceWindow.xaml;ColorPickerDialog.xaml;ExportOptionsWindow.xaml;HelpWindow.xaml;MainWindow.xaml;NewProjectDialog.xaml;NuGetPackageManagerWindow.xaml;RenameDialog.xaml;WelcomeWindow.xaml;
+85988249093
+238-1946825305
+AddReferenceWindow.xaml;ColorPickerDialog.xaml;ExportOptionsWindow.xaml;GifExportOptionsWindow.xaml;HelpWindow.xaml;MainWindow.xaml;NewProjectDialog.xaml;NuGetPackageManagerWindow.xaml;ProgressDialog.xaml;RenameDialog.xaml;TimelinePanel.xaml;WelcomeWindow.xaml;ZoomToShapeDialog.xaml;
 
-False
+True
 

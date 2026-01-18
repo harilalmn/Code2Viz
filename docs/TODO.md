@@ -1,9 +1,117 @@
 # TODO - Viz2d Future Development
 
-## High Priority (P0)
+## High Priority (P0) - Interactive Editing
+
+### Shape Selection System
+- [ ] **Click to select** - Single shape selection on canvas click
+- [ ] **Multi-select with Shift** - Add to selection with Shift+Click
+- [ ] **Multi-select with Ctrl** - Toggle selection with Ctrl+Click
+- [ ] **Selection box** - Drag rectangle to select multiple shapes
+- [ ] **Select All** - Ctrl+A to select all shapes
+- [ ] **Deselect** - Escape or click on empty canvas
+- [ ] **Visual feedback** - Highlight selected shapes with handles
+
+### Shape Editing
+- [ ] **Control point handles** - Show draggable handles on selected shapes
+- [ ] **Drag to modify** - Move control points to edit shape geometry
+- [ ] **Move selected shapes** - Drag selection to reposition
+- [ ] **Resize handles** - Corner/edge handles for scaling
+- [ ] **Rotation handle** - Rotate selected shapes
+- [ ] **Sync to code** - Update source code when shapes are edited
+
+### Properties Panel
+- [ ] **Panel UI** - Dockable panel showing shape properties
+- [ ] **Coordinate editing** - Edit X, Y, Width, Height, Radius, etc.
+- [ ] **Color picker** - Visual color selection for Stroke/Fill
+- [ ] **Thickness slider** - Adjust stroke thickness
+- [ ] **Opacity slider** - Adjust shape opacity
+- [ ] **Name/ID display** - Show shape identifier
+- [ ] **Multi-selection** - Edit common properties of multiple shapes
+
+### Delete Shape
+- [ ] **Delete key** - Remove selected shapes
+- [ ] **Right-click context menu** - Delete option
+- [ ] **Code sync** - Remove corresponding code when shape deleted
+- [ ] **Undo support** - Restore deleted shapes
+
+---
+
+## High Priority (P0) - Animation UI
+
+### Timeline Panel
+- [ ] **Timeline UI** - Visual timeline at bottom of window
+- [ ] **Time ruler** - Displays time in seconds
+- [ ] **Playhead** - Draggable position indicator
+- [ ] **Shape tracks** - Row per animated shape
+- [ ] **Keyframe markers** - Visual keyframe indicators
+- [ ] **Duration handles** - Resize animation duration
+- [ ] **Zoom timeline** - Zoom in/out on timeline
+
+### Animation Preview
+- [ ] **Play button** - Start animation playback
+- [ ] **Pause button** - Pause at current frame
+- [ ] **Stop button** - Reset to beginning
+- [ ] **Loop toggle** - Enable/disable repeat
+- [ ] **Speed control** - Playback speed slider (0.25x - 4x)
+- [ ] **Frame stepping** - Step forward/backward one frame
+- [ ] **Current time display** - Show current time position
+
+---
+
+## High Priority (P0) - Export
+
+### DXF Export
+- [ ] **DXF file format** - AutoCAD DXF R12/R14 format
+- [ ] **Layer mapping** - Map shape types to DXF layers
+- [ ] **Color mapping** - Map colors to DXF color indices
+- [ ] **Line type support** - Solid, dashed, dotted
+- [ ] **All shape types** - Export all supported shapes
+- [ ] **Scale/units** - Configurable export units
+
+### PDF Export
+- [ ] **Vector PDF** - PDF/A format for archiving
+- [ ] **Page size options** - A4, Letter, Custom
+- [ ] **Margins** - Configurable page margins
+- [ ] **Fit to page** - Auto-scale to fit
+- [ ] **Multi-page** - Split large drawings across pages
+- [ ] **Metadata** - Title, author, date
+
+---
+
+## Medium Priority (P1) - Geometry Operations
+
+### Boolean Operations
+- [ ] **Union** - Combine two or more polygons
+- [ ] **Intersection** - Get overlapping area of polygons
+- [ ] **Difference** - Subtract one polygon from another
+- [ ] **XOR** - Symmetric difference
+- [ ] **Clipper library** - Use Clipper2 for robust operations
+- [ ] **API exposure** - VPolygon.Union(other), etc.
+
+### Array/Pattern Operations
+- [ ] **Linear array** - Repeat shape along vector
+  ```csharp
+  shape.LinearArray(direction, count, spacing);
+  ```
+- [ ] **Rectangular array** - Grid of copies
+  ```csharp
+  shape.RectangularArray(rows, cols, rowSpacing, colSpacing);
+  ```
+- [ ] **Circular array** - Copies around center point
+  ```csharp
+  shape.CircularArray(center, count, angleSpan);
+  ```
+- [ ] **Path array** - Distribute along curve
+  ```csharp
+  shape.PathArray(curve, count, alignToPath);
+  ```
+
+---
+
+## Medium Priority (P1) - Bug Fixes & Performance
 
 ### Bug Fixes
-- [ ] Test arc rendering for edge cases (360° arc, negative angles)
+- [ ] Test arc rendering for edge cases (360 arc, negative angles)
 - [ ] Verify polygon rendering with self-intersecting polygons
 - [ ] Test zoom limits at extreme scales
 
@@ -14,40 +122,17 @@
 
 ---
 
-## Medium Priority (P1)
-
-### New Shapes
-- [ ] **Bezier Curve** - Cubic Bezier with 4 control points
-  ```csharp
-  Bezier bezier = new Bezier(p0, p1, p2, p3);
-  bezier.Draw();
-  ```
-- [ ] **Spline** - Smooth curve through multiple points
-  ```csharp
-  Spline spline = new Spline(points);
-  spline.Draw();
-  ```
-- [ ] **Text** - Text labels at specified positions
-  ```csharp
-  Text text = new Text("Label", x, y);
-  text.FontSize = 14;
-  text.Draw();
-  ```
+## Low Priority (P2) - Styling Enhancements
 
 ### Shape Styling
 - [ ] **Dash patterns** - Dashed/dotted lines
   ```csharp
   line.DashPattern = "Dash"; // Dash, Dot, DashDot, DashDotDot
   ```
-- [ ] **Opacity** - Transparency support
-  ```csharp
-  circle.Opacity = 0.5;
-  ```
-- [ ] **Arrow heads** - For lines and polylines
-  ```csharp
-  line.StartArrow = true;
-  line.EndArrow = true;
-  ```
+- [ ] **Line caps** - Round, Square, Flat
+- [ ] **Line joins** - Miter, Bevel, Round
+- [ ] **Gradient fills** - Linear and radial gradients
+- [ ] **Pattern fills** - Hatch patterns (diagonal, cross, dots)
 
 ### Canvas Features
 - [ ] **Snap to grid** - Snap coordinates to grid intersections
@@ -55,37 +140,23 @@
 - [ ] **Zoom slider** - Visual zoom control in UI
 - [ ] **Mini-map** - Overview of entire canvas
 
-### Editor Features
-- [ ] **Autocomplete** - IntelliSense for geometry classes
-- [ ] **Error highlighting** - Red squiggles for errors
-- [ ] **Code snippets** - Quick templates for common shapes
-- [ ] **Undo/Redo** - Already in AvalonEdit, just expose
-
 ---
 
-## Low Priority (P2)
+## Low Priority (P2) - Additional Features
 
 ### Export Features
-- [ ] **SVG export** - Vector graphics format
-- [ ] **DXF export** - CAD interchange format
 - [ ] **Copy to clipboard** - As image or SVG
 
-### Advanced Features
-- [ ] **Shape selection** - Click to select shapes
-- [ ] **Properties panel** - View/edit selected shape properties
-- [ ] **Layer support** - Organize shapes into layers
-- [ ] **Animation** - Animate shape properties over time
-
-### Code Features
-- [ ] **Multiple files** - Tab-based file editing
-- [ ] **Code templates** - Predefined starting templates
-- [ ] **Share/Import** - Share code snippets
+### Layer System
+- [ ] **Named layers** - Create/rename layers
+- [ ] **Visibility toggle** - Show/hide layers
+- [ ] **Lock layers** - Prevent editing
+- [ ] **Z-order** - Bring to front, send to back
 
 ### UI Enhancements
 - [ ] **Customizable theme** - Light/Dark mode toggle
-- [ ] **Resizable panels** - Remember panel sizes
 - [ ] **Full screen mode** - Maximize canvas
-- [ ] **Recent files** - Quick access to recent files
+- [ ] **Undo/Redo for drawing** - Undo interactive drawing operations
 
 ---
 
@@ -104,22 +175,40 @@
 
 ---
 
-## Ideas for Future Versions
+## Completed Features
 
-### Version 1.1
-- Bezier curves and splines
-- Basic autocomplete
-- SVG export
+### Shapes (14 total)
+- [x] VPoint, VLine, VCircle, VRectangle, VEllipse, VArc
+- [x] VPolygon, VPolyline, VBezier, VSpline
+- [x] VArrow, VText, VDimension, VGroup
 
-### Version 1.2
-- Shape selection and properties panel
-- Layers support
-- Animation basics
+### Drawing Tools (12 total)
+- [x] All shape types with click-based creation
+- [x] Code generation for drawn shapes
 
-### Version 2.0
-- Full CAD-like features
-- Constraints system
-- Parametric shapes
+### Snap System (6 types)
+- [x] Endpoint, Midpoint, Center, Intersection, Perpendicular, Nearest
+
+### Animation System
+- [x] Draw, Move, Rotate, Flip, FadeIn, FadeOut animations
+- [x] Timeline class with easing functions
+
+### Export
+- [x] PNG export
+- [x] SVG export
+- [x] GIF animation export
+
+### Editor
+- [x] Syntax highlighting (C# and F#)
+- [x] Code completion and IntelliSense
+- [x] Code folding and bracket matching
+- [x] Code snippets
+
+### Canvas
+- [x] Zoom and pan
+- [x] Grid and axes
+- [x] Coordinate display
+- [x] Measuring tool
 
 ---
 

@@ -83,6 +83,18 @@ namespace Code2Viz.Documentation
                 { "RotateAnimation", "Animates rotating a shape around a specified pivot point by a given angle in degrees. Useful for spinning or orbiting effects." },
                 { "FlipAnimation", "Animates flipping (mirroring) a shape across a specified axis line. Creates a reflection transformation over time." },
                 { "EasingFunctions", "Static class providing common easing functions for smooth animations: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic, EaseOutCubic, EaseInOutCubic." },
+
+                // Boolean Operations
+                { "BooleanOps", "Static class providing polygon boolean operations using Clipper2 library. Supports Union (combine polygons), Intersect (overlapping area), Difference (subtract), Xor (symmetric difference), OffsetPolygon (grow/shrink), Simplify (remove redundant points), Area calculation, and PointInPolygon test." },
+
+                // Array Operations
+                { "ArrayOps", "Static class providing array and pattern generation for shapes. Includes LinearArray (copies along direction), RectangularArray (grid pattern), CircularArray (polar pattern around center), PathArray (copies along curve), SpiralArray (spiral pattern), and Mirror (create mirrored copy)." },
+
+                // Export
+                { "Code2Viz.Export", "Contains classes for exporting shapes to various file formats." },
+                { "DxfExporter", "Exports shapes to AutoCAD DXF format (R12 ASCII). Supports all shape types including lines, circles, arcs, ellipses, polygons, polylines, text, and arrows." },
+                { "PdfExporter", "Exports shapes to vector PDF format using PdfSharp library. Preserves colors, stroke styles, and produces high-quality vector output suitable for printing." },
+                { "SvgExporter", "Exports shapes to SVG (Scalable Vector Graphics) format. Web-compatible vector format that opens in browsers and vector editors. Supports all shape types with full color and styling." },
             };
         }
 
@@ -99,6 +111,7 @@ namespace Code2Viz.Documentation
                 .Where(t => t.IsPublic && (t.IsClass || t.IsAbstract) && t.Namespace != null &&
                     (t.Namespace.StartsWith("Code2Viz.Geometry") ||
                      t.Namespace.StartsWith("Code2Viz.Animation") ||
+                     t.Namespace.StartsWith("Code2Viz.Export") ||
                      t.Name.Contains("Helper")))
                 .OrderBy(t => t.Namespace)
                 .ThenBy(t => t.Name)
@@ -832,7 +845,78 @@ var moveAnim = new MoveAnimation(circle, new VXYZ(200, 0, 0), 0, 3);
 moveAnim.EasingFunction = EasingFunctions.EaseInOutCubic;
 
 timeline.AddAnimation(moveAnim);
-timeline.Play();" }
+timeline.Play();" },
+
+                // Boolean Operations
+                { "BooleanOps", @"// Boolean operations on polygons using Clipper2
+
+var poly1 = new VPolygon(
+    new VPoint(0, 0), new VPoint(100, 0),
+    new VPoint(100, 100), new VPoint(0, 100));
+var poly2 = new VPolygon(
+    new VPoint(50, 50), new VPoint(150, 50),
+    new VPoint(150, 150), new VPoint(50, 150));
+
+// Union - combine polygons
+var union = poly1.Union(poly2);
+foreach (var p in union) { p.StrokeColor = ""Cyan""; p.Draw(); }
+
+// Intersection - overlapping area
+var intersection = poly1.Intersect(poly2);
+
+// Difference - subtract poly2 from poly1
+var difference = poly1.Difference(poly2);
+
+// XOR - symmetric difference (non-overlapping areas)
+var xor = poly1.Xor(poly2);
+
+// Utility methods
+bool inside = poly1.Contains(new VPoint(50, 50));
+double area = poly1.GetArea();
+
+// Offset polygon (positive = outward, negative = inward)
+var offsetPolygons = BooleanOps.OffsetPolygon(poly1, 10);
+
+// Simplify polygon (remove redundant points)
+var simplified = BooleanOps.Simplify(poly1, tolerance: 0.1);" },
+
+                // Array Operations
+                { "ArrayOps", @"// Create arrays and patterns of shapes
+
+var circle = new VCircle(0, 0, 20);
+
+// Linear array along X axis: 5 copies, 50 units apart
+circle.LinearArrayX(5, 50).DrawAll();
+
+// Linear array along Y axis: 4 copies, 40 units apart
+circle.LinearArrayY(4, 40).DrawAll();
+
+// Linear array along custom direction
+circle.LinearArray(new VXYZ(1, 1, 0), 6, 30).DrawAll();
+
+// Rectangular grid: 3 rows, 4 columns
+var rect = new VRectangle(0, 0, 30, 20);
+rect.RectangularArray(rows: 3, cols: 4, rowSpacing: 40, colSpacing: 50).DrawAll();
+
+// Circular array around a center point
+var shape = new VCircle(50, 0, 10);
+var center = new VPoint(0, 0);
+shape.CircularArray(center, count: 8).DrawAll();  // Full circle
+shape.CircularArray(center, count: 6, totalAngleDegrees: 180).DrawAll();  // Half circle
+
+// Path array - distribute along a curve
+var marker = new VCircle(0, 0, 5);
+var path = new VSpline(new VPoint(0,0), new VPoint(50,100), new VPoint(100,0));
+marker.PathArray(path, count: 10, alignToPath: true).DrawAll();
+
+// Spiral array
+var dot = new VCircle(0, 0, 3);
+dot.SpiralArray(center, count: 30, startRadius: 20, endRadius: 100, totalRevolutions: 2).DrawAll();
+
+// Mirror across an axis
+var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,40));
+var mirrorAxis = new VLine(0, -50, 0, 50);
+triangle.Mirror(mirrorAxis).DrawAll();" }
             };
         }
 

@@ -2,6 +2,44 @@ using System;
 
 namespace Code2Viz.Geometry;
 
+/// <summary>
+/// Types of control points for shape editing.
+/// </summary>
+public enum ControlPointType
+{
+    /// <summary>Move the entire shape.</summary>
+    Move,
+    /// <summary>Vertex/endpoint of the shape.</summary>
+    Vertex,
+    /// <summary>Control point for radius/size.</summary>
+    Radius,
+    /// <summary>Control point for rotation.</summary>
+    Rotation,
+    /// <summary>Control point for curve control.</summary>
+    CurveControl
+}
+
+/// <summary>
+/// Represents a control point for interactive shape editing.
+/// </summary>
+public class ControlPoint
+{
+    public ControlPointType Type { get; }
+    public double X { get; set; }
+    public double Y { get; set; }
+    public string Label { get; }
+
+    public ControlPoint(ControlPointType type, double x, double y, string label = "")
+    {
+        Type = type;
+        X = x;
+        Y = y;
+        Label = label;
+    }
+
+    public VPoint ToVPoint() => new VPoint(X, Y);
+}
+
 public interface IDrawable
 {
     void Draw();
@@ -18,6 +56,11 @@ public abstract class Shape : IDrawable
 
     public long Id { get; } = System.Threading.Interlocked.Increment(ref _idCounter);
     public string Name { get; set; } = "";
+
+    /// <summary>
+    /// Indicates whether this shape is currently selected.
+    /// </summary>
+    public bool IsSelected { get; set; } = false;
     
     public string StrokeColor { get; set; } = ShapeDefaults.GlobalStrokeColor ?? "Cyan";
     public string FillColor { get; set; } = ShapeDefaults.GlobalFillColor ?? "Transparent";
@@ -103,6 +146,37 @@ public abstract class Shape : IDrawable
     /// </summary>
     /// <returns>Tuple of (min point, max point) defining the axis-aligned bounding box.</returns>
     public abstract (VPoint min, VPoint max) GetBounds();
+
+    /// <summary>
+    /// Gets the control points for interactive editing.
+    /// </summary>
+    /// <returns>List of control points with their types and positions.</returns>
+    public virtual List<ControlPoint> GetControlPoints()
+    {
+        // Default implementation returns bounding box corners
+        var bounds = GetBounds();
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, (bounds.min.X + bounds.max.X) / 2, (bounds.min.Y + bounds.max.Y) / 2, "Center")
+        };
+    }
+
+    /// <summary>
+    /// Moves a control point to a new position.
+    /// </summary>
+    /// <param name="index">Index of the control point.</param>
+    /// <param name="newPosition">New position for the control point.</param>
+    public virtual void MoveControlPoint(int index, VPoint newPosition)
+    {
+        // Default implementation moves the entire shape
+        if (index == 0)
+        {
+            var bounds = GetBounds();
+            var center = new VPoint((bounds.min.X + bounds.max.X) / 2, (bounds.min.Y + bounds.max.Y) / 2);
+            var delta = new VXYZ(newPosition.X - center.X, newPosition.Y - center.Y, 0);
+            Move(delta);
+        }
+    }
 
     /// <summary>
     /// Calculates the intersection of this shape with another shape.
