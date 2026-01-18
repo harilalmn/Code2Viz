@@ -523,6 +523,10 @@ public static class TypeInspector
         var members = new List<(string Name, string Description, CompletionKind Kind)>();
         var seenNames = new HashSet<string>();
 
+        // Check if this is EasingFunctions - its methods should be marked as Delegate
+        // since they're meant to be used as method references for delegate properties
+        bool isEasingFunctions = type.Name == "EasingFunctions";
+
         // Get properties
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
         foreach (var prop in properties)
@@ -565,13 +569,16 @@ public static class TypeInspector
                 var returnType = GetTypeName(method.ReturnType);
                 var parameters = string.Join(", ", method.GetParameters().Select(p => $"{GetTypeName(p.ParameterType)} {p.Name}"));
                 var description = $"{returnType} {method.Name}({parameters}){staticStr}";
-                members.Add((method.Name, description, CompletionKind.Method));
+
+                // Mark EasingFunctions methods as Delegate (no parentheses on completion)
+                var kind = isEasingFunctions ? CompletionKind.Delegate : CompletionKind.Method;
+                members.Add((method.Name, description, kind));
             }
         }
 
-        // Sort: Properties first, then methods, alphabetically within each group
+        // Sort: Properties first, then methods/delegates, alphabetically within each group
         return members
-            .OrderBy(m => m.Kind == CompletionKind.Method ? 1 : 0)
+            .OrderBy(m => m.Kind == CompletionKind.Method || m.Kind == CompletionKind.Delegate ? 1 : 0)
             .ThenBy(m => m.Name)
             .ToList();
     }

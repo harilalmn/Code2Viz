@@ -113,6 +113,27 @@ public partial class MainWindow : Window
             CoordinatesText.Text = $"X: {pos.X:F2}  Y: {pos.Y:F2}";
         };
 
+        // Selection changes
+        RenderCanvas.SelectionTool.SelectionChanged += OnSelectionChanged;
+
+        // Timeline panel events
+        TimelinePanel.TimeChanged += (s, time) =>
+        {
+            var timeline = CanvasRenderer.Instance.ActiveTimeline;
+            if (timeline != null)
+            {
+                // Pause if scrubbing
+                if (timeline.IsPlaying)
+                {
+                    _isPaused = true;
+                    timeline.IsPlaying = false;
+                    _animationStopwatch.Stop();
+                    PlayPauseBtn.Content = "\u25B6";
+                }
+                RenderCanvas.Refresh();
+            }
+        };
+
         // Animation Loop
         _animationTimer = new DispatcherTimer();
         _animationTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60 FPS
@@ -120,18 +141,27 @@ public partial class MainWindow : Window
         _animationTimer.Tick += (s, e) =>
         {
             var timeline = CanvasRenderer.Instance.ActiveTimeline;
+
+            // Update animation controls visibility and time display
+            UpdateAnimationControlsVisibility();
+
             if (timeline != null && timeline.IsPlaying)
             {
                 // Update animation state (sets DrawFactor, positions, etc.)
-                timeline.Update(_animationStopwatch.Elapsed.TotalSeconds);
+                // Apply speed multiplier
+                var scaledTime = _animationStopwatch.Elapsed.TotalSeconds * timeline.Speed;
+                timeline.Update(scaledTime);
 
                 // Redraw canvas with updated shape properties
                 RenderCanvas.Refresh();
 
-                // Zoom to fit on first frame that has visible shapes
+                // Zoom to fit on first frame that has visible shapes (if setting enabled)
                 if (_needsInitialZoom && timeline.Shapes.Count > 0)
                 {
-                    RenderCanvas.ZoomExtents(CanvasRenderer.Instance.GetShapes());
+                    if (ApplicationSettings.Instance.ZoomToFitOnRun)
+                    {
+                        RenderCanvas.ZoomExtents(CanvasRenderer.Instance.GetShapes());
+                    }
                     _needsInitialZoom = false;
                 }
             }
@@ -2673,6 +2703,9 @@ public partial class MainWindow : Window
         HighlightOpacityText.Text = $"{appSettings.HighlightOpacity}%";
         UpdateColorButton(HighlightColorBtn, HighlightColorBox.Text);
 
+        // Canvas Settings
+        SettingsZoomToFitCheck.IsChecked = appSettings.ZoomToFitOnRun;
+
         // Update Button colors
         UpdateColorButton(SettingsStrokeColorBtn, SettingsStrokeColorBox.Text);
         UpdateColorButton(SettingsFillColorBtn, SettingsFillColorBox.Text);
@@ -2750,6 +2783,12 @@ public partial class MainWindow : Window
         {
             HighlightOpacityText.Text = $"{(int)e.NewValue}%";
         }
+    }
+
+    private void SettingsZoomToFitCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        ApplicationSettings.Instance.ZoomToFitOnRun = SettingsZoomToFitCheck.IsChecked == true;
+        ApplicationSettings.Save();
     }
 
     private void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -3197,6 +3236,110 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ExportDxfButton_Click(object sender, RoutedEventArgs e)
+    {
+        var shapes = CanvasRenderer.Instance.GetShapes();
+        if (shapes.Count == 0)
+        {
+            MessageBox.Show(
+                "No shapes to export.\n\nPlease run code that creates shapes before exporting to DXF.",
+                "No Shapes",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Filter = "AutoCAD DXF (*.dxf)|*.dxf",
+            DefaultExt = ".dxf",
+            FileName = "shapes_export"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var exporter = new DxfExporter();
+                exporter.Export(shapes, dialog.FileName);
+                SetStatus($"Exported: {Path.GetFileName(dialog.FileName)}", isError: false);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"DXF export error: {ex.Message}", isError: true);
+            }
+        }
+    }
+
+    private void ExportPdfButton_Click(object sender, RoutedEventArgs e)
+    {
+        var shapes = CanvasRenderer.Instance.GetShapes();
+        if (shapes.Count == 0)
+        {
+            MessageBox.Show(
+                "No shapes to export.\n\nPlease run code that creates shapes before exporting to PDF.",
+                "No Shapes",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Filter = "PDF Document (*.pdf)|*.pdf",
+            DefaultExt = ".pdf",
+            FileName = "shapes_export"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var exporter = new PdfExporter();
+                exporter.Export(shapes, dialog.FileName);
+                SetStatus($"Exported: {Path.GetFileName(dialog.FileName)}", isError: false);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"PDF export error: {ex.Message}", isError: true);
+            }
+        }
+    }
+
+    private void ExportSvgButton_Click(object sender, RoutedEventArgs e)
+    {
+        var shapes = CanvasRenderer.Instance.GetShapes();
+        if (shapes.Count == 0)
+        {
+            MessageBox.Show(
+                "No shapes to export.\n\nPlease run code that creates shapes before exporting to SVG.",
+                "No Shapes",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Filter = "SVG Image (*.svg)|*.svg",
+            DefaultExt = ".svg",
+            FileName = "shapes_export"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                Canvas.SvgExporter.SaveToFile(dialog.FileName, shapes);
+                SetStatus($"Exported: {Path.GetFileName(dialog.FileName)}", isError: false);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"SVG export error: {ex.Message}", isError: true);
+            }
+        }
+    }
+
     private void ExportGifButton_Click(object sender, RoutedEventArgs e)
     {
         var timeline = CanvasRenderer.Instance.ActiveTimeline;
@@ -3564,6 +3707,7 @@ public partial class MainWindow : Window
             if (RenderCanvas.DrawingTool.Mode != Canvas.DrawingMode.None)
             {
                 CancelDrawingTool();
+                EnableSelectionMode();
                 e.Handled = true;
             }
             // Cancel measuring tool if active
@@ -3572,6 +3716,23 @@ public partial class MainWindow : Window
                 RenderCanvas.MeasuringTool.CancelMeasuring();
                 RenderCanvas.Refresh();
                 SetStatus("Measuring cancelled", isError: false);
+                e.Handled = true;
+            }
+            // Clear selection if in selection mode
+            else if (RenderCanvas.IsSelectionMode && RenderCanvas.SelectionTool.SelectedShapes.Count > 0)
+            {
+                RenderCanvas.SelectionTool.ClearSelection();
+                RenderCanvas.Refresh();
+                SetStatus("Selection cleared", isError: false);
+                e.Handled = true;
+            }
+        }
+        // Delete key - delete selected shapes (only when editor is not focused)
+        else if (e.Key == Key.Delete && !CodeEditor.IsKeyboardFocusWithin)
+        {
+            if (RenderCanvas.IsSelectionMode && RenderCanvas.SelectionTool.SelectedShapes.Count > 0)
+            {
+                DeleteSelectedShapes();
                 e.Handled = true;
             }
         }
@@ -3596,8 +3757,59 @@ public partial class MainWindow : Window
                     SetDrawingMode(Canvas.DrawingMode.Rectangle);
                     e.Handled = true;
                     break;
+                case Key.A:
+                    // Select all shapes (when not in editor)
+                    if (RenderCanvas.IsSelectionMode)
+                    {
+                        RenderCanvas.SelectionTool.SelectAll(RenderCanvas.GetCurrentShapes());
+                        RenderCanvas.Refresh();
+                        var count = RenderCanvas.SelectionTool.SelectedShapes.Count;
+                        SetStatus($"Selected {count} shape{(count != 1 ? "s" : "")}", isError: false);
+                        e.Handled = true;
+                    }
+                    break;
             }
         }
+    }
+
+    private void DeleteSelectedShapes()
+    {
+        var selectedShapes = RenderCanvas.SelectionTool.SelectedShapes.ToList();
+        if (selectedShapes.Count == 0) return;
+
+        var entryFile = _currentProject?.EntryPointFile;
+        if (entryFile == null) return;
+
+        // Get current content
+        var content = entryFile.Content;
+
+        // Remove shapes from code
+        var newContent = Canvas.CodeSyncManager.RemoveShapesCode(content, selectedShapes);
+
+        // Check if any changes were made
+        if (newContent != content)
+        {
+            // Update file content
+            entryFile.Content = newContent;
+            entryFile.HasUnsavedChanges = true;
+
+            // Update editor if this file is active
+            if (_activeFile == entryFile)
+            {
+                CodeEditor.Text = newContent;
+            }
+
+            RefreshFileTabs();
+        }
+
+        // Clear selection
+        var count = selectedShapes.Count;
+        RenderCanvas.SelectionTool.ClearSelection();
+
+        // Re-run code to update canvas (shapes will be removed)
+        RunButton_Click(this, new RoutedEventArgs());
+
+        SetStatus($"Deleted {count} shape{(count != 1 ? "s" : "")}", isError: false);
     }
 
     #endregion
@@ -3653,6 +3865,36 @@ public partial class MainWindow : Window
     private void SelectTool_Click(object sender, RoutedEventArgs e)
     {
         CancelDrawingTool();
+        EnableSelectionMode();
+    }
+
+    private void EnableSelectionMode()
+    {
+        RenderCanvas.IsSelectionMode = true;
+        RenderCanvas.Cursor = Cursors.Arrow;
+        SetStatus("Selection mode: Click to select, Shift+Click to add, Ctrl+Click to toggle", isError: false);
+        RenderCanvas.Refresh();
+    }
+
+    private void OnSelectionChanged(object? sender, EventArgs e)
+    {
+        var selectedShapes = RenderCanvas.SelectionTool.SelectedShapes;
+
+        // Update status bar
+        var count = selectedShapes.Count;
+        if (count == 0)
+        {
+            SetStatus("Selection mode: Click to select, Shift+Click to add, Ctrl+Click to toggle", isError: false);
+        }
+        else if (count == 1)
+        {
+            var shape = selectedShapes[0];
+            SetStatus($"Selected: {shape.GetType().Name} (ID: {shape.Id})", isError: false);
+        }
+        else
+        {
+            SetStatus($"Selected {count} shapes", isError: false);
+        }
     }
 
     private void DrawPoint_Click(object sender, RoutedEventArgs e)
@@ -3723,6 +3965,10 @@ public partial class MainWindow : Window
             RenderCanvas.MeasuringTool.CancelMeasuring();
         }
 
+        // Disable selection mode when drawing
+        RenderCanvas.IsSelectionMode = false;
+        RenderCanvas.SelectionTool.ClearSelection();
+
         var tool = RenderCanvas.DrawingTool;
         tool.SetMode(mode);
 
@@ -3750,7 +3996,6 @@ public partial class MainWindow : Window
         var tool = RenderCanvas.DrawingTool;
         tool.Cancel();
         UpdateDrawingToolbarButtons();
-        SetStatus("Ready", isError: false);
 
         // Reset cursor to normal
         RenderCanvas.Cursor = Cursors.Arrow;
@@ -3850,7 +4095,8 @@ public partial class MainWindow : Window
         UpdateDrawingToolbarButtons();
         if (mode == Canvas.DrawingMode.None)
         {
-            SetStatus("Ready", isError: false);
+            // Return to selection mode
+            EnableSelectionMode();
         }
         else
         {
@@ -5807,6 +6053,122 @@ public partial class MainWindow : Window
     private void OutlinerItem_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         RenderCanvas.HighlightedShapeId = null;
+    }
+
+    #endregion
+
+    #region Animation Controls
+
+    private bool _isPaused = false;
+
+    private void PlayPause_Click(object sender, RoutedEventArgs e)
+    {
+        var timeline = CanvasRenderer.Instance.ActiveTimeline;
+        if (timeline == null) return;
+
+        if (_isPaused)
+        {
+            // Resume from paused state
+            _isPaused = false;
+            timeline.IsPlaying = true;
+            _animationStopwatch.Start();
+            PlayPauseBtn.Content = "\u23F8"; // Pause symbol
+        }
+        else if (timeline.IsPlaying)
+        {
+            // Pause
+            _isPaused = true;
+            timeline.IsPlaying = false;
+            _animationStopwatch.Stop();
+            PlayPauseBtn.Content = "\u25B6"; // Play symbol
+        }
+        else
+        {
+            // Start playing
+            timeline.IsPlaying = true;
+            _animationStopwatch.Restart();
+            PlayPauseBtn.Content = "\u23F8"; // Pause symbol
+        }
+    }
+
+    private void Stop_Click(object sender, RoutedEventArgs e)
+    {
+        var timeline = CanvasRenderer.Instance.ActiveTimeline;
+        if (timeline == null) return;
+
+        // Stop and reset
+        timeline.IsPlaying = false;
+        _isPaused = false;
+        _animationStopwatch.Reset();
+        timeline.Update(0);
+        RenderCanvas.Refresh();
+
+        PlayPauseBtn.Content = "\u25B6"; // Play symbol
+        TimeDisplay.Text = $"0.00s / {timeline.Duration:F2}s";
+    }
+
+    private void SpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        var timeline = CanvasRenderer.Instance.ActiveTimeline;
+        if (timeline != null)
+        {
+            timeline.Speed = SpeedSlider.Value;
+        }
+
+        // Update speed display
+        if (SpeedText != null)
+        {
+            SpeedText.Text = $"{SpeedSlider.Value:F2}x";
+        }
+    }
+
+    private Timeline? _lastTimeline = null;
+
+    private void UpdateAnimationControlsVisibility()
+    {
+        var timeline = CanvasRenderer.Instance.ActiveTimeline;
+        if (timeline != null)
+        {
+            AnimationControlsPanel.Visibility = Visibility.Visible;
+
+            // Update time display
+            var currentTime = timeline.CurrentTime;
+            var duration = timeline.Duration;
+            TimeDisplay.Text = $"{currentTime:F2}s / {duration:F2}s";
+
+            // Update play/pause button
+            if (timeline.IsPlaying && !_isPaused)
+            {
+                PlayPauseBtn.Content = "\u23F8"; // Pause symbol
+            }
+            else
+            {
+                PlayPauseBtn.Content = "\u25B6"; // Play symbol
+            }
+
+            // Update timeline panel if timeline changed
+            if (timeline != _lastTimeline)
+            {
+                _lastTimeline = timeline;
+                TimelinePanel.SetTimeline(timeline);
+            }
+            else
+            {
+                // Just update playhead
+                TimelinePanel.UpdatePlayhead();
+            }
+        }
+        else
+        {
+            AnimationControlsPanel.Visibility = Visibility.Collapsed;
+            _isPaused = false;
+
+            if (_lastTimeline != null)
+            {
+                _lastTimeline = null;
+                TimelinePanel.SetTimeline(null);
+            }
+        }
     }
 
     #endregion

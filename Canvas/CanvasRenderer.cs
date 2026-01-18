@@ -63,6 +63,9 @@ public class CanvasRenderer
     public void RenderTo(RenderCanvas canvas)
     {
         canvas.Render(_shapes);
-        canvas.ZoomExtents(_shapes);
+        if (Code2Viz.ApplicationSettings.Instance.ZoomToFitOnRun)
+        {
+            canvas.ZoomExtents(_shapes);
+        }
     }
 }

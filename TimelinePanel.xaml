@@ -1,0 +1,159 @@
+<UserControl
+    x:Class="Code2Viz.TimelinePanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="150"
+    d:DesignWidth="800"
+    Background="{StaticResource SecondaryBackgroundBrush}"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <!--  Minimal ScrollViewer template with no padding  -->
+        <ControlTemplate x:Key="MinimalScrollViewerTemplate" TargetType="ScrollViewer">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ScrollContentPresenter Grid.Row="0" Grid.Column="0" />
+                <ScrollBar
+                    x:Name="PART_VerticalScrollBar"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Maximum="{TemplateBinding ScrollableHeight}"
+                    Orientation="Vertical"
+                    ViewportSize="{TemplateBinding ViewportHeight}"
+                    Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                    Value="{TemplateBinding VerticalOffset}" />
+                <ScrollBar
+                    x:Name="PART_HorizontalScrollBar"
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Maximum="{TemplateBinding ScrollableWidth}"
+                    Orientation="Horizontal"
+                    ViewportSize="{TemplateBinding ViewportWidth}"
+                    Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                    Value="{TemplateBinding HorizontalOffset}" />
+            </Grid>
+        </ControlTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24" />
+            <!--  Time ruler  -->
+            <RowDefinition Height="*" />
+            <!--  Tracks  -->
+            <RowDefinition Height="Auto" />
+            <!--  Controls  -->
+        </Grid.RowDefinitions>
+
+        <!--  Time Ruler Canvas  -->
+        <Canvas
+            x:Name="TimeRulerCanvas"
+            Grid.Row="0"
+            HorizontalAlignment="Left"
+            Background="{StaticResource BackgroundBrush}"
+            ClipToBounds="True" />
+
+        <!--  Track Content with Playhead  -->
+        <Grid
+            Grid.Row="1"
+            Background="{StaticResource BackgroundBrush}">
+            <ScrollViewer
+                x:Name="TracksScroll"
+                HorizontalScrollBarVisibility="Auto"
+                ScrollChanged="TracksScroll_ScrollChanged"
+                Template="{StaticResource MinimalScrollViewerTemplate}"
+                VerticalScrollBarVisibility="Auto">
+                <Canvas
+                    x:Name="TracksCanvas"
+                    HorizontalAlignment="Left"
+                    MouseLeftButtonDown="TracksCanvas_MouseLeftButtonDown"
+                    MouseLeftButtonUp="TracksCanvas_MouseLeftButtonUp"
+                    MouseMove="TracksCanvas_MouseMove" />
+            </ScrollViewer>
+
+            <!--  Playhead overlaid  -->
+            <Canvas x:Name="PlayheadCanvas" IsHitTestVisible="False">
+                <Line
+                    x:Name="PlayheadLine"
+                    Stroke="#FF5722"
+                    StrokeThickness="2"
+                    Y1="0"
+                    Y2="{Binding ActualHeight, ElementName=PlayheadCanvas}" />
+                <Polygon
+                    x:Name="PlayheadTriangle"
+                    Fill="#FF5722"
+                    Points="0,0 8,0 4,8" />
+            </Canvas>
+        </Grid>
+
+        <!--  Bottom Controls  -->
+        <Border
+            Grid.Row="2"
+            Padding="8,4"
+            Background="{StaticResource SecondaryBackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal">
+                <!--  Zoom Controls  -->
+                <TextBlock
+                    Margin="0,0,4,0"
+                    VerticalAlignment="Center"
+                    Foreground="{StaticResource ForegroundBrush}"
+                    Text="Zoom:" />
+                <Slider
+                    x:Name="ZoomSlider"
+                    Width="100"
+                    VerticalAlignment="Center"
+                    Maximum="200"
+                    Minimum="10"
+                    ValueChanged="ZoomSlider_ValueChanged"
+                    Value="50" />
+                <TextBlock
+                    x:Name="ZoomText"
+                    Width="50"
+                    Margin="4,0,16,0"
+                    VerticalAlignment="Center"
+                    Foreground="{StaticResource MutedForegroundBrush}"
+                    Text="50 px/s" />
+
+                <!--  Time Info  -->
+                <TextBlock
+                    x:Name="TimeInfoText"
+                    Margin="0,0,16,0"
+                    VerticalAlignment="Center"
+                    Foreground="{StaticResource ForegroundBrush}"
+                    Text="Duration: 0.00s" />
+
+                <!--  Snap Controls  -->
+                <CheckBox
+                    x:Name="SnapCheckBox"
+                    VerticalAlignment="Center"
+                    Content="Snap to grid"
+                    Foreground="{StaticResource ForegroundBrush}"
+                    IsChecked="True" />
+            </StackPanel>
+        </Border>
+
+        <!--  Empty State Overlay  -->
+        <Border
+            x:Name="EmptyStateOverlay"
+            Grid.RowSpan="3"
+            Background="{StaticResource SecondaryBackgroundBrush}"
+            Visibility="Visible">
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                FontSize="14"
+                Foreground="{StaticResource MutedForegroundBrush}"
+                Text="No active timeline. Run code with animations to see the timeline." />
+        </Border>
+    </Grid>
+</UserControl>

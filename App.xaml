@@ -14,6 +14,7 @@
         <Color x:Key="BorderColor">#3F3F46</Color>
         <Color x:Key="ErrorColor">#F44747</Color>
         <Color x:Key="SuccessColor">#4EC9B0</Color>
+        <Color x:Key="MutedForegroundColor">#808080</Color>
 
         <!--  Brushes  -->
         <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
@@ -25,6 +26,7 @@
         <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
         <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />
         <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+        <SolidColorBrush x:Key="MutedForegroundBrush" Color="{StaticResource MutedForegroundColor}" />
 
         <!--  Button Style  -->
         <Style x:Key="RibbonButtonStyle" TargetType="Button">
@@ -40,6 +42,42 @@
                     <ControlTemplate TargetType="Button">
                         <Border
                             Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  Media Control Button Style  -->
+        <Style x:Key="MediaButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#404040" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#555555" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontFamily" Value="Segoe UI Symbol" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"

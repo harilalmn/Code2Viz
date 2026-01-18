@@ -47,6 +47,7 @@ public class CompletionData : ICompletionData
                 CompletionKind.Keyword => KeywordColor,
                 CompletionKind.Type => TypeColor,
                 CompletionKind.Method => MethodColor,
+                CompletionKind.Delegate => MethodColor,  // Same color as methods
                 CompletionKind.Property => PropertyColor,
                 _ => Brushes.White
             };
@@ -102,16 +103,8 @@ public class CompletionData : ICompletionData
             CompletionKind.Type => 2.0,
             CompletionKind.Property => 3.0,
             CompletionKind.Method => 3.0,
-            CompletionKind.Snippet => 0.5, // Snippets on top ? Wait, snippet was 0.5 and type was 2.0. Standard double priority usually means HIGHER is better?
-            // AvalonEdit DefaultCompletionWindow sorting: "The items are sorted by their text. If you want to sort them differently, you have to sort the list of completion data."
-            // Wait, does Priority actually do anything in standard AvalonEdit? The standard ICompletionData has Priority.
-            // Documentation says: "The priority of the completion entry. When multiple completion entries have the same text, the one with the higher priority is selected."
-            // Ah, so it handles duplicates? It doesn't sort the list?
-            // Actually, if I add them in order, they appear in order.
-            // But if I want to FORCE selection, higher priority helps if same text matches?
-            // No, the user wants it at the TOP of the list.
-            // If I just add it first to the list, that should be enough if unsorted.
-            // But if I want to be safe, I should allow setting it.
+            CompletionKind.Delegate => 3.0,
+            CompletionKind.Snippet => 0.5,
             _ => 1.0
         };
         set => _priority = value;
@@ -146,6 +139,7 @@ public enum CompletionKind
     Type,
     Property,
     Method,
+    Delegate,  // Method reference used as delegate (no parentheses)
     Snippet
 }
 

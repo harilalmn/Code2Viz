@@ -6,6 +6,7 @@
         xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:canvas="clr-namespace:Code2Viz.Canvas"
         xmlns:project="clr-namespace:Code2Viz.Project"
+        xmlns:local="clr-namespace:Code2Viz"
         mc:Ignorable="d"
         Title="Code2Viz - 2D Geometry Visualizer"
         Icon="/img/logo.ico"
@@ -44,7 +45,7 @@
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="12,12">
-            <Image Source="/img/logo.png" Height="80" HorizontalAlignment="Left" />
+            <Image Source="/img/logo_white.png" Height="80" HorizontalAlignment="Left" />
         </Border>
 
         <!-- Menu Bar -->
@@ -83,6 +84,9 @@
                         <Separator />
                         <MenuItem Header="_Export PNG..." Click="ExportButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <MenuItem Header="Export _GIF Animation..." Click="ExportGifButton_Click" Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem Header="Export _DXF (AutoCAD)..." Click="ExportDxfButton_Click" Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem Header="Export _PDF..." Click="ExportPdfButton_Click" Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem Header="Export _SVG..." Click="ExportSvgButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <MenuItem Header="Export _Console..." Click="ExportConsoleButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <Separator />
                         <MenuItem Header="E_xit" Click="ExitMenuItem_Click" InputGestureText="Alt+F4" Style="{StaticResource MenuItemStyle}" />
@@ -200,7 +204,7 @@
             </StackPanel>
         </Border>
 
-        <!-- Main Content: Project Browser + Canvas + Editor -->
+        <!-- Main Content: Project Browser + Canvas + Editor + Properties -->
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="250" MinWidth="150" />
@@ -506,10 +510,12 @@
                           Background="{StaticResource BorderBrush}" 
                           ResizeBehavior="PreviousAndNext" />
 
-            <!-- Canvas and Console -->
+            <!-- Canvas, Timeline, and Console -->
             <Grid Grid.Column="2" x:Name="CanvasConsoleGrid">
                 <Grid.RowDefinitions>
                     <RowDefinition x:Name="CanvasRow" Height="*" MinHeight="200" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition x:Name="TimelineRow" Height="120" MinHeight="80" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition x:Name="ConsoleRow" Height="200" MinHeight="80" />
                 </Grid.RowDefinitions>
@@ -519,11 +525,57 @@
                         Background="{StaticResource BackgroundBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="0,0,1,0">
-                    <canvas:RenderCanvas x:Name="RenderCanvas" />
+                    <Grid>
+                        <canvas:RenderCanvas x:Name="RenderCanvas" />
+
+                        <!-- Animation Controls Overlay -->
+                        <Border x:Name="AnimationControlsPanel"
+                                Visibility="Collapsed"
+                                Background="#CC1E1E1E"
+                                CornerRadius="8"
+                                Padding="12,8"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,0,20">
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="PlayPauseBtn" Content="▶"
+                                        Style="{StaticResource MediaButtonStyle}"
+                                        ToolTip="Play/Pause"
+                                        Click="PlayPause_Click"/>
+                                <Button x:Name="StopBtn" Content="■"
+                                        Style="{StaticResource MediaButtonStyle}"
+                                        ToolTip="Stop"
+                                        Click="Stop_Click"/>
+                                <TextBlock Text="Speed:" Foreground="White"
+                                           VerticalAlignment="Center" Margin="12,0,4,0"/>
+                                <Slider x:Name="SpeedSlider"
+                                        Minimum="0.25" Maximum="4" Value="1"
+                                        Width="80" VerticalAlignment="Center"
+                                        ValueChanged="SpeedSlider_ValueChanged"/>
+                                <TextBlock x:Name="SpeedText" Text="1x" Foreground="White"
+                                           VerticalAlignment="Center" Margin="4,0,12,0" Width="30"/>
+                                <TextBlock x:Name="TimeDisplay" Text="0.00s" Foreground="LightGray"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </Border>
 
-                <!-- Horizontal Splitter (Double-click to reset) -->
+                <!-- Splitter between Canvas and Timeline -->
                 <GridSplitter Grid.Row="1"
+                              Height="4"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Center"
+                              ResizeBehavior="PreviousAndNext"
+                              Background="{StaticResource BorderBrush}"
+                              Cursor="SizeNS"
+                              ToolTip="Drag to resize." />
+
+                <!-- Timeline Panel -->
+                <local:TimelinePanel Grid.Row="2" x:Name="TimelinePanel" />
+
+                <!-- Splitter between Timeline and Console -->
+                <GridSplitter Grid.Row="3"
                               Height="4"
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Center"
@@ -534,7 +586,7 @@
                               ToolTip="Drag to resize. Double-click to reset." />
 
                 <!-- Console Panel -->
-                <Border Grid.Row="2"
+                <Border Grid.Row="4"
                         Background="{StaticResource SecondaryBackgroundBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="0,0,1,0">
@@ -1039,6 +1091,8 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="200" />
@@ -1219,8 +1273,8 @@
                                                            Text="Highlight Opacity:"
                                                            Foreground="{StaticResource ForegroundBrush}"
                                                            VerticalAlignment="Center"
-                                                           Margin="0,0,0,0"/>
-                                                <StackPanel Grid.Row="12" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,0">
+                                                           Margin="0,0,0,16"/>
+                                                <StackPanel Grid.Row="12" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,16">
                                                     <Slider x:Name="HighlightOpacitySlider"
                                                             Width="200"
                                                             Minimum="10"
@@ -1235,6 +1289,28 @@
                                                                Margin="10,0,0,0"
                                                                Width="40"/>
                                                 </StackPanel>
+
+                                                <!-- Canvas Settings Sub-header -->
+                                                <TextBlock Grid.Row="13" Grid.ColumnSpan="3"
+                                                           Text="Canvas Settings"
+                                                           FontSize="14" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           Margin="0,8,0,12"/>
+
+                                                <!-- Zoom to Fit on Run -->
+                                                <TextBlock Grid.Row="14" Grid.Column="0"
+                                                           Text="Zoom to Fit on Run:"
+                                                           Foreground="{StaticResource ForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,0,0"/>
+                                                <CheckBox x:Name="SettingsZoomToFitCheck"
+                                                          Grid.Row="14" Grid.Column="1"
+                                                          Content="Enabled"
+                                                          Foreground="{StaticResource ForegroundBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,0,0"
+                                                          Checked="SettingsZoomToFitCheck_Changed"
+                                                          Unchecked="SettingsZoomToFitCheck_Changed"/>
                                             </Grid>
 
                                             <!-- Note about auto-save -->
@@ -1252,6 +1328,7 @@
 
                 </TabControl>
             </Border>
+
         </Grid>
 
         <!-- Footer -->

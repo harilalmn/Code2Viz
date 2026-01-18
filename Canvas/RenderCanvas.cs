@@ -75,6 +75,15 @@ public class RenderCanvas : FrameworkElement
     private DrawingTool? _drawingTool;
     public DrawingTool DrawingTool => _drawingTool ??= new DrawingTool();
 
+    // Selection Tool
+    private SelectionTool? _selectionTool;
+    public SelectionTool SelectionTool => _selectionTool ??= new SelectionTool();
+
+    /// <summary>
+    /// Whether selection mode is active (vs drawing mode).
+    /// </summary>
+    public bool IsSelectionMode { get; set; } = true;
+
     // Shape highlighting (for Outliner hover)
     private long? _highlightedShapeId;
     public long? HighlightedShapeId
@@ -237,7 +246,7 @@ public class RenderCanvas : FrameworkElement
             var worldPos = ScreenToWorld(screenPos.X, screenPos.Y);
             var vPoint = new VPoint(worldPos.X, worldPos.Y);
 
-            // Handle drawing tool clicks
+            // Handle drawing tool clicks first (if active)
             if (_drawingTool != null && _drawingTool.Mode != DrawingMode.None)
             {
                 if (e.ClickCount == 2)
@@ -257,6 +266,24 @@ public class RenderCanvas : FrameworkElement
             if (_measuringTool?.Mode == ToolMode.Measuring)
             {
                 _measuringTool.OnLeftClick(vPoint);
+                RedrawAll();
+                e.Handled = true;
+                return;
+            }
+
+            // Handle selection mode
+            if (IsSelectionMode && _selectionTool != null)
+            {
+                var shift = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+                var ctrl = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
+
+                _selectionTool.OnMouseDown(vPoint, shift, ctrl, _currentShapes, _scale);
+
+                if (_selectionTool.IsBoxSelecting || _selectionTool.IsDraggingHandle)
+                {
+                    CaptureMouse();
+                }
+
                 RedrawAll();
                 e.Handled = true;
             }
@@ -280,6 +307,23 @@ public class RenderCanvas : FrameworkElement
             _isPanning = false;
             ReleaseMouseCapture();
             Cursor = Cursors.Arrow;
+        }
+        else if (e.LeftButton == MouseButtonState.Released)
+        {
+            // Handle selection box completion or handle dragging end
+            if (_selectionTool?.IsBoxSelecting == true || _selectionTool?.IsDraggingHandle == true)
+            {
+                var screenPos = e.GetPosition(this);
+                var worldPos = ScreenToWorld(screenPos.X, screenPos.Y);
+                var vPoint = new VPoint(worldPos.X, worldPos.Y);
+
+                var shift = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+                var ctrl = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
+
+                _selectionTool.OnMouseUp(vPoint, _currentShapes, shift, ctrl);
+                ReleaseMouseCapture();
+                RedrawAll();
+            }
         }
     }
 
@@ -308,6 +352,12 @@ public class RenderCanvas : FrameworkElement
             _measuringTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
             RedrawAll();
         }
+        else if (_selectionTool?.IsBoxSelecting == true || _selectionTool?.IsDraggingHandle == true)
+        {
+            // Update selection box or handle drag
+            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y));
+            RedrawAll();
+        }
     }
 
     public void ClearShapes()
@@ -332,6 +382,14 @@ public class RenderCanvas : FrameworkElement
     {
         _currentShapes.Add(shape);
         RedrawAll();
+    }
+
+    /// <summary>
+    /// Gets a read-only list of current shapes.
+    /// </summary>
+    public IReadOnlyList<IDrawable> GetCurrentShapes()
+    {
+        return _currentShapes.AsReadOnly();
     }
 
     private static Brush GetCachedBrush(string colorName)
@@ -377,9 +435,10 @@ public class RenderCanvas : FrameworkElement
         dc.DrawRectangle(_backgroundBrush, null, new Rect(0, 0, ActualWidth, ActualHeight));
 
         if (_showGrid)
+        {
             DrawGrid(dc);
-
-        DrawAxes(dc);
+            DrawAxes(dc);
+        }
 
         // Calculate Viewport in World Coordinates for Culling
         var p1 = ScreenToWorld(0, 0);
@@ -492,6 +551,12 @@ public class RenderCanvas : FrameworkElement
         if (_drawingTool?.Mode != DrawingMode.None)
         {
             DrawDrawingToolOverlay(dc);
+        }
+
+        // Draw selection overlay
+        if (IsSelectionMode && _selectionTool != null)
+        {
+            DrawSelectionOverlay(dc);
         }
     }
 
@@ -739,6 +804,112 @@ public class RenderCanvas : FrameworkElement
 
                     DrawDistanceLabel(dc, midScreen, distance.Value);
                 }
+            }
+        }
+    }
+
+    private void DrawSelectionOverlay(DrawingContext dc)
+    {
+        if (_selectionTool == null) return;
+
+        // Create selection brushes and pens
+        var selectionBrush = new SolidColorBrush(Color.FromArgb(40, 0, 150, 255));
+        selectionBrush.Freeze();
+        var selectionPen = new Pen(new SolidColorBrush(Color.FromRgb(0, 150, 255)), 1.5);
+        selectionPen.Freeze();
+        var handleBrush = new SolidColorBrush(Colors.White);
+        handleBrush.Freeze();
+        var handlePen = new Pen(new SolidColorBrush(Color.FromRgb(0, 120, 215)), 1.5);
+        handlePen.Freeze();
+
+        // Draw selection box if dragging
+        if (_selectionTool.IsBoxSelecting && _selectionTool.BoxStart != null && _selectionTool.BoxEnd != null)
+        {
+            var start = WorldToScreen(_selectionTool.BoxStart.X, _selectionTool.BoxStart.Y);
+            var end = WorldToScreen(_selectionTool.BoxEnd.X, _selectionTool.BoxEnd.Y);
+
+            var rect = new Rect(
+                Math.Min(start.X, end.X),
+                Math.Min(start.Y, end.Y),
+                Math.Abs(end.X - start.X),
+                Math.Abs(end.Y - start.Y));
+
+            dc.DrawRectangle(selectionBrush, selectionPen, rect);
+        }
+
+        // Draw selection handles for selected shapes
+        foreach (var shape in _selectionTool.SelectedShapes)
+        {
+            DrawSelectionHandles(dc, shape, handleBrush, handlePen, selectionPen);
+        }
+    }
+
+    private void DrawSelectionHandles(DrawingContext dc, Shape shape, Brush handleBrush, Pen handlePen, Pen boundsPen)
+    {
+        const double handleSize = 8;
+        const double smallHandleSize = 6;
+
+        // Get bounding box
+        var bounds = shape.GetBounds();
+        var minScreen = WorldToScreen(bounds.min.X, bounds.max.Y);
+        var maxScreen = WorldToScreen(bounds.max.X, bounds.min.Y);
+
+        // Draw bounding box
+        var boundsRect = new Rect(minScreen, maxScreen);
+        dc.DrawRectangle(null, boundsPen, boundsRect);
+
+        // Draw control points
+        var controlPoints = shape.GetControlPoints();
+        var moveBrush = new SolidColorBrush(Color.FromRgb(50, 205, 50)); // Green for move
+        moveBrush.Freeze();
+        var vertexBrush = new SolidColorBrush(Color.FromRgb(255, 165, 0)); // Orange for vertex
+        vertexBrush.Freeze();
+        var radiusBrush = new SolidColorBrush(Color.FromRgb(138, 43, 226)); // Purple for radius
+        radiusBrush.Freeze();
+        var curveBrush = new SolidColorBrush(Color.FromRgb(255, 105, 180)); // Pink for curve control
+        curveBrush.Freeze();
+
+        foreach (var cp in controlPoints)
+        {
+            var screenPos = WorldToScreen(cp.X, cp.Y);
+            var size = cp.Type == ControlPointType.Move ? handleSize : smallHandleSize;
+
+            Brush fillBrush = cp.Type switch
+            {
+                ControlPointType.Move => moveBrush,
+                ControlPointType.Vertex => vertexBrush,
+                ControlPointType.Radius => radiusBrush,
+                ControlPointType.CurveControl => curveBrush,
+                _ => handleBrush
+            };
+
+            if (cp.Type == ControlPointType.Move)
+            {
+                // Draw circle for move handle
+                dc.DrawEllipse(fillBrush, handlePen, screenPos, size / 2, size / 2);
+            }
+            else if (cp.Type == ControlPointType.CurveControl)
+            {
+                // Draw diamond for curve control
+                var diamond = new StreamGeometry();
+                using (var ctx = diamond.Open())
+                {
+                    ctx.BeginFigure(new Point(screenPos.X, screenPos.Y - size / 2), true, true);
+                    ctx.LineTo(new Point(screenPos.X + size / 2, screenPos.Y), true, false);
+                    ctx.LineTo(new Point(screenPos.X, screenPos.Y + size / 2), true, false);
+                    ctx.LineTo(new Point(screenPos.X - size / 2, screenPos.Y), true, false);
+                }
+                diamond.Freeze();
+                dc.DrawGeometry(fillBrush, handlePen, diamond);
+            }
+            else
+            {
+                // Draw square for other handles
+                dc.DrawRectangle(fillBrush, handlePen, new Rect(
+                    screenPos.X - size / 2,
+                    screenPos.Y - size / 2,
+                    size,
+                    size));
             }
         }
     }

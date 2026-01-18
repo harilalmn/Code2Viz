@@ -8,6 +8,7 @@ public class AppSettingsData
     public bool IncludeGridInExport { get; set; } = true;
     public string DefaultExportBackground { get; set; } = "Transparent";
     public bool ShowGrid { get; set; } = true;
+    public bool ZoomToFitOnRun { get; set; } = false;
 
     // Snap Settings
     public bool SnapEndpointEnabled { get; set; } = true;

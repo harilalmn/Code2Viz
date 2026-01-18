@@ -13,6 +13,11 @@ namespace Code2Viz.Animation
         public double Duration { get; }
         public Func<double, double> EasingFunction { get; set; } = EasingFunctions.Linear;
 
+        /// <summary>
+        /// Optional name for the animation (e.g., variable name from code).
+        /// </summary>
+        public string? Name { get; set; }
+
         protected Animation(Shape target, double startTime, double duration)
         {
             Target = target;
