@@ -48,7 +48,7 @@ namespace Code2Viz.Documentation
                 { "VBezier", "Represents a 2D cubic Bezier curve defined by four control points: start, control1, control2, and end." },
                 { "VSpline", "Represents a smooth Catmull-Rom spline curve passing through a series of points." },
                 { "VText", "Represents text drawn at a specific position. Supports font size (Height property) and styling." },
-                { "VGroup", "Represents a collection of shapes treated as a single unit. Supports group transformations (Move, Rotate, Scale)." },
+                { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyStrokeColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
                 { "VArrow", "Represents an arrow (line with arrowhead). Supports single or double-ended arrows with configurable head size and angle." },
                 { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. Useful for technical drawings." },
 
@@ -342,7 +342,22 @@ namespace Code2Viz.Documentation
                 { "VSpline", "let pts = [| VPoint(0.0,0.0); VPoint(50.0,50.0); VPoint(100.0,0.0) |]\nlet s = VSpline(pts)\ns.Draw()" },
                 { "VText", "let t = VText(VPoint(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Draw()" },
                 { "VArrow", "// From two points\nlet a = VArrow(VPoint(10.0, 10.0), VPoint(100.0, 10.0))\na.Draw()\n\n// From start point, direction, and length\nlet a2 = VArrow(VPoint(0.0, 0.0), VXYZ.BasisX, 50.0)\na2.Draw()" },
-                { "VGroup", "let g = VGroup()\ng.Add(VCircle(VPoint(0.0,0.0), 10.0))\ng.Move(100.0, 100.0)\ng.Draw()" },
+                { "VGroup", @"// Create a group from shapes
+let circle = VCircle(VPoint(0.0, 0.0), 20.0)
+let line1 = VLine(VPoint(-30.0, 0.0), VPoint(30.0, 0.0))
+let line2 = VLine(VPoint(0.0, -30.0), VPoint(0.0, 30.0))
+let group = VGroup([| circle :> Shape; line1 :> Shape; line2 :> Shape |])
+
+// Transform the entire group
+group.Move(VXYZ(100.0, 100.0, 0.0))
+group.Rotate(VPoint(100.0, 100.0), 45.0)
+
+// Apply styling to all shapes
+group.StrokeColor <- ""Cyan""
+group.ApplyStyle() |> ignore
+
+// Draw as a single selectable entity
+group.Draw()" },
                 
                 // Support classes
                 { "VXYZ", "let v = VXYZ(10.0, 20.0, 30.0)\nlet len = v.GetLength()" },
@@ -689,15 +704,33 @@ var dim2 = new VDimension(0, 50, 80, 50);
 dim2.CustomText = ""80 mm"";
 dim2.Draw();" },
 
-                { "VGroup", @"// Create a group of shapes
-var group = new VGroup();
-group.Add(new VCircle(0, 0, 20));
-group.Add(new VLine(-30, 0, 30, 0));
-group.Add(new VLine(0, -30, 0, 30));
+                { "VGroup", @"// Create a group from shapes
+var group = new VGroup(
+    new VCircle(0, 0, 20),
+    new VLine(-30, 0, 30, 0),
+    new VLine(0, -30, 0, 30)
+);
 
-// Transform the whole group
+// Or create empty and add shapes
+var group2 = new VGroup();
+group2.Add(new VCircle(50, 50, 15));
+group2.AddRange(new[] { new VLine(40, 50, 60, 50) });
+
+// Transform the entire group
 group.Move(new VXYZ(100, 100, 0));
 group.Rotate(new VPoint(100, 100), 45);
+group.Scale(group.GetCenter(), 1.5);
+
+// Apply styling to all shapes
+group.StrokeColor = ""Cyan"";
+group.ApplyStyle();
+
+// Utility methods
+var circles = group.GetShapesOfType<VCircle>();
+var allShapes = group.Flatten();  // Includes nested groups
+group.ForEach(s => s.StrokeThickness = 2);
+
+// Draw as a single selectable entity
 group.Draw();" },
 
                 // Support classes

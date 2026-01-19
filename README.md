@@ -72,7 +72,100 @@ Press **F5** or click the **Run** button to execute and see results on the canva
 | **VText** | Text at a position | `new VText(position, "text")` |
 | **VArrow** | Arrow with head | `new VArrow(start, end)` |
 | **VDimension** | Dimension annotation | `new VDimension(p1, p2)` |
-| **VGroup** | Group of shapes | `new VGroup()` then `.Add(shape)` |
+| **VGroup** | Group of shapes | `new VGroup(shape1, shape2, ...)` or `new VGroup(shapeList)` |
+
+---
+
+## Shape Grouping (VGroup)
+
+VGroup allows you to combine multiple shapes into a single unit that can be transformed and selected together.
+
+### Creating Groups
+
+```csharp
+// Empty group, add shapes later
+var group = new VGroup();
+group.Add(new VCircle(0, 0, 20));
+group.Add(new VLine(-30, 0, 30, 0));
+
+// From params
+var group2 = new VGroup(
+    new VCircle(0, 0, 20),
+    new VLine(-30, 0, 30, 0),
+    new VLine(0, -30, 0, 30)
+);
+
+// From collection
+var shapes = new List<Shape> { circle, line1, line2 };
+var group3 = new VGroup(shapes);
+```
+
+### Group Transformations
+
+All transformations apply to every shape in the group:
+
+```csharp
+var group = new VGroup(circle, line1, line2);
+
+// Move entire group
+group.Move(new VXYZ(100, 50, 0));
+
+// Rotate around a pivot point
+group.Rotate(new VPoint(0, 0), 45);
+
+// Scale from center
+group.Scale(group.GetCenter(), 2.0);
+
+// Draw the group (renders as a single selectable entity)
+group.Draw();
+```
+
+### Group Styling
+
+Apply styles to all shapes at once:
+
+```csharp
+var group = new VGroup(shape1, shape2, shape3);
+group.StrokeColor = "Cyan";
+group.FillColor = "#4000FFFF";
+group.StrokeThickness = 2;
+
+// Apply group style to all children
+group.ApplyStyle();
+
+// Or apply individual properties
+group.ApplyStrokeColor();
+group.ApplyFillColor();
+group.ApplyStrokeThickness();
+
+// Set opacity for all shapes
+group.SetOpacity(0.5);
+```
+
+### Group Utilities
+
+```csharp
+// Access shapes
+int count = group.Count;
+Shape first = group[0];
+bool hasCircle = group.ContainsShape(myCircle);
+
+// Query shapes by type
+var allCircles = group.GetShapesOfType<VCircle>();
+
+// Flatten nested groups
+List<Shape> allShapes = group.Flatten();
+
+// Iterate with action
+group.ForEach(s => s.StrokeColor = "Yellow");
+
+// Filter to new group
+var filtered = group.Where(s => s is VCircle);
+
+// Get bounds and center
+var (min, max) = group.GetBounds();
+VPoint center = group.GetCenter();
+```
 
 ---
 
