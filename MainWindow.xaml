@@ -136,6 +136,10 @@
                         <MenuItem x:Name="GridMenuItem" Header="Show _Grid" IsCheckable="True" IsChecked="True" Click="GridMenuItem_Click" Style="{StaticResource MenuItemStyle}" />
                         <MenuItem Header="_Zoom To Shape..." Click="ZoomToShapeMenuItem_Click" Style="{StaticResource MenuItemStyle}" InputGestureText="Ctrl+G" />
                         <Separator />
+                        <MenuItem x:Name="InlayHintsMenuItem" Header="_Inlay Hints" IsCheckable="True" IsChecked="False" Click="InlayHintsMenuItem_Click" Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem x:Name="SemanticHighlightingMenuItem" Header="_Semantic Highlighting" IsCheckable="True" IsChecked="True" Click="SemanticHighlightingMenuItem_Click" Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem x:Name="CodeLensMenuItem" Header="Code _Lens" IsCheckable="True" IsChecked="False" Click="CodeLensMenuItem_Click" Style="{StaticResource MenuItemStyle}" />
+                        <Separator />
                         <MenuItem Header="_Clear Canvas" Click="ClearButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <MenuItem Header="Clear C_onsole" Click="ClearConsoleButton_Click" Style="{StaticResource MenuItemStyle}" />
                         <Separator />
@@ -779,6 +783,7 @@
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
@@ -896,8 +901,15 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
 
+                            <!-- Breadcrumb Navigation Bar -->
+                            <Border Grid.Row="1" Background="#252526" BorderBrush="#3C3C3C" BorderThickness="0,0,0,1" Padding="8,4">
+                                <StackPanel x:Name="BreadcrumbPanel" Orientation="Horizontal">
+                                    <TextBlock x:Name="BreadcrumbText" Foreground="#9CDCFE" FontSize="12" VerticalAlignment="Center" Text="Ready" />
+                                </StackPanel>
+                            </Border>
+
                             <!-- Active Editor -->
-                            <Border Grid.Row="1" Background="#1E1E1E">
+                            <Border Grid.Row="2" Background="#1E1E1E">
                                 <avalonedit:TextEditor x:Name="CodeEditor"
                                                        FontFamily="Consolas"
                                                        FontSize="14"

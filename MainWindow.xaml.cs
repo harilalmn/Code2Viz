@@ -63,12 +63,27 @@ public partial class MainWindow : Window
     // Peek Definition popup
     private System.Windows.Controls.Primitives.Popup? _peekPopup;
 
+    // Inlay Hints
+    private Editor.InlayHintGenerator? _inlayHintGenerator;
+
+    // Semantic Highlighting
+    private Editor.SemanticHighlighter? _semanticHighlighter;
+    private DispatcherTimer? _semanticUpdateTimer;
+
+    // Code Lens
+    private Editor.CodeLensGenerator? _codeLensGenerator;
+
+    // Hierarchy Provider
+    private Editor.HierarchyProvider? _hierarchyProvider;
+
     public static RoutedCommand RenameCommand = new RoutedCommand();
     public static RoutedCommand GoToDefinitionCommand = new RoutedCommand();
     public static RoutedCommand FindAllReferencesCommand = new RoutedCommand();
     public static RoutedCommand PeekDefinitionCommand = new RoutedCommand();
     public static RoutedCommand DocumentSymbolsCommand = new RoutedCommand();
     public static RoutedCommand WorkspaceSymbolsCommand = new RoutedCommand();
+    public static RoutedCommand CallHierarchyCommand = new RoutedCommand();
+    public static RoutedCommand TypeHierarchyCommand = new RoutedCommand();
 
     public MainWindow(VizCodeProject? project = null)
     {
@@ -76,6 +91,7 @@ public partial class MainWindow : Window
 
         _compiler = new ModuleCompiler();
         _refactoringProvider = new RefactoringProvider(_compiler);
+        _hierarchyProvider = new Editor.HierarchyProvider();
 
         // Initialize snippet session
         _snippetSession = new SnippetSession(CodeEditor);
@@ -358,6 +374,171 @@ public partial class MainWindow : Window
         var result = BracketSearcher.SearchBracket(CodeEditor.Document, CodeEditor.CaretOffset);
         _bracketRenderer.Result = result;
         CodeEditor.TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
+
+        // Update breadcrumb navigation
+        UpdateBreadcrumb();
+    }
+
+    private void UpdateBreadcrumb()
+    {
+        try
+        {
+            var text = CodeEditor.Text;
+            var offset = CodeEditor.CaretOffset;
+            var line = CodeEditor.TextArea.Caret.Line;
+
+            // Find current namespace, class, and method
+            var breadcrumbParts = new List<(string Text, string Kind)>();
+
+            // Parse backwards to find enclosing constructs
+            var currentNamespace = FindEnclosingConstruct(text, offset, "namespace");
+            var currentClass = FindEnclosingConstruct(text, offset, "class");
+            var currentMethod = FindEnclosingMethod(text, offset);
+
+            if (!string.IsNullOrEmpty(currentNamespace))
+                breadcrumbParts.Add((currentNamespace, "namespace"));
+
+            if (!string.IsNullOrEmpty(currentClass))
+                breadcrumbParts.Add((currentClass, "class"));
+
+            if (!string.IsNullOrEmpty(currentMethod))
+                breadcrumbParts.Add((currentMethod, "method"));
+
+            // Update UI
+            BreadcrumbPanel.Children.Clear();
+
+            if (breadcrumbParts.Count == 0)
+            {
+                BreadcrumbText.Text = _activeFile?.FileName ?? "Ready";
+                BreadcrumbPanel.Children.Add(BreadcrumbText);
+            }
+            else
+            {
+                for (int i = 0; i < breadcrumbParts.Count; i++)
+                {
+                    var (partText, kind) = breadcrumbParts[i];
+
+                    // Add separator
+                    if (i > 0)
+                    {
+                        BreadcrumbPanel.Children.Add(new TextBlock
+                        {
+                            Text = " > ",
+                            Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+                            VerticalAlignment = VerticalAlignment.Center
+                        });
+                    }
+
+                    // Color based on kind
+                    var color = kind switch
+                    {
+                        "namespace" => Color.FromRgb(86, 156, 214),   // Blue
+                        "class" => Color.FromRgb(78, 201, 176),       // Teal
+                        "method" => Color.FromRgb(220, 220, 170),     // Yellow
+                        _ => Color.FromRgb(156, 220, 254)             // Light blue
+                    };
+
+                    var textBlock = new TextBlock
+                    {
+                        Text = partText,
+                        Foreground = new SolidColorBrush(color),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Cursor = System.Windows.Input.Cursors.Hand
+                    };
+
+                    BreadcrumbPanel.Children.Add(textBlock);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"UpdateBreadcrumb error: {ex.Message}");
+        }
+    }
+
+    private string? FindEnclosingConstruct(string text, int offset, string keyword)
+    {
+        // Simple regex-based search for enclosing namespace or class
+        var pattern = keyword == "namespace"
+            ? @"namespace\s+([a-zA-Z_][a-zA-Z0-9_\.]*)"
+            : @"(?:class|struct|interface|record)\s+([a-zA-Z_][a-zA-Z0-9_<>,\s]*)";
+
+        var matches = System.Text.RegularExpressions.Regex.Matches(text.Substring(0, Math.Min(offset, text.Length)), pattern);
+
+        // Find the last match that starts before the offset
+        string? result = null;
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            // Check if we're still inside this construct by looking for matching braces
+            var constructStart = match.Index;
+            var braceDepth = 0;
+            var inConstruct = false;
+
+            for (int i = constructStart; i < Math.Min(offset, text.Length); i++)
+            {
+                if (text[i] == '{')
+                {
+                    braceDepth++;
+                    inConstruct = true;
+                }
+                else if (text[i] == '}')
+                {
+                    braceDepth--;
+                    if (braceDepth <= 0 && inConstruct)
+                    {
+                        inConstruct = false;
+                        break;
+                    }
+                }
+            }
+
+            if (braceDepth > 0 || !inConstruct)
+            {
+                var name = match.Groups[1].Value.Trim();
+                // Clean up generics
+                var angleIndex = name.IndexOf('<');
+                if (angleIndex > 0 && keyword != "namespace")
+                {
+                    name = name.Substring(0, angleIndex);
+                }
+                result = name;
+            }
+        }
+
+        return result;
+    }
+
+    private string? FindEnclosingMethod(string text, int offset)
+    {
+        // Find method declarations before the offset
+        var pattern = @"(?:public|private|protected|internal|static|async|override|virtual|abstract|\s)+\s+\S+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*(?:where[^{]*)?{";
+        var matches = System.Text.RegularExpressions.Regex.Matches(text.Substring(0, Math.Min(offset, text.Length)), pattern);
+
+        string? result = null;
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            var methodStart = match.Index;
+            var braceStart = match.Index + match.Length - 1;
+            var braceDepth = 1;
+
+            // Check if we're inside this method's body
+            for (int i = braceStart + 1; i < Math.Min(offset, text.Length); i++)
+            {
+                if (text[i] == '{') braceDepth++;
+                else if (text[i] == '}')
+                {
+                    braceDepth--;
+                    if (braceDepth <= 0) break;
+                }
+            }
+
+            if (braceDepth > 0)
+            {
+                result = match.Groups[1].Value;
+            }
+        }
+
+        return result;
     }
 
     // Flag to prevent clearing multi-selections when AddNextOccurrence changes the selection
@@ -501,6 +682,14 @@ public partial class MainWindow : Window
         CodeEditor.InputBindings.Add(new KeyBinding(WorkspaceSymbolsCommand, new KeyGesture(Key.T, ModifierKeys.Control)));
         CommandBindings.Add(new CommandBinding(WorkspaceSymbolsCommand, WorkspaceSymbols_Executed));
 
+        // Call Hierarchy (Ctrl+Shift+H)
+        CodeEditor.InputBindings.Add(new KeyBinding(CallHierarchyCommand, new KeyGesture(Key.H, ModifierKeys.Control | ModifierKeys.Shift)));
+        CommandBindings.Add(new CommandBinding(CallHierarchyCommand, CallHierarchy_Executed));
+
+        // Type Hierarchy (Ctrl+Shift+T)
+        CodeEditor.InputBindings.Add(new KeyBinding(TypeHierarchyCommand, new KeyGesture(Key.T, ModifierKeys.Control | ModifierKeys.Shift)));
+        CommandBindings.Add(new CommandBinding(TypeHierarchyCommand, TypeHierarchy_Executed));
+
         // Setup autocomplete
         CodeEditor.TextArea.TextEntered += TextArea_TextEntered;
         CodeEditor.TextArea.TextEntering += TextArea_TextEntering;
@@ -522,6 +711,30 @@ public partial class MainWindow : Window
         CodeEditor.TextArea.SelectionChanged += TextArea_SelectionChanged_ClearMultiSelect;
         CodeEditor.TextArea.TextEntering += TextArea_TextEntering_MultiCursor;
         CodeEditor.TextArea.PreviewMouseDown += TextArea_PreviewMouseDown_ClearMultiSelect;
+
+        // Initialize Inlay Hints
+        _inlayHintGenerator = new Editor.InlayHintGenerator(CodeEditor.Document);
+        CodeEditor.TextArea.TextView.ElementGenerators.Add(_inlayHintGenerator);
+        _inlayHintGenerator.Enabled = false; // Disabled by default, can be enabled via menu
+
+        // Initialize Semantic Highlighting
+        _semanticHighlighter = new Editor.SemanticHighlighter(CodeEditor.Document);
+        CodeEditor.TextArea.TextView.LineTransformers.Add(_semanticHighlighter);
+        _semanticHighlighter.Enabled = true; // Enabled by default
+
+        // Timer for debounced semantic highlighting updates
+        _semanticUpdateTimer = new DispatcherTimer();
+        _semanticUpdateTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _semanticUpdateTimer.Tick += async (s, e) =>
+        {
+            _semanticUpdateTimer.Stop();
+            await UpdateSemanticHighlightingAsync();
+        };
+
+        // Initialize Code Lens
+        _codeLensGenerator = new Editor.CodeLensGenerator(CodeEditor.Document);
+        CodeEditor.TextArea.TextView.ElementGenerators.Add(_codeLensGenerator);
+        _codeLensGenerator.Enabled = false; // Disabled by default (can be slow)
 
         // Initialize Folding
         if (_foldingManager == null)
@@ -1283,6 +1496,19 @@ public partial class MainWindow : Window
                     }
                 }
             }
+
+            // Update inlay hints
+            if (_inlayHintGenerator != null && _inlayHintGenerator.Enabled)
+            {
+                _inlayHintGenerator.UpdateHints(CodeEditor.Text);
+                CodeEditor.TextArea.TextView.Redraw();
+            }
+
+            // Trigger semantic highlighting update (debounced)
+            TriggerSemanticHighlightingUpdate();
+
+            // Update Code Lens (debounced - done via semantic timer)
+            UpdateCodeLens();
 
             // Update status bar with error count or clear it
             if (totalErrorCount > 0)
@@ -3704,6 +3930,105 @@ public partial class MainWindow : Window
             // Save to application settings
             ApplicationSettings.Instance.ShowGrid = GridMenuItem.IsChecked;
             ApplicationSettings.Save();
+        }
+    }
+
+    private void InlayHintsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_inlayHintGenerator != null)
+        {
+            _inlayHintGenerator.Enabled = InlayHintsMenuItem.IsChecked;
+
+            // Update hints immediately if enabling
+            if (_inlayHintGenerator.Enabled)
+            {
+                _inlayHintGenerator.UpdateHints(CodeEditor.Text);
+            }
+
+            CodeEditor.TextArea.TextView.Redraw();
+        }
+    }
+
+    private void SemanticHighlightingMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_semanticHighlighter != null)
+        {
+            _semanticHighlighter.Enabled = SemanticHighlightingMenuItem.IsChecked;
+
+            // Update highlighting immediately if enabling
+            if (_semanticHighlighter.Enabled)
+            {
+                _ = UpdateSemanticHighlightingAsync();
+            }
+            else
+            {
+                _semanticHighlighter.Clear();
+            }
+
+            CodeEditor.TextArea.TextView.Redraw();
+        }
+    }
+
+    private async Task UpdateSemanticHighlightingAsync()
+    {
+        if (_semanticHighlighter == null || !_semanticHighlighter.Enabled) return;
+
+        try
+        {
+            var code = CodeEditor.Text;
+            var references = _compiler.GetReferences();
+
+            await _semanticHighlighter.UpdateTokensAsync(code, references);
+
+            // Redraw on UI thread
+            await Dispatcher.InvokeAsync(() =>
+            {
+                CodeEditor.TextArea.TextView.Redraw();
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Semantic highlighting error: {ex.Message}");
+        }
+    }
+
+    private void TriggerSemanticHighlightingUpdate()
+    {
+        if (_semanticHighlighter == null || !_semanticHighlighter.Enabled) return;
+
+        // Restart the debounce timer
+        _semanticUpdateTimer?.Stop();
+        _semanticUpdateTimer?.Start();
+    }
+
+    private void UpdateCodeLens()
+    {
+        if (_codeLensGenerator == null || !_codeLensGenerator.Enabled) return;
+
+        try
+        {
+            _codeLensGenerator.UpdateCodeLens(CodeEditor.Text);
+            CodeEditor.TextArea.TextView.Redraw();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Code lens error: {ex.Message}");
+        }
+    }
+
+    private void CodeLensMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_codeLensGenerator != null)
+        {
+            _codeLensGenerator.Enabled = CodeLensMenuItem.IsChecked;
+
+            // Update code lens immediately if enabling
+            if (_codeLensGenerator.Enabled)
+            {
+                UpdateCodeLens();
+            }
+
+            CodeEditor.TextArea.TextView.Redraw();
         }
     }
 
@@ -6824,6 +7149,117 @@ public partial class MainWindow : Window
             _symbolsPopup.IsOpen = false;
             _symbolsPopup = null;
         }
+    }
+
+    private void CallHierarchy_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (_hierarchyProvider == null) return;
+
+        var offset = CodeEditor.CaretOffset;
+        var result = _hierarchyProvider.GetCallHierarchy(CodeEditor.Text, offset);
+
+        if (result == null)
+        {
+            SetStatus("No method found at cursor position", true);
+            return;
+        }
+
+        // Display results in console
+        ConsoleOutput.Instance.Clear();
+        ConsoleOutput.Instance.AddEntry($"=== Call Hierarchy for '{result.MethodName}' ===");
+
+        if (result.IncomingCalls.Count > 0)
+        {
+            ConsoleOutput.Instance.AddEntry("");
+            ConsoleOutput.Instance.AddEntry($"Incoming Calls ({result.IncomingCalls.Count}):");
+            foreach (var call in result.IncomingCalls)
+            {
+                ConsoleOutput.Instance.AddEntry(
+                    $"  {call.MethodName}() calls {result.MethodName}()",
+                    _activeFile?.FilePath,
+                    call.Line,
+                    0,
+                    false);
+            }
+        }
+        else
+        {
+            ConsoleOutput.Instance.AddEntry("No incoming calls found.");
+        }
+
+        if (result.OutgoingCalls.Count > 0)
+        {
+            ConsoleOutput.Instance.AddEntry("");
+            ConsoleOutput.Instance.AddEntry($"Outgoing Calls ({result.OutgoingCalls.Count}):");
+            foreach (var call in result.OutgoingCalls)
+            {
+                ConsoleOutput.Instance.AddEntry(
+                    $"  {result.MethodName}() calls {call.MethodName}()",
+                    _activeFile?.FilePath,
+                    call.Line,
+                    0,
+                    false);
+            }
+        }
+        else
+        {
+            ConsoleOutput.Instance.AddEntry("No outgoing calls found.");
+        }
+
+        SetStatus($"Call hierarchy for {result.MethodName}: {result.IncomingCalls.Count} callers, {result.OutgoingCalls.Count} callees", false);
+    }
+
+    private void TypeHierarchy_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (_hierarchyProvider == null) return;
+
+        var offset = CodeEditor.CaretOffset;
+        var result = _hierarchyProvider.GetTypeHierarchy(CodeEditor.Text, offset);
+
+        if (result == null)
+        {
+            SetStatus("No type found at cursor position", true);
+            return;
+        }
+
+        // Display results in console
+        ConsoleOutput.Instance.Clear();
+        ConsoleOutput.Instance.AddEntry($"=== Type Hierarchy for '{result.TypeName}' ({result.TypeKind}) ===");
+
+        if (result.BaseTypes.Count > 0)
+        {
+            ConsoleOutput.Instance.AddEntry("");
+            ConsoleOutput.Instance.AddEntry("Base Types:");
+            foreach (var baseType in result.BaseTypes)
+            {
+                ConsoleOutput.Instance.AddEntry($"  : {baseType.TypeName}");
+            }
+        }
+        else
+        {
+            ConsoleOutput.Instance.AddEntry("No base types (other than object).");
+        }
+
+        if (result.DerivedTypes.Count > 0)
+        {
+            ConsoleOutput.Instance.AddEntry("");
+            ConsoleOutput.Instance.AddEntry($"Derived Types ({result.DerivedTypes.Count}):");
+            foreach (var derived in result.DerivedTypes)
+            {
+                ConsoleOutput.Instance.AddEntry(
+                    $"  {derived.TypeName} : {result.TypeName}",
+                    _activeFile?.FilePath,
+                    derived.Line,
+                    0,
+                    false);
+            }
+        }
+        else
+        {
+            ConsoleOutput.Instance.AddEntry("No derived types found.");
+        }
+
+        SetStatus($"Type hierarchy for {result.TypeName}: {result.BaseTypes.Count} base, {result.DerivedTypes.Count} derived", false);
     }
 
     private string GetWordAtOffset(TextDocument document, int offset)

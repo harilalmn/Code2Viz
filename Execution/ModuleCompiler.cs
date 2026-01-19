@@ -97,6 +97,15 @@ public class ModuleCompiler
         DefaultReferences.Add(MetadataReference.CreateFromFile(typeof(Geometry.VPoint).Assembly.Location));
     }
 
+    /// <summary>
+    /// Gets the default metadata references used for compilation.
+    /// Useful for semantic analysis features like semantic highlighting.
+    /// </summary>
+    public IEnumerable<MetadataReference> GetReferences()
+    {
+        return DefaultReferences;
+    }
+
     public async Task<CompilationResult> CompileAndExecuteAsync(VizCodeProject project)
     {
         // Dispatch based on language
