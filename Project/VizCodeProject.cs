@@ -45,7 +45,15 @@ public class VizCodeProject
         }
 
         SortFiles(project);
-        project.ApplySettings(); 
+
+        // Only open the entry point file by default
+        var entryPoint = project.EntryPointFile;
+        if (entryPoint != null)
+        {
+            entryPoint.IsOpen = true;
+        }
+
+        project.ApplySettings();
         return project;
     }
 
@@ -87,7 +95,8 @@ public class VizCodeProject
         {
             FilePath = entryPointPath,
             Content = content,
-            HasUnsavedChanges = true
+            HasUnsavedChanges = true,
+            IsOpen = true
         };
         
         // Write it immediately so it exists on disk? 
