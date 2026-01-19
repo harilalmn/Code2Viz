@@ -72,6 +72,92 @@ public class MultiSelectionRenderer : IBackgroundRenderer
     public bool HasSelections => _selections.Count > 0;
 
     /// <summary>
+    /// Adds a cursor above the current cursor position(s).
+    /// </summary>
+    public bool AddCursorAbove()
+    {
+        var document = _textView.Document;
+        var caret = _textArea.Caret;
+
+        // Get all current cursor positions (main + additional)
+        var cursorPositions = GetAllCursorPositions();
+
+        // Find the topmost cursor
+        var topmost = cursorPositions.OrderBy(p => p.Line).First();
+
+        // Can't go above line 1
+        if (topmost.Line <= 1)
+            return false;
+
+        // Get the target line
+        int targetLine = topmost.Line - 1;
+        var targetLineObj = document.GetLineByNumber(targetLine);
+
+        // Calculate target column (clamped to line length)
+        int targetColumn = Math.Min(topmost.Column, targetLineObj.Length + 1);
+        int targetOffset = targetLineObj.Offset + targetColumn - 1;
+
+        // Add the new cursor
+        AddSelection(targetOffset, 0);
+        return true;
+    }
+
+    /// <summary>
+    /// Adds a cursor below the current cursor position(s).
+    /// </summary>
+    public bool AddCursorBelow()
+    {
+        var document = _textView.Document;
+        var caret = _textArea.Caret;
+
+        // Get all current cursor positions (main + additional)
+        var cursorPositions = GetAllCursorPositions();
+
+        // Find the bottommost cursor
+        var bottommost = cursorPositions.OrderByDescending(p => p.Line).First();
+
+        // Can't go below last line
+        if (bottommost.Line >= document.LineCount)
+            return false;
+
+        // Get the target line
+        int targetLine = bottommost.Line + 1;
+        var targetLineObj = document.GetLineByNumber(targetLine);
+
+        // Calculate target column (clamped to line length)
+        int targetColumn = Math.Min(bottommost.Column, targetLineObj.Length + 1);
+        int targetOffset = targetLineObj.Offset + targetColumn - 1;
+
+        // Add the new cursor
+        AddSelection(targetOffset, 0);
+        return true;
+    }
+
+    /// <summary>
+    /// Gets all cursor positions including main caret and additional selections.
+    /// </summary>
+    private List<(int Line, int Column, int Offset)> GetAllCursorPositions()
+    {
+        var document = _textView.Document;
+        var positions = new List<(int Line, int Column, int Offset)>();
+
+        // Add main caret
+        var caretLine = _textArea.Caret.Line;
+        var caretColumn = _textArea.Caret.Column;
+        var caretOffset = _textArea.Caret.Offset;
+        positions.Add((caretLine, caretColumn, caretOffset));
+
+        // Add additional cursors
+        foreach (var sel in _selections)
+        {
+            var loc = document.GetLocation(sel.EndOffset);
+            positions.Add((loc.Line, loc.Column, sel.EndOffset));
+        }
+
+        return positions;
+    }
+
+    /// <summary>
     /// Inserts text at all cursor positions (main + additional selections).
     /// </summary>
     public void InsertTextAtAllCursors(string text)

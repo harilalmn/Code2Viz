@@ -629,12 +629,14 @@ triangle.Mirror(mirrorAxis).DrawAll();
 | `Shift+Alt+Left` | Shrink selection (undo expand) |
 | `Ctrl+D` | Add next occurrence with multi-cursor support |
 | `Ctrl+Shift+L` | Select all occurrences |
+| `Ctrl+Alt+Up` | Add cursor above |
+| `Ctrl+Alt+Down` | Add cursor below |
 | `Esc` | Exit multi-cursor mode |
 
-### Multi-Cursor Editing (Ctrl+D)
+### Multi-Cursor Editing
 Code2Viz supports VS Code-style multi-cursor editing:
-1. **First Ctrl+D**: Selects the word at cursor
-2. **Subsequent Ctrl+D**: Adds the next occurrence to the selection, creating multiple cursors
+1. **Ctrl+D**: Selects word at cursor, then adds next occurrences
+2. **Ctrl+Alt+Up/Down**: Adds cursors vertically above/below
 3. **Type**: Text is inserted at ALL cursor positions simultaneously
 4. **Backspace/Delete**: Works at all cursor positions
 5. **Escape**: Exits multi-cursor mode

@@ -1185,6 +1185,8 @@ namespace StartViz
             AddShortcutRow(rowGroup, "Shift+Alt+Left", "Shrink selection", true);
             AddShortcutRow(rowGroup, "Ctrl+D", "Add next occurrence", false);
             AddShortcutRow(rowGroup, "Ctrl+Shift+L", "Select all occurrences", true);
+            AddShortcutRow(rowGroup, "Ctrl+Alt+Up", "Add cursor above", false);
+            AddShortcutRow(rowGroup, "Ctrl+Alt+Down", "Add cursor below", true);
             // Canvas & Tools
             AddShortcutRow(rowGroup, "Mouse Wheel", "Zoom canvas", false);
             AddShortcutRow(rowGroup, "Middle Click", "Pan canvas", true);

@@ -4358,6 +4358,21 @@ public partial class MainWindow : Window
                     break;
             }
         }
+        else if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt))
+        {
+            // Ctrl+Alt+Up/Down: Add cursor above/below (like VSCode)
+            switch (e.SystemKey)
+            {
+                case Key.Up:
+                    AddCursorAbove();
+                    e.Handled = true;
+                    break;
+                case Key.Down:
+                    AddCursorBelow();
+                    e.Handled = true;
+                    break;
+            }
+        }
         else if (e.Key == Key.F5)
         {
             RunButton_Click(sender, e);
@@ -5110,6 +5125,18 @@ public partial class MainWindow : Window
         }
 
         caret.Line = currentLineNumber + 1;
+    }
+
+    private void AddCursorAbove()
+    {
+        if (!CodeEditor.IsKeyboardFocusWithin) return;
+        _multiSelectionRenderer?.AddCursorAbove();
+    }
+
+    private void AddCursorBelow()
+    {
+        if (!CodeEditor.IsKeyboardFocusWithin) return;
+        _multiSelectionRenderer?.AddCursorBelow();
     }
 
     private void ToggleComment()

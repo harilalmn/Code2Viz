@@ -212,11 +212,13 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - `Shift+Alt+Left` - Shrink selection (undo expand)
 - `Ctrl+D` - Add next occurrence (multi-cursor support)
 - `Ctrl+Shift+L` - Select all occurrences
+- `Ctrl+Alt+Up` - Add cursor above
+- `Ctrl+Alt+Down` - Add cursor below
 - `Esc` - Exit multi-cursor mode
 
 ### Multi-Cursor Editing
-- First `Ctrl+D` selects word at cursor
-- Subsequent `Ctrl+D` adds next occurrence with new cursor
+- `Ctrl+D` selects word at cursor, then adds next occurrences
+- `Ctrl+Alt+Up/Down` adds cursors vertically above/below
 - Type to insert at all cursors simultaneously
 - Backspace/Delete work at all cursor positions
 - Click elsewhere or `Esc` to exit multi-cursor mode
