@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Code2Viz.Geometry;
 
-public interface ICurve
+public interface ICurve : IDrawable
 {
     /// <summary>
     /// Gets the start point of the curve.

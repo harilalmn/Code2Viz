@@ -88,6 +88,8 @@ Example: `[StartViz:15] Hello World`
 ### Shape System
 - All shapes extend `Shape` abstract class
 - `Shape` implements `IDrawable` interface
+- Curve shapes (VLine, VCircle, VArc, etc.) also implement `ICurve` interface
+- `ICurve` extends `IDrawable`, so all curves can be drawn via the interface
 - Shapes have: `StrokeColor`, `FillColor`, `StrokeThickness`
 - Calling `Draw()` adds shape to `CanvasRenderer.Instance`
 

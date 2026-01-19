@@ -819,6 +819,42 @@ bool hit = shape.Contains(point);// Point containment test
 double d = shape.DistanceTo(pt); // Distance to point
 ```
 
+### ICurve Interface
+Shapes that represent curves (VLine, VCircle, VArc, VEllipse, VPolyline, VBezier, VSpline) implement the `ICurve` interface. Since `ICurve` extends `IDrawable`, all curves can be drawn directly:
+
+```csharp
+// Work with curves generically
+ICurve curve = new VLine(0, 0, 100, 50);
+curve.Draw();  // ICurve extends IDrawable
+
+// Curve operations
+VPoint start = curve.StartPoint;
+VPoint end = curve.EndPoint;
+double length = curve.GetLength();
+
+// Divide curve into segments
+List<VPoint> points = curve.Divide(10);  // 11 points (including start/end)
+
+// Measure points at fixed intervals
+List<VPoint> measured = curve.Measure(25);  // Points every 25 units
+
+// Project a point onto the curve
+VPoint closest = curve.Project(new VPoint(50, 50));
+
+// Get point at specific distance along curve
+VPoint midPoint = curve.PointAtSegmentLength(length / 2);
+
+// Create offset curve
+ICurve offset = curve.Offset(10);
+offset.Draw();
+
+// Split curve at a point
+var (first, second) = curve.SplitAtPoint(midPoint);
+
+// Get normal vector at a point
+VXYZ normal = curve.NormalAtPoint(midPoint);
+```
+
 ---
 
 ## Example: Complete Drawing

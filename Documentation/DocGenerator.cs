@@ -34,7 +34,7 @@ namespace Code2Viz.Documentation
                 // Base classes
                 { "Shape", "Abstract base class for all drawable shapes. Provides common properties like StrokeColor, FillColor, StrokeThickness, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains(), DistanceTo()." },
                 { "IDrawable", "Interface for any object that can be drawn on the canvas. Defines Draw() method and styling properties." },
-                { "ICurve", "Interface for geometric shapes that can be treated as curves (measurable, divisible)." },
+                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), StrokeColor, FillColor, and StrokeThickness. Provides curve operations: StartPoint, EndPoint, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint()." },
 
                 // Shapes
                 { "VArc", "Represents a 2D arc defined by a center point, radius, start angle, and end angle (in degrees). The arc is drawn counter-clockwise from start to end angle." },
