@@ -7,6 +7,12 @@ public class VCircle : Shape, ICurve
     public VPoint Center { get; set; }
     public double Radius { get; set; }
 
+    /// <summary>Gets the start point of the circle (at angle 0).</summary>
+    public VPoint StartPoint => new VPoint(Center.X + Radius, Center.Y);
+
+    /// <summary>Gets the end point of the circle (same as StartPoint, since it's closed).</summary>
+    public VPoint EndPoint => StartPoint;
+
     public VCircle(VPoint center, double radius)
     {
         Center = center;

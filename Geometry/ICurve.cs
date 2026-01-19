@@ -5,6 +5,17 @@ namespace Code2Viz.Geometry;
 public interface ICurve
 {
     /// <summary>
+    /// Gets the start point of the curve.
+    /// </summary>
+    VPoint StartPoint { get; }
+
+    /// <summary>
+    /// Gets the end point of the curve.
+    /// For closed curves, this returns the same point as StartPoint.
+    /// </summary>
+    VPoint EndPoint { get; }
+
+    /// <summary>
     /// Divides the curve into the specified number of segments.
     /// </summary>
     /// <returns>A list of points including the start and end points.</returns>

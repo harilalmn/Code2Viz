@@ -6389,10 +6389,17 @@ public partial class MainWindow : Window
         var timeline = CanvasRenderer.Instance.ActiveTimeline;
         if (timeline != null)
         {
+            // Always show animation controls (play/pause buttons)
             AnimationControlsPanel.Visibility = Visibility.Visible;
-            TimelinePanel.Visibility = Visibility.Visible;
-            TimelineSplitter.Visibility = Visibility.Visible;
-            TimelineRow.Height = new GridLength(120);
+
+            // Only show timeline panel if user hasn't disabled it in Window menu
+            bool userWantsTimeline = ShowTimelineMenuItem.IsChecked;
+            if (userWantsTimeline)
+            {
+                TimelinePanel.Visibility = Visibility.Visible;
+                TimelineSplitter.Visibility = Visibility.Visible;
+                TimelineRow.Height = new GridLength(120);
+            }
 
             // Update time display
             var currentTime = timeline.CurrentTime;

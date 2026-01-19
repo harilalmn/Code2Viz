@@ -6,6 +6,12 @@ public class VPolyline : Shape, ICurve
 {
     public List<VPoint> Points { get; set; }
 
+    /// <summary>Gets the start point of the polyline.</summary>
+    public VPoint StartPoint => Points.Count > 0 ? Points[0] : new VPoint(0, 0);
+
+    /// <summary>Gets the end point of the polyline.</summary>
+    public VPoint EndPoint => Points.Count > 0 ? Points[^1] : new VPoint(0, 0);
+
     public VPolyline(params VPoint[] points)
     {
         Points = points.ToList();

@@ -8,6 +8,12 @@ public class VRectangle : Shape, ICurve
     public double Width { get; set; }
     public double Height { get; set; }
 
+    /// <summary>Gets the start point of the rectangle (same as Corner).</summary>
+    public VPoint StartPoint => Corner;
+
+    /// <summary>Gets the end point of the rectangle (same as Corner, since it's closed).</summary>
+    public VPoint EndPoint => Corner;
+
     public VRectangle(VPoint corner, double width, double height)
     {
         Corner = corner;
