@@ -1000,4 +1000,99 @@ public static class CompletionProvider
 
         return typeName;
     }
+
+    /// <summary>
+    /// Gets the return type of a member (property, field, or method) from a custom class.
+    /// </summary>
+    public static string? GetCustomMemberType(string className, string memberName)
+    {
+        if (!_customClasses.TryGetValue(className, out var members))
+            return null;
+
+        var member = members.FirstOrDefault(m => m.Name == memberName);
+        if (member.Name == null)
+            return null;
+
+        // Extract type from description format: "TypeName property", "TypeName field", "TypeName method"
+        var desc = member.Description;
+        var spaceIndex = desc.IndexOf(' ');
+        if (spaceIndex > 0)
+        {
+            return desc.Substring(0, spaceIndex);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Resolves a chained member access expression (e.g., "wall.Geometry") to its final type.
+    /// </summary>
+    /// <param name="textBeforeCursor">The code text before the cursor for variable resolution</param>
+    /// <param name="expression">The expression to resolve (e.g., "wall.Geometry")</param>
+    /// <param name="allCode">All code in the project for context</param>
+    /// <returns>The resolved type name, or null if resolution fails</returns>
+    public static string? ResolveChainedExpression(string textBeforeCursor, string expression, string? allCode = null)
+    {
+        if (string.IsNullOrEmpty(expression))
+            return null;
+
+        // Update custom classes cache
+        if (!string.IsNullOrEmpty(allCode))
+        {
+            UpdateCustomClasses(allCode);
+        }
+
+        // Split expression by dots
+        var parts = expression.Split('.');
+        if (parts.Length == 0)
+            return null;
+
+        // Resolve the first part (the variable)
+        var currentType = FindVariableType(textBeforeCursor, parts[0], allCode);
+        if (string.IsNullOrEmpty(currentType))
+        {
+            // Maybe it's a type name or namespace
+            if (TypeInspector.ResolveType(parts[0]) != null || TypeInspector.IsNamespace(parts[0]))
+            {
+                currentType = parts[0];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        // Resolve each subsequent member
+        for (int i = 1; i < parts.Length; i++)
+        {
+            var memberName = parts[i];
+            if (string.IsNullOrEmpty(memberName))
+                continue;
+
+            string? memberType = null;
+
+            // First, check if current type is a custom class
+            if (_customClasses.ContainsKey(currentType))
+            {
+                memberType = GetCustomMemberType(currentType, memberName);
+            }
+
+            // If not found in custom classes, try reflection
+            if (string.IsNullOrEmpty(memberType))
+            {
+                var resolvedType = TypeInspector.ResolveType(currentType);
+                if (resolvedType != null)
+                {
+                    memberType = TypeInspector.GetMemberReturnType(resolvedType, memberName);
+                }
+            }
+
+            if (string.IsNullOrEmpty(memberType))
+                return null;
+
+            currentType = memberType;
+        }
+
+        return currentType;
+    }
 }

@@ -1018,14 +1018,15 @@ public partial class MainWindow : Window
                 return;
 
             // Resolve variable type
+            var textBefore = CodeEditor.Document.GetText(0, beforeDotStart);
             if (!fullIdentifier.Contains('.'))
             {
-                var textBefore = CodeEditor.Document.GetText(0, beforeDotStart);
                 typeName = CompletionProvider.FindVariableType(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
             }
             else
             {
-                typeName = fullIdentifier;
+                // Resolve chained member access (e.g., wall.Geometry -> VPolygon)
+                typeName = CompletionProvider.ResolveChainedExpression(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
             }
 
             if (string.IsNullOrEmpty(typeName))
@@ -1867,15 +1868,15 @@ public partial class MainWindow : Window
                     return;
 
                 // For simple identifiers (no dots), try to find variable type
+                var textBefore = CodeEditor.Document.GetText(0, identifierStart);
                 if (!fullIdentifier.Contains('.'))
                 {
-                    var textBefore = CodeEditor.Document.GetText(0, identifierStart);
                     typeName = CompletionProvider.FindVariableType(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
                 }
                 else
                 {
-                    // For dotted identifiers, use as-is (could be namespace or nested type)
-                    typeName = fullIdentifier;
+                    // Resolve chained member access (e.g., wall.Geometry -> VPolygon)
+                    typeName = CompletionProvider.ResolveChainedExpression(textBefore, fullIdentifier, allCode) ?? fullIdentifier;
                 }
             }
 

@@ -452,6 +452,16 @@ public class VPolygon : Shape, ICurve
         dx /= len;
         dy /= len;
 
+        // First, verify the segments are actually collinear (not just parallel)
+        // by checking perpendicular distance from p3 and p4 to the line p1-p2
+        // Perpendicular distance = |(p3 - p1) x direction| where x is 2D cross product
+        double perpDist3 = Math.Abs((p3.X - p1.X) * (-dy) + (p3.Y - p1.Y) * dx);
+        double perpDist4 = Math.Abs((p4.X - p1.X) * (-dy) + (p4.Y - p1.Y) * dx);
+
+        // If either point is too far from the line, segments are parallel but not collinear
+        if (perpDist3 > ConnectionTolerance || perpDist4 > ConnectionTolerance)
+            return false;
+
         double t1 = 0;
         double t2 = len;
         double t3 = (p3.X - p1.X) * dx + (p3.Y - p1.Y) * dy;
