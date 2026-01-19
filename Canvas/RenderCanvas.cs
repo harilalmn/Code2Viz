@@ -356,8 +356,8 @@ public class RenderCanvas : FrameworkElement
         }
         else if (_selectionTool?.IsBoxSelecting == true || _selectionTool?.IsDraggingHandle == true)
         {
-            // Update selection box or handle drag
-            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y));
+            // Update selection box or handle drag (with snapping support)
+            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
             RedrawAll();
         }
     }
@@ -837,6 +837,12 @@ public class RenderCanvas : FrameworkElement
                 Math.Abs(end.Y - start.Y));
 
             dc.DrawRectangle(selectionBrush, selectionPen, rect);
+        }
+
+        // Draw snap indicator when dragging control points
+        if (_selectionTool.IsDraggingHandle && _selectionTool.CurrentSnap != null)
+        {
+            DrawSnapIndicator(dc, _selectionTool.CurrentSnap);
         }
 
         // Draw selection handles for selected shapes
@@ -1748,8 +1754,71 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawGroup(DrawingContext dc, VGroup group)
     {
-        // Groups don't draw themselves - shapes inside are added individually via Draw()
-        // This is here for completeness if groups are added directly to renderer
+        if (group.DrawFactor <= 0 || group.Opacity <= 0) return;
+
+        var applyOpacity = group.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(group.Opacity);
+
+        // Draw each shape in the group
+        foreach (var shape in group.Shapes)
+        {
+            DrawShape(dc, shape);
+        }
+
+        if (applyOpacity) dc.Pop();
+    }
+
+    /// <summary>
+    /// Draws a single shape using the appropriate method based on its type.
+    /// Used for rendering child shapes within groups.
+    /// </summary>
+    private void DrawShape(DrawingContext dc, Shape shape)
+    {
+        switch (shape)
+        {
+            case VPoint point:
+                DrawPoint(dc, point);
+                break;
+            case VLine line:
+                DrawLine(dc, line);
+                break;
+            case VArc arc:
+                DrawArc(dc, arc);
+                break;
+            case VCircle circle:
+                DrawCircle(dc, circle);
+                break;
+            case VRectangle rect:
+                DrawRectangle(dc, rect);
+                break;
+            case VEllipse ellipse:
+                DrawEllipse(dc, ellipse);
+                break;
+            case VPolygon polygon:
+                DrawPolygon(dc, polygon);
+                break;
+            case VPolyline polyline:
+                DrawPolyline(dc, polyline);
+                break;
+            case VText text:
+                DrawText(dc, text);
+                break;
+            case VBezier bezier:
+                DrawBezier(dc, bezier);
+                break;
+            case VSpline spline:
+                DrawSpline(dc, spline);
+                break;
+            case VArrow arrow:
+                DrawArrow(dc, arrow);
+                break;
+            case VDimension dim:
+                DrawDimension(dc, dim);
+                break;
+            case VGroup nestedGroup:
+                DrawGroup(dc, nestedGroup);
+                break;
+        }
     }
 
     public void ZoomExtents(IEnumerable<IDrawable> shapes)

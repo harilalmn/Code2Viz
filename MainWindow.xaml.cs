@@ -120,6 +120,9 @@ public partial class MainWindow : Window
         // Selection changes
         RenderCanvas.SelectionTool.SelectionChanged += OnSelectionChanged;
 
+        // Control point drag ended - update code when shape is moved
+        RenderCanvas.SelectionTool.ControlPointDragEnded += OnControlPointDragEnded;
+
         // Timeline panel events
         TimelinePanel.TimeChanged += (s, time) =>
         {
@@ -2956,8 +2959,10 @@ public partial class MainWindow : Window
 
         ApplicationSettings.Save();
 
-        // Refresh measuring tool snap settings
+        // Refresh snap settings for all tools
         RenderCanvas.MeasuringTool.RefreshSnapSettings();
+        RenderCanvas.SelectionTool.RefreshSnapSettings();
+        RenderCanvas.DrawingTool.RefreshSnapSettings();
 
         SetStatus("Settings saved (Project and Application).", isError: false);
     }
@@ -4102,6 +4107,7 @@ public partial class MainWindow : Window
     {
         RenderCanvas.IsSelectionMode = true;
         RenderCanvas.Cursor = Cursors.Arrow;
+        RenderCanvas.SelectionTool.RefreshSnapSettings();
         SetStatus("Selection mode: Click to select, Shift+Click to add, Ctrl+Click to toggle", isError: false);
         RenderCanvas.Refresh();
     }
@@ -4124,6 +4130,44 @@ public partial class MainWindow : Window
         else
         {
             SetStatus($"Selected {count} shapes", isError: false);
+        }
+    }
+
+    private void OnControlPointDragEnded(object? sender, Canvas.ControlPointDragEndedEventArgs e)
+    {
+        // Update the code for the dragged shape
+        var shape = e.Shape;
+        if (shape == null || _currentProject == null) return;
+
+        var entryFile = _currentProject.EntryPointFile;
+        if (entryFile == null) return;
+
+        var content = entryFile.Content;
+        var language = _currentProject.ProjectFile.Language;
+
+        // Try to update the shape's constructor in code
+        var (newContent, found) = Canvas.CodeSyncManager.UpdateShapeCode(content, shape, language);
+
+        if (found && newContent != content)
+        {
+            // Update the file content
+            entryFile.Content = newContent;
+
+            // Update the editor if this file is currently displayed
+            if (_activeFile == entryFile)
+            {
+                // Save cursor position
+                var caretOffset = CodeEditor.CaretOffset;
+
+                CodeEditor.Text = newContent;
+
+                // Restore cursor position (clamped to valid range)
+                CodeEditor.CaretOffset = Math.Min(caretOffset, newContent.Length);
+            }
+
+            // Mark as modified
+            RefreshFileTabs();
+            SetStatus($"Updated {shape.GetType().Name} in code", isError: false);
         }
     }
 

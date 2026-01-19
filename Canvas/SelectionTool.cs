@@ -4,6 +4,21 @@ using Code2Viz.Geometry;
 namespace Code2Viz.Canvas;
 
 /// <summary>
+/// Event args for control point drag ended event.
+/// </summary>
+public class ControlPointDragEndedEventArgs : EventArgs
+{
+    public Shape Shape { get; }
+    public int ControlPointIndex { get; }
+
+    public ControlPointDragEndedEventArgs(Shape shape, int controlPointIndex)
+    {
+        Shape = shape;
+        ControlPointIndex = controlPointIndex;
+    }
+}
+
+/// <summary>
 /// Manages shape selection state and interaction.
 /// </summary>
 public class SelectionTool
@@ -12,9 +27,25 @@ public class SelectionTool
     private const double HandleTolerance = 10.0; // Screen pixels for handles
 
     /// <summary>
+    /// The snap engine used for detecting snap points while dragging.
+    /// </summary>
+    public SnapEngine SnapEngine { get; }
+
+    /// <summary>
+    /// Current snap result during dragging (if any).
+    /// </summary>
+    public SnapResult? CurrentSnap { get; private set; }
+
+    /// <summary>
     /// Currently selected shapes.
     /// </summary>
     public List<Shape> SelectedShapes { get; } = new();
+
+    public SelectionTool()
+    {
+        SnapEngine = new SnapEngine();
+        SnapEngine.SyncFromSettings();
+    }
 
     /// <summary>
     /// Whether a box selection is in progress.
@@ -60,6 +91,11 @@ public class SelectionTool
     /// Event raised when a control point is moved.
     /// </summary>
     public event EventHandler? ControlPointMoved;
+
+    /// <summary>
+    /// Event raised when a control point drag operation ends.
+    /// </summary>
+    public event EventHandler<ControlPointDragEndedEventArgs>? ControlPointDragEnded;
 
     /// <summary>
     /// Performs hit testing to find a shape at the given position.
@@ -442,18 +478,50 @@ public class SelectionTool
     /// <summary>
     /// Handles mouse move during box selection or handle dragging.
     /// </summary>
-    public void OnMouseMove(VPoint worldPos)
+    /// <param name="worldPos">Current mouse position in world coordinates.</param>
+    /// <param name="shapes">All shapes on the canvas (for snapping).</param>
+    /// <param name="scale">Current canvas scale (for snap tolerance calculation).</param>
+    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable>? shapes = null, double scale = 1.0)
     {
         if (IsDraggingHandle && DraggedShape != null)
         {
-            DragPosition = worldPos;
-            DraggedShape.MoveControlPoint(DraggedControlPointIndex, worldPos);
+            // Try to snap to other shapes (exclude the shape being dragged)
+            VPoint targetPos = worldPos;
+            CurrentSnap = null;
+
+            if (shapes != null)
+            {
+                // Filter out the dragged shape from snap targets
+                var snapTargets = shapes.Where(s => s != DraggedShape).ToList();
+                CurrentSnap = SnapEngine.FindSnapPoint(worldPos, snapTargets, scale);
+
+                if (CurrentSnap != null)
+                {
+                    targetPos = CurrentSnap.Point;
+                }
+            }
+
+            DragPosition = targetPos;
+            DraggedShape.MoveControlPoint(DraggedControlPointIndex, targetPos);
             ControlPointMoved?.Invoke(this, EventArgs.Empty);
         }
         else if (IsBoxSelecting)
         {
             BoxEnd = worldPos;
+            CurrentSnap = null;
         }
+        else
+        {
+            CurrentSnap = null;
+        }
+    }
+
+    /// <summary>
+    /// Refreshes snap settings from application settings.
+    /// </summary>
+    public void RefreshSnapSettings()
+    {
+        SnapEngine.SyncFromSettings();
     }
 
     /// <summary>
@@ -468,6 +536,12 @@ public class SelectionTool
         // End handle dragging
         if (IsDraggingHandle)
         {
+            // Fire event before clearing the shape reference
+            if (DraggedShape != null)
+            {
+                ControlPointDragEnded?.Invoke(this, new ControlPointDragEndedEventArgs(DraggedShape, DraggedControlPointIndex));
+            }
+
             IsDraggingHandle = false;
             DraggedShape = null;
             DraggedControlPointIndex = -1;

@@ -12,15 +12,15 @@ namespace CSharpSample
         public double Thickness  {get; private set;}
         public VPolygon Geometry {get; private set;}
         
-        public static Wall FromCurve(ICurve curve, double thickness)
-        {
-            ICurve c1 = curve.Offset(thickness / 2);
-            ICurve c2 = curve.Offset(-thickness / 2);
-            
-            VPolygon polygon = new VPolygon()
-            
-            
-        }
+        // public static Wall FromCurve(ICurve curve, double thickness)
+        // {
+            // ICurve c1 = curve.Offset(thickness / 2);
+            // ICurve c2 = curve.Offset(-thickness / 2);
+            // 
+            // VPolygon polygon = new VPolygon()
+            // 
+            // 
+        // }
         
     }
 }
