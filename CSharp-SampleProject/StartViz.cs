@@ -10,27 +10,19 @@ namespace CSharpSample
     {
         public static void Main()
         {
-            // Wall wall = new Wall(line1);
-            VPoint point = new VPoint(0,0);
-            VXYZ v = new VXYZ(15,0,0);
+            VPolyline line1 = new VPolyline(
+            	new VPoint(0, 0), 
+	            new VPoint(20, 0),
+	            new VPoint(20, 30),
+	            new VPoint(15, 30),
+	            new VPoint(15, 35),
+	            new VPoint(0, 35),
+	            new VPoint(0, 0)
+            );
             
-            double n = 1;
-            
-            Animation a1 = new MoveAnimation(point, v, 0, n);
-            a1.EasingFunction = EasingFunctions.EaseInQuad;
-            
-            Animation a2 = new FadeOutAnimation(point, n, n/2) ;
-            a2.EasingFunction = EasingFunctions.EaseInQuad;
-            
-            
-            Timeline t = new Timeline();
-            t.Repeat = true;
-            t.Duration = 0.5;
-            
-            t.AddAnimation(a1);
-            t.AddAnimation(a2);
-            
-            t.Play();
+            Wall wall1 = new Wall(line1, 0.5);
+            wall1.Geometry.Draw();
+
         }
     }
 }

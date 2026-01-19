@@ -13,6 +13,9 @@ public class VLine : Shape, ICurve
     /// <summary>Gets the end point of the line.</summary>
     public VPoint EndPoint => End;
 
+    /// <summary>A line is never self-intersecting.</summary>
+    public bool SelfIntersecting => false;
+
     /// <summary>Gets the midpoint of the line.</summary>
     public VPoint MidPoint => Evaluate(0.5);
 
@@ -216,6 +219,14 @@ public class VLine : Shape, ICurve
             return GeometryHelper.IntersectLineRect(this, rect);
         }
         return base.Intersect(other);
+    }
+
+    /// <summary>
+    /// Computes the intersection between this line and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }
 

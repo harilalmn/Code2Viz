@@ -276,4 +276,15 @@ public class VEllipse : Shape, ICurve
 
     public VPoint StartPoint => Evaluate(0);
     public VPoint EndPoint => Evaluate(1);
+
+    /// <summary>An ellipse is never self-intersecting.</summary>
+    public bool SelfIntersecting => false;
+
+    /// <summary>
+    /// Computes the intersection between this ellipse and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
+    }
 }

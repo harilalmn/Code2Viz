@@ -16,6 +16,13 @@ public interface ICurve : IDrawable
     VPoint EndPoint { get; }
 
     /// <summary>
+    /// Indicates whether the curve intersects itself.
+    /// Simple curves (Line, Circle, Arc, Ellipse) are never self-intersecting.
+    /// Complex curves (Polyline, Polygon, Bezier, Spline) may be self-intersecting.
+    /// </summary>
+    bool SelfIntersecting { get; }
+
+    /// <summary>
     /// Divides the curve into the specified number of segments.
     /// </summary>
     /// <returns>A list of points including the start and end points.</returns>
@@ -68,4 +75,10 @@ public interface ICurve : IDrawable
     /// Calculates the normal vector at a specific point on the curve.
     /// </summary>
     VXYZ NormalAtPoint(VPoint p);
+
+    /// <summary>
+    /// Computes the intersection between this curve and another curve.
+    /// Returns an IntersectionResult containing points and/or overlapping curves.
+    /// </summary>
+    IntersectionResult Intersect(ICurve other);
 }

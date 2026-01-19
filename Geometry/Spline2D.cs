@@ -8,6 +8,7 @@ namespace Code2Viz.Geometry;
 public class VSpline : Shape, ICurve
 {
     public List<VPoint> ControlPoints { get; set; }
+    private readonly bool _selfIntersecting;
 
     /// <summary>Number of segments between each pair of control points</summary>
     public int SegmentsPerSpan { get; set; } = 16;
@@ -18,16 +19,21 @@ public class VSpline : Shape, ICurve
     public VPoint StartPoint => ControlPoints.Count > 0 ? ControlPoints[0] : new VPoint(0, 0);
     public VPoint EndPoint => ControlPoints.Count > 0 ? ControlPoints[^1] : new VPoint(0, 0);
 
+    /// <summary>Indicates whether the spline intersects itself.</summary>
+    public bool SelfIntersecting => _selfIntersecting;
+
     public VSpline(params VPoint[] points)
     {
         ControlPoints = points.ToList();
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Violet";
+        _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
     public VSpline(IEnumerable<VPoint> points)
     {
         ControlPoints = points.ToList();
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Violet";
+        _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
     /// <summary>
@@ -411,5 +417,13 @@ public class VSpline : Shape, ICurve
         double y = Tension * (d1 * p0.Y + d2 * p1.Y + d3 * p2.Y + d4 * p3.Y);
 
         return new VPoint(x, y);
+    }
+
+    /// <summary>
+    /// Computes the intersection between this spline and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }

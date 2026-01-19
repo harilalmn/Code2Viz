@@ -13,6 +13,9 @@ public class VCircle : Shape, ICurve
     /// <summary>Gets the end point of the circle (same as StartPoint, since it's closed).</summary>
     public VPoint EndPoint => StartPoint;
 
+    /// <summary>A circle is never self-intersecting.</summary>
+    public bool SelfIntersecting => false;
+
     public VCircle(VPoint center, double radius)
     {
         Center = center;
@@ -205,6 +208,14 @@ public class VCircle : Shape, ICurve
     public VXYZ NormalAtPoint(VPoint p)
     {
         return new VXYZ(p.X - Center.X, p.Y - Center.Y, 0).Normalize();
+    }
+
+    /// <summary>
+    /// Computes the intersection between this circle and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }
 

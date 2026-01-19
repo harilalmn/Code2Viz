@@ -14,6 +14,9 @@ public class VRectangle : Shape, ICurve
     /// <summary>Gets the end point of the rectangle (same as Corner, since it's closed).</summary>
     public VPoint EndPoint => Corner;
 
+    /// <summary>A rectangle is never self-intersecting.</summary>
+    public bool SelfIntersecting => false;
+
     public VRectangle(VPoint corner, double width, double height)
     {
         Corner = corner;
@@ -325,5 +328,13 @@ public class VRectangle : Shape, ICurve
     public VXYZ NormalAtPoint(VPoint p)
     {
         return GeometryHelper.GetPolylineNormalAtPoint(GetCorners(), p, true);
+    }
+
+    /// <summary>
+    /// Computes the intersection between this rectangle and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }

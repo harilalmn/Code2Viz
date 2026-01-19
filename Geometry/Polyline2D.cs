@@ -5,6 +5,7 @@ namespace Code2Viz.Geometry;
 public class VPolyline : Shape, ICurve
 {
     public List<VPoint> Points { get; set; }
+    private readonly bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polyline.</summary>
     public VPoint StartPoint => Points.Count > 0 ? Points[0] : new VPoint(0, 0);
@@ -12,16 +13,21 @@ public class VPolyline : Shape, ICurve
     /// <summary>Gets the end point of the polyline.</summary>
     public VPoint EndPoint => Points.Count > 0 ? Points[^1] : new VPoint(0, 0);
 
+    /// <summary>Indicates whether the polyline intersects itself.</summary>
+    public bool SelfIntersecting => _selfIntersecting;
+
     public VPolyline(params VPoint[] points)
     {
         Points = points.ToList();
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightGreen";
+        _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 
     public VPolyline(IEnumerable<VPoint> points)
     {
         Points = points.ToList();
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightGreen";
+        _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 
     public void AddPoint(VPoint point)
@@ -200,40 +206,77 @@ public class VPolyline : Shape, ICurve
         if (Points.Count < 2) return (ICurve)this.Clone();
 
         var newPoints = new List<VPoint>();
-        
-        // Simple offset by vertex normal (average of adjacent segment normals)
-        for (int i = 0; i < Points.Count; i++)
+
+        // Check if polyline is closed (first and last points are the same)
+        bool isClosed = Points.Count > 2 && Points[0].DistanceTo(Points[Points.Count - 1]) < 1e-6;
+
+        // For closed polylines, don't process the duplicate end point
+        int pointCount = isClosed ? Points.Count - 1 : Points.Count;
+
+        // Offset by vertex normal with proper miter calculation at corners
+        for (int i = 0; i < pointCount; i++)
         {
-            VXYZ n1 = new VXYZ(0,0,0);
-            VXYZ n2 = new VXYZ(0,0,0);
-            
-            if (i > 0)
+            VXYZ n1 = new VXYZ(0, 0, 0);
+            VXYZ n2 = new VXYZ(0, 0, 0);
+
+            // Get normal from previous segment
+            int prevIdx = isClosed ? (i - 1 + pointCount) % pointCount : i - 1;
+            if (i > 0 || isClosed)
             {
-                var dir = (Points[i].AsVXYZ() - Points[i-1].AsVXYZ()).Normalize();
+                var dir = (Points[i].AsVXYZ() - Points[prevIdx].AsVXYZ()).Normalize();
                 n1 = new VXYZ(-dir.Y, dir.X, 0); // Normal left
             }
-            
-            if (i < Points.Count - 1)
+
+            // Get normal from next segment
+            int nextIdx = isClosed ? (i + 1) % pointCount : i + 1;
+            if (i < Points.Count - 1 || isClosed)
             {
-                var dir = (Points[i+1].AsVXYZ() - Points[i].AsVXYZ()).Normalize();
+                var dir = (Points[nextIdx].AsVXYZ() - Points[i].AsVXYZ()).Normalize();
                 n2 = new VXYZ(-dir.Y, dir.X, 0); // Normal left
             }
-            
-            VXYZ normal;
-            if (i == 0) normal = n2;
-            else if (i == Points.Count - 1) normal = n1;
-            else 
+
+            VXYZ offsetVector;
+            bool isEndpoint = !isClosed && (i == 0 || i == Points.Count - 1);
+
+            if (isEndpoint)
             {
-                normal = (n1 + n2).Normalize();
-                 // Create miter? For now simple average normalized. 
-                 // Note: strict miter offset is distance / sin(angle/2).
+                // Open polyline endpoints - use single segment normal
+                offsetVector = (i == 0 ? n2 : n1) * distance;
+            }
+            else
+            {
+                // Interior vertex (or any vertex on closed polyline) - calculate miter
+                var miterDir = (n1 + n2);
+                double miterLength = miterDir.GetLength();
+
+                if (miterLength < 1e-10)
+                {
+                    // Segments are parallel (180 degree turn) - use perpendicular offset
+                    offsetVector = n1 * distance;
+                }
+                else
+                {
+                    miterDir = miterDir.Normalize();
+                    // cos(theta) = dot(miterDir, n1) where theta is angle between miter and normal
+                    double cosTheta = miterDir.DotProduct(n1);
+
+                    // Limit miter to avoid extreme spikes at very sharp angles (miter limit)
+                    const double miterLimit = 4.0; // Standard miter limit
+                    double miterScale = 1.0 / Math.Max(cosTheta, 1.0 / miterLimit);
+
+                    offsetVector = miterDir * distance * miterScale;
+                }
             }
 
-            // Approximate miter adjustment: valid for small angles 
-            // but let's just use perpendicular offset for robustness in this pass
-            newPoints.Add((Points[i].AsVXYZ() + normal * distance).AsVPoint());
+            newPoints.Add((Points[i].AsVXYZ() + offsetVector).AsVPoint());
         }
-        
+
+        // For closed polylines, close the offset curve by adding the first point again
+        if (isClosed && newPoints.Count > 0)
+        {
+            newPoints.Add(newPoints[0]);
+        }
+
         return new VPolyline(newPoints);
     }
 
@@ -338,5 +381,13 @@ public class VPolyline : Shape, ICurve
     public VXYZ NormalAtPoint(VPoint p)
     {
         return GeometryHelper.GetPolylineNormalAtPoint(Points, p, false);
+    }
+
+    /// <summary>
+    /// Computes the intersection between this polyline and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }

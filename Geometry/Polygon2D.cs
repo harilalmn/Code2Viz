@@ -5,6 +5,8 @@ namespace Code2Viz.Geometry;
 public class VPolygon : Shape, ICurve
 {
     public List<VPoint> Points { get; set; }
+    public List<ICurve> Curves { get; private set; } = new();
+    private readonly bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polygon.</summary>
     public VPoint StartPoint => Points.Count > 0 ? Points[0] : new VPoint(0, 0);
@@ -12,11 +14,15 @@ public class VPolygon : Shape, ICurve
     /// <summary>Gets the end point of the polygon (same as StartPoint, since it's closed).</summary>
     public VPoint EndPoint => StartPoint;
 
+    /// <summary>Indicates whether the polygon intersects itself.</summary>
+    public bool SelfIntersecting => _selfIntersecting;
+
     public VPolygon(params VPoint[] points)
     {
         Points = points.ToList();
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightBlue";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
+        _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(GetClosedPoints());
     }
 
     public VPolygon(IEnumerable<VPoint> points)
@@ -24,6 +30,18 @@ public class VPolygon : Shape, ICurve
         Points = points.ToList();
         StrokeColor = "LightBlue";
         FillColor = "Transparent";
+        _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(GetClosedPoints());
+    }
+
+    private List<VPoint> GetClosedPoints()
+    {
+        if (Points.Count == 0) return Points;
+        var closed = new List<VPoint>(Points);
+        if (closed.Count > 0 && closed[0].DistanceTo(closed[^1]) > 1e-6)
+        {
+            closed.Add(closed[0]);
+        }
+        return closed;
     }
 
     /// <summary>
@@ -58,8 +76,14 @@ public class VPolygon : Shape, ICurve
         // Extract vertices from the ordered curves
         Points = ExtractVerticesFromCurves(orderedCurves);
 
+        // Store the curves (extract just the ICurve from the tuples)
+        Curves = orderedCurves.Select(t => t.curve).ToList();
+
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightBlue";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
+
+        // Validation passed, so no self-intersection
+        _selfIntersecting = false;
     }
 
     private const double ConnectionTolerance = 1e-6;
@@ -825,5 +849,13 @@ public class VPolygon : Shape, ICurve
     public VXYZ NormalAtPoint(VPoint p)
     {
         return GeometryHelper.GetPolylineNormalAtPoint(Points, p, true);
+    }
+
+    /// <summary>
+    /// Computes the intersection between this polygon and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }

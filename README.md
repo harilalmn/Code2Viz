@@ -853,6 +853,58 @@ var (first, second) = curve.SplitAtPoint(midPoint);
 
 // Get normal vector at a point
 VXYZ normal = curve.NormalAtPoint(midPoint);
+
+// Check if curve is self-intersecting
+bool selfIntersects = curve.SelfIntersecting;
+
+// Intersect with another curve
+IntersectionResult result = curve.Intersect(otherCurve);
+if (result.HasIntersection)
+{
+    foreach (var pt in result.Points)
+        new VPoint(pt.X, pt.Y).Draw();  // Draw intersection points
+}
+```
+
+### Curve Intersection
+All ICurve types support intersection detection:
+
+```csharp
+var line1 = new VLine(0, 0, 100, 100);
+var line2 = new VLine(0, 100, 100, 0);
+var circle = new VCircle(50, 50, 30);
+
+// Line-Line intersection
+var result = line1.Intersect(line2);
+if (result.IsSinglePoint)
+    VizConsole.Log($"Lines cross at: {result.Points[0]}");
+
+// Line-Circle intersection (may have 0, 1, or 2 points)
+var circleResult = line1.Intersect(circle);
+VizConsole.Log($"Found {circleResult.Points.Count} intersections");
+
+// Check for overlapping segments (collinear lines)
+if (result.HasOverlap)
+    foreach (var overlapCurve in result.Curves)
+        overlapCurve.Draw();
+```
+
+### Self-Intersection Detection
+The `SelfIntersecting` property indicates whether a curve crosses itself:
+
+```csharp
+// Simple curves are never self-intersecting
+var line = new VLine(0, 0, 100, 100);
+VizConsole.Log($"Line self-intersects: {line.SelfIntersecting}");  // false
+
+// Complex curves may self-intersect
+var polyline = new VPolyline(
+    new VPoint(0, 0),
+    new VPoint(100, 0),
+    new VPoint(50, 50),
+    new VPoint(50, -50)  // crosses back over
+);
+VizConsole.Log($"Polyline self-intersects: {polyline.SelfIntersecting}");  // true
 ```
 
 ---

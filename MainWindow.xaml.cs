@@ -2544,9 +2544,9 @@ public partial class MainWindow : Window
     {
         var selectedFile = _activeFile;
         FileTabs.ItemsSource = null;
-        FileTabs.ItemsSource = _currentProject?.Files;
+        FileTabs.ItemsSource = _currentProject?.Files.Where(f => f.IsOpen).ToList();
 
-        if (selectedFile != null && _currentProject?.Files.Contains(selectedFile) == true)
+        if (selectedFile != null && selectedFile.IsOpen)
         {
             FileTabs.SelectedItem = selectedFile;
         }
@@ -2862,12 +2862,15 @@ public partial class MainWindow : Window
                     _currentProject?.SaveFile(file);
             }
 
-            _currentProject?.RemoveFile(file);
+            // Close the tab (don't remove from project, just mark as not open)
+            file.IsOpen = false;
             RefreshFileTabs();
 
-            if (_currentProject?.Files.Count > 0)
+            // Select another open file
+            var openFiles = _currentProject?.Files.Where(f => f.IsOpen).ToList();
+            if (openFiles?.Count > 0)
             {
-                SelectFile(_currentProject.Files[0]);
+                SelectFile(openFiles[0]);
             }
             else
             {
@@ -5681,9 +5684,15 @@ public partial class MainWindow : Window
             {
                 // Check if file is already loaded
                 var existingFile = _currentProject?.Files.FirstOrDefault(f => f.FilePath.Equals(item.FullPath, StringComparison.OrdinalIgnoreCase));
-                
+
                 if (existingFile != null)
                 {
+                    // Reopen the tab if it was closed
+                    if (!existingFile.IsOpen)
+                    {
+                        existingFile.IsOpen = true;
+                        RefreshFileTabs();
+                    }
                     SelectFile(existingFile);
                 }
                 else if (File.Exists(item.FullPath) && _currentProject != null)

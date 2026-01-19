@@ -11,6 +11,7 @@ public class VBezier : Shape, ICurve
     public VPoint P1 { get; set; }  // Control point 1
     public VPoint P2 { get; set; }  // Control point 2
     public VPoint P3 { get; set; }  // End point
+    private readonly bool _selfIntersecting;
 
     /// <summary>Number of segments for rendering (higher = smoother)</summary>
     public int Segments { get; set; } = 32;
@@ -19,6 +20,9 @@ public class VBezier : Shape, ICurve
     public VPoint EndPoint => P3;
     public VPoint MidPoint => Evaluate(0.5);
 
+    /// <summary>Indicates whether the bezier curve intersects itself.</summary>
+    public bool SelfIntersecting => _selfIntersecting;
+
     public VBezier(VPoint p0, VPoint p1, VPoint p2, VPoint p3)
     {
         P0 = p0;
@@ -26,6 +30,7 @@ public class VBezier : Shape, ICurve
         P2 = p2;
         P3 = p3;
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Purple";
+        _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
     public VBezier(double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
@@ -35,6 +40,7 @@ public class VBezier : Shape, ICurve
         P2 = new VPoint(x2, y2);
         P3 = new VPoint(x3, y3);
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Purple";
+        _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
     /// <summary>
@@ -367,7 +373,15 @@ public class VBezier : Shape, ICurve
         
         double x = term1 * (P1.X - P0.X) + term2 * (P2.X - P1.X) + term3 * (P3.X - P2.X);
         double y = term1 * (P1.Y - P0.Y) + term2 * (P2.Y - P1.Y) + term3 * (P3.Y - P2.Y);
-        
+
         return new VPoint(x, y);
+    }
+
+    /// <summary>
+    /// Computes the intersection between this bezier curve and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
     }
 }

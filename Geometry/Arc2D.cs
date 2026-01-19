@@ -15,6 +15,9 @@ public class VArc : Shape, ICurve
     /// <summary>Gets the end point of the arc.</summary>
     public VPoint EndPoint => Evaluate(1);
 
+    /// <summary>An arc is never self-intersecting.</summary>
+    public bool SelfIntersecting => false;
+
     /// <summary>Gets the midpoint of the arc.</summary>
     public VPoint MidPoint => Evaluate(0.5);
 
@@ -323,5 +326,13 @@ public class VArc : Shape, ICurve
     }
 
     public override string ToString() => $"VArc(Center: {Center}, R: {Radius}, {StartAngle}° to {EndAngle}°)";
+
+    /// <summary>
+    /// Computes the intersection between this arc and another curve.
+    /// </summary>
+    public IntersectionResult Intersect(ICurve other)
+    {
+        return CurveIntersection.Intersect(this, other);
+    }
 }
 

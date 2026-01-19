@@ -34,7 +34,9 @@ namespace Code2Viz.Documentation
                 // Base classes
                 { "Shape", "Abstract base class for all drawable shapes. Provides common properties like StrokeColor, FillColor, StrokeThickness, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains(), DistanceTo()." },
                 { "IDrawable", "Interface for any object that can be drawn on the canvas. Defines Draw() method and styling properties." },
-                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), StrokeColor, FillColor, and StrokeThickness. Provides curve operations: StartPoint, EndPoint, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint()." },
+                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), StrokeColor, FillColor, and StrokeThickness. Provides curve operations: StartPoint, EndPoint, SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(). The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve." },
+                { "IntersectionResult", "Represents the result of an intersection operation between curves. Contains Points (list of intersection points) and Curves (list of overlapping segments). Properties: HasIntersection (true if any intersection), IsSinglePoint (exactly one point), HasOverlap (curves share a segment), Count (total elements). Use Intersect() method on any ICurve to compute intersections." },
+                { "CurveIntersection", "Static utility class providing curve intersection algorithms. Supports Line-Line, Line-Circle, Line-Arc, Line-Ellipse, Circle-Circle, Circle-Arc, Arc-Arc intersections with specialized algorithms. Complex curves use segment-based approximation. Also provides IsSelfIntersecting() for detecting self-intersections." },
 
                 // Shapes
                 { "VArc", "Represents a 2D arc defined by a center point, radius, start angle, and end angle (in degrees). The arc is drawn counter-clockwise from start to end angle." },
@@ -801,6 +803,56 @@ double dist = shape.DistanceTo(point);" },
 double dist = GeometryHelper.DistancePointToLine(point, line);
 VPoint? intersection = GeometryHelper.LineLineIntersection(line1, line2);
 double angle = GeometryHelper.AngleBetweenVectors(v1, v2);" },
+
+                { "ICurve", @"// ICurve interface - all curve shapes implement this
+ICurve curve = new VLine(0, 0, 100, 100);
+curve.Draw();  // ICurve extends IDrawable
+
+// Check for self-intersection
+bool selfIntersects = curve.SelfIntersecting;
+VizConsole.Log($""Self-intersecting: {selfIntersects}"");
+
+// Intersect with another curve
+var line2 = new VLine(0, 100, 100, 0);
+IntersectionResult result = curve.Intersect(line2);
+if (result.HasIntersection)
+{
+    foreach (var pt in result.Points)
+        new VPoint(pt.X, pt.Y).Draw();
+}" },
+
+                { "IntersectionResult", @"// IntersectionResult holds intersection data
+var line1 = new VLine(0, 0, 100, 100);
+var line2 = new VLine(0, 100, 100, 0);
+var circle = new VCircle(50, 50, 30);
+
+// Line-Line intersection
+var result = line1.Intersect(line2);
+if (result.IsSinglePoint)
+    VizConsole.Log($""Cross at: {result.Points[0]}"");
+
+// Line-Circle may have multiple points
+var circleResult = line1.Intersect(circle);
+VizConsole.Log($""Found {circleResult.Points.Count} intersections"");
+
+// Check for overlapping segments (collinear lines)
+if (result.HasOverlap)
+    foreach (var c in result.Curves) c.Draw();" },
+
+                { "CurveIntersection", @"// Static utility for curve intersections
+var line = new VLine(0, 0, 100, 100);
+var circle = new VCircle(50, 50, 40);
+
+// Use directly via static methods
+var result = CurveIntersection.Intersect(line, circle);
+foreach (var pt in result.Points)
+    new VPoint(pt.X, pt.Y).Draw();
+
+// Check self-intersection
+var polyline = new VPolyline(
+    new VPoint(0, 0), new VPoint(100, 0),
+    new VPoint(50, 50), new VPoint(50, -50));
+bool selfX = CurveIntersection.IsSelfIntersecting(polyline);" },
 
                 // Animation
                 { "Timeline", @"// Create shapes
