@@ -42,7 +42,7 @@ public class VCircle : Shape, ICurve
 
         double d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
 
-        if (Math.Abs(d) < 1e-10)
+        if (GeometryTolerance.IsZero(d))
             throw new ArgumentException("The three points are collinear; cannot create a circle.");
 
         double sq1 = x1 * x1 + y1 * y1;

@@ -103,11 +103,11 @@ namespace Code2Viz.Geometry
         public bool IsZeroLength() => IsZero(GetLength());
         public bool IsUnitLength() => IsZero(GetLength() - 1.0);
 
-        public bool IsAlmostEqualTo(VXYZ source, double tolerance = 1.0e-09)
+        public bool IsAlmostEqualTo(VXYZ source, double tolerance = GeometryTolerance.Epsilon)
         {
-            return Math.Abs(X - source.X) < tolerance &&
-                   Math.Abs(Y - source.Y) < tolerance &&
-                   Math.Abs(Z - source.Z) < tolerance;
+            return GeometryTolerance.AreEqual(X, source.X, tolerance) &&
+                   GeometryTolerance.AreEqual(Y, source.Y, tolerance) &&
+                   GeometryTolerance.AreEqual(Z, source.Z, tolerance);
         }
 
         public static bool IsWithinLengthLimits(VXYZ point)
@@ -153,6 +153,6 @@ namespace Code2Viz.Geometry
             return $"({X:F9}, {Y:F9}, {Z:F9})";
         }
 
-        private static bool IsZero(double val) => Math.Abs(val) < 1.0e-09;
+        private static bool IsZero(double val) => GeometryTolerance.IsZero(val);
     }
 }

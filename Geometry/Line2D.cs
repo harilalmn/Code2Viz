@@ -195,7 +195,7 @@ public class VLine : Shape, ICurve
         double d1 = Start.DistanceTo(p);
         double d2 = p.DistanceTo(End);
         double total = Start.DistanceTo(End);
-        return Math.Abs((d1 + d2) - total) < 1e-9;
+        return GeometryTolerance.IsZero((d1 + d2) - total);
     }
 
     public (ICurve, ICurve) SplitAtPoint(VPoint point)

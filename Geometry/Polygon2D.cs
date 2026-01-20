@@ -437,7 +437,7 @@ public class VPolygon : Shape, ICurve
         double cross = d1x * d2y - d1y * d2x;
 
         // Parallel or collinear
-        if (Math.Abs(cross) < 1e-10)
+        if (GeometryTolerance.IsZero(cross))
         {
             // Check for collinear overlap (excluding shared endpoints)
             if (AreCollinearAndOverlapping(p1, p2, p3, p4, segmentsShareEndpoint, allowedIntersection))

@@ -88,7 +88,7 @@ public static class GeometryHelper
         double d = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
         
         // Parallel lines
-        if (Math.Abs(d) < 1e-10)
+        if (GeometryTolerance.IsZero(d))
         {
             // Check for collinearity and overlap
             // This is a bit complex for a simple first pass, returning null for parallel lines for now unless requested otherwise
@@ -120,7 +120,7 @@ public static class GeometryHelper
         double b = (l1.Start.X - l1.End.X);
         double c = -a * l1.Start.X - b * l1.Start.Y;
         
-        return Math.Abs(a * l2.Start.X + b * l2.Start.Y + c) < 1e-5;
+        return GeometryTolerance.IsZero(a * l2.Start.X + b * l2.Start.Y + c, GeometryTolerance.VisualEpsilon);
     }
 
     private static Shape? GetLineOverlap(VLine l1, VLine l2)
@@ -157,7 +157,7 @@ public static class GeometryHelper
         
         // Should verify this segment allows for actual overlap 
         // (already checked via overlapMin/Max but good to be safe)
-        if (Math.Abs(GetVal(pStart) - GetVal(pEnd)) < 1e-9) return new VPoint(pStart.X, pStart.Y);
+        if (GeometryTolerance.AreEqual(GetVal(pStart), GetVal(pEnd))) return new VPoint(pStart.X, pStart.Y);
         
         return new VLine(pStart.X, pStart.Y, pEnd.X, pEnd.Y);
     }
@@ -201,7 +201,7 @@ public static class GeometryHelper
             if (edge == 2) { p = -dy; q = -(rect.Corner.Y - y1); }
             if (edge == 3) { p = dy; q = (rect.Corner.Y + rect.Height - y1); }
 
-            if (p == 0 && q < 0) return null; // Parallel and outside
+            if (GeometryTolerance.IsZero(p) && q < 0) return null; // Parallel and outside
 
             r = q / p;
 
@@ -225,7 +225,7 @@ public static class GeometryHelper
             double newY2 = y1 + t1 * dy;
             
             // If it's a point
-            if (Math.Abs(t1 - t0) < 1e-9) return new VPoint(newX1, newY1);
+            if (GeometryTolerance.AreEqual(t1, t0)) return new VPoint(newX1, newY1);
             
             return new VLine(newX1, newY1, newX2, newY2);
         }
@@ -294,7 +294,9 @@ public static class GeometryHelper
         double d = Math.Sqrt(dx * dx + dy * dy);
 
         // Circles are separate or contained within each other
-        if (d > r1 + r2 || d < Math.Abs(r1 - r2) || d == 0)
+        if (GeometryTolerance.IsGreaterThan(d, r1 + r2) ||
+            GeometryTolerance.IsLessThan(d, Math.Abs(r1 - r2)) ||
+            GeometryTolerance.IsZero(d))
         {
             return results;
         }
@@ -311,7 +313,7 @@ public static class GeometryHelper
         ));
 
         // If not tangent (touching at one point)
-        if (d != r1 + r2)
+        if (!GeometryTolerance.AreEqual(d, r1 + r2))
         {
             results.Add(new VPoint(
                 x2 - h * (c2.Y - c1.Y) / d,

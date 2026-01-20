@@ -1,5 +1,6 @@
 using System.Text;
 using System.Timers;
+using Code2Viz.Services;
 
 namespace Code2Viz.Console;
 
@@ -17,7 +18,7 @@ public class ConsoleEntry
     public bool IsClickable => !string.IsNullOrEmpty(FilePath) && LineNumber > 0;
 }
 
-public class ConsoleOutput
+public class ConsoleOutput : IConsoleOutput
 {
     private static readonly Lazy<ConsoleOutput> _instance = new(() => new ConsoleOutput());
     public static ConsoleOutput Instance => _instance.Value;

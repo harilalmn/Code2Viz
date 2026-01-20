@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using Code2Viz.Animation;
 using Code2Viz.Canvas;
+using Code2Viz.Commands;
 using Code2Viz.Console;
 using Code2Viz.Editor;
 using Code2Viz.Execution;
@@ -3470,6 +3471,9 @@ public partial class MainWindow : Window
                 // Reset animation time
                 _animationStopwatch.Restart();
 
+                // Clear undo stack since all shapes are regenerated from code
+                TransactionManager.Instance.Clear();
+
                 var shapes = CanvasRenderer.Instance.GetShapes();
                 var count = shapes.Count;
 
@@ -3630,6 +3634,7 @@ public partial class MainWindow : Window
     {
         CanvasRenderer.Instance.Clear();
         RenderCanvas.ClearShapes();
+        TransactionManager.Instance.Clear(); // Clear undo stack
         SetStatus("Canvas cleared", isError: false);
     }
 
@@ -4316,6 +4321,22 @@ public partial class MainWindow : Window
         {
             switch (e.Key)
             {
+                case Key.Z:
+                    // Undo - only handle if canvas has focus or shapes are selected
+                    if (RenderCanvas.IsFocused || RenderCanvas.IsMouseOver || RenderCanvas.SelectionTool.SelectedShapes.Count > 0)
+                    {
+                        PerformUndo();
+                        e.Handled = true;
+                    }
+                    break;
+                case Key.Y:
+                    // Redo - only handle if canvas has focus or shapes are selected
+                    if (RenderCanvas.IsFocused || RenderCanvas.IsMouseOver || RenderCanvas.SelectionTool.SelectedShapes.Count > 0)
+                    {
+                        PerformRedo();
+                        e.Handled = true;
+                    }
+                    break;
                 case Key.N:
                     NewFileButton_Click(sender, e);
                     e.Handled = true;
@@ -7718,6 +7739,48 @@ public partial class MainWindow : Window
     private void OutlinerItem_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         RenderCanvas.HighlightedShapeId = null;
+    }
+
+    #endregion
+
+    #region Undo/Redo
+
+    private void PerformUndo()
+    {
+        if (TransactionManager.Instance.CanUndo)
+        {
+            var description = TransactionManager.Instance.UndoDescription;
+            TransactionManager.Instance.Undo();
+            SetStatus($"Undo: {description}", isError: false);
+        }
+        else
+        {
+            SetStatus("Nothing to undo", isError: false);
+        }
+    }
+
+    private void PerformRedo()
+    {
+        if (TransactionManager.Instance.CanRedo)
+        {
+            var description = TransactionManager.Instance.RedoDescription;
+            TransactionManager.Instance.Redo();
+            SetStatus($"Redo: {description}", isError: false);
+        }
+        else
+        {
+            SetStatus("Nothing to redo", isError: false);
+        }
+    }
+
+    private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PerformUndo();
+    }
+
+    private void RedoMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PerformRedo();
     }
 
     #endregion

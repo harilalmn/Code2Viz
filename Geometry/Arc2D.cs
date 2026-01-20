@@ -47,7 +47,7 @@ public class VArc : Shape, ICurve
         // Check collinearity via determinant (2 * signed area)
         double D = 2 * (start.X * (mid.Y - end.Y) + mid.X * (end.Y - start.Y) + end.X * (start.Y - mid.Y));
         
-        if (Math.Abs(D) < 1e-9)
+        if (GeometryTolerance.IsZero(D))
         {
             // Collinear - theoretically a straight line/infinite radius. 
             // Fallback to a valid but flat arc or throw? 

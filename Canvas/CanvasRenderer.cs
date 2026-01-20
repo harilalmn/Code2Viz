@@ -1,9 +1,10 @@
 using Code2Viz.Geometry;
 using Code2Viz.Animation;
+using Code2Viz.Services;
 
 namespace Code2Viz.Canvas;
 
-public class CanvasRenderer
+public class CanvasRenderer : ICanvasRenderer
 {
     private static CanvasRenderer? _instance;
     private static readonly object _lock = new();

@@ -52,17 +52,19 @@ internal static class SnapMarkerBrushes
 public class RenderCanvas : FrameworkElement
 {
     private const double PointRadius = 5;
-    private const double MinZoom = 0.01;
-    private const double MaxZoom = 100;
-    private const double ZoomFactor = 1.1;
 
-    private double _scale = 1.0;
-    private double _panX = 0;
-    private double _panY = 0;
+    // Viewport transformation (encapsulates scale/pan/coordinate conversion)
+    private readonly ViewportTransform _viewport = new();
+
     private Point _lastMousePosition;
     private bool _isPanning = false;
     private bool _showGrid = true;
     private double _gridSpacing = 50;
+
+    /// <summary>
+    /// Current zoom scale factor. Read-only; use zoom methods to modify.
+    /// </summary>
+    public double Scale => _viewport.Scale;
 
     private List<IDrawable> _currentShapes = new();
     private readonly DrawingVisual _visual;
@@ -178,14 +180,13 @@ public class RenderCanvas : FrameworkElement
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
+        _viewport.SetViewportSize(ActualWidth, ActualHeight);
         RedrawAll();
     }
 
     public void CenterOrigin()
     {
-        _scale = 1.0;
-        _panX = 0;
-        _panY = 0;
+        _viewport.Reset();
         RedrawAll();
     }
 
@@ -199,36 +200,16 @@ public class RenderCanvas : FrameworkElement
 
     // Convert world coordinates to screen coordinates
     private Point WorldToScreen(double worldX, double worldY)
-    {
-        var screenX = ActualWidth / 2 + (worldX * _scale) + _panX;
-        var screenY = ActualHeight / 2 - (worldY * _scale) + _panY;
-        return new Point(screenX, screenY);
-    }
+        => _viewport.WorldToScreen(worldX, worldY);
 
     // Convert screen coordinates to world coordinates
     private Point ScreenToWorld(double screenX, double screenY)
-    {
-        var worldX = (screenX - ActualWidth / 2 - _panX) / _scale;
-        var worldY = -(screenY - ActualHeight / 2 - _panY) / _scale;
-        return new Point(worldX, worldY);
-    }
+        => _viewport.ScreenToWorld(screenX, screenY);
 
     private void OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
         var mouseScreenPos = e.GetPosition(this);
-        var worldPos = ScreenToWorld(mouseScreenPos.X, mouseScreenPos.Y);
-
-        if (e.Delta > 0)
-            _scale *= ZoomFactor;
-        else
-            _scale /= ZoomFactor;
-
-        _scale = Math.Clamp(_scale, MinZoom, MaxZoom);
-
-        var newScreenPos = WorldToScreen(worldPos.X, worldPos.Y);
-        _panX += mouseScreenPos.X - newScreenPos.X;
-        _panY += mouseScreenPos.Y - newScreenPos.Y;
-
+        _viewport.ZoomAtPoint(mouseScreenPos.X, mouseScreenPos.Y, e.Delta > 0);
         RedrawAll();
     }
 
@@ -281,7 +262,7 @@ public class RenderCanvas : FrameworkElement
                 // Check for double-click on empty space to zoom extents
                 if (e.ClickCount == 2)
                 {
-                    var hitShape = _selectionTool.HitTest(vPoint, _currentShapes, _scale);
+                    var hitShape = _selectionTool.HitTest(vPoint, _currentShapes, _viewport.Scale);
                     if (hitShape == null)
                     {
                         ZoomExtents(_currentShapes);
@@ -290,7 +271,7 @@ public class RenderCanvas : FrameworkElement
                     }
                 }
 
-                _selectionTool.OnMouseDown(vPoint, shift, ctrl, _currentShapes, _scale);
+                _selectionTool.OnMouseDown(vPoint, shift, ctrl, _currentShapes, _viewport.Scale);
 
                 if (_selectionTool.IsBoxSelecting || _selectionTool.IsDraggingHandle)
                 {
@@ -356,8 +337,7 @@ public class RenderCanvas : FrameworkElement
 
         if (_isPanning)
         {
-            _panX += screenPos.X - _lastMousePosition.X;
-            _panY += screenPos.Y - _lastMousePosition.Y;
+            _viewport.Pan(screenPos.X - _lastMousePosition.X, screenPos.Y - _lastMousePosition.Y);
             _lastMousePosition = screenPos;
             RedrawAll();
         }
@@ -366,19 +346,19 @@ public class RenderCanvas : FrameworkElement
             // Update drawing tool with cursor position
             // Check for Shift key to enable orthogonal constraint
             _drawingTool.IsOrthoMode = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
-            _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
+            _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale);
             RedrawAll();
         }
         else if (_measuringTool?.Mode == ToolMode.Measuring)
         {
             // Update measuring tool with cursor position
-            _measuringTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
+            _measuringTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale);
             RedrawAll();
         }
         else if (_selectionTool?.IsBoxSelecting == true || _selectionTool?.IsDraggingHandle == true)
         {
             // Update selection box or handle drag (with snapping support)
-            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _scale);
+            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale);
             RedrawAll();
         }
     }
@@ -387,9 +367,7 @@ public class RenderCanvas : FrameworkElement
     {
         _currentShapes.Clear();
         _spatialIndex = null;
-        _scale = 1.0;
-        _panX = 0;
-        _panY = 0;
+        _viewport.Reset();
         RedrawAll();
     }
 
@@ -402,6 +380,7 @@ public class RenderCanvas : FrameworkElement
 
     /// <summary>
     /// Rebuilds the spatial index from the current shapes.
+    /// Called for bulk operations; individual add/remove use incremental updates.
     /// </summary>
     private void RebuildSpatialIndex()
     {
@@ -409,12 +388,81 @@ public class RenderCanvas : FrameworkElement
     }
 
     /// <summary>
+    /// Ensures the spatial index exists and expands bounds if necessary.
+    /// Returns the bounds for the given shape.
+    /// </summary>
+    private AABB EnsureSpatialIndexForShape(IDrawable shape)
+    {
+        AABB shapeBounds = default;
+        if (shape is Shape s)
+            shapeBounds = AABB.FromShape(s);
+
+        if (_spatialIndex == null)
+        {
+            // Create a new spatial index with generous initial bounds
+            var padding = Math.Max(100, Math.Max(shapeBounds.Width, shapeBounds.Height) * 2);
+            var initialBounds = new AABB(
+                shapeBounds.MinX - padding,
+                shapeBounds.MinY - padding,
+                shapeBounds.MaxX + padding,
+                shapeBounds.MaxY + padding
+            );
+            _spatialIndex = new QuadTree(initialBounds);
+        }
+        else if (!_spatialIndex.Bounds.Contains(shapeBounds))
+        {
+            // Shape is outside current bounds - rebuild with expanded bounds
+            RebuildSpatialIndex();
+        }
+
+        return shapeBounds;
+    }
+
+    /// <summary>
     /// Adds a shape to the current canvas display without requiring code execution.
+    /// Uses incremental spatial index update instead of full rebuild.
     /// </summary>
     public void AddShape(IDrawable shape)
     {
         _currentShapes.Add(shape);
-        RebuildSpatialIndex();
+
+        // Incremental insert into spatial index
+        var bounds = EnsureSpatialIndexForShape(shape);
+        _spatialIndex?.Insert(shape, bounds);
+
+        RedrawAll();
+    }
+
+    /// <summary>
+    /// Removes a shape from the canvas.
+    /// Uses incremental spatial index update.
+    /// </summary>
+    public void RemoveShape(IDrawable shape)
+    {
+        _currentShapes.Remove(shape);
+        _spatialIndex?.Remove(shape);
+        RedrawAll();
+    }
+
+    /// <summary>
+    /// Updates a shape's position in the spatial index.
+    /// Call this after moving or resizing a shape.
+    /// </summary>
+    public void UpdateShapePosition(IDrawable shape)
+    {
+        if (shape is Shape s && _spatialIndex != null)
+        {
+            var newBounds = AABB.FromShape(s);
+            if (!_spatialIndex.Bounds.Contains(newBounds))
+            {
+                // Shape moved outside bounds - rebuild
+                RebuildSpatialIndex();
+            }
+            else
+            {
+                _spatialIndex.Update(shape, newBounds);
+            }
+        }
         RedrawAll();
     }
 
@@ -475,21 +523,14 @@ public class RenderCanvas : FrameworkElement
         }
 
         // Calculate Viewport in World Coordinates for Culling
-        var p1 = ScreenToWorld(0, 0);
-        var p2 = ScreenToWorld(ActualWidth, ActualHeight);
-
-        // Normalize coordinates (min/max)
-        var minX = Math.Min(p1.X, p2.X);
-        var maxX = Math.Max(p1.X, p2.X);
-        var minY = Math.Min(p1.Y, p2.Y);
-        var maxY = Math.Max(p1.Y, p2.Y);
+        var visibleBounds = _viewport.GetVisibleWorldBounds();
 
         // Add padding to account for stroke thickness (approx 20px in world units)
-        var padding = 20.0 / Math.Max(_scale, MinZoom);
-        minX -= padding;
-        maxX += padding;
-        minY -= padding;
-        maxY += padding;
+        var padding = 20.0 / Math.Max(_viewport.Scale, ViewportTransform.MinZoom);
+        var minX = visibleBounds.Left - padding;
+        var maxX = visibleBounds.Right + padding;
+        var minY = visibleBounds.Top - padding;
+        var maxY = visibleBounds.Bottom + padding;
 
         // Query spatial index for visible shapes (O(log n + k) instead of O(n))
         var viewport = new AABB(minX, minY, maxX, maxY);
@@ -641,21 +682,21 @@ public class RenderCanvas : FrameworkElement
 
             case VCircle circle:
                 var circleCenter = WorldToScreen(circle.Center.X, circle.Center.Y);
-                var circleRadius = circle.Radius * _scale;
+                var circleRadius = circle.Radius * _viewport.Scale;
                 dc.DrawEllipse(null, previewPen, circleCenter, circleRadius, circleRadius);
                 break;
 
             case VRectangle rect:
                 var rectTopLeft = WorldToScreen(rect.Corner.X, rect.Corner.Y + rect.Height);
-                var rectWidth = rect.Width * _scale;
-                var rectHeight = rect.Height * _scale;
+                var rectWidth = rect.Width * _viewport.Scale;
+                var rectHeight = rect.Height * _viewport.Scale;
                 dc.DrawRectangle(null, previewPen, new Rect(rectTopLeft.X, rectTopLeft.Y, rectWidth, rectHeight));
                 break;
 
             case VEllipse ellipse:
                 var ellipseCenter = WorldToScreen(ellipse.Center.X, ellipse.Center.Y);
-                var radiusX = ellipse.RadiusX * _scale;
-                var radiusY = ellipse.RadiusY * _scale;
+                var radiusX = ellipse.RadiusX * _viewport.Scale;
+                var radiusY = ellipse.RadiusY * _viewport.Scale;
                 dc.DrawEllipse(null, previewPen, ellipseCenter, radiusX, radiusY);
                 break;
 
@@ -765,10 +806,10 @@ public class RenderCanvas : FrameworkElement
                     CultureInfo.InvariantCulture,
                     FlowDirection.LeftToRight,
                     new Typeface("Consolas"),
-                    text.Height * _scale,
+                    text.Height * _viewport.Scale,
                     previewBrush,
                     1.0);
-                dc.DrawText(formattedText, new Point(textPos.X, textPos.Y - text.Height * _scale));
+                dc.DrawText(formattedText, new Point(textPos.X, textPos.Y - text.Height * _viewport.Scale));
                 break;
         }
     }
@@ -776,7 +817,7 @@ public class RenderCanvas : FrameworkElement
     private void DrawArcPreview(DrawingContext dc, VArc arc, Pen pen)
     {
         var center = WorldToScreen(arc.Center.X, arc.Center.Y);
-        var radius = arc.Radius * _scale;
+        var radius = arc.Radius * _viewport.Scale;
 
         var startAngle = arc.StartAngle * Math.PI / 180;
         var endAngle = arc.EndAngle * Math.PI / 180;
@@ -1156,10 +1197,10 @@ public class RenderCanvas : FrameworkElement
     {
         // Target visual spacing in pixels (approx 50px)
         const double targetPixelSpacing = 50.0;
-        
+
         // Calculate the theoretical world spacing to achieve target pixel spacing
         // world = pixels / scale
-        double rawSpacing = targetPixelSpacing / _scale;
+        double rawSpacing = targetPixelSpacing / _viewport.Scale;
 
         // Find the nearest "nice" interval: 1, 2, 5, 10, 20, 50, etc.
         double powerOf10 = Math.Pow(10, Math.Floor(Math.Log10(rawSpacing)));
@@ -1280,7 +1321,7 @@ public class RenderCanvas : FrameworkElement
         if (angleDiff < 0) angleDiff += 360;
         var isLargeArc = angleDiff > 180;
 
-        var screenRadius = arc.Radius * _scale;
+        var screenRadius = arc.Radius * _viewport.Scale;
         var pen = GetCachedPen(arc.StrokeColor, arc.StrokeThickness);
 
         // Use StreamGeometry for better performance
@@ -1317,7 +1358,7 @@ public class RenderCanvas : FrameworkElement
         var offsetY = circle.OffsetY;
 
         var centerScreen = WorldToScreen(circle.Center.X + offsetX, circle.Center.Y + offsetY);
-        var screenRadius = circle.Radius * _scale;
+        var screenRadius = circle.Radius * _viewport.Scale;
         var fill = GetCachedBrush(circle.FillColor);
         var pen = GetCachedPen(circle.StrokeColor, circle.StrokeThickness);
 
@@ -1373,8 +1414,8 @@ public class RenderCanvas : FrameworkElement
         var offsetY = rect.OffsetY;
 
         var corner = WorldToScreen(rect.Corner.X + offsetX, rect.Corner.Y + rect.Height + offsetY);
-        var screenWidth = rect.Width * _scale;
-        var screenHeight = rect.Height * _scale;
+        var screenWidth = rect.Width * _viewport.Scale;
+        var screenHeight = rect.Height * _viewport.Scale;
         var fill = GetCachedBrush(rect.FillColor);
         var pen = GetCachedPen(rect.StrokeColor, rect.StrokeThickness);
 
@@ -1438,8 +1479,8 @@ public class RenderCanvas : FrameworkElement
         if (applyOpacity) dc.PushOpacity(ellipse.Opacity);
 
         var centerScreen = WorldToScreen(ellipse.Center.X, ellipse.Center.Y);
-        var screenRadiusX = ellipse.RadiusX * _scale;
-        var screenRadiusY = ellipse.RadiusY * _scale;
+        var screenRadiusX = ellipse.RadiusX * _viewport.Scale;
+        var screenRadiusY = ellipse.RadiusY * _viewport.Scale;
         var fill = GetCachedBrush(ellipse.FillColor);
         var pen = GetCachedPen(ellipse.StrokeColor, ellipse.StrokeThickness);
 
@@ -1565,7 +1606,7 @@ public class RenderCanvas : FrameworkElement
         var brush = GetCachedBrush(text.StrokeColor);
 
         // Scale font size with zoom, but keep it readable
-        var fontSize = text.Height * _scale;
+        var fontSize = text.Height * _viewport.Scale;
         fontSize = Math.Max(fontSize, 6); // Minimum readable size
 
         var typeface = new Typeface("Segoe UI");
@@ -1765,7 +1806,7 @@ public class RenderCanvas : FrameworkElement
 
         // Draw text
         var brush = GetCachedBrush(dim.StrokeColor);
-        var fontSize = dim.TextHeight * _scale;
+        var fontSize = dim.TextHeight * _viewport.Scale;
         fontSize = Math.Max(fontSize, 8);
         var typeface = new Typeface("Segoe UI");
         var formattedText = new FormattedText(
@@ -1857,9 +1898,9 @@ public class RenderCanvas : FrameworkElement
         var shapeList = shapes.ToList();
         if (!shapeList.Any() || ActualWidth <= 0 || ActualHeight <= 0)
         {
-            _scale = 1.0;
-            _panX = 0;
-            _panY = 0;
+            _viewport.Scale = 1.0;
+            _viewport.PanX = 0;
+            _viewport.PanY = 0;
             RedrawAll();
             return;
         }
@@ -1946,11 +1987,11 @@ public class RenderCanvas : FrameworkElement
 
         var scaleX = availableWidth / worldWidth;
         var scaleY = availableHeight / worldHeight;
-        _scale = Math.Min(scaleX, scaleY);
-        _scale = Math.Clamp(_scale, MinZoom, MaxZoom);
+        _viewport.Scale = Math.Min(scaleX, scaleY);
+        _viewport.Scale = Math.Clamp(_viewport.Scale, ViewportTransform.MinZoom, ViewportTransform.MaxZoom);
 
-        _panX = -worldCenterX * _scale;
-        _panY = worldCenterY * _scale;
+        _viewport.PanX = -worldCenterX * _viewport.Scale;
+        _viewport.PanY = worldCenterY * _viewport.Scale;
 
         RedrawAll();
     }
@@ -1986,9 +2027,9 @@ public class RenderCanvas : FrameworkElement
         var shapeList = shapes.ToList();
         if (!shapeList.Any() || ActualWidth <= 0 || ActualHeight <= 0)
         {
-            _scale = 1.0;
-            _panX = 0;
-            _panY = 0;
+            _viewport.Scale = 1.0;
+            _viewport.PanX = 0;
+            _viewport.PanY = 0;
             RedrawAll();
             return;
         }
@@ -2076,11 +2117,11 @@ public class RenderCanvas : FrameworkElement
 
         var scaleX = availableWidth / worldWidth;
         var scaleY = availableHeight / worldHeight;
-        _scale = Math.Min(scaleX, scaleY);
-        _scale = Math.Clamp(_scale, MinZoom, MaxZoom);
+        _viewport.Scale = Math.Min(scaleX, scaleY);
+        _viewport.Scale = Math.Clamp(_viewport.Scale, ViewportTransform.MinZoom, ViewportTransform.MaxZoom);
 
-        _panX = -worldCenterX * _scale;
-        _panY = worldCenterY * _scale;
+        _viewport.PanX = -worldCenterX * _viewport.Scale;
+        _viewport.PanY = worldCenterY * _viewport.Scale;
 
         RedrawAll();
     }

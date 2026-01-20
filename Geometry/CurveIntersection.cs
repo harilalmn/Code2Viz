@@ -9,7 +9,7 @@ namespace Code2Viz.Geometry;
 /// </summary>
 public static class CurveIntersection
 {
-    private const double Tolerance = 1e-9;
+    private const double Tolerance = GeometryTolerance.Epsilon;
 
     #region Main Intersection Method
 
