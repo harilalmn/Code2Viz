@@ -228,5 +228,10 @@ public class VLine : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the line at the given normalized parameter.
+    /// </summary>
+    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
 }
 

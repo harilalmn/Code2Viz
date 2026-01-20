@@ -879,4 +879,29 @@ public class VPolygon : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the polygon perimeter at the given normalized parameter.
+    /// Parameter is distributed evenly across segments (not by arc length).
+    /// Parameter 0 and 1 both return the first point (closed curve).
+    /// </summary>
+    public VPoint PointAtParameter(double parameter)
+    {
+        if (Points.Count == 0) return new VPoint(0, 0);
+        if (Points.Count == 1) return Points[0];
+        if (parameter <= 0 || parameter >= 1) return Points[0];
+
+        int numSegments = Points.Count; // Closed polygon has N segments for N points
+        double scaledT = parameter * numSegments;
+        int segmentIndex = Math.Min((int)scaledT, numSegments - 1);
+        double localT = scaledT - segmentIndex;
+
+        VPoint p1 = Points[segmentIndex];
+        VPoint p2 = Points[(segmentIndex + 1) % Points.Count];
+
+        return new VPoint(
+            p1.X + (p2.X - p1.X) * localT,
+            p1.Y + (p2.Y - p1.Y) * localT
+        );
+    }
 }

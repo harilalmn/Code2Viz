@@ -337,4 +337,28 @@ public class VRectangle : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the rectangle perimeter at the given normalized parameter.
+    /// Parameter is distributed evenly across the 4 sides (not by arc length).
+    /// Parameter 0 and 1 both return the corner point.
+    /// </summary>
+    public VPoint PointAtParameter(double parameter)
+    {
+        if (parameter <= 0 || parameter >= 1) return Corner;
+
+        var corners = GetCorners();
+        int numSegments = 4; // Rectangle has 4 sides
+        double scaledT = parameter * numSegments;
+        int segmentIndex = Math.Min((int)scaledT, numSegments - 1);
+        double localT = scaledT - segmentIndex;
+
+        VPoint p1 = corners[segmentIndex];
+        VPoint p2 = corners[segmentIndex + 1];
+
+        return new VPoint(
+            p1.X + (p2.X - p1.X) * localT,
+            p1.Y + (p2.Y - p1.Y) * localT
+        );
+    }
 }

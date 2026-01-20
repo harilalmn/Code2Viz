@@ -81,4 +81,11 @@ public interface ICurve : IDrawable
     /// Returns an IntersectionResult containing points and/or overlapping curves.
     /// </summary>
     IntersectionResult Intersect(ICurve other);
+
+    /// <summary>
+    /// Returns a point on the curve at the given normalized parameter.
+    /// </summary>
+    /// <param name="parameter">A value from 0 to 1, where 0 is the start and 1 is the end of the curve.</param>
+    /// <returns>The point on the curve at the specified parameter.</returns>
+    VPoint PointAtParameter(double parameter);
 }

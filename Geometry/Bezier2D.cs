@@ -384,4 +384,9 @@ public class VBezier : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the bezier curve at the given normalized parameter.
+    /// </summary>
+    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
 }

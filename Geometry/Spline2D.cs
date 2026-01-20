@@ -426,4 +426,9 @@ public class VSpline : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the spline at the given normalized parameter.
+    /// </summary>
+    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
 }

@@ -217,5 +217,15 @@ public class VCircle : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the circle at the given normalized parameter.
+    /// Parameter 0 corresponds to angle 0 (3 o'clock), parameter 1 returns to the same point.
+    /// </summary>
+    public VPoint PointAtParameter(double parameter)
+    {
+        double angle = parameter * 2 * Math.PI;
+        return GetPointAtAngle(angle);
+    }
 }
 

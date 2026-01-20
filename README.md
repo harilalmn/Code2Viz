@@ -950,6 +950,9 @@ VPoint closest = curve.Project(new VPoint(50, 50));
 // Get point at specific distance along curve
 VPoint midPoint = curve.PointAtSegmentLength(length / 2);
 
+// Get point at normalized parameter (0 to 1)
+VPoint quarterPoint = curve.PointAtParameter(0.25);  // 25% along the curve
+
 // Create offset curve
 ICurve offset = curve.Offset(10);
 offset.Draw();

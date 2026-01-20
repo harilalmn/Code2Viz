@@ -390,4 +390,29 @@ public class VPolyline : Shape, ICurve
     {
         return CurveIntersection.Intersect(this, other);
     }
+
+    /// <summary>
+    /// Returns a point on the polyline at the given normalized parameter.
+    /// Parameter is distributed evenly across segments (not by arc length).
+    /// </summary>
+    public VPoint PointAtParameter(double parameter)
+    {
+        if (Points.Count == 0) return new VPoint(0, 0);
+        if (Points.Count == 1) return Points[0];
+        if (parameter <= 0) return Points[0];
+        if (parameter >= 1) return Points[^1];
+
+        int numSegments = Points.Count - 1;
+        double scaledT = parameter * numSegments;
+        int segmentIndex = Math.Min((int)scaledT, numSegments - 1);
+        double localT = scaledT - segmentIndex;
+
+        VPoint p1 = Points[segmentIndex];
+        VPoint p2 = Points[segmentIndex + 1];
+
+        return new VPoint(
+            p1.X + (p2.X - p1.X) * localT,
+            p1.Y + (p2.Y - p1.Y) * localT
+        );
+    }
 }
