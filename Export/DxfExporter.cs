@@ -351,17 +351,25 @@ public class DxfExporter
 
     private void WriteLwPolyline(List<(double x, double y)> points, bool closed)
     {
-        WriteLine(0, "LWPOLYLINE");
+        // Use R12-compatible POLYLINE format (not LWPOLYLINE which requires R14+)
+        WriteLine(0, "POLYLINE");
         WriteHandle();
         WriteLayer();
-        WriteLine(90, points.Count.ToString());
-        WriteLine(70, closed ? "1" : "0");
+        WriteLine(66, "1"); // Vertices follow flag
+        WriteLine(70, closed ? "1" : "0"); // Closed flag
+        WriteCoord(10, 20, 30, 0, 0, 0); // Base point
 
         foreach (var (x, y) in points)
         {
-            WriteDouble(10, x);
-            WriteDouble(20, y);
+            WriteLine(0, "VERTEX");
+            WriteHandle();
+            WriteLayer();
+            WriteCoord(10, 20, 30, x, y, 0);
         }
+
+        WriteLine(0, "SEQEND");
+        WriteHandle();
+        WriteLayer();
     }
 
     private void WriteHandle()
