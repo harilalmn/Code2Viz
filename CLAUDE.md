@@ -12,7 +12,7 @@ Viz2d is a WPF 2D geometry visualization application that allows users to write 
 ## Project Structure
 ```
 Viz2d/
-├── Geometry/           # Shape classes (Point, Line, Arc, Circle, Rectangle, Ellipse, Polygon, Polyline)
+├── Geometry/           # Shape classes (Point, Line, Arc, Circle, Rectangle, Ellipse, Polygon, Polyline, Grid, Group)
 ├── Canvas/             # RenderCanvas (zoom/pan), CanvasRenderer (shape collection)
 ├── Console/            # VizConsole (output), ConsoleOutput (singleton collector)
 ├── Editor/             # Code editor features: IntelliSenseProvider, SemanticHighlighter, CodeLensProvider, HierarchyProvider
@@ -52,7 +52,7 @@ Viz2d/
 ```csharp
 using System;
 using System.Collections.Generic;
-using Viz2d.Geometry;    // Point, Line, Circle, Arc, Rectangle, Ellipse, Polygon, Polyline
+using Viz2d.Geometry;    // Point, Line, Circle, Arc, Rectangle, Ellipse, Polygon, Polyline, Grid, Group
 using Viz2d.Console;     // VizConsole.Write(), VizConsole.WriteLine()
 ```
 
@@ -224,6 +224,7 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - Click elsewhere or `Esc` to exit multi-cursor mode
 
 ### Canvas & Tools
+- `Double-click` (empty space) - Zoom to fit all shapes
 - `Ctrl+M` - Toggle Measuring Tape tool
 - `Ctrl+G` - Zoom to shape by ID
 - `Esc` - Cancel current tool/operation
@@ -271,3 +272,12 @@ dotnet test
 4. Colors parsed via WPF ColorConverter - any named color works
 5. Entry point must be `StartViz.Viz.Main()` in `StartViz.vizcode`
 6. Use `VizConsole` instead of `Console` for output with line tracking
+
+## Documentation Policy (MANDATORY)
+**After ANY code change that affects the public API (new classes, methods, properties, or signature changes), you MUST update:**
+
+1. **README.md** - Update examples, API tables, and feature descriptions
+2. **Help Documentation (DocGenerator.cs)** - Update `_memberDescriptions` dictionary with descriptions for new/changed members
+3. **CLAUDE.md** - Update if the change affects project structure or key implementation details
+
+This is non-negotiable. No compromise on documentation, ever.

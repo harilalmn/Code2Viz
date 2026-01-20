@@ -1,4 +1,5 @@
 using Clipper2Lib;
+using Code2Viz.Console;
 
 namespace Code2Viz.Geometry;
 
@@ -11,11 +12,19 @@ public static class BooleanOps
 
     /// <summary>
     /// Computes the union of multiple polygons.
+    /// Returns a single polygon if successful, or null if a single polygon cannot be formed.
     /// </summary>
-    public static List<VPolygon> Union(params VPolygon[] polygons)
+    public static VPolygon? Union(params VPolygon[] polygons)
     {
-        if (polygons.Length == 0) return new List<VPolygon>();
-        if (polygons.Length == 1) return new List<VPolygon> { (VPolygon)polygons[0].Clone() };
+        if (polygons.Length == 0)
+        {
+            ConsoleOutput.Instance.AddEntry("BooleanOps.Union: No polygons provided.", isError: true);
+            return null;
+        }
+        if (polygons.Length == 1)
+        {
+            return (VPolygon)polygons[0].Clone();
+        }
 
         var subject = ToPath64(polygons[0]);
         var clips = new Paths64();
@@ -25,13 +34,27 @@ public static class BooleanOps
         }
 
         var solution = Clipper.Union(new Paths64 { subject }, clips, FillRule.NonZero);
-        return FromPaths64(solution);
+        var results = FromPaths64(solution);
+
+        if (results.Count == 0)
+        {
+            ConsoleOutput.Instance.AddEntry("BooleanOps.Union: Operation resulted in no polygon (empty result).", isError: true);
+            return null;
+        }
+        if (results.Count > 1)
+        {
+            ConsoleOutput.Instance.AddEntry($"BooleanOps.Union: Cannot form a single polygon. Result contains {results.Count} disjoint regions (polygons do not overlap or touch).", isError: true);
+            return null;
+        }
+
+        return results[0];
     }
 
     /// <summary>
     /// Computes the union of a list of polygons.
+    /// Returns a single polygon if successful, or null if a single polygon cannot be formed.
     /// </summary>
-    public static List<VPolygon> Union(IEnumerable<VPolygon> polygons)
+    public static VPolygon? Union(IEnumerable<VPolygon> polygons)
     {
         return Union(polygons.ToArray());
     }
@@ -150,8 +173,9 @@ public static class VPolygonBooleanExtensions
 {
     /// <summary>
     /// Computes the union of this polygon with another.
+    /// Returns a single polygon if successful, or null if a single polygon cannot be formed.
     /// </summary>
-    public static List<VPolygon> Union(this VPolygon polygon, VPolygon other)
+    public static VPolygon? Union(this VPolygon polygon, VPolygon other)
     {
         return BooleanOps.Union(polygon, other);
     }

@@ -17,6 +17,27 @@ public class VPolygon : Shape, ICurve
     /// <summary>Indicates whether the polygon intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
+    /// <summary>
+    /// Gets the signed area of the polygon using the shoelace formula.
+    /// Positive for counter-clockwise vertices, negative for clockwise.
+    /// </summary>
+    public double Area
+    {
+        get
+        {
+            if (Points.Count < 3) return 0;
+
+            double area = 0;
+            for (int i = 0; i < Points.Count; i++)
+            {
+                int j = (i + 1) % Points.Count;
+                area += Points[i].X * Points[j].Y;
+                area -= Points[j].X * Points[i].Y;
+            }
+            return area / 2.0;
+        }
+    }
+
     public VPolygon(params VPoint[] points)
     {
         Points = points.ToList();

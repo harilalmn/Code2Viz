@@ -14,6 +14,7 @@ namespace Code2Viz.Documentation
         private Dictionary<string, string> _summaries;
         private Dictionary<string, string> _fsharpSamples;
         private Dictionary<string, string> _csharpSamples;
+        private Dictionary<string, string> _memberDescriptions;
 
         public DocGenerator()
         {
@@ -21,6 +22,7 @@ namespace Code2Viz.Documentation
             InitializeSummaries();
             InitializeFSharpSamples();
             InitializeCSharpSamples();
+            InitializeMemberDescriptions();
         }
 
         private void InitializeSummaries()
@@ -51,6 +53,7 @@ namespace Code2Viz.Documentation
                 { "VSpline", "Represents a smooth Catmull-Rom spline curve passing through a series of points." },
                 { "VText", "Represents text drawn at a specific position. Supports font size (Height property) and styling." },
                 { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyStrokeColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
+                { "VGrid", "Represents a rectangular grid of VPoints. Constructor: VGrid(location, xcount, ycount, xSpacing, ySpacing, centered). If centered=true, grid is centered at location; if false, location is bottom-left corner. Access points via Points property, indexers [index] or [col, row], or GetRow()/GetColumn() methods. Supports all Shape transformations (Move, Rotate, Scale, Flip) and ApplyStyle() to set colors on all points." },
                 { "VArrow", "Represents an arrow (line with arrowhead). Supports single or double-ended arrows with configurable head size and angle." },
                 { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. Useful for technical drawings." },
 
@@ -67,6 +70,7 @@ namespace Code2Viz.Documentation
                 { "Spline2D", "Represents a smooth spline curve passing through a series of points." },
                 { "Text2D", "Represents text drawn at a specific position." },
                 { "Group2D", "Represents a collection of shapes treated as a single unit." },
+                { "Grid2D", "Represents a rectangular grid of points." },
 
                 // Support classes
                 { "VXYZ", "Represents a 3D vector or point with X, Y, Z coordinates. Provides vector operations like Add, Subtract, CrossProduct, DotProduct, Normalize, GetLength. Also has static properties BasisX, BasisY, BasisZ, Zero." },
@@ -172,7 +176,7 @@ namespace Code2Viz.Documentation
             if (dtors.Length > 0)
             {
                 AddSectionHeader(doc, "Constructors");
-                doc.Blocks.Add(GenerateMemberTable(dtors));
+                doc.Blocks.Add(GenerateMemberTable(dtors, type.Name));
             }
 
             // Properties
@@ -180,7 +184,7 @@ namespace Code2Viz.Documentation
             if (props.Length > 0)
             {
                 AddSectionHeader(doc, "Properties");
-                doc.Blocks.Add(GenerateMemberTable(props));
+                doc.Blocks.Add(GenerateMemberTable(props, type.Name));
             }
 
             // Methods
@@ -191,7 +195,7 @@ namespace Code2Viz.Documentation
             if (methods.Length > 0)
             {
                 AddSectionHeader(doc, "Methods");
-                doc.Blocks.Add(GenerateMemberTable(methods));
+                doc.Blocks.Add(GenerateMemberTable(methods, type.Name));
             }
 
             return doc;
@@ -254,24 +258,26 @@ namespace Code2Viz.Documentation
             return p;
         }
 
-        private Table GenerateMemberTable(MemberInfo[] members)
+        private Table GenerateMemberTable(MemberInfo[] members, string className = "")
         {
             var table = new Table();
             table.CellSpacing = 0;
             table.BorderBrush = Brushes.LightGray;
             table.BorderThickness = new Thickness(1);
-            
-            // Use fixed widths to ensure stability and readability
-            table.Columns.Add(new TableColumn { Width = new GridLength(220) }); // Name
-            table.Columns.Add(new TableColumn { Width = new GridLength(500) }); // Description
+
+            // Use fixed widths: Name, Type/Signature, Description
+            table.Columns.Add(new TableColumn { Width = new GridLength(150) }); // Name
+            table.Columns.Add(new TableColumn { Width = new GridLength(220) }); // Type/Signature
+            table.Columns.Add(new TableColumn { Width = new GridLength(400) }); // Description
 
             var rowGroup = new TableRowGroup();
-            
+
             // Header
             var headerRow = new TableRow();
             headerRow.Background = Brushes.AliceBlue;
             headerRow.Cells.Add(CreateHeaderCell("Name"));
-            headerRow.Cells.Add(CreateHeaderCell("Signature / Description"));
+            headerRow.Cells.Add(CreateHeaderCell("Type / Signature"));
+            headerRow.Cells.Add(CreateHeaderCell("Description"));
             rowGroup.Rows.Add(headerRow);
 
             bool isAlt = false;
@@ -280,42 +286,91 @@ namespace Code2Viz.Documentation
                 var row = new TableRow();
                 if (isAlt) row.Background = Brushes.WhiteSmoke;
                 isAlt = !isAlt;
-                
-                // Name
+
+                // Name column
                 var nameText = new Run(member.Name) { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkBlue };
                 var nameCell = new TableCell(new Paragraph(nameText)) { Padding = new Thickness(5), BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0,0,0,1) };
                 row.Cells.Add(nameCell);
 
-                // Description/Signature
+                // Type/Signature column
                 string sig = "";
+                string returnType = "";
                 if (member is MethodInfo mi)
                 {
-                    var paramStr = string.Join(", ", mi.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
-                    sig = $"{mi.ReturnType.Name} ({paramStr})";
+                    var paramStr = string.Join(", ", mi.GetParameters().Select(p => $"{GetFriendlyTypeName(p.ParameterType)} {p.Name}"));
+                    returnType = GetFriendlyTypeName(mi.ReturnType);
+                    sig = $"{returnType} ({paramStr})";
                 }
                 else if (member is PropertyInfo pi)
                 {
-                    sig = pi.PropertyType.Name;
+                    sig = GetFriendlyTypeName(pi.PropertyType);
+                    var accessors = new List<string>();
+                    if (pi.CanRead) accessors.Add("get");
+                    if (pi.CanWrite) accessors.Add("set");
+                    if (accessors.Count > 0)
+                        sig += $" {{ {string.Join("; ", accessors)} }}";
                 }
                 else if (member is ConstructorInfo ci)
                 {
-                    var paramStr = string.Join(", ", ci.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
-                    if (string.IsNullOrEmpty(paramStr)) paramStr = "()";
-                    sig = paramStr;
+                    var paramStr = string.Join(", ", ci.GetParameters().Select(p => $"{GetFriendlyTypeName(p.ParameterType)} {p.Name}"));
+                    sig = string.IsNullOrEmpty(paramStr) ? "()" : $"({paramStr})";
                 }
 
                 var sigPara = new Paragraph(new Run(sig));
                 sigPara.FontFamily = new FontFamily("Consolas");
-                sigPara.FontSize = 12; // Slightly larger
-                var sigCell = new TableCell(sigPara) { Padding = new Thickness(5), BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0,0,0,1) };
-                
+                sigPara.FontSize = 11;
+                sigPara.Foreground = Brushes.DarkSlateGray;
+                sigPara.TextAlignment = TextAlignment.Left;
+                var sigCell = new TableCell(sigPara) { Padding = new Thickness(5), BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0,0,0,1), TextAlignment = TextAlignment.Left };
                 row.Cells.Add(sigCell);
+
+                // Description column
+                var description = GetMemberDescription(className, member.Name);
+                if (string.IsNullOrEmpty(description))
+                {
+                    // Try base class descriptions for inherited members
+                    description = GetMemberDescription("Shape", member.Name);
+                }
+                if (string.IsNullOrEmpty(description))
+                {
+                    description = GetMemberDescription("ICurve", member.Name);
+                }
+                var descPara = new Paragraph(new Run(description));
+                descPara.FontSize = 11;
+                descPara.Foreground = string.IsNullOrEmpty(description) ? Brushes.Gray : Brushes.Black;
+                if (string.IsNullOrEmpty(description))
+                    descPara.Inlines.Clear();
+                var descCell = new TableCell(descPara) { Padding = new Thickness(5), BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0,0,0,1) };
+                row.Cells.Add(descCell);
 
                 rowGroup.Rows.Add(row);
             }
 
             table.RowGroups.Add(rowGroup);
             return table;
+        }
+
+        private string GetFriendlyTypeName(Type type)
+        {
+            if (type == typeof(void)) return "void";
+            if (type == typeof(int)) return "int";
+            if (type == typeof(double)) return "double";
+            if (type == typeof(float)) return "float";
+            if (type == typeof(bool)) return "bool";
+            if (type == typeof(string)) return "string";
+            if (type == typeof(object)) return "object";
+
+            if (type.IsGenericType)
+            {
+                var baseName = type.Name;
+                var tickIndex = baseName.IndexOf('`');
+                if (tickIndex > 0)
+                    baseName = baseName.Substring(0, tickIndex);
+                var args = string.Join(", ", type.GetGenericArguments().Select(GetFriendlyTypeName));
+                return $"{baseName}<{args}>";
+            }
+
+            return type.Name;
         }
 
         private TableCell CreateHeaderCell(string text)
@@ -360,7 +415,25 @@ group.ApplyStyle() |> ignore
 
 // Draw as a single selectable entity
 group.Draw()" },
-                
+
+                { "VGrid", @"// Create a centered grid at origin: 5 columns x 3 rows, spacing 10
+let grid = VGrid(VPoint(0.0, 0.0), 5, 3, 10.0, true)
+grid.FillColor <- ""Cyan""
+grid.ApplyStyle()
+grid.Draw()
+
+// Access points
+let firstPoint = grid.[0]
+let cell = grid.[2, 1]  // Column 2, Row 1
+
+// Get rows/columns
+let bottomRow = grid.GetRow(0)
+let thirdCol = grid.GetColumn(2)
+
+// Transform
+grid.Move(VXYZ(50.0, 25.0, 0.0))
+grid.Rotate(VPoint(0.0, 0.0), 45.0)" },
+
                 // Support classes
                 { "VXYZ", "let v = VXYZ(10.0, 20.0, 30.0)\nlet len = v.GetLength()" },
                 { "VPlane", "let origin = VXYZ.Zero\nlet normal = VXYZ.BasisZ\nlet plane = VPlane.CreateByNormalAndOrigin(normal, origin)" },
@@ -735,6 +808,29 @@ group.ForEach(s => s.StrokeThickness = 2);
 // Draw as a single selectable entity
 group.Draw();" },
 
+                { "VGrid", @"// Create a centered grid at origin: 5 columns x 3 rows, spacing 10
+var grid = new VGrid(new VPoint(0, 0), 5, 3, 10, true);
+grid.FillColor = ""Cyan"";
+grid.ApplyStyle();
+grid.Draw();
+
+// Create grid with bottom-left at (-100, -50), different X/Y spacing
+var grid2 = new VGrid(new VPoint(-100, -50), 4, 4, 20, 15, false);
+grid2.Draw();
+
+// Access individual points
+VPoint firstPoint = grid[0];           // By index
+VPoint cell = grid[2, 1];              // By column, row
+
+// Get rows and columns
+var bottomRow = grid.GetRow(0);
+var thirdColumn = grid.GetColumn(2);
+
+// Transform entire grid
+grid.Move(new VXYZ(50, 25, 0));
+grid.Rotate(new VPoint(0, 0), 45);
+grid.Scale(grid.GetCenter(), 2.0);" },
+
                 // Support classes
                 { "VXYZ", @"// Create a 3D vector
 var v = new VXYZ(10, 20, 30);
@@ -1003,6 +1099,630 @@ var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,40)
 var mirrorAxis = new VLine(0, -50, 0, 50);
 triangle.Mirror(mirrorAxis).DrawAll();" }
             };
+        }
+
+        private void InitializeMemberDescriptions()
+        {
+            _memberDescriptions = new Dictionary<string, string>
+            {
+                // VGrid Properties
+                { "VGrid.Points", "Gets the collection of all VPoint objects in the grid. Points are stored in row-major order (left to right, bottom to top)." },
+                { "VGrid.Location", "Gets the reference location point. If Centered is true, this is the center of the grid. If false, this is the bottom-left corner." },
+                { "VGrid.XCount", "Gets the number of points along the X (horizontal) axis." },
+                { "VGrid.YCount", "Gets the number of points along the Y (vertical) axis." },
+                { "VGrid.XSpacing", "Gets the spacing distance between adjacent points along the X axis." },
+                { "VGrid.YSpacing", "Gets the spacing distance between adjacent points along the Y axis." },
+                { "VGrid.Centered", "Gets whether the grid is centered at the Location point. If true, grid is centered; if false, Location is the bottom-left corner." },
+                { "VGrid.Count", "Gets the total number of points in the grid (XCount × YCount)." },
+                { "VGrid.Item", "Gets a point by index (single parameter) or by column and row indices (two parameters). Indexer: grid[index] or grid[col, row]." },
+
+                // VGrid Methods
+                { "VGrid.Draw", "Draws all points in the grid to the canvas. Each point is rendered using its individual style properties." },
+                { "VGrid.Clone", "Creates a deep copy of this grid with all points cloned. Returns a new VGrid instance with the same properties and point positions." },
+                { "VGrid.Move", "Translates all points in the grid by the specified displacement vector. Also updates the Location property." },
+                { "VGrid.Rotate", "Rotates all points in the grid around a specified pivot point by the given angle in degrees (counter-clockwise)." },
+                { "VGrid.Flip", "Mirrors all points in the grid across the specified line (mirror axis). Creates a reflection of the grid." },
+                { "VGrid.Scale", "Scales all points in the grid relative to a center point by the specified factor. Factor > 1 enlarges, < 1 shrinks." },
+                { "VGrid.GetBounds", "Returns the axis-aligned bounding box of all points as a tuple (minPoint, maxPoint)." },
+                { "VGrid.DistanceTo", "Returns the minimum distance from any point in the grid to the specified point." },
+                { "VGrid.ApplyStyle", "Applies the grid's StrokeColor, FillColor, and StrokeThickness to all contained points." },
+                { "VGrid.GetRow", "Returns a list of all points in the specified row (0-based index, row 0 is the bottom row)." },
+                { "VGrid.GetColumn", "Returns a list of all points in the specified column (0-based index, column 0 is the leftmost)." },
+                { "VGrid.GetCenter", "Calculates and returns the geometric center point of the grid based on its bounding box." },
+                { "VGrid.ToString", "Returns a string representation of the grid: \"VGrid(XCount×YCount, Location=..., Centered=...)\"" },
+
+                // VGroup Properties
+                { "VGroup.Shapes", "Gets the list of Shape objects contained in this group. Shapes can be added, removed, or modified directly." },
+                { "VGroup.Count", "Gets the number of shapes currently in the group." },
+                { "VGroup.Item", "Gets a shape at the specified index. Indexer: group[index]." },
+
+                // VGroup Methods
+                { "VGroup.Add", "Adds a shape to the group and returns the group for method chaining." },
+                { "VGroup.AddRange", "Adds multiple shapes to the group and returns the group for method chaining." },
+                { "VGroup.Remove", "Removes the specified shape from the group. Returns true if successful." },
+                { "VGroup.RemoveAt", "Removes the shape at the specified index from the group." },
+                { "VGroup.Clear", "Removes all shapes from the group." },
+                { "VGroup.ContainsShape", "Returns true if the specified shape is in the group." },
+                { "VGroup.Flatten", "Returns a flat list of all shapes, expanding any nested groups recursively." },
+                { "VGroup.ForEach", "Executes the specified action on each shape in the group." },
+                { "VGroup.Where", "Returns a new VGroup containing only shapes that match the predicate." },
+                { "VGroup.GetShapesOfType", "Returns all shapes of the specified type T from the group." },
+                { "VGroup.ApplyStyle", "Applies the group's StrokeColor, FillColor, and StrokeThickness to all contained shapes." },
+                { "VGroup.ApplyStrokeColor", "Applies only the group's StrokeColor to all contained shapes." },
+                { "VGroup.ApplyFillColor", "Applies only the group's FillColor to all contained shapes." },
+                { "VGroup.ApplyStrokeThickness", "Applies only the group's StrokeThickness to all contained shapes." },
+                { "VGroup.SetOpacity", "Sets the opacity (0.0 to 1.0) for all shapes in the group by adjusting their fill color alpha." },
+                { "VGroup.GetCenter", "Calculates and returns the geometric center point of all shapes in the group." },
+
+                // VPoint Properties
+                { "VPoint.X", "Gets or sets the X coordinate of the point in world units." },
+                { "VPoint.Y", "Gets or sets the Y coordinate of the point in world units." },
+
+                // VPoint Methods
+                { "VPoint.AsVXYZ", "Converts this VPoint to a VXYZ vector with Z=0." },
+                { "VPoint.Add", "Returns a new VPoint that is the sum of this point and the other point or vector." },
+                { "VPoint.Draw", "Renders the point to the canvas as a small dot." },
+                { "VPoint.Clone", "Creates a deep copy of this point with all properties duplicated." },
+                { "VPoint.Move", "Translates the point by the specified displacement vector." },
+                { "VPoint.Rotate", "Rotates the point around the specified pivot by the given angle in degrees." },
+                { "VPoint.Flip", "Mirrors the point across the specified line (axis of reflection)." },
+                { "VPoint.Scale", "Scales the point position relative to a center point by the specified factor." },
+                { "VPoint.GetBounds", "Returns the bounding box (point itself for both min and max)." },
+                { "VPoint.DistanceTo", "Returns the Euclidean distance from this point to another point." },
+                { "VPoint.Intersect", "Returns a copy of this point if it lies inside the other shape, otherwise null." },
+                { "VPoint.ToString", "Returns a string representation: \"VPoint(X, Y)\"." },
+
+                // VLine Properties
+                { "VLine.StartPoint", "Gets or sets the starting point of the line segment." },
+                { "VLine.EndPoint", "Gets or sets the ending point of the line segment." },
+                { "VLine.Length", "Gets the length of the line segment." },
+                { "VLine.MidPoint", "Gets the midpoint of the line segment." },
+                { "VLine.SelfIntersecting", "Always returns false (lines cannot self-intersect)." },
+
+                // VLine Methods
+                { "VLine.Draw", "Renders the line segment to the canvas." },
+                { "VLine.Clone", "Creates a deep copy of this line with all properties duplicated." },
+                { "VLine.Move", "Translates the line by the specified displacement vector." },
+                { "VLine.Rotate", "Rotates the line around the specified pivot by the given angle in degrees." },
+                { "VLine.Flip", "Mirrors the line across the specified axis line." },
+                { "VLine.Scale", "Scales the line relative to a center point by the specified factor." },
+                { "VLine.GetBounds", "Returns the axis-aligned bounding box of the line segment." },
+                { "VLine.Contains", "Returns true if the specified point lies on the line segment." },
+                { "VLine.DistanceTo", "Returns the minimum distance from the line to the specified point." },
+                { "VLine.GetLength", "Returns the length of the line segment." },
+                { "VLine.Divide", "Divides the line into equal segments, returning the division points." },
+                { "VLine.Measure", "Returns points along the line at fixed distance intervals." },
+                { "VLine.Project", "Projects a point onto the line, returning the closest point on the line." },
+                { "VLine.PointAtSegmentLength", "Returns the point at the specified distance from the start." },
+                { "VLine.Offset", "Creates a parallel line offset by the specified distance." },
+                { "VLine.SplitAtPoint", "Splits the line at the specified point, returning two line segments." },
+                { "VLine.NormalAtPoint", "Returns the normal vector (perpendicular) to the line." },
+                { "VLine.Intersect", "Computes intersection with another curve." },
+                { "VLine.PointsAtChordLengthFromPoint", "Returns points on the line at a chord distance from a given point." },
+                { "VLine.ToString", "Returns a string representation of the line." },
+
+                // VCircle Properties
+                { "VCircle.Center", "Gets or sets the center point of the circle." },
+                { "VCircle.Radius", "Gets or sets the radius of the circle." },
+                { "VCircle.Diameter", "Gets the diameter of the circle (2 × Radius)." },
+                { "VCircle.Circumference", "Gets the circumference of the circle (2π × Radius)." },
+                { "VCircle.Area", "Gets the area of the circle (π × Radius²)." },
+                { "VCircle.SelfIntersecting", "Always returns false (circles cannot self-intersect)." },
+                { "VCircle.StartPoint", "Gets a point on the circle (at 0 degrees)." },
+                { "VCircle.EndPoint", "Gets a point on the circle (same as StartPoint for closed curves)." },
+
+                // VCircle Methods
+                { "VCircle.Draw", "Renders the circle to the canvas." },
+                { "VCircle.Clone", "Creates a deep copy of this circle with all properties duplicated." },
+                { "VCircle.Move", "Translates the circle by the specified displacement vector." },
+                { "VCircle.Rotate", "Rotates the circle around the specified pivot by the given angle in degrees." },
+                { "VCircle.Flip", "Mirrors the circle across the specified axis line." },
+                { "VCircle.Scale", "Scales the circle relative to a center point by the specified factor." },
+                { "VCircle.GetBounds", "Returns the axis-aligned bounding box of the circle." },
+                { "VCircle.Contains", "Returns true if the specified point is inside or on the circle." },
+                { "VCircle.DistanceTo", "Returns the minimum distance from the circle to the specified point." },
+                { "VCircle.GetLength", "Returns the circumference of the circle." },
+                { "VCircle.Divide", "Divides the circle into equal arc segments, returning the division points." },
+                { "VCircle.Measure", "Returns points along the circle at fixed arc length intervals." },
+                { "VCircle.Project", "Projects a point onto the circle, returning the closest point on the circle." },
+                { "VCircle.Offset", "Creates a concentric circle offset by the specified distance (+ = outward)." },
+                { "VCircle.NormalAtPoint", "Returns the normal vector at the specified point on the circle (points outward)." },
+                { "VCircle.Intersect", "Computes intersection with another curve." },
+                { "VCircle.ToString", "Returns a string representation of the circle." },
+
+                // VRectangle Properties
+                { "VRectangle.Corner", "Gets or sets the bottom-left corner point of the rectangle." },
+                { "VRectangle.Width", "Gets or sets the width of the rectangle (along X axis)." },
+                { "VRectangle.Height", "Gets or sets the height of the rectangle (along Y axis)." },
+                { "VRectangle.Area", "Gets the area of the rectangle (Width × Height)." },
+
+                // VRectangle Methods
+                { "VRectangle.Draw", "Renders the rectangle to the canvas." },
+                { "VRectangle.Clone", "Creates a deep copy of this rectangle with all properties duplicated." },
+                { "VRectangle.Move", "Translates the rectangle by the specified displacement vector." },
+                { "VRectangle.Rotate", "Rotates the rectangle around the specified pivot by the given angle in degrees." },
+                { "VRectangle.Flip", "Mirrors the rectangle across the specified axis line." },
+                { "VRectangle.Scale", "Scales the rectangle relative to a center point by the specified factor." },
+                { "VRectangle.GetBounds", "Returns the axis-aligned bounding box of the rectangle." },
+                { "VRectangle.Contains", "Returns true if the specified point is inside or on the rectangle." },
+                { "VRectangle.DistanceTo", "Returns the minimum distance from the rectangle to the specified point." },
+                { "VRectangle.ToString", "Returns a string representation of the rectangle." },
+
+                // VArc Properties
+                { "VArc.Center", "Gets or sets the center point of the arc." },
+                { "VArc.Radius", "Gets or sets the radius of the arc." },
+                { "VArc.StartAngle", "Gets or sets the start angle in degrees (0 = positive X axis)." },
+                { "VArc.EndAngle", "Gets or sets the end angle in degrees (counter-clockwise from start)." },
+                { "VArc.StartPoint", "Gets the starting point of the arc." },
+                { "VArc.EndPoint", "Gets the ending point of the arc." },
+                { "VArc.SelfIntersecting", "Always returns false (arcs cannot self-intersect)." },
+
+                // VArc Methods
+                { "VArc.Draw", "Renders the arc to the canvas." },
+                { "VArc.Clone", "Creates a deep copy of this arc with all properties duplicated." },
+                { "VArc.Move", "Translates the arc by the specified displacement vector." },
+                { "VArc.Rotate", "Rotates the arc around the specified pivot by the given angle in degrees." },
+                { "VArc.Flip", "Mirrors the arc across the specified axis line." },
+                { "VArc.Scale", "Scales the arc relative to a center point by the specified factor." },
+                { "VArc.GetBounds", "Returns the axis-aligned bounding box of the arc." },
+                { "VArc.Contains", "Returns true if the specified point is on the arc." },
+                { "VArc.DistanceTo", "Returns the minimum distance from the arc to the specified point." },
+                { "VArc.GetLength", "Returns the arc length." },
+                { "VArc.Divide", "Divides the arc into equal segments, returning the division points." },
+                { "VArc.Measure", "Returns points along the arc at fixed distance intervals." },
+                { "VArc.Project", "Projects a point onto the arc, returning the closest point on the arc." },
+                { "VArc.Offset", "Creates a concentric arc offset by the specified distance." },
+                { "VArc.NormalAtPoint", "Returns the normal vector at the specified point on the arc." },
+                { "VArc.Intersect", "Computes intersection with another curve." },
+                { "VArc.ToString", "Returns a string representation of the arc." },
+
+                // VEllipse Properties
+                { "VEllipse.Center", "Gets or sets the center point of the ellipse." },
+                { "VEllipse.RadiusX", "Gets or sets the horizontal radius (semi-major or semi-minor axis)." },
+                { "VEllipse.RadiusY", "Gets or sets the vertical radius (semi-major or semi-minor axis)." },
+                { "VEllipse.SelfIntersecting", "Always returns false (ellipses cannot self-intersect)." },
+
+                // VEllipse Methods
+                { "VEllipse.Draw", "Renders the ellipse to the canvas." },
+                { "VEllipse.Clone", "Creates a deep copy of this ellipse with all properties duplicated." },
+                { "VEllipse.Move", "Translates the ellipse by the specified displacement vector." },
+                { "VEllipse.Rotate", "Rotates the ellipse around the specified pivot by the given angle in degrees." },
+                { "VEllipse.Flip", "Mirrors the ellipse across the specified axis line." },
+                { "VEllipse.Scale", "Scales the ellipse relative to a center point by the specified factor." },
+                { "VEllipse.GetBounds", "Returns the axis-aligned bounding box of the ellipse." },
+                { "VEllipse.Contains", "Returns true if the specified point is inside or on the ellipse." },
+                { "VEllipse.DistanceTo", "Returns the minimum distance from the ellipse to the specified point." },
+                { "VEllipse.GetLength", "Returns the approximate perimeter of the ellipse." },
+                { "VEllipse.Intersect", "Computes intersection with another curve." },
+                { "VEllipse.ToString", "Returns a string representation of the ellipse." },
+
+                // VPolygon Properties
+                { "VPolygon.Points", "Gets or sets the list of vertex points defining the polygon." },
+                { "VPolygon.Curves", "Gets the list of curves used to construct the polygon (if created from curves)." },
+                { "VPolygon.StartPoint", "Gets the first vertex of the polygon." },
+                { "VPolygon.EndPoint", "Gets the last vertex (same as StartPoint for closed polygon)." },
+                { "VPolygon.SelfIntersecting", "Returns true if any edges of the polygon cross each other." },
+                { "VPolygon.Area", "Gets the signed area of the polygon (positive for CCW, negative for CW vertices)." },
+
+                // VPolygon Methods
+                { "VPolygon.Draw", "Renders the polygon to the canvas (closed shape)." },
+                { "VPolygon.Clone", "Creates a deep copy of this polygon with all properties duplicated." },
+                { "VPolygon.Move", "Translates the polygon by the specified displacement vector." },
+                { "VPolygon.Rotate", "Rotates the polygon around the specified pivot by the given angle in degrees." },
+                { "VPolygon.Flip", "Mirrors the polygon across the specified axis line." },
+                { "VPolygon.Scale", "Scales the polygon relative to a center point by the specified factor." },
+                { "VPolygon.GetBounds", "Returns the axis-aligned bounding box of the polygon." },
+                { "VPolygon.Contains", "Returns true if the specified point is inside or on the polygon." },
+                { "VPolygon.DistanceTo", "Returns the minimum distance from the polygon to the specified point." },
+                { "VPolygon.GetLength", "Returns the total perimeter of the polygon." },
+                { "VPolygon.Divide", "Divides the polygon perimeter into equal segments, returning the division points." },
+                { "VPolygon.Measure", "Returns points along the polygon perimeter at fixed distance intervals." },
+                { "VPolygon.AddPoint", "Adds a vertex point to the polygon." },
+                { "VPolygon.Project", "Projects a point onto the polygon boundary, returning the closest point." },
+                { "VPolygon.PointAtSegmentLength", "Returns the point at the specified distance along the polygon perimeter." },
+                { "VPolygon.Offset", "Creates an offset polygon at the specified distance (+ = outward, - = inward)." },
+                { "VPolygon.PointsAtChordLengthFromPoint", "Returns points on the polygon at a chord distance from a given point." },
+                { "VPolygon.SplitAtPoint", "Splits the polygon at the specified point into two polylines." },
+                { "VPolygon.NormalAtPoint", "Returns the outward normal vector at the specified point on the polygon." },
+                { "VPolygon.Intersect", "Computes intersection with another curve." },
+                { "VPolygon.ToString", "Returns a string representation of the polygon." },
+
+                // VPolyline Properties
+                { "VPolyline.Points", "Gets the list of points defining the polyline." },
+                { "VPolyline.PointCount", "Gets the number of points in the polyline." },
+                { "VPolyline.StartPoint", "Gets the first point of the polyline." },
+                { "VPolyline.EndPoint", "Gets the last point of the polyline." },
+                { "VPolyline.SelfIntersecting", "Returns true if any segments of the polyline cross each other." },
+
+                // VPolyline Methods
+                { "VPolyline.Draw", "Renders the polyline to the canvas (open shape)." },
+                { "VPolyline.Clone", "Creates a deep copy of this polyline with all properties duplicated." },
+                { "VPolyline.Move", "Translates the polyline by the specified displacement vector." },
+                { "VPolyline.Rotate", "Rotates the polyline around the specified pivot by the given angle in degrees." },
+                { "VPolyline.Flip", "Mirrors the polyline across the specified axis line." },
+                { "VPolyline.Scale", "Scales the polyline relative to a center point by the specified factor." },
+                { "VPolyline.GetBounds", "Returns the axis-aligned bounding box of the polyline." },
+                { "VPolyline.Contains", "Returns true if the specified point is on the polyline." },
+                { "VPolyline.DistanceTo", "Returns the minimum distance from the polyline to the specified point." },
+                { "VPolyline.GetLength", "Returns the total length of all segments." },
+                { "VPolyline.Divide", "Divides the polyline into equal segments, returning the division points." },
+                { "VPolyline.Measure", "Returns points along the polyline at fixed distance intervals." },
+                { "VPolyline.Project", "Projects a point onto the polyline, returning the closest point." },
+                { "VPolyline.Offset", "Creates a parallel polyline offset by the specified distance." },
+                { "VPolyline.Intersect", "Computes intersection with another curve." },
+                { "VPolyline.ToString", "Returns a string representation of the polyline." },
+
+                // VText Properties
+                { "VText.Position", "Gets or sets the position point for the text." },
+                { "VText.Text", "Gets or sets the text content to display." },
+                { "VText.Height", "Gets or sets the font height in world units." },
+                { "VText.FontFamily", "Gets or sets the font family name." },
+
+                // VText Methods
+                { "VText.Draw", "Renders the text to the canvas." },
+                { "VText.Clone", "Creates a deep copy of this text with all properties duplicated." },
+                { "VText.Move", "Translates the text by the specified displacement vector." },
+                { "VText.Rotate", "Rotates the text around the specified pivot by the given angle in degrees." },
+                { "VText.Flip", "Mirrors the text across the specified axis line." },
+                { "VText.Scale", "Scales the text relative to a center point by the specified factor." },
+                { "VText.GetBounds", "Returns the axis-aligned bounding box of the text." },
+                { "VText.ToString", "Returns a string representation of the text object." },
+
+                // VBezier Properties
+                { "VBezier.StartPoint", "Gets or sets the starting point of the Bezier curve." },
+                { "VBezier.Control1", "Gets or sets the first control point." },
+                { "VBezier.Control2", "Gets or sets the second control point." },
+                { "VBezier.EndPoint", "Gets or sets the ending point of the Bezier curve." },
+                { "VBezier.SelfIntersecting", "Returns true if the Bezier curve crosses itself." },
+
+                // VBezier Methods
+                { "VBezier.Draw", "Renders the Bezier curve to the canvas." },
+                { "VBezier.Clone", "Creates a deep copy of this Bezier with all properties duplicated." },
+                { "VBezier.Move", "Translates the Bezier by the specified displacement vector." },
+                { "VBezier.Rotate", "Rotates the Bezier around the specified pivot by the given angle in degrees." },
+                { "VBezier.Flip", "Mirrors the Bezier across the specified axis line." },
+                { "VBezier.Scale", "Scales the Bezier relative to a center point by the specified factor." },
+                { "VBezier.GetBounds", "Returns the axis-aligned bounding box of the Bezier curve." },
+                { "VBezier.GetLength", "Returns the approximate arc length of the Bezier curve." },
+                { "VBezier.Divide", "Divides the Bezier into equal arc-length segments." },
+                { "VBezier.Intersect", "Computes intersection with another curve." },
+                { "VBezier.ToString", "Returns a string representation of the Bezier curve." },
+
+                // VSpline Properties
+                { "VSpline.ControlPoints", "Gets the list of control points defining the spline." },
+                { "VSpline.StartPoint", "Gets the starting point of the spline." },
+                { "VSpline.EndPoint", "Gets the ending point of the spline." },
+                { "VSpline.SelfIntersecting", "Returns true if the spline crosses itself." },
+
+                // VSpline Methods
+                { "VSpline.Draw", "Renders the spline curve to the canvas." },
+                { "VSpline.Clone", "Creates a deep copy of this spline with all properties duplicated." },
+                { "VSpline.Move", "Translates the spline by the specified displacement vector." },
+                { "VSpline.Rotate", "Rotates the spline around the specified pivot by the given angle in degrees." },
+                { "VSpline.Flip", "Mirrors the spline across the specified axis line." },
+                { "VSpline.Scale", "Scales the spline relative to a center point by the specified factor." },
+                { "VSpline.GetBounds", "Returns the axis-aligned bounding box of the spline." },
+                { "VSpline.GetLength", "Returns the approximate arc length of the spline." },
+                { "VSpline.Divide", "Divides the spline into equal arc-length segments." },
+                { "VSpline.Intersect", "Computes intersection with another curve." },
+                { "VSpline.ToString", "Returns a string representation of the spline." },
+
+                // VArrow Properties
+                { "VArrow.Start", "Gets or sets the starting point of the arrow." },
+                { "VArrow.End", "Gets or sets the ending point (tip) of the arrow." },
+                { "VArrow.HeadSize", "Gets or sets the size of the arrowhead." },
+                { "VArrow.HeadAngle", "Gets or sets the angle of the arrowhead in degrees." },
+                { "VArrow.DoubleHeaded", "Gets or sets whether the arrow has heads on both ends." },
+
+                // VArrow Methods
+                { "VArrow.Draw", "Renders the arrow to the canvas." },
+                { "VArrow.Clone", "Creates a deep copy of this arrow with all properties duplicated." },
+                { "VArrow.Move", "Translates the arrow by the specified displacement vector." },
+                { "VArrow.Rotate", "Rotates the arrow around the specified pivot by the given angle in degrees." },
+                { "VArrow.Flip", "Mirrors the arrow across the specified axis line." },
+                { "VArrow.Scale", "Scales the arrow relative to a center point by the specified factor." },
+                { "VArrow.GetBounds", "Returns the axis-aligned bounding box of the arrow." },
+                { "VArrow.ToString", "Returns a string representation of the arrow." },
+
+                // VDimension Properties
+                { "VDimension.Point1", "Gets or sets the first measurement point." },
+                { "VDimension.Point2", "Gets or sets the second measurement point." },
+                { "VDimension.Offset", "Gets or sets the offset distance for the dimension line." },
+                { "VDimension.TextHeight", "Gets or sets the height of the dimension text." },
+
+                // VDimension Methods
+                { "VDimension.Draw", "Renders the dimension annotation to the canvas." },
+                { "VDimension.Clone", "Creates a deep copy of this dimension with all properties duplicated." },
+                { "VDimension.Move", "Translates the dimension by the specified displacement vector." },
+                { "VDimension.Rotate", "Rotates the dimension around the specified pivot by the given angle in degrees." },
+                { "VDimension.Flip", "Mirrors the dimension across the specified axis line." },
+                { "VDimension.Scale", "Scales the dimension relative to a center point by the specified factor." },
+                { "VDimension.GetBounds", "Returns the axis-aligned bounding box of the dimension." },
+                { "VDimension.ToString", "Returns a string representation of the dimension." },
+
+                // Shape base class properties
+                { "Shape.Id", "Gets the unique identifier for this shape, automatically assigned on creation." },
+                { "Shape.StrokeColor", "Gets or sets the outline/stroke color as a string (named color or hex code like '#FF0000' or '#80FF0000')." },
+                { "Shape.FillColor", "Gets or sets the fill color as a string. Use 'Transparent' for no fill." },
+                { "Shape.StrokeThickness", "Gets or sets the thickness of the outline stroke in pixels." },
+                { "Shape.DrawFactor", "Gets or sets the draw factor (0.0 to 1.0) for progressive drawing animations." },
+                { "Shape.OffsetX", "Gets or sets the X offset for translation animations." },
+                { "Shape.OffsetY", "Gets or sets the Y offset for translation animations." },
+                { "Shape.RotationAngle", "Gets or sets the rotation angle in degrees for rotation animations." },
+                { "Shape.RotationPivot", "Gets or sets the pivot point for rotation animations. Null uses shape center." },
+
+                // Shape base class methods
+                { "Shape.Draw", "Renders the shape to the canvas. Must be called for the shape to be visible." },
+                { "Shape.Clone", "Creates a deep copy of the shape with all properties duplicated." },
+                { "Shape.Move", "Translates the shape by the specified displacement vector." },
+                { "Shape.Rotate", "Rotates the shape around the specified pivot point by the given angle in degrees." },
+                { "Shape.Flip", "Mirrors the shape across the specified line (axis of reflection)." },
+                { "Shape.Scale", "Scales the shape relative to a center point by the specified factor." },
+                { "Shape.GetBounds", "Returns the axis-aligned bounding box as a tuple (minPoint, maxPoint)." },
+                { "Shape.Contains", "Returns true if the specified point is inside or on the shape boundary." },
+                { "Shape.DistanceTo", "Returns the minimum distance from the shape to the specified point." },
+                { "Shape.Intersect", "Computes geometric intersection with another shape." },
+                { "Shape.CopyStyleTo", "Copies this shape's style properties to another shape." },
+                { "Shape.ToString", "Returns a string representation of the shape." },
+
+                // VXYZ Properties
+                { "VXYZ.X", "Gets or sets the X component of the vector." },
+                { "VXYZ.Y", "Gets or sets the Y component of the vector." },
+                { "VXYZ.Z", "Gets or sets the Z component of the vector." },
+                { "VXYZ.Item", "Gets the vector component at the specified index (0=X, 1=Y, 2=Z)." },
+
+                // VXYZ Methods
+                { "VXYZ.Add", "Returns a new vector that is the sum of this vector and another." },
+                { "VXYZ.Subtract", "Returns a new vector that is the difference of this vector and another." },
+                { "VXYZ.Multiply", "Returns a new vector with each component multiplied by the scalar value." },
+                { "VXYZ.Divide", "Returns a new vector with each component divided by the scalar value." },
+                { "VXYZ.Negate", "Returns a new vector with all components negated (reversed direction)." },
+                { "VXYZ.AsVPoint", "Converts this VXYZ to a VPoint (ignores Z component)." },
+                { "VXYZ.GetLength", "Returns the magnitude (length) of the vector." },
+                { "VXYZ.Normalize", "Returns a unit vector in the same direction (length = 1)." },
+                { "VXYZ.DistanceTo", "Returns the Euclidean distance from this point/vector to another." },
+                { "VXYZ.DotProduct", "Returns the dot product (scalar product) of this vector with another vector." },
+                { "VXYZ.CrossProduct", "Returns the cross product of this vector with another vector (3D only)." },
+                { "VXYZ.TripleProduct", "Returns the scalar triple product of three vectors: this · (a × b)." },
+                { "VXYZ.AngleTo", "Returns the angle in radians between this vector and another vector." },
+                { "VXYZ.IsZeroLength", "Returns true if the vector has zero length (all components are zero)." },
+                { "VXYZ.IsUnitLength", "Returns true if the vector has unit length (magnitude ≈ 1)." },
+                { "VXYZ.IsAlmostEqualTo", "Returns true if this vector is approximately equal to another within the specified tolerance." },
+                { "VXYZ.Equals", "Returns true if this vector equals another object." },
+                { "VXYZ.GetHashCode", "Returns a hash code for this vector." },
+                { "VXYZ.ToString", "Returns a string representation: \"(X, Y, Z)\"." },
+
+                // ICurve interface
+                { "ICurve.StartPoint", "Gets the starting point of the curve." },
+                { "ICurve.EndPoint", "Gets the ending point of the curve." },
+                { "ICurve.SelfIntersecting", "Gets whether this curve intersects itself. Simple curves (lines, circles) always return false." },
+                { "ICurve.GetLength", "Returns the total arc length of the curve." },
+                { "ICurve.Divide", "Divides the curve into the specified number of equal segments, returning the division points." },
+                { "ICurve.Measure", "Returns points along the curve at fixed distance intervals." },
+                { "ICurve.Project", "Projects a point onto the curve, returning the closest point on the curve." },
+                { "ICurve.PointAtSegmentLength", "Returns the point at the specified distance along the curve from the start." },
+                { "ICurve.Offset", "Creates a new curve offset by the specified distance (positive = left, negative = right)." },
+                { "ICurve.SplitAtPoint", "Splits the curve at the specified point, returning two curve segments." },
+                { "ICurve.NormalAtPoint", "Returns the normal vector (perpendicular) to the curve at the specified point." },
+                { "ICurve.Intersect", "Computes intersection with another curve, returning an IntersectionResult with points and overlapping segments." },
+
+                // Timeline
+                { "Timeline.Duration", "Gets or sets the total duration of the animation in seconds." },
+                { "Timeline.Repeat", "Gets or sets whether the animation loops continuously." },
+                { "Timeline.CurrentTime", "Gets the current playback time in seconds." },
+                { "Timeline.IsPlaying", "Gets whether the timeline is currently playing." },
+                { "Timeline.Play", "Starts or resumes playback of the animation." },
+                { "Timeline.Pause", "Pauses playback at the current time." },
+                { "Timeline.Stop", "Stops playback and resets to the beginning." },
+                { "Timeline.AddAnimation", "Adds an animation to the timeline." },
+
+                // IntersectionResult
+                { "IntersectionResult.Points", "Gets the list of intersection points." },
+                { "IntersectionResult.Curves", "Gets the list of overlapping curve segments (for collinear/coincident curves)." },
+                { "IntersectionResult.HasIntersection", "Returns true if there is at least one intersection point or overlapping segment." },
+                { "IntersectionResult.IsSinglePoint", "Returns true if there is exactly one intersection point." },
+                { "IntersectionResult.HasOverlap", "Returns true if the curves share an overlapping segment." },
+                { "IntersectionResult.Count", "Gets the total number of intersection elements (points + curves)." },
+
+                // Animation base class
+                { "Animation.Target", "Gets or sets the shape that this animation affects." },
+                { "Animation.StartTime", "Gets or sets the time in seconds when the animation begins." },
+                { "Animation.Duration", "Gets or sets how long the animation lasts in seconds." },
+                { "Animation.EasingFunction", "Gets or sets the easing function for smooth motion (e.g., EaseInOut)." },
+                { "Animation.Apply", "Applies the animation at the specified normalized time (0 to 1)." },
+
+                // DrawAnimation
+                { "DrawAnimation.Target", "Gets or sets the shape to animate drawing." },
+                { "DrawAnimation.StartTime", "Gets or sets when the draw animation begins (in seconds)." },
+                { "DrawAnimation.Duration", "Gets or sets how long the drawing takes (in seconds)." },
+                { "DrawAnimation.EasingFunction", "Gets or sets the easing function for the draw effect." },
+                { "DrawAnimation.Apply", "Applies the draw animation, setting DrawFactor on the target shape." },
+
+                // MoveAnimation
+                { "MoveAnimation.Target", "Gets or sets the shape to move." },
+                { "MoveAnimation.Displacement", "Gets or sets the total displacement vector for the movement." },
+                { "MoveAnimation.StartTime", "Gets or sets when the movement begins (in seconds)." },
+                { "MoveAnimation.Duration", "Gets or sets how long the movement takes (in seconds)." },
+                { "MoveAnimation.EasingFunction", "Gets or sets the easing function for smooth movement." },
+                { "MoveAnimation.Apply", "Applies the move animation, updating OffsetX and OffsetY on the target." },
+
+                // RotateAnimation
+                { "RotateAnimation.Target", "Gets or sets the shape to rotate." },
+                { "RotateAnimation.Pivot", "Gets or sets the center point of rotation." },
+                { "RotateAnimation.AngleDegrees", "Gets or sets the total rotation angle in degrees." },
+                { "RotateAnimation.StartTime", "Gets or sets when the rotation begins (in seconds)." },
+                { "RotateAnimation.Duration", "Gets or sets how long the rotation takes (in seconds)." },
+                { "RotateAnimation.EasingFunction", "Gets or sets the easing function for smooth rotation." },
+                { "RotateAnimation.Apply", "Applies the rotate animation, updating RotationAngle on the target." },
+
+                // FlipAnimation
+                { "FlipAnimation.Target", "Gets or sets the shape to flip." },
+                { "FlipAnimation.MirrorAxis", "Gets or sets the line across which to mirror the shape." },
+                { "FlipAnimation.StartTime", "Gets or sets when the flip begins (in seconds)." },
+                { "FlipAnimation.Duration", "Gets or sets how long the flip takes (in seconds)." },
+                { "FlipAnimation.EasingFunction", "Gets or sets the easing function for the flip effect." },
+                { "FlipAnimation.Apply", "Applies the flip animation, progressively mirroring the shape." },
+
+                // FadeInAnimation
+                { "FadeInAnimation.Target", "Gets or sets the shape to fade in." },
+                { "FadeInAnimation.StartTime", "Gets or sets when the fade-in begins (in seconds)." },
+                { "FadeInAnimation.Duration", "Gets or sets how long the fade-in takes (in seconds)." },
+                { "FadeInAnimation.EasingFunction", "Gets or sets the easing function for smooth fade-in." },
+                { "FadeInAnimation.Apply", "Applies the fade-in animation, increasing opacity from 0 to 1." },
+
+                // FadeOutAnimation
+                { "FadeOutAnimation.Target", "Gets or sets the shape to fade out." },
+                { "FadeOutAnimation.StartTime", "Gets or sets when the fade-out begins (in seconds)." },
+                { "FadeOutAnimation.Duration", "Gets or sets how long the fade-out takes (in seconds)." },
+                { "FadeOutAnimation.EasingFunction", "Gets or sets the easing function for smooth fade-out." },
+                { "FadeOutAnimation.Apply", "Applies the fade-out animation, decreasing opacity from 1 to 0." },
+
+                // EasingFunctions
+                { "EasingFunctions.Linear", "Returns linear easing (constant speed, no acceleration)." },
+                { "EasingFunctions.EaseInQuad", "Returns quadratic ease-in (slow start, accelerating)." },
+                { "EasingFunctions.EaseOutQuad", "Returns quadratic ease-out (fast start, decelerating)." },
+                { "EasingFunctions.EaseInOutQuad", "Returns quadratic ease-in-out (slow start and end)." },
+                { "EasingFunctions.EaseInCubic", "Returns cubic ease-in (slower start than quadratic)." },
+                { "EasingFunctions.EaseOutCubic", "Returns cubic ease-out (slower end than quadratic)." },
+                { "EasingFunctions.EaseInOutCubic", "Returns cubic ease-in-out (smoother start and end)." },
+
+                // ArrayOps
+                { "ArrayOps.LinearArray", "Creates copies of a shape along a direction vector." },
+                { "ArrayOps.LinearArrayX", "Creates copies of a shape along the X axis." },
+                { "ArrayOps.LinearArrayY", "Creates copies of a shape along the Y axis." },
+                { "ArrayOps.RectangularArray", "Creates a grid pattern of shape copies (rows × columns)." },
+                { "ArrayOps.CircularArray", "Creates copies arranged in a circle around a center point." },
+                { "ArrayOps.PathArray", "Creates copies distributed along a curve path." },
+                { "ArrayOps.SpiralArray", "Creates copies arranged in a spiral pattern." },
+                { "ArrayOps.Mirror", "Creates a mirrored copy of a shape across an axis line." },
+
+                // BooleanOps
+                { "BooleanOps.Union", "Combines two or more polygons into one. Returns a single VPolygon if successful, or null if polygons don't overlap/touch (logs reason to console)." },
+                { "BooleanOps.Intersect", "Returns the overlapping area of two polygons (logical AND)." },
+                { "BooleanOps.Difference", "Subtracts one polygon from another." },
+                { "BooleanOps.Xor", "Returns the symmetric difference of two polygons (non-overlapping areas)." },
+                { "BooleanOps.OffsetPolygon", "Grows or shrinks a polygon by the specified distance." },
+                { "BooleanOps.Simplify", "Removes redundant points from a polygon within tolerance." },
+                { "BooleanOps.Area", "Calculates the area of a polygon." },
+                { "BooleanOps.PointInPolygon", "Tests if a point is inside a polygon." },
+
+                // ControlPoint
+                { "ControlPoint.Position", "Gets or sets the position of the control point." },
+                { "ControlPoint.Weight", "Gets or sets the weight for NURBS curves (default 1.0)." },
+
+                // CurveIntersection
+                { "CurveIntersection.Intersect", "Computes intersection points between two curves." },
+                { "CurveIntersection.IsSelfIntersecting", "Checks if a curve crosses itself." },
+                { "CurveIntersection.LineLineIntersection", "Finds the intersection of two line segments." },
+                { "CurveIntersection.LineCircleIntersection", "Finds intersections of a line and circle." },
+                { "CurveIntersection.CircleCircleIntersection", "Finds intersections of two circles." },
+                { "CurveIntersection.LineArcIntersection", "Finds intersections of a line and arc." },
+                { "CurveIntersection.ArcArcIntersection", "Finds intersections of two arcs." },
+
+                // GeometryHelper
+                { "GeometryHelper.DistancePointToLine", "Calculates perpendicular distance from a point to a line." },
+                { "GeometryHelper.DistancePointToPoint", "Calculates Euclidean distance between two points." },
+                { "GeometryHelper.LineLineIntersection", "Finds the intersection point of two infinite lines." },
+                { "GeometryHelper.AngleBetweenVectors", "Calculates the angle between two vectors in radians." },
+                { "GeometryHelper.RotatePoint", "Rotates a point around a pivot by an angle." },
+                { "GeometryHelper.FlipPoint", "Mirrors a point across a line." },
+                { "GeometryHelper.ProjectPointOnLine", "Projects a point onto the nearest point on a line." },
+                { "GeometryHelper.IsPointOnLine", "Checks if a point lies on a line segment." },
+                { "GeometryHelper.IsPointInPolygon", "Checks if a point is inside a polygon." },
+                { "GeometryHelper.GetPolygonArea", "Calculates the signed area of a polygon." },
+                { "GeometryHelper.GetPolygonCentroid", "Calculates the centroid (center of mass) of a polygon." },
+
+                // IDrawable
+                { "IDrawable.Draw", "Renders the drawable object to the canvas." },
+                { "IDrawable.StrokeColor", "Gets or sets the stroke/outline color." },
+                { "IDrawable.FillColor", "Gets or sets the fill color." },
+                { "IDrawable.StrokeThickness", "Gets or sets the stroke thickness." },
+
+                // ShapeDefaults
+                { "ShapeDefaults.GlobalStrokeColor", "Gets or sets the default stroke color for new shapes." },
+                { "ShapeDefaults.GlobalFillColor", "Gets or sets the default fill color for new shapes." },
+                { "ShapeDefaults.GlobalStrokeThickness", "Gets or sets the default stroke thickness for new shapes." },
+                { "ShapeDefaults.Reset", "Resets all global defaults to their original values." },
+
+                // VCoordinateSystem
+                { "VCoordinateSystem.Origin", "Gets or sets the origin point of the coordinate system." },
+                { "VCoordinateSystem.BasisX", "Gets or sets the X-axis direction vector." },
+                { "VCoordinateSystem.BasisY", "Gets or sets the Y-axis direction vector." },
+                { "VCoordinateSystem.BasisZ", "Gets or sets the Z-axis direction vector." },
+                { "VCoordinateSystem.IsRightHanded", "Returns true if the coordinate system is right-handed." },
+                { "VCoordinateSystem.Transform", "Transforms a point from world to local coordinates." },
+                { "VCoordinateSystem.InverseTransform", "Transforms a point from local to world coordinates." },
+
+                // VPlane
+                { "VPlane.Origin", "Gets or sets the origin point of the plane." },
+                { "VPlane.Normal", "Gets the normal vector perpendicular to the plane." },
+                { "VPlane.XAxis", "Gets the X-axis direction vector on the plane." },
+                { "VPlane.YAxis", "Gets the Y-axis direction vector on the plane." },
+                { "VPlane.CreateByNormalAndOrigin", "Creates a plane from a normal vector and origin point." },
+                { "VPlane.CreateByThreePoints", "Creates a plane passing through three points." },
+                { "VPlane.ProjectPoint", "Projects a 3D point onto the plane." },
+                { "VPlane.DistanceTo", "Returns the signed distance from a point to the plane." },
+
+                // VTransform
+                { "VTransform.Matrix", "Gets the 4x4 transformation matrix." },
+                { "VTransform.IsIdentity", "Returns true if this is an identity transform (no change)." },
+                { "VTransform.CreateRotation", "Creates a rotation transform around an axis by an angle." },
+                { "VTransform.CreateTranslation", "Creates a translation transform by a displacement vector." },
+                { "VTransform.CreateScale", "Creates a uniform or non-uniform scale transform." },
+                { "VTransform.CreateReflection", "Creates a reflection transform across a plane." },
+                { "VTransform.Multiply", "Multiplies (combines) two transforms." },
+                { "VTransform.Inverse", "Returns the inverse of this transform." },
+                { "VTransform.TransformPoint", "Applies the transform to a point." },
+                { "VTransform.TransformVector", "Applies the transform to a vector (ignores translation)." },
+
+                // DxfExporter
+                { "DxfExporter.Export", "Exports shapes to a DXF file (AutoCAD format)." },
+                { "DxfExporter.ExportToString", "Exports shapes to a DXF string." },
+
+                // PdfExporter
+                { "PdfExporter.Export", "Exports shapes to a PDF file." },
+                { "PdfExporter.PageSize", "Gets or sets the page size (A4, Letter, etc.)." },
+                { "PdfExporter.Margin", "Gets or sets the page margins." },
+
+                // SvgExporter
+                { "SvgExporter.Export", "Exports shapes to an SVG file." },
+                { "SvgExporter.ExportToString", "Exports shapes to an SVG string." },
+                { "SvgExporter.Width", "Gets or sets the SVG canvas width." },
+                { "SvgExporter.Height", "Gets or sets the SVG canvas height." },
+
+                // GifEncoder
+                { "GifEncoder.AddFrame", "Adds a frame to the GIF animation." },
+                { "GifEncoder.Save", "Saves the GIF to a file." },
+                { "GifEncoder.FrameDelay", "Gets or sets the delay between frames in milliseconds." },
+                { "GifEncoder.Repeat", "Gets or sets whether the GIF loops infinitely." },
+
+                // ShapeArrayExtensions (extension methods)
+                { "ShapeArrayExtensions.DrawAll", "Draws all shapes in the collection." },
+                { "ShapeArrayExtensions.LinearArrayX", "Extension: creates copies along the X axis." },
+                { "ShapeArrayExtensions.LinearArrayY", "Extension: creates copies along the Y axis." },
+                { "ShapeArrayExtensions.LinearArray", "Extension: creates copies along a direction." },
+                { "ShapeArrayExtensions.RectangularArray", "Extension: creates a grid pattern of copies." },
+                { "ShapeArrayExtensions.CircularArray", "Extension: creates copies in a circle." },
+                { "ShapeArrayExtensions.PathArray", "Extension: creates copies along a path." },
+                { "ShapeArrayExtensions.SpiralArray", "Extension: creates copies in a spiral." },
+                { "ShapeArrayExtensions.Mirror", "Extension: creates a mirrored copy." },
+
+                // VPolygonBooleanExtensions (extension methods)
+                { "VPolygonBooleanExtensions.Union", "Extension: combines polygons into one. Returns VPolygon or null if they don't overlap." },
+                { "VPolygonBooleanExtensions.Intersect", "Extension: returns overlapping area (boolean AND)." },
+                { "VPolygonBooleanExtensions.Difference", "Extension: subtracts one polygon from another." },
+                { "VPolygonBooleanExtensions.Xor", "Extension: returns symmetric difference." },
+                { "VPolygonBooleanExtensions.Contains", "Extension: tests if a point is inside the polygon." },
+                { "VPolygonBooleanExtensions.GetArea", "Extension: calculates polygon area." },
+            };
+        }
+
+        private string GetMemberDescription(string className, string memberName)
+        {
+            var key = $"{className}.{memberName}";
+            if (_memberDescriptions != null && _memberDescriptions.TryGetValue(key, out var desc))
+                return desc;
+            return "";
         }
 
         public FlowDocument GenerateWelcomePage()

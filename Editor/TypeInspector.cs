@@ -831,16 +831,69 @@ public static class TypeInspector
         if (string.IsNullOrWhiteSpace(typeName))
             return namespaces.ToList();
 
+        // Strip generic parameters if present (e.g., "List<VPolygon>" -> "List")
+        var baseTypeName = typeName;
+        var genericIndex = typeName.IndexOf('<');
+        if (genericIndex > 0)
+            baseTypeName = typeName.Substring(0, genericIndex);
+
+        // First check our known types (Code2Viz types are always available)
+        if (GetKnownTypes().TryGetValue(baseTypeName, out var knownType))
+        {
+            if (!string.IsNullOrEmpty(knownType.Namespace))
+            {
+                namespaces.Add(knownType.Namespace);
+            }
+        }
+
+        // Then search all loaded assemblies
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             try
             {
-                foreach (var type in assembly.GetTypes())
+                // Use GetExportedTypes for better performance (only public types)
+                foreach (var type in assembly.GetExportedTypes())
                 {
-                    if (type.IsPublic && type.Name == typeName && !string.IsNullOrEmpty(type.Namespace))
+                    if (string.IsNullOrEmpty(type.Namespace))
+                        continue;
+
+                    // Get type name, stripping generic arity suffix (e.g., "List`1" -> "List")
+                    var name = type.Name;
+                    var tickIndex = name.IndexOf('`');
+                    if (tickIndex > 0)
+                        name = name.Substring(0, tickIndex);
+
+                    if (name.Equals(baseTypeName, StringComparison.Ordinal))
                     {
                         namespaces.Add(type.Namespace);
                     }
+                }
+            }
+            catch (NotSupportedException)
+            {
+                // Dynamic assemblies don't support GetExportedTypes
+                // Try GetTypes() as fallback
+                try
+                {
+                    foreach (var type in assembly.GetTypes())
+                    {
+                        if (!type.IsPublic || string.IsNullOrEmpty(type.Namespace))
+                            continue;
+
+                        var name = type.Name;
+                        var tickIndex = name.IndexOf('`');
+                        if (tickIndex > 0)
+                            name = name.Substring(0, tickIndex);
+
+                        if (name.Equals(baseTypeName, StringComparison.Ordinal))
+                        {
+                            namespaces.Add(type.Namespace);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignored
                 }
             }
             catch
@@ -849,6 +902,10 @@ public static class TypeInspector
             }
         }
 
-        return namespaces.OrderBy(n => n).ToList();
+        // Prioritize Code2Viz namespaces at the top
+        return namespaces
+            .OrderByDescending(n => n.StartsWith("Code2Viz"))
+            .ThenBy(n => n)
+            .ToList();
     }
 }

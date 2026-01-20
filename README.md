@@ -73,6 +73,7 @@ Press **F5** or click the **Run** button to execute and see results on the canva
 | **VArrow** | Arrow with head | `new VArrow(start, end)` |
 | **VDimension** | Dimension annotation | `new VDimension(p1, p2)` |
 | **VGroup** | Group of shapes | `new VGroup(shape1, shape2, ...)` or `new VGroup(shapeList)` |
+| **VGrid** | Grid of points | `new VGrid(location, xcount, ycount, spacing, centered)` |
 
 ---
 
@@ -165,6 +166,81 @@ var filtered = group.Where(s => s is VCircle);
 // Get bounds and center
 var (min, max) = group.GetBounds();
 VPoint center = group.GetCenter();
+```
+
+---
+
+## Point Grids (VGrid)
+
+VGrid creates a rectangular grid of VPoints, useful for creating patterns, matrices, or reference grids.
+
+### Creating Grids
+
+```csharp
+// Centered grid at origin: 5 columns x 3 rows, spacing 10 units
+var grid = new VGrid(new VPoint(0, 0), 5, 3, 10, true);
+grid.Draw();
+
+// Grid with bottom-left corner at (-100, -50)
+var grid2 = new VGrid(new VPoint(-100, -50), 4, 4, 20, false);
+grid2.Draw();
+
+// Different X and Y spacing: 15 horizontal, 10 vertical
+var grid3 = new VGrid(new VPoint(0, 0), 6, 4, 15, 10, true);
+grid3.Draw();
+```
+
+### Constructor Options
+
+| Constructor | Description |
+|-------------|-------------|
+| `VGrid(location, xcount, ycount, centered)` | Default spacing of 1.0 |
+| `VGrid(location, xcount, ycount, spacing, centered)` | Uniform spacing |
+| `VGrid(location, xcount, ycount, xSpacing, ySpacing, centered)` | Different X/Y spacing |
+
+### Grid Properties
+
+```csharp
+var grid = new VGrid(new VPoint(0, 0), 5, 3, 10, true);
+
+// Access points
+List<VPoint> allPoints = grid.Points;
+int totalCount = grid.Count;           // 15 (5 x 3)
+VPoint point = grid[0];                // First point (by index)
+VPoint cell = grid[2, 1];              // Column 2, Row 1
+
+// Grid info
+int cols = grid.XCount;                // 5
+int rows = grid.YCount;                // 3
+double xSpace = grid.XSpacing;         // 10
+double ySpace = grid.YSpacing;         // 10
+bool centered = grid.Centered;         // true
+```
+
+### Grid Operations
+
+```csharp
+var grid = new VGrid(new VPoint(0, 0), 5, 3, 10, true);
+
+// Style all points
+grid.StrokeColor = "White";
+grid.FillColor = "Cyan";
+grid.ApplyStyle();  // Apply to all points
+
+// Get rows and columns
+List<VPoint> row0 = grid.GetRow(0);      // Bottom row
+List<VPoint> col2 = grid.GetColumn(2);   // Third column
+
+// Geometry
+VPoint center = grid.GetCenter();
+var (min, max) = grid.GetBounds();
+
+// Transform entire grid
+grid.Move(new VXYZ(50, 25, 0));
+grid.Rotate(new VPoint(0, 0), 45);
+grid.Scale(grid.GetCenter(), 2.0);
+
+grid.Draw();
 ```
 
 ---
@@ -485,9 +561,9 @@ Code2Viz provides polygon boolean operations using the Clipper2 library.
 var poly1 = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
 var poly2 = new VPolygon(new VPoint(50,50), new VPoint(150,50), new VPoint(150,150), new VPoint(50,150));
 
-// Union - combine two polygons
+// Union - combine two polygons (returns single VPolygon or null if disjoint)
 var union = poly1.Union(poly2);
-foreach (var p in union) p.Draw();
+union?.Draw();
 
 // Intersection - get overlapping area
 var intersection = poly1.Intersect(poly2);
@@ -649,6 +725,7 @@ All cursors are visually indicated with white caret lines, and selections are hi
 |----------|--------|
 | `Mouse Wheel` | Zoom |
 | `Middle Click` | Pan |
+| `Double-click` (empty space) | Zoom to fit all shapes |
 | `Ctrl+G` | Zoom to shape by ID |
 | `Ctrl+M` | Toggle Measuring Tape tool |
 | `Esc` | Cancel current tool/operation |
