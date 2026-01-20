@@ -190,6 +190,17 @@
                             Style="{StaticResource MenuItemStyle}" />
                         <Separator />
                         <MenuItem
+                            Click="AddCursorAboveMenuItem_Click"
+                            Header="Add Cursor A_bove"
+                            InputGestureText="Ctrl+Alt+Up"
+                            Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem
+                            Click="AddCursorBelowMenuItem_Click"
+                            Header="Add Cursor Bel_ow"
+                            InputGestureText="Ctrl+Alt+Down"
+                            Style="{StaticResource MenuItemStyle}" />
+                        <Separator />
+                        <MenuItem
                             Click="ToggleCommentMenuItem_Click"
                             Header="_Toggle Comment"
                             InputGestureText="Ctrl+/"
@@ -734,7 +745,9 @@
                         Padding="0,5"
                         Background="Transparent"
                         BorderThickness="0"
-                        Visibility="Collapsed">
+                        Visibility="Collapsed"
+                        VirtualizingStackPanel.IsVirtualizing="True"
+                        VirtualizingStackPanel.VirtualizationMode="Recycling">
                         <TreeView.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Click="OutlinerExpandAll_Click" Header="Expand All" />

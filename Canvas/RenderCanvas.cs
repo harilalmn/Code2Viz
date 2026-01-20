@@ -66,6 +66,7 @@ public class RenderCanvas : FrameworkElement
 
     private List<IDrawable> _currentShapes = new();
     private readonly DrawingVisual _visual;
+    private QuadTree? _spatialIndex;
 
     // Measuring Tool
     private MeasuringTool? _measuringTool;
@@ -277,6 +278,18 @@ public class RenderCanvas : FrameworkElement
                 var shift = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
                 var ctrl = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
 
+                // Check for double-click on empty space to zoom extents
+                if (e.ClickCount == 2)
+                {
+                    var hitShape = _selectionTool.HitTest(vPoint, _currentShapes, _scale);
+                    if (hitShape == null)
+                    {
+                        ZoomExtents(_currentShapes);
+                        e.Handled = true;
+                        return;
+                    }
+                }
+
                 _selectionTool.OnMouseDown(vPoint, shift, ctrl, _currentShapes, _scale);
 
                 if (_selectionTool.IsBoxSelecting || _selectionTool.IsDraggingHandle)
@@ -373,6 +386,7 @@ public class RenderCanvas : FrameworkElement
     public void ClearShapes()
     {
         _currentShapes.Clear();
+        _spatialIndex = null;
         _scale = 1.0;
         _panX = 0;
         _panY = 0;
@@ -382,7 +396,16 @@ public class RenderCanvas : FrameworkElement
     public void Render(IEnumerable<IDrawable> shapes)
     {
         _currentShapes = shapes.ToList();
+        RebuildSpatialIndex();
         RedrawAll();
+    }
+
+    /// <summary>
+    /// Rebuilds the spatial index from the current shapes.
+    /// </summary>
+    private void RebuildSpatialIndex()
+    {
+        _spatialIndex = QuadTree.FromShapes(_currentShapes);
     }
 
     /// <summary>
@@ -391,6 +414,7 @@ public class RenderCanvas : FrameworkElement
     public void AddShape(IDrawable shape)
     {
         _currentShapes.Add(shape);
+        RebuildSpatialIndex();
         RedrawAll();
     }
 
@@ -453,7 +477,7 @@ public class RenderCanvas : FrameworkElement
         // Calculate Viewport in World Coordinates for Culling
         var p1 = ScreenToWorld(0, 0);
         var p2 = ScreenToWorld(ActualWidth, ActualHeight);
-        
+
         // Normalize coordinates (min/max)
         var minX = Math.Min(p1.X, p2.X);
         var maxX = Math.Max(p1.X, p2.X);
@@ -467,78 +491,77 @@ public class RenderCanvas : FrameworkElement
         minY -= padding;
         maxY += padding;
 
-        // Draw all shapes using DrawingContext with Viewport Culling
+        // Query spatial index for visible shapes (O(log n + k) instead of O(n))
+        var viewport = new AABB(minX, minY, maxX, maxY);
+        HashSet<IDrawable>? visibleSet = null;
+
+        if (_spatialIndex != null)
+        {
+            visibleSet = new HashSet<IDrawable>();
+            _spatialIndex.Query(viewport, visibleSet);
+        }
+
+        // Draw all shapes using DrawingContext with Viewport Culling via QuadTree
         foreach (var shape in _currentShapes)
         {
+            // Skip if spatial index exists and shape not in visible set
+            if (visibleSet != null && !visibleSet.Contains(shape))
+                continue;
+
             switch (shape)
             {
                 case VPoint point:
-                    if (point.X >= minX && point.X <= maxX && point.Y >= minY && point.Y <= maxY)
-                        DrawPoint(dc, point);
+                    DrawPoint(dc, point);
                     break;
-                    
+
                 case VLine line:
-                    // AABB check
-                    if (Math.Max(line.Start.X, line.End.X) >= minX && Math.Min(line.Start.X, line.End.X) <= maxX &&
-                        Math.Max(line.Start.Y, line.End.Y) >= minY && Math.Min(line.Start.Y, line.End.Y) <= maxY)
-                        DrawLine(dc, line);
+                    DrawLine(dc, line);
                     break;
-                    
+
                 case VArc arc:
-                    // Bounding Box check using Center +/- Radius
-                    if ((arc.Center.X + arc.Radius) >= minX && (arc.Center.X - arc.Radius) <= maxX &&
-                        (arc.Center.Y + arc.Radius) >= minY && (arc.Center.Y - arc.Radius) <= maxY)
-                        DrawArc(dc, arc);
+                    DrawArc(dc, arc);
                     break;
-                    
+
                 case VCircle circle:
-                    if ((circle.Center.X + circle.Radius) >= minX && (circle.Center.X - circle.Radius) <= maxX &&
-                        (circle.Center.Y + circle.Radius) >= minY && (circle.Center.Y - circle.Radius) <= maxY)
-                        DrawCircle(dc, circle);
+                    DrawCircle(dc, circle);
                     break;
-                    
+
                 case VRectangle rect:
-                    if ((rect.Corner.X + rect.Width) >= minX && rect.Corner.X <= maxX &&
-                        (rect.Corner.Y + rect.Height) >= minY && rect.Corner.Y <= maxY)
-                        DrawRectangle(dc, rect);
+                    DrawRectangle(dc, rect);
                     break;
-                    
+
                 case VEllipse ellipse:
-                    if ((ellipse.Center.X + ellipse.RadiusX) >= minX && (ellipse.Center.X - ellipse.RadiusX) <= maxX &&
-                        (ellipse.Center.Y + ellipse.RadiusY) >= minY && (ellipse.Center.Y - ellipse.RadiusY) <= maxY)
-                        DrawEllipse(dc, ellipse);
+                    DrawEllipse(dc, ellipse);
                     break;
-                    
+
                 case VPolygon polygon:
                     DrawPolygon(dc, polygon);
                     break;
-                    
+
                 case VPolyline polyline:
                     DrawPolyline(dc, polyline);
                     break;
-                    
+
                 case VText text:
-                    if (text.Location.X >= minX && text.Location.X <= maxX && 
-                        text.Location.Y >= minY && text.Location.Y <= maxY)
-                        DrawText(dc, text);
+                    DrawText(dc, text);
                     break;
-                    
+
                 case VBezier bezier:
                     DrawBezier(dc, bezier);
                     break;
-                    
+
                 case VSpline spline:
                     DrawSpline(dc, spline);
                     break;
-                    
+
                 case VArrow arrow:
                     DrawArrow(dc, arrow);
                     break;
-                    
+
                 case VDimension dim:
                     DrawDimension(dc, dim);
                     break;
-                    
+
                 case VGroup group:
                     DrawGroup(dc, group);
                     break;

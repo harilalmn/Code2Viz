@@ -11,14 +11,13 @@ public class BracketHighlightRenderer : IBackgroundRenderer
     private readonly TextView _textView;
     public BracketSearchResult? Result { get; set; }
     
-    // Highlight styling - using a subtle box around the bracket
-    private static readonly Brush HighlightBrush = new SolidColorBrush(Color.FromArgb(50, 255, 255, 255)); 
-    private static readonly Pen HighlightPen = new Pen(new SolidColorBrush(Colors.LightGray), 1);
+    // Highlight styling - subtle background fill only (no stroke to avoid obscuring cursor)
+    private static readonly Brush HighlightBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 100));
+    private static readonly Pen? HighlightPen = null; // No border - keeps cursor visible
 
     static BracketHighlightRenderer()
     {
         HighlightBrush.Freeze();
-        HighlightPen.Freeze();
     }
 
     public BracketHighlightRenderer(TextView textView)
@@ -26,7 +25,7 @@ public class BracketHighlightRenderer : IBackgroundRenderer
         _textView = textView;
     }
 
-    public KnownLayer Layer => KnownLayer.Selection;
+    public KnownLayer Layer => KnownLayer.Background;
 
     public void Draw(TextView textView, DrawingContext drawingContext)
     {

@@ -262,6 +262,33 @@ circle.Draw();
 - **Hex RGB**: `"#FF0000"` (red)
 - **Hex ARGB**: `"#80FF0000"` (semi-transparent red, where 80 is alpha)
 
+### VColor Utility Class
+
+Use `VColor` for easy color access and random color generation:
+
+```csharp
+// Static color properties
+circle.StrokeColor = VColor.Red;
+circle.FillColor = VColor.LimeGreen;
+
+// Random colors
+shape.StrokeColor = VColor.GetRandomColor();        // pastel (default)
+shape.StrokeColor = VColor.GetRandomColor(false);   // vibrant
+shape.FillColor = VColor.GetRandomPastelColor();    // shorthand for pastel
+shape.StrokeColor = VColor.GetRandomVibrantColor(); // shorthand for vibrant
+
+// Custom RGB colors
+shape.FillColor = VColor.FromRgb(255, 128, 0);      // orange
+shape.FillColor = VColor.FromArgb(128, 255, 0, 0);  // semi-transparent red
+
+// From enum
+shape.StrokeColor = VColor.FromEnum(ColorName.Coral);
+```
+
+**Color categories:**
+- **Vibrant colors** (25): Bright colors good for strokes - Red, Lime, Cyan, HotPink, Gold, etc.
+- **Pastel colors** (25): Soft colors good for fills - LightBlue, Lavender, PaleGreen, etc.
+
 ### Global Defaults
 
 Set default styling for all new shapes:

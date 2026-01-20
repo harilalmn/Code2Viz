@@ -59,7 +59,7 @@ namespace CSharpSample
 
             // 2. Create timeline
             var shapes = new List<Shape> { line, circle, arc, triangle, bezier, rect };
-            var timeline = new Timeline(shapes);
+            var timeline = new Timeline();
             timeline.Duration = 15.0;
             timeline.Repeat = true;
 

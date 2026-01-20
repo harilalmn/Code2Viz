@@ -7634,6 +7634,8 @@ public partial class MainWindow : Window
 
     #region Outliner
 
+    private const int OutlinerMaxShapes = 1000;
+
     private void PopulateOutliner(IReadOnlyList<Geometry.IDrawable> shapes)
     {
         var items = new System.Collections.ObjectModel.ObservableCollection<Project.OutlinerItem>();
@@ -7644,15 +7646,21 @@ public partial class MainWindow : Window
             .GroupBy(s => s.GetType().Name)
             .OrderBy(g => g.Key);
 
+        var totalShapeCount = shapes.Count;
+
         foreach (var group in groupedShapes)
         {
             var groupItem = new Project.OutlinerItem(group.Key + $" ({group.Count()})");
 
-            foreach (var shape in group.OrderBy(s => s.Id))
+            // Skip individual shape items if too many shapes (performance optimization)
+            if (totalShapeCount <= OutlinerMaxShapes)
             {
-                var shapeName = !string.IsNullOrEmpty(shape.Name) ? shape.Name : group.Key;
-                var shapeItem = new Project.OutlinerItem(shapeName, isShape: true, id: shape.Id);
-                groupItem.Children.Add(shapeItem);
+                foreach (var shape in group.OrderBy(s => s.Id))
+                {
+                    var shapeName = !string.IsNullOrEmpty(shape.Name) ? shape.Name : group.Key;
+                    var shapeItem = new Project.OutlinerItem(shapeName, isShape: true, id: shape.Id);
+                    groupItem.Children.Add(shapeItem);
+                }
             }
 
             items.Add(groupItem);

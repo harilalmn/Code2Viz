@@ -36,7 +36,6 @@
   <ItemGroup>
     <Resource Include="img\logo.ico" />
     <Resource Include="img\logo.png" />
-    <Resource Include="img\logo_white.png" />
     <Resource Include="img\folder.png" />
     <Resource Include="img\file.png" />
   </ItemGroup>

@@ -634,23 +634,31 @@ public static class CompletionProvider
             UpdateCustomClasses(allCode);
         }
 
-        // Check for known static classes first
-        if (TypeInspector.ResolveType(variableName) != null)
-        {
-            return variableName;
-        }
+        // IMPORTANT: Check local context FIRST before global type lookup
+        // This ensures that a property named "Geometry" on a custom class is found
+        // before System.Windows.Media.Geometry from WPF assemblies
 
-        // Check if variable name is a custom class (static access)
-        if (_customClasses.ContainsKey(variableName))
-        {
-            return variableName;
-        }
-
-        // Check if the variable is an inherited member from a base class
+        // Check if the variable is a member of the current class or an inherited member
         var currentClass = FindCurrentClass(text);
         if (!string.IsNullOrEmpty(currentClass))
         {
-            // Find the base class of the current class
+            // First, check if it's a member of the current class itself
+            if (_customClasses.TryGetValue(currentClass, out var classMembers))
+            {
+                var member = classMembers.FirstOrDefault(m => m.Name == variableName);
+                if (member.Name != null)
+                {
+                    // Extract type from description format: "TypeName property", "TypeName field", "TypeName method"
+                    var desc = member.Description;
+                    var spaceIndex = desc.IndexOf(' ');
+                    if (spaceIndex > 0)
+                    {
+                        return desc.Substring(0, spaceIndex);
+                    }
+                }
+            }
+
+            // Then check the base class
             var baseClassName = FindBaseClass(allCode ?? text, currentClass);
             if (!string.IsNullOrEmpty(baseClassName))
             {
@@ -665,6 +673,19 @@ public static class CompletionProvider
                     }
                 }
             }
+        }
+
+        // Check if variable name is a custom class (static access)
+        if (_customClasses.ContainsKey(variableName))
+        {
+            return variableName;
+        }
+
+        // Check for known static classes (only after local context is exhausted)
+        // Use IsKnownType to check our explicitly registered types, not all assemblies
+        if (TypeInspector.IsKnownType(variableName))
+        {
+            return variableName;
         }
 
         // Escape variable name for regex

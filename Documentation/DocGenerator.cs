@@ -79,6 +79,8 @@ namespace Code2Viz.Documentation
                 { "VCoordinateSystem", "Represents a 3D coordinate system with origin and orthonormal basis vectors (X, Y, Z axes)." },
                 { "GeometryHelper", "Static helper class providing common geometric algorithms like intersection, projection, distance calculations, and angle measurements." },
                 { "ShapeDefaults", "Static class holding global default settings for shapes (GlobalStrokeColor, GlobalFillColor, GlobalStrokeThickness). These are populated from Project Settings." },
+                { "VColor", "Static utility class for easy color access and random color generation. Provides named color properties (Red, Blue, Green, etc.), GetRandomColor(pastel) for random colors, FromRgb/FromArgb for custom colors. Use with StrokeColor and FillColor properties." },
+                { "ColorName", "Enum containing common color names (Red, Green, Blue, Yellow, Orange, etc.). Use VColor.FromEnum(ColorName.Red) to convert to string." },
 
                 // Animation
                 { "Code2Viz.Animation", "Contains classes for animating shapes over time using a timeline-based system." },
@@ -1714,6 +1716,34 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VPolygonBooleanExtensions.Xor", "Extension: returns symmetric difference." },
                 { "VPolygonBooleanExtensions.Contains", "Extension: tests if a point is inside the polygon." },
                 { "VPolygonBooleanExtensions.GetArea", "Extension: calculates polygon area." },
+
+                // VColor Static Properties (common colors)
+                { "VColor.Red", "Returns \"Red\" color string." },
+                { "VColor.Green", "Returns \"Green\" color string." },
+                { "VColor.Blue", "Returns \"Blue\" color string." },
+                { "VColor.Yellow", "Returns \"Yellow\" color string." },
+                { "VColor.Orange", "Returns \"Orange\" color string." },
+                { "VColor.Purple", "Returns \"Purple\" color string." },
+                { "VColor.Pink", "Returns \"Pink\" color string." },
+                { "VColor.Cyan", "Returns \"Cyan\" color string." },
+                { "VColor.Magenta", "Returns \"Magenta\" color string." },
+                { "VColor.White", "Returns \"White\" color string." },
+                { "VColor.Black", "Returns \"Black\" color string." },
+                { "VColor.Gray", "Returns \"Gray\" color string." },
+                { "VColor.LimeGreen", "Returns \"LimeGreen\" color string." },
+                { "VColor.Gold", "Returns \"Gold\" color string." },
+                { "VColor.Coral", "Returns \"Coral\" color string." },
+
+                // VColor Static Methods
+                { "VColor.GetRandomColor", "Returns a random color string. If returnPastelColor is true (default), returns soft pastel colors; if false, returns vibrant colors." },
+                { "VColor.GetRandomVibrantColor", "Returns a random vibrant color (good for strokes on dark backgrounds)." },
+                { "VColor.GetRandomPastelColor", "Returns a random pastel color (good for fills)." },
+                { "VColor.FromEnum", "Converts a ColorName enum value to its string representation." },
+                { "VColor.FromRgb", "Creates a hex color string from RGB values (0-255). Example: FromRgb(255, 128, 0) returns \"#FF8000\"." },
+                { "VColor.FromArgb", "Creates a hex color string from ARGB values (0-255). Example: FromArgb(128, 255, 0, 0) returns \"#80FF0000\"." },
+                { "VColor.WithOpacity", "Creates a semi-transparent color from RGB values and opacity (0.0-1.0)." },
+                { "VColor.GetVibrantColors", "Returns an array of all vibrant color names." },
+                { "VColor.GetPastelColors", "Returns an array of all pastel color names." },
             };
         }
 
