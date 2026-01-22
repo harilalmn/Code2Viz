@@ -17,6 +17,9 @@ public class VPolygon : Shape, ICurve
     /// <summary>Indicates whether the polygon intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
+    /// <summary>Gets the vertices of the polygon.</summary>
+    public List<VPoint> Vertices => Points;
+
     /// <summary>
     /// Gets the signed area of the polygon using the shoelace formula.
     /// Positive for counter-clockwise vertices, negative for clockwise.

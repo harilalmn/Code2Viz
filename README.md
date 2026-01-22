@@ -936,6 +936,7 @@ curve.Draw();  // ICurve extends IDrawable
 // Curve operations
 VPoint start = curve.StartPoint;
 VPoint end = curve.EndPoint;
+List<VPoint> vertices = curve.Vertices;  // Key vertices/control points
 double length = curve.GetLength();
 
 // Divide curve into segments

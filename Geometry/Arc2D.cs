@@ -18,6 +18,9 @@ public class VArc : Shape, ICurve
     /// <summary>An arc is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
+    /// <summary>Gets the vertices of the arc (center, start point, end point).</summary>
+    public List<VPoint> Vertices => new List<VPoint> { Center, StartPoint, EndPoint };
+
     /// <summary>Gets the midpoint of the arc.</summary>
     public VPoint MidPoint => Evaluate(0.5);
 

@@ -280,6 +280,9 @@ public class VEllipse : Shape, ICurve
     /// <summary>An ellipse is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
+    /// <summary>Gets the vertices of the ellipse (center point).</summary>
+    public List<VPoint> Vertices => new List<VPoint> { Center };
+
     /// <summary>
     /// Computes the intersection between this ellipse and another curve.
     /// </summary>

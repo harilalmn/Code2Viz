@@ -1506,6 +1506,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 // ICurve interface
                 { "ICurve.StartPoint", "Gets the starting point of the curve." },
                 { "ICurve.EndPoint", "Gets the ending point of the curve." },
+                { "ICurve.Vertices", "Gets the key vertices/control points of the curve. For lines: start and end. For circles/ellipses: center. For arcs: center, start, end. For polygons/polylines: all vertices. For beziers/splines: all control points." },
                 { "ICurve.SelfIntersecting", "Gets whether this curve intersects itself. Simple curves (lines, circles) always return false." },
                 { "ICurve.GetLength", "Returns the total arc length of the curve." },
                 { "ICurve.Divide", "Divides the curve into the specified number of equal segments, returning the division points." },

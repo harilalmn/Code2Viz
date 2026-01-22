@@ -16,6 +16,15 @@ public interface ICurve : IDrawable
     VPoint EndPoint { get; }
 
     /// <summary>
+    /// Gets the key vertices/control points of the curve.
+    /// For lines: start and end points.
+    /// For arcs/circles: center and endpoint(s).
+    /// For polygons/polylines: all vertices.
+    /// For beziers/splines: all control points.
+    /// </summary>
+    List<VPoint> Vertices { get; }
+
+    /// <summary>
     /// Indicates whether the curve intersects itself.
     /// Simple curves (Line, Circle, Arc, Ellipse) are never self-intersecting.
     /// Complex curves (Polyline, Polygon, Bezier, Spline) may be self-intersecting.

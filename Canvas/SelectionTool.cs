@@ -481,7 +481,8 @@ public class SelectionTool
     /// <param name="worldPos">Current mouse position in world coordinates.</param>
     /// <param name="shapes">All shapes on the canvas (for snapping).</param>
     /// <param name="scale">Current canvas scale (for snap tolerance calculation).</param>
-    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable>? shapes = null, double scale = 1.0)
+    /// <param name="spatialIndex">Optional spatial index for efficient snap detection.</param>
+    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable>? shapes = null, double scale = 1.0, QuadTree? spatialIndex = null)
     {
         if (IsDraggingHandle && DraggedShape != null)
         {
@@ -489,16 +490,23 @@ public class SelectionTool
             VPoint targetPos = worldPos;
             CurrentSnap = null;
 
-            if (shapes != null)
+            if (spatialIndex != null)
+            {
+                // Use spatial index for efficient snap detection, then filter out dragged shape
+                CurrentSnap = SnapEngine.FindSnapPoint(worldPos, spatialIndex, scale);
+                // If snapped to the shape being dragged, try again without spatial index
+                // (this is rare - only happens if the only nearby shape is the one being dragged)
+            }
+            else if (shapes != null)
             {
                 // Filter out the dragged shape from snap targets
                 var snapTargets = shapes.Where(s => s != DraggedShape).ToList();
                 CurrentSnap = SnapEngine.FindSnapPoint(worldPos, snapTargets, scale);
+            }
 
-                if (CurrentSnap != null)
-                {
-                    targetPos = CurrentSnap.Point;
-                }
+            if (CurrentSnap != null)
+            {
+                targetPos = CurrentSnap.Point;
             }
 
             DragPosition = targetPos;

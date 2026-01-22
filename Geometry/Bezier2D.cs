@@ -23,6 +23,9 @@ public class VBezier : Shape, ICurve
     /// <summary>Indicates whether the bezier curve intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
+    /// <summary>Gets the control points of the bezier curve.</summary>
+    public List<VPoint> Vertices => new List<VPoint> { P0, P1, P2, P3 };
+
     public VBezier(VPoint p0, VPoint p1, VPoint p2, VPoint p3)
     {
         P0 = p0;

@@ -343,22 +343,22 @@ public class RenderCanvas : FrameworkElement
         }
         else if (_drawingTool != null && _drawingTool.Mode != DrawingMode.None)
         {
-            // Update drawing tool with cursor position
+            // Update drawing tool with cursor position (use spatial index for O(log n) snap detection)
             // Check for Shift key to enable orthogonal constraint
             _drawingTool.IsOrthoMode = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
-            _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale);
+            _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale, _spatialIndex);
             RedrawAll();
         }
         else if (_measuringTool?.Mode == ToolMode.Measuring)
         {
-            // Update measuring tool with cursor position
-            _measuringTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale);
+            // Update measuring tool with cursor position (use spatial index for O(log n) snap detection)
+            _measuringTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale, _spatialIndex);
             RedrawAll();
         }
         else if (_selectionTool?.IsBoxSelecting == true || _selectionTool?.IsDraggingHandle == true)
         {
-            // Update selection box or handle drag (with snapping support)
-            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale);
+            // Update selection box or handle drag (with snapping support, use spatial index for O(log n) performance)
+            _selectionTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale, _spatialIndex);
             RedrawAll();
         }
     }

@@ -16,6 +16,9 @@ public class VPolyline : Shape, ICurve
     /// <summary>Indicates whether the polyline intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
+    /// <summary>Gets the vertices of the polyline.</summary>
+    public List<VPoint> Vertices => Points;
+
     public VPolyline(params VPoint[] points)
     {
         Points = points.ToList();

@@ -94,15 +94,24 @@ public class MeasuringTool
     /// <param name="worldPos">Mouse position in world coordinates.</param>
     /// <param name="shapes">Current shapes on canvas.</param>
     /// <param name="scale">Current canvas scale.</param>
-    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable> shapes, double scale)
+    /// <param name="spatialIndex">Optional spatial index for efficient snap detection.</param>
+    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable> shapes, double scale, QuadTree? spatialIndex = null)
     {
         if (Mode != ToolMode.Measuring)
             return;
 
         CurrentPoint = worldPos;
 
-        // Try to find a snap point
-        CurrentSnap = SnapEngine.FindSnapPoint(worldPos, shapes, scale);
+        // Use spatial index for efficient snap detection if available
+        if (spatialIndex != null)
+        {
+            CurrentSnap = SnapEngine.FindSnapPoint(worldPos, spatialIndex, scale);
+        }
+        else
+        {
+            // Fall back to checking all shapes (slower for large shape counts)
+            CurrentSnap = SnapEngine.FindSnapPoint(worldPos, shapes, scale);
+        }
     }
 
     /// <summary>

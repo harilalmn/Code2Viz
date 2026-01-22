@@ -118,7 +118,11 @@ public class DrawingTool
     /// <summary>
     /// Handles mouse movement during drawing.
     /// </summary>
-    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable> shapes, double scale)
+    /// <param name="worldPos">Mouse position in world coordinates.</param>
+    /// <param name="shapes">Current shapes on canvas.</param>
+    /// <param name="scale">Current canvas scale.</param>
+    /// <param name="spatialIndex">Optional spatial index for efficient snap detection.</param>
+    public void OnMouseMove(VPoint worldPos, IReadOnlyList<IDrawable> shapes, double scale, QuadTree? spatialIndex = null)
     {
         if (Mode == DrawingMode.None)
             return;
@@ -131,7 +135,16 @@ public class DrawingTool
         }
 
         CurrentPoint = constrainedPos;
-        CurrentSnap = SnapEngine.FindSnapPoint(constrainedPos, shapes, scale);
+
+        // Use spatial index for efficient snap detection if available
+        if (spatialIndex != null)
+        {
+            CurrentSnap = SnapEngine.FindSnapPoint(constrainedPos, spatialIndex, scale);
+        }
+        else
+        {
+            CurrentSnap = SnapEngine.FindSnapPoint(constrainedPos, shapes, scale);
+        }
     }
 
     /// <summary>

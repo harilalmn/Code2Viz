@@ -17,6 +17,15 @@ public class VRectangle : Shape, ICurve
     /// <summary>A rectangle is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
+    /// <summary>Gets the four corner vertices of the rectangle.</summary>
+    public List<VPoint> Vertices => new List<VPoint>
+    {
+        Corner,
+        new VPoint(Corner.X + Width, Corner.Y),
+        new VPoint(Corner.X + Width, Corner.Y + Height),
+        new VPoint(Corner.X, Corner.Y + Height)
+    };
+
     public VRectangle(VPoint corner, double width, double height)
     {
         Corner = corner;

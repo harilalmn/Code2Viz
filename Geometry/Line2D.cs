@@ -16,6 +16,9 @@ public class VLine : Shape, ICurve
     /// <summary>A line is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
+    /// <summary>Gets the vertices of the line (start and end points).</summary>
+    public List<VPoint> Vertices => new List<VPoint> { Start, End };
+
     /// <summary>Gets the midpoint of the line.</summary>
     public VPoint MidPoint => Evaluate(0.5);
 

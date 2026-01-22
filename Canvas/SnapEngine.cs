@@ -91,6 +91,71 @@ public class SnapEngine
         return prioritizedCandidates.First();
     }
 
+    /// <summary>
+    /// Finds the best snap point using spatial index for efficient culling (O(log n + k) instead of O(n)).
+    /// </summary>
+    /// <param name="cursorWorld">Cursor position in world coordinates.</param>
+    /// <param name="spatialIndex">QuadTree spatial index for efficient shape lookup.</param>
+    /// <param name="scale">Current canvas scale (zoom level).</param>
+    /// <returns>The best snap result, or null if no snap found.</returns>
+    public SnapResult? FindSnapPoint(VPoint cursorWorld, QuadTree? spatialIndex, double scale)
+    {
+        // Convert screen tolerance to world tolerance
+        var worldTolerance = DefaultSnapTolerance / scale;
+
+        // If no spatial index, return null (caller should use the other overload)
+        if (spatialIndex == null)
+            return null;
+
+        // Query only shapes within snap tolerance of cursor
+        var queryBounds = new AABB(
+            cursorWorld.X - worldTolerance,
+            cursorWorld.Y - worldTolerance,
+            cursorWorld.X + worldTolerance,
+            cursorWorld.Y + worldTolerance
+        );
+
+        var nearbyShapes = spatialIndex.Query(queryBounds);
+
+        var candidates = new List<SnapResult>();
+
+        foreach (var shape in nearbyShapes)
+        {
+            CollectSnapPoints(cursorWorld, shape, worldTolerance, candidates);
+        }
+
+        // For intersection snaps, only check pairs of nearby shapes
+        if (IntersectionSnapEnabled && nearbyShapes.Count > 1)
+        {
+            CollectIntersectionPointsFromList(cursorWorld, nearbyShapes, worldTolerance, candidates);
+        }
+
+        if (candidates.Count == 0)
+            return null;
+
+        var prioritizedCandidates = candidates
+            .OrderBy(c => GetSnapPriority(c.Type))
+            .ThenBy(c => c.Distance)
+            .ToList();
+
+        return prioritizedCandidates.First();
+    }
+
+    private void CollectIntersectionPointsFromList(VPoint cursor, List<IDrawable> shapes, double tolerance, List<SnapResult> candidates)
+    {
+        for (int i = 0; i < shapes.Count; i++)
+        {
+            for (int j = i + 1; j < shapes.Count; j++)
+            {
+                var intersections = FindIntersections(shapes[i], shapes[j]);
+                foreach (var point in intersections)
+                {
+                    AddSnapCandidate(cursor, point, SnapType.Intersection, tolerance, candidates);
+                }
+            }
+        }
+    }
+
     private int GetSnapPriority(SnapType type) => type switch
     {
         SnapType.Endpoint => 1,

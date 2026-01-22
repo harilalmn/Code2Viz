@@ -16,6 +16,9 @@ public class VCircle : Shape, ICurve
     /// <summary>A circle is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
+    /// <summary>Gets the vertices of the circle (center point).</summary>
+    public List<VPoint> Vertices => new List<VPoint> { Center };
+
     public VCircle(VPoint center, double radius)
     {
         Center = center;

@@ -22,6 +22,9 @@ public class VSpline : Shape, ICurve
     /// <summary>Indicates whether the spline intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
+    /// <summary>Gets the control points of the spline.</summary>
+    public List<VPoint> Vertices => ControlPoints;
+
     public VSpline(params VPoint[] points)
     {
         ControlPoints = points.ToList();
