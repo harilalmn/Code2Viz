@@ -438,11 +438,13 @@ public class VizAssemblyLoadContext : AssemblyLoadContext
 }
 
 /// <summary>
-/// Rewrites animation variable declarations to automatically set the Name property
+/// Rewrites animation and shape variable declarations to automatically set the Name property
 /// to the variable name. Transforms:
 ///   Animation circleAnim = new MoveAnimation(...);
+///   VCircle myCircle = new VCircle(0, 0, 10);
 /// To:
 ///   Animation circleAnim = new MoveAnimation(...) { Name = "circleAnim" };
+///   VCircle myCircle = new VCircle(0, 0, 10) { Name = "myCircle" };
 /// </summary>
 internal class AnimationNameRewriter : CSharpSyntaxRewriter
 {
@@ -450,6 +452,13 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
     {
         "Animation", "DrawAnimation", "MoveAnimation", "RotateAnimation",
         "FlipAnimation", "FadeInAnimation", "FadeOutAnimation"
+    };
+
+    private static readonly HashSet<string> ShapeTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "VPoint", "VLine", "VCircle", "VArc", "VRectangle", "VEllipse",
+        "VPolygon", "VPolyline", "VBezier", "VSpline", "VArrow", "VText",
+        "VGrid", "VGroup", "VDimension"
     };
 
     public override SyntaxNode? VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
@@ -463,7 +472,7 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
 
         foreach (var variable in variables)
         {
-            var newVariable = TryRewriteAnimationVariable(declaration.Type, variable);
+            var newVariable = TryRewriteNamedVariable(declaration.Type, variable);
             if (newVariable != variable)
                 anyChanged = true;
             newVariables.Add(newVariable);
@@ -477,28 +486,69 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
         return node.WithDeclaration(newDeclaration);
     }
 
-    private VariableDeclaratorSyntax TryRewriteAnimationVariable(TypeSyntax type, VariableDeclaratorSyntax variable)
+    public override SyntaxNode? VisitFieldDeclaration(FieldDeclarationSyntax node)
     {
-        // Check if this is an animation type (explicit or var)
-        var typeName = type.ToString();
-        bool isAnimationType = typeName == "var" || AnimationTypes.Contains(typeName);
+        var declaration = node.Declaration;
+        var variables = declaration.Variables;
 
-        if (!isAnimationType)
-            return variable;
+        // Process each variable in the declaration
+        var newVariables = new List<VariableDeclaratorSyntax>();
+        bool anyChanged = false;
+
+        foreach (var variable in variables)
+        {
+            var newVariable = TryRewriteNamedVariable(declaration.Type, variable);
+            if (newVariable != variable)
+                anyChanged = true;
+            newVariables.Add(newVariable);
+        }
+
+        if (!anyChanged)
+            return base.VisitFieldDeclaration(node);
+
+        var newDeclaration = declaration.WithVariables(
+            SyntaxFactory.SeparatedList(newVariables));
+        return node.WithDeclaration(newDeclaration);
+    }
+
+    private VariableDeclaratorSyntax TryRewriteNamedVariable(TypeSyntax type, VariableDeclaratorSyntax variable)
+    {
+        // Check if this is an animation or shape type (explicit or var)
+        var typeName = type.ToString();
+        bool isNamedType = typeName == "var" || AnimationTypes.Contains(typeName) || ShapeTypes.Contains(typeName);
 
         // Check if initializer is an object creation expression
-        if (variable.Initializer?.Value is not ObjectCreationExpressionSyntax objectCreation)
-            return variable;
-
-        // Check if the created type is an animation type
-        var createdTypeName = objectCreation.Type.ToString();
-        if (!AnimationTypes.Contains(createdTypeName))
-            return variable;
-
-        // Skip if already has an initializer with Name set
-        if (objectCreation.Initializer != null)
+        if (variable.Initializer?.Value is ObjectCreationExpressionSyntax objectCreation)
         {
-            var hasNameProperty = objectCreation.Initializer.Expressions
+            // Check if the created type is an animation or shape type
+            var createdTypeName = objectCreation.Type.ToString();
+            if (!isNamedType && !AnimationTypes.Contains(createdTypeName) && !ShapeTypes.Contains(createdTypeName))
+                return variable;
+
+            return TryAddNameInitializer(variable, objectCreation, objectCreation.Initializer);
+        }
+
+        // Handle target-typed new: VLine line = new(...)
+        if (variable.Initializer?.Value is ImplicitObjectCreationExpressionSyntax implicitCreation)
+        {
+            if (!isNamedType)
+                return variable;
+
+            return TryAddNameInitializerImplicit(variable, implicitCreation, implicitCreation.Initializer);
+        }
+
+        return variable;
+    }
+
+    private VariableDeclaratorSyntax TryAddNameInitializer(
+        VariableDeclaratorSyntax variable,
+        ObjectCreationExpressionSyntax objectCreation,
+        InitializerExpressionSyntax? existingInitializer)
+    {
+        // Skip if already has an initializer with Name set
+        if (existingInitializer != null)
+        {
+            var hasNameProperty = existingInitializer.Expressions
                 .OfType<AssignmentExpressionSyntax>()
                 .Any(a => a.Left.ToString() == "Name");
             if (hasNameProperty)
@@ -516,11 +566,11 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
 
         // Create or extend the object initializer
         InitializerExpressionSyntax newInitializer;
-        if (objectCreation.Initializer != null)
+        if (existingInitializer != null)
         {
             // Add to existing initializer
-            var newExpressions = objectCreation.Initializer.Expressions.Add(nameAssignment);
-            newInitializer = objectCreation.Initializer.WithExpressions(newExpressions);
+            var newExpressions = existingInitializer.Expressions.Add(nameAssignment);
+            newInitializer = existingInitializer.WithExpressions(newExpressions);
         }
         else
         {
@@ -532,6 +582,51 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
 
         var newObjectCreation = objectCreation.WithInitializer(newInitializer);
         var newInitializerClause = variable.Initializer!.WithValue(newObjectCreation);
+        return variable.WithInitializer(newInitializerClause);
+    }
+
+    private VariableDeclaratorSyntax TryAddNameInitializerImplicit(
+        VariableDeclaratorSyntax variable,
+        ImplicitObjectCreationExpressionSyntax implicitCreation,
+        InitializerExpressionSyntax? existingInitializer)
+    {
+        // Skip if already has an initializer with Name set
+        if (existingInitializer != null)
+        {
+            var hasNameProperty = existingInitializer.Expressions
+                .OfType<AssignmentExpressionSyntax>()
+                .Any(a => a.Left.ToString() == "Name");
+            if (hasNameProperty)
+                return variable;
+        }
+
+        // Create the Name = "variableName" assignment
+        var variableName = variable.Identifier.Text;
+        var nameAssignment = SyntaxFactory.AssignmentExpression(
+            SyntaxKind.SimpleAssignmentExpression,
+            SyntaxFactory.IdentifierName("Name"),
+            SyntaxFactory.LiteralExpression(
+                SyntaxKind.StringLiteralExpression,
+                SyntaxFactory.Literal(variableName)));
+
+        // Create or extend the object initializer
+        InitializerExpressionSyntax newInitializer;
+        if (existingInitializer != null)
+        {
+            // Add to existing initializer
+            var newExpressions = existingInitializer.Expressions.Add(nameAssignment);
+            newInitializer = existingInitializer.WithExpressions(newExpressions);
+        }
+        else
+        {
+            // Create new initializer
+            newInitializer = SyntaxFactory.InitializerExpression(
+                SyntaxKind.ObjectInitializerExpression,
+                SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(nameAssignment));
+        }
+
+        var newImplicitCreation = implicitCreation.WithInitializer(newInitializer);
+        var newInitializerClause = variable.Initializer!.WithValue(newImplicitCreation);
         return variable.WithInitializer(newInitializerClause);
     }
 }

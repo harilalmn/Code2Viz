@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Code2Viz.Geometry;
 using Code2Viz.Project;
 
@@ -12,12 +13,44 @@ public static class CodeGenerator
     // Counters for sequential variable names
     private static readonly Dictionary<string, int> _shapeCounters = new();
 
+    // Pattern to match variable declarations like "var line1", "let circle5", "VLine line2"
+    private static readonly Regex _variablePattern = new(
+        @"\b(?:var|let|VPoint|VLine|VCircle|VRectangle|VEllipse|VArc|VPolygon|VPolyline|VBezier|VSpline|VArrow|VText|VGrid|VGroup)\s+(point|line|circle|rect|ellipse|arc|polygon|polyline|bezier|spline|arrow|text|grid|group)(\d+)\b",
+        RegexOptions.Compiled);
+
     /// <summary>
     /// Resets all shape counters (call when starting a new project or clearing the canvas).
     /// </summary>
     public static void ResetCounters()
     {
         _shapeCounters.Clear();
+    }
+
+    /// <summary>
+    /// Scans existing code to find the highest counter values for each shape type.
+    /// Call this before generating new code to avoid duplicate variable names.
+    /// </summary>
+    /// <param name="existingCode">The existing source code to scan.</param>
+    public static void SyncCountersFromCode(string existingCode)
+    {
+        if (string.IsNullOrEmpty(existingCode))
+            return;
+
+        var matches = _variablePattern.Matches(existingCode);
+        foreach (Match match in matches)
+        {
+            var shapeName = match.Groups[1].Value; // e.g., "line", "circle"
+            var numberStr = match.Groups[2].Value; // e.g., "1", "5"
+
+            if (int.TryParse(numberStr, out var number))
+            {
+                // Update counter to be at least this number
+                if (!_shapeCounters.TryGetValue(shapeName, out var current) || current < number)
+                {
+                    _shapeCounters[shapeName] = number;
+                }
+            }
+        }
     }
 
     private static int GetNextCounter(string shapeName)
@@ -185,6 +218,7 @@ public static class CodeGenerator
     private static string GeneratePointCode(VPoint p, ProjectLanguage language)
     {
         var varName = $"point{GetNextCounter("point")}";
+        p.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(p, varName, indent, language);
 
@@ -197,6 +231,7 @@ public static class CodeGenerator
     private static string GenerateLineCode(VLine l, ProjectLanguage language)
     {
         var varName = $"line{GetNextCounter("line")}";
+        l.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(l, varName, indent, language);
 
@@ -209,6 +244,7 @@ public static class CodeGenerator
     private static string GenerateCircleCode(VCircle c, ProjectLanguage language)
     {
         var varName = $"circle{GetNextCounter("circle")}";
+        c.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(c, varName, indent, language);
 
@@ -221,6 +257,7 @@ public static class CodeGenerator
     private static string GenerateRectangleCode(VRectangle r, ProjectLanguage language)
     {
         var varName = $"rect{GetNextCounter("rect")}";
+        r.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(r, varName, indent, language);
 
@@ -233,6 +270,7 @@ public static class CodeGenerator
     private static string GenerateEllipseCode(VEllipse e, ProjectLanguage language)
     {
         var varName = $"ellipse{GetNextCounter("ellipse")}";
+        e.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(e, varName, indent, language);
 
@@ -245,6 +283,7 @@ public static class CodeGenerator
     private static string GenerateArcCode(VArc a, ProjectLanguage language)
     {
         var varName = $"arc{GetNextCounter("arc")}";
+        a.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(a, varName, indent, language);
 
@@ -257,6 +296,7 @@ public static class CodeGenerator
     private static string GeneratePolygonCode(VPolygon pg, ProjectLanguage language)
     {
         var varName = $"polygon{GetNextCounter("polygon")}";
+        pg.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(pg, varName, indent, language);
 
@@ -279,6 +319,7 @@ public static class CodeGenerator
     private static string GeneratePolylineCode(VPolyline pl, ProjectLanguage language)
     {
         var varName = $"polyline{GetNextCounter("polyline")}";
+        pl.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(pl, varName, indent, language);
 
@@ -301,6 +342,7 @@ public static class CodeGenerator
     private static string GenerateBezierCode(VBezier b, ProjectLanguage language)
     {
         var varName = $"bezier{GetNextCounter("bezier")}";
+        b.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(b, varName, indent, language);
 
@@ -313,6 +355,7 @@ public static class CodeGenerator
     private static string GenerateSplineCode(VSpline s, ProjectLanguage language)
     {
         var varName = $"spline{GetNextCounter("spline")}";
+        s.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(s, varName, indent, language);
 
@@ -335,6 +378,7 @@ public static class CodeGenerator
     private static string GenerateArrowCode(VArrow ar, ProjectLanguage language)
     {
         var varName = $"arrow{GetNextCounter("arrow")}";
+        ar.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(ar, varName, indent, language);
 
@@ -347,6 +391,7 @@ public static class CodeGenerator
     private static string GenerateTextCode(VText t, ProjectLanguage language)
     {
         var varName = $"text{GetNextCounter("text")}";
+        t.Name = varName; // Set Name for status bar display
         var indent = GetIndent(language);
         var style = GenerateStyleCode(t, varName, indent, language);
         // Escape quotes in the text content

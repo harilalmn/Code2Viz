@@ -4843,7 +4843,8 @@ public partial class MainWindow : Window
         else if (count == 1)
         {
             var shape = selectedShapes[0];
-            SetStatus($"Selected: {shape.GetType().Name} (ID: {shape.Id})", isError: false);
+            var nameInfo = !string.IsNullOrEmpty(shape.Name) ? $" \"{shape.Name}\"" : "";
+            SetStatus($"Selected: {shape.GetType().Name}{nameInfo} (ID: {shape.Id})", isError: false);
         }
         else
         {
@@ -5020,6 +5021,11 @@ public partial class MainWindow : Window
     {
         // Generate code based on project language
         var language = _currentProject?.ProjectFile?.Language ?? Project.ProjectLanguage.CSharp;
+
+        // Sync counters from existing code to avoid duplicate variable names
+        var existingCode = _currentProject?.EntryPointFile?.Content ?? "";
+        Canvas.CodeGenerator.SyncCountersFromCode(existingCode);
+
         var code = Canvas.CodeGenerator.GenerateCode(shape, language);
         InsertShapeCode(code);
 
