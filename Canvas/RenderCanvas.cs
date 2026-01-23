@@ -17,6 +17,11 @@ internal static class SnapMarkerBrushes
     public static readonly Brush IntersectionBrush;
     public static readonly Brush NearestBrush;
     public static readonly Brush PerpendicularBrush;
+    public static readonly Brush ExtensionBrush;
+    public static readonly Brush TangentBrush;
+    public static readonly Pen ExtensionLinePen;
+    public static readonly Pen PerpendicularLinePen;
+    public static readonly Pen TangentLinePen;
     public static readonly Pen MeasuringLinePen;
 
     static SnapMarkerBrushes()
@@ -38,6 +43,21 @@ internal static class SnapMarkerBrushes
 
         PerpendicularBrush = new SolidColorBrush(Colors.Orange);
         PerpendicularBrush.Freeze();
+
+        ExtensionBrush = new SolidColorBrush(Colors.DeepSkyBlue);
+        ExtensionBrush.Freeze();
+
+        TangentBrush = new SolidColorBrush(Colors.Violet);
+        TangentBrush.Freeze();
+
+        ExtensionLinePen = new Pen(ExtensionBrush, 1) { DashStyle = DashStyles.Dot };
+        ExtensionLinePen.Freeze();
+
+        PerpendicularLinePen = new Pen(PerpendicularBrush, 1) { DashStyle = DashStyles.Dot };
+        PerpendicularLinePen.Freeze();
+
+        TangentLinePen = new Pen(TangentBrush, 1) { DashStyle = DashStyles.Dot };
+        TangentLinePen.Freeze();
 
         var measuringBrush = new SolidColorBrush(Colors.LimeGreen);
         measuringBrush.Freeze();
@@ -161,12 +181,104 @@ public class RenderCanvas : FrameworkElement
         AddLogicalChild(_visual);
 
         ClipToBounds = true;
+        Focusable = true; // Allow canvas to receive keyboard focus
 
         MouseWheel += OnMouseWheel;
         MouseDown += OnMouseDown;
         MouseUp += OnMouseUp;
         MouseMove += OnMouseMove;
         SizeChanged += OnSizeChanged;
+        PreviewKeyDown += OnPreviewKeyDown;
+    }
+
+    /// <summary>
+    /// Handles keyboard input for drawing tool when canvas has focus.
+    /// </summary>
+    private void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        // Only handle keys when drawing and waiting for next point
+        if (DrawingTool.Mode == DrawingMode.None || DrawingTool.Points.Count == 0)
+            return;
+
+        var key = e.Key;
+
+        // Escape cancels input mode
+        if (key == System.Windows.Input.Key.Escape)
+        {
+            if (DrawingTool.InputMode != DrawingInputMode.None)
+            {
+                DrawingTool.HandleEscapeInput();
+                Refresh();
+                e.Handled = true;
+            }
+            return;
+        }
+
+        // Tab cycles through input modes (None -> Distance -> Angle -> None)
+        if (key == System.Windows.Input.Key.Tab)
+        {
+            e.Handled = true;
+            if (DrawingTool.CycleInputMode())
+            {
+                Refresh();
+            }
+            return;
+        }
+
+        // Enter confirms input
+        if (key == System.Windows.Input.Key.Enter)
+        {
+            if (DrawingTool.InputMode != DrawingInputMode.None)
+            {
+                // Let MainWindow handle the Enter to place the point
+                return;
+            }
+        }
+
+        // Backspace removes last character
+        if (key == System.Windows.Input.Key.Back)
+        {
+            if (DrawingTool.HandleBackspace())
+            {
+                Refresh();
+                e.Handled = true;
+            }
+            return;
+        }
+
+        // Number keys (0-9) - start distance input if not already in input mode
+        char? inputChar = null;
+        if (key >= System.Windows.Input.Key.D0 && key <= System.Windows.Input.Key.D9)
+        {
+            inputChar = (char)('0' + (key - System.Windows.Input.Key.D0));
+        }
+        else if (key >= System.Windows.Input.Key.NumPad0 && key <= System.Windows.Input.Key.NumPad9)
+        {
+            inputChar = (char)('0' + (key - System.Windows.Input.Key.NumPad0));
+        }
+        else if (key == System.Windows.Input.Key.OemPeriod || key == System.Windows.Input.Key.Decimal)
+        {
+            inputChar = '.';
+        }
+        else if (key == System.Windows.Input.Key.OemMinus || key == System.Windows.Input.Key.Subtract)
+        {
+            inputChar = '-';
+        }
+
+        if (inputChar.HasValue)
+        {
+            // Start Distance mode if not already in input mode
+            if (DrawingTool.InputMode == DrawingInputMode.None)
+            {
+                DrawingTool.StartDistanceInput();
+            }
+
+            if (DrawingTool.HandleCharInput(inputChar.Value))
+            {
+                Refresh();
+                e.Handled = true;
+            }
+        }
     }
 
     // Required overrides for hosting DrawingVisual
@@ -348,6 +460,12 @@ public class RenderCanvas : FrameworkElement
             _drawingTool.IsOrthoMode = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
             _drawingTool.OnMouseMove(new VPoint(worldPos.X, worldPos.Y), _currentShapes, _viewport.Scale, _spatialIndex);
             RedrawAll();
+
+            // Focus canvas when drawing to enable keyboard input for distance/angle
+            if (_drawingTool.Points.Count > 0 && !IsFocused)
+            {
+                Focus();
+            }
         }
         else if (_measuringTool?.Mode == ToolMode.Measuring)
         {
@@ -1007,6 +1125,8 @@ public class RenderCanvas : FrameworkElement
             SnapType.Intersection => SnapMarkerBrushes.IntersectionBrush,
             SnapType.Nearest => SnapMarkerBrushes.NearestBrush,
             SnapType.Perpendicular => SnapMarkerBrushes.PerpendicularBrush,
+            SnapType.Extension => SnapMarkerBrushes.ExtensionBrush,
+            SnapType.Tangent => SnapMarkerBrushes.TangentBrush,
             _ => Brushes.White
         };
 
@@ -1065,7 +1185,17 @@ public class RenderCanvas : FrameworkElement
                 break;
 
             case SnapType.Perpendicular:
-                // Right angle marker
+                // Draw dotted line from reference point to perpendicular point
+                if (snap.ReferenceSource != null)
+                {
+                    var refScreen = WorldToScreen(snap.ReferenceSource.X, snap.ReferenceSource.Y);
+                    dc.DrawLine(SnapMarkerBrushes.PerpendicularLinePen, refScreen, screenPos);
+
+                    // Draw small circle at reference point
+                    dc.DrawEllipse(null, markerPen, refScreen, markerSize / 3, markerSize / 3);
+                }
+
+                // Right angle marker at snap point
                 var rightAngle = new StreamGeometry();
                 using (var ctx = rightAngle.Open())
                 {
@@ -1075,8 +1205,151 @@ public class RenderCanvas : FrameworkElement
                 }
                 rightAngle.Freeze();
                 dc.DrawGeometry(null, markerPen, rightAngle);
+
+                // Draw perpendicular label
+                if (snap.ReferenceSource != null)
+                {
+                    var distance = snap.ReferenceSource.DistanceTo(snap.Point);
+                    DrawSnapLabel(dc, screenPos, $"Perp: {distance:F2}", SnapMarkerBrushes.PerpendicularBrush);
+                }
+                break;
+
+            case SnapType.Tangent:
+                // Draw dotted line from reference point to tangent point
+                if (snap.ReferenceSource != null)
+                {
+                    var refScreen = WorldToScreen(snap.ReferenceSource.X, snap.ReferenceSource.Y);
+                    dc.DrawLine(SnapMarkerBrushes.TangentLinePen, refScreen, screenPos);
+
+                    // Draw small circle at reference point
+                    var tangentPen = new Pen(SnapMarkerBrushes.TangentBrush, 2);
+                    tangentPen.Freeze();
+                    dc.DrawEllipse(null, tangentPen, refScreen, markerSize / 3, markerSize / 3);
+                }
+
+                // Circle marker at tangent point
+                dc.DrawEllipse(null, markerPen, screenPos, markerSize / 2, markerSize / 2);
+
+                // Draw tangent label
+                if (snap.ReferenceSource != null)
+                {
+                    var distance = snap.ReferenceSource.DistanceTo(snap.Point);
+                    DrawSnapLabel(dc, screenPos, $"Tan: {distance:F2}", SnapMarkerBrushes.TangentBrush);
+                }
+                break;
+
+            case SnapType.Extension:
+                // Draw dotted extension line from source to snap point
+                if (snap.ExtensionSource != null)
+                {
+                    var sourceScreen = WorldToScreen(snap.ExtensionSource.X, snap.ExtensionSource.Y);
+                    dc.DrawLine(SnapMarkerBrushes.ExtensionLinePen, sourceScreen, screenPos);
+
+                    // Draw small square at source endpoint
+                    dc.DrawRectangle(null, markerPen, new Rect(
+                        sourceScreen.X - markerSize / 3, sourceScreen.Y - markerSize / 3,
+                        markerSize * 2 / 3, markerSize * 2 / 3));
+                }
+
+                // Draw X marker at snap point
+                dc.DrawLine(markerPen,
+                    new Point(screenPos.X - markerSize / 2, screenPos.Y - markerSize / 2),
+                    new Point(screenPos.X + markerSize / 2, screenPos.Y + markerSize / 2));
+                dc.DrawLine(markerPen,
+                    new Point(screenPos.X + markerSize / 2, screenPos.Y - markerSize / 2),
+                    new Point(screenPos.X - markerSize / 2, screenPos.Y + markerSize / 2));
+
+                // Draw extension label with distance and angle
+                if (snap.ExtensionSource != null)
+                {
+                    var effectivePoint = _drawingTool.GetEffectiveEndPoint() ?? snap.Point;
+                    var basePoint = _drawingTool.OverrideDistance.HasValue || _drawingTool.OverrideAngle.HasValue
+                        ? snap.ExtensionSource
+                        : snap.ExtensionSource;
+
+                    var distance = _drawingTool.OverrideDistance ?? snap.ExtensionSource.DistanceTo(effectivePoint);
+                    var angle = _drawingTool.OverrideAngle ?? snap.ExtensionAngle;
+
+                    // Format label with highlighting for active input mode
+                    string labelText;
+                    if (_drawingTool.InputMode == DrawingInputMode.Distance)
+                    {
+                        labelText = $"Extension: [{_drawingTool.InputBuffer}_] < {angle:F0}°";
+                    }
+                    else if (_drawingTool.InputMode == DrawingInputMode.Angle)
+                    {
+                        labelText = $"Extension: {distance:F2} < [{_drawingTool.InputBuffer}_]°";
+                    }
+                    else
+                    {
+                        labelText = $"Extension: {distance:F2} < {angle:F0}°";
+                    }
+                    DrawExtensionLabel(dc, screenPos, labelText);
+                }
                 break;
         }
+    }
+
+    private void DrawExtensionLabel(DrawingContext dc, Point screenPos, string text)
+    {
+        var typeface = new Typeface("Segoe UI");
+        var formattedText = new FormattedText(
+            text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            12,
+            SnapMarkerBrushes.ExtensionBrush,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+        // Position label below and to the right of the snap point
+        var labelPos = new Point(screenPos.X + 10, screenPos.Y + 5);
+
+        // Draw background
+        var padding = 3.0;
+        var bgRect = new Rect(
+            labelPos.X - padding,
+            labelPos.Y - padding,
+            formattedText.Width + padding * 2,
+            formattedText.Height + padding * 2);
+
+        var bgBrush = new SolidColorBrush(Color.FromArgb(220, 30, 30, 30));
+        bgBrush.Freeze();
+        dc.DrawRectangle(bgBrush, null, bgRect);
+
+        // Draw text
+        dc.DrawText(formattedText, labelPos);
+    }
+
+    private void DrawSnapLabel(DrawingContext dc, Point screenPos, string text, Brush brush)
+    {
+        var typeface = new Typeface("Segoe UI");
+        var formattedText = new FormattedText(
+            text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            12,
+            brush,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+        // Position label below and to the right of the snap point
+        var labelPos = new Point(screenPos.X + 10, screenPos.Y + 5);
+
+        // Draw background
+        var padding = 3.0;
+        var bgRect = new Rect(
+            labelPos.X - padding,
+            labelPos.Y - padding,
+            formattedText.Width + padding * 2,
+            formattedText.Height + padding * 2);
+
+        var bgBrush = new SolidColorBrush(Color.FromArgb(220, 30, 30, 30));
+        bgBrush.Freeze();
+        dc.DrawRectangle(bgBrush, null, bgRect);
+
+        // Draw text
+        dc.DrawText(formattedText, labelPos);
     }
 
     private void DrawDistanceLabel(DrawingContext dc, Point screenPos, double distance)

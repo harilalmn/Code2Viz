@@ -16,6 +16,7 @@
     Background="{StaticResource BackgroundBrush}"
     Closing="Window_Closing"
     Icon="/img/logo.ico"
+    KeyboardNavigation.TabNavigation="None"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
     mc:Ignorable="d">
@@ -1793,13 +1794,49 @@
                                                 <TextBlock
                                                     Grid.Row="9"
                                                     Grid.Column="0"
-                                                    Margin="0,0,0,16"
+                                                    Margin="0,0,0,8"
                                                     VerticalAlignment="Center"
                                                     Foreground="{StaticResource ForegroundBrush}"
                                                     Text="Snap to Perpendicular:" />
                                                 <CheckBox
                                                     x:Name="SnapPerpendicularCheck"
                                                     Grid.Row="9"
+                                                    Grid.Column="1"
+                                                    Margin="0,0,0,8"
+                                                    VerticalAlignment="Center"
+                                                    Content="Enabled"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    IsChecked="True" />
+
+                                                <!--  Snap Extension  -->
+                                                <TextBlock
+                                                    Grid.Row="10"
+                                                    Grid.Column="0"
+                                                    Margin="0,0,0,8"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    Text="Snap to Extension:" />
+                                                <CheckBox
+                                                    x:Name="SnapExtensionCheck"
+                                                    Grid.Row="10"
+                                                    Grid.Column="1"
+                                                    Margin="0,0,0,8"
+                                                    VerticalAlignment="Center"
+                                                    Content="Enabled"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    IsChecked="True" />
+
+                                                <!--  Snap Tangent  -->
+                                                <TextBlock
+                                                    Grid.Row="11"
+                                                    Grid.Column="0"
+                                                    Margin="0,0,0,16"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    Text="Snap to Tangent:" />
+                                                <CheckBox
+                                                    x:Name="SnapTangentCheck"
+                                                    Grid.Row="11"
                                                     Grid.Column="1"
                                                     Margin="0,0,0,16"
                                                     VerticalAlignment="Center"
@@ -1809,7 +1846,7 @@
 
                                                 <!--  Highlight Settings Sub-header  -->
                                                 <TextBlock
-                                                    Grid.Row="10"
+                                                    Grid.Row="12"
                                                     Grid.ColumnSpan="3"
                                                     Margin="0,8,0,12"
                                                     FontSize="14"
@@ -1819,7 +1856,7 @@
 
                                                 <!--  Highlight Color  -->
                                                 <TextBlock
-                                                    Grid.Row="11"
+                                                    Grid.Row="13"
                                                     Grid.Column="0"
                                                     Margin="0,0,0,8"
                                                     VerticalAlignment="Center"
@@ -1827,7 +1864,7 @@
                                                     Text="Highlight Color:" />
                                                 <TextBox
                                                     x:Name="HighlightColorBox"
-                                                    Grid.Row="11"
+                                                    Grid.Row="13"
                                                     Grid.Column="1"
                                                     Margin="0,0,0,8"
                                                     Padding="6"
@@ -1838,7 +1875,7 @@
                                                     TextChanged="HighlightColorBox_TextChanged" />
                                                 <Button
                                                     x:Name="HighlightColorBtn"
-                                                    Grid.Row="11"
+                                                    Grid.Row="13"
                                                     Grid.Column="2"
                                                     Width="30"
                                                     Height="30"
@@ -1851,14 +1888,14 @@
 
                                                 <!--  Highlight Opacity  -->
                                                 <TextBlock
-                                                    Grid.Row="12"
+                                                    Grid.Row="14"
                                                     Grid.Column="0"
                                                     Margin="0,0,0,16"
                                                     VerticalAlignment="Center"
                                                     Foreground="{StaticResource ForegroundBrush}"
                                                     Text="Highlight Opacity:" />
                                                 <StackPanel
-                                                    Grid.Row="12"
+                                                    Grid.Row="14"
                                                     Grid.Column="1"
                                                     Margin="0,0,0,16"
                                                     Orientation="Horizontal">

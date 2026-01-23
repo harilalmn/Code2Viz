@@ -145,9 +145,34 @@ Below the menu bar, contains buttons for all 12 shape types:
 | Text | Click position | 1 |
 
 ### Snap Support
-- Snaps to existing shape endpoints, midpoints, centers
-- Snaps to intersections and nearest points
-- Visual indicators show snap points during drawing
+The drawing tool supports 8 snap types (configurable in Settings):
+
+| Snap Type | Marker | Description |
+|-----------|--------|-------------|
+| Endpoint | Yellow square | Start/end points of lines, arcs, polylines |
+| Midpoint | Cyan triangle | Middle point of segments |
+| Center | Magenta circle | Center of circles, arcs, ellipses |
+| Intersection | Red X | Where two shapes cross |
+| Nearest | Green diamond | Closest point on any curve |
+| Perpendicular | Orange line | 90° from first click to existing geometry |
+| Extension | Cyan dotted line | Extended line along existing edges |
+| Tangent | Violet line | Tangent point from first click to circles/arcs |
+
+### Advanced Snaps (Second Point)
+When picking the second point:
+- **Extension**: Shows dotted line extending from endpoints with label "Extension: [dist] < [angle]°"
+- **Perpendicular**: Shows perpendicular relationship from first point to existing shapes
+- **Tangent**: Shows tangent point when near circles/arcs
+
+### Precise Distance/Angle Input
+While drawing after the first point, type numbers to enter precise values:
+- **Type any digit**: Starts Distance input mode (value pre-selected, typing replaces it)
+- **Tab**: Cycle through None → Distance → Angle → None
+- **Backspace**: Delete character (or clear all if selected)
+- **Enter**: Confirm and place point at specified distance/angle
+- **Escape**: Cancel input mode
+
+Key files: `Canvas/SnapEngine.cs`, `Canvas/DrawingTool.cs` (InputMode, InputBuffer, StartDistanceInput)
 
 ### Orthogonal Constraint
 - Hold **Shift** after first point to constrain to horizontal/vertical

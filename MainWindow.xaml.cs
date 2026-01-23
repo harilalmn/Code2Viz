@@ -864,6 +864,19 @@ public partial class MainWindow : Window
 
     private void TextArea_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // HIGHEST PRIORITY: Tab key for drawing input mode cycling
+        // Must intercept here as well since TextArea may handle Tab before MainWindow
+        if (e.Key == Key.Tab && RenderCanvas.DrawingTool.Mode != Canvas.DrawingMode.None && RenderCanvas.DrawingTool.Points.Count > 0)
+        {
+            e.Handled = true;
+            if (RenderCanvas.DrawingTool.CycleInputMode())
+            {
+                RenderCanvas.Refresh();
+                UpdateDrawingInputStatus();
+            }
+            return;
+        }
+
         // Handle Backspace/Delete for multi-cursor editing
         if (_multiSelectionRenderer != null && _multiSelectionRenderer.HasSelections)
         {
@@ -3166,6 +3179,8 @@ public partial class MainWindow : Window
         SnapIntersectionCheck.IsChecked = appSettings.SnapIntersectionEnabled;
         SnapNearestCheck.IsChecked = appSettings.SnapNearestEnabled;
         SnapPerpendicularCheck.IsChecked = appSettings.SnapPerpendicularEnabled;
+        SnapExtensionCheck.IsChecked = appSettings.SnapExtensionEnabled;
+        SnapTangentCheck.IsChecked = appSettings.SnapTangentEnabled;
 
         // Highlight Settings
         HighlightColorBox.Text = appSettings.HighlightColor ?? "Yellow";
@@ -3319,6 +3334,8 @@ public partial class MainWindow : Window
         ApplicationSettings.Instance.SnapIntersectionEnabled = SnapIntersectionCheck.IsChecked == true;
         ApplicationSettings.Instance.SnapNearestEnabled = SnapNearestCheck.IsChecked == true;
         ApplicationSettings.Instance.SnapPerpendicularEnabled = SnapPerpendicularCheck.IsChecked == true;
+        ApplicationSettings.Instance.SnapExtensionEnabled = SnapExtensionCheck.IsChecked == true;
+        ApplicationSettings.Instance.SnapTangentEnabled = SnapTangentCheck.IsChecked == true;
 
         // Save Highlight Settings
         ApplicationSettings.Instance.HighlightColor = HighlightColorBox.Text.Trim();
@@ -4317,6 +4334,95 @@ public partial class MainWindow : Window
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // HIGHEST PRIORITY: Drawing input when mouse is over canvas and waiting for next point
+        // This intercepts digit keys to start distance input mode for precise drawing
+        if (RenderCanvas.IsMouseOver &&
+            RenderCanvas.DrawingTool.Mode != Canvas.DrawingMode.None &&
+            RenderCanvas.DrawingTool.Points.Count > 0)
+        {
+            var isInInputMode = RenderCanvas.DrawingTool.InputMode != Canvas.DrawingInputMode.None;
+
+            // Tab cycles input modes (None -> Distance -> Angle -> None)
+            if (e.Key == Key.Tab)
+            {
+                e.Handled = true;
+                if (RenderCanvas.DrawingTool.CycleInputMode())
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                }
+                return;
+            }
+
+            // Escape cancels input mode
+            if (e.Key == Key.Escape && isInInputMode)
+            {
+                RenderCanvas.DrawingTool.HandleEscapeInput();
+                RenderCanvas.Refresh();
+                UpdateDrawingInputStatus();
+                e.Handled = true;
+                return;
+            }
+
+            // Backspace removes last character
+            if (e.Key == Key.Back && isInInputMode)
+            {
+                if (RenderCanvas.DrawingTool.HandleBackspace())
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            // Number keys - start distance input when drawing
+            char? inputChar = null;
+            if (e.Key >= Key.D0 && e.Key <= Key.D9)
+                inputChar = (char)('0' + (e.Key - Key.D0));
+            else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
+                inputChar = (char)('0' + (e.Key - Key.NumPad0));
+            else if (e.Key == Key.OemPeriod || e.Key == Key.Decimal)
+                inputChar = '.';
+            else if (e.Key == Key.OemMinus || e.Key == Key.Subtract)
+                inputChar = '-';
+
+            if (inputChar.HasValue)
+            {
+                // Start Distance mode if not already in input mode
+                if (!isInInputMode)
+                {
+                    RenderCanvas.DrawingTool.StartDistanceInput();
+                }
+
+                if (RenderCanvas.DrawingTool.HandleCharInput(inputChar.Value))
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            // Enter confirms input and places point
+            if (e.Key == Key.Enter && isInInputMode)
+            {
+                if (RenderCanvas.DrawingTool.HandleEnterInput())
+                {
+                    var effectivePoint = RenderCanvas.DrawingTool.GetEffectiveEndPoint();
+                    if (effectivePoint != null)
+                    {
+                        // Simulate a click at the effective position
+                        RenderCanvas.DrawingTool.OnLeftClick(effectivePoint);
+                        RenderCanvas.Refresh();
+                        UpdateDrawingInputStatus();
+                    }
+                }
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (Keyboard.Modifiers == ModifierKeys.Control)
         {
             switch (e.Key)
@@ -4469,10 +4575,89 @@ public partial class MainWindow : Window
             HelpMenuItem_Click(sender, e);
             e.Handled = true;
         }
+        // Handle numeric input for drawing tool distance/angle
+        else if (!CodeEditor.IsKeyboardFocusWithin && RenderCanvas.DrawingTool.InputMode != Canvas.DrawingInputMode.None)
+        {
+            // Number keys
+            if (e.Key >= Key.D0 && e.Key <= Key.D9)
+            {
+                var digit = (char)('0' + (e.Key - Key.D0));
+                if (RenderCanvas.DrawingTool.HandleCharInput(digit))
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
+            {
+                var digit = (char)('0' + (e.Key - Key.NumPad0));
+                if (RenderCanvas.DrawingTool.HandleCharInput(digit))
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+            }
+            // Decimal point
+            else if (e.Key == Key.OemPeriod || e.Key == Key.Decimal)
+            {
+                if (RenderCanvas.DrawingTool.HandleCharInput('.'))
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+            }
+            // Minus sign
+            else if (e.Key == Key.OemMinus || e.Key == Key.Subtract)
+            {
+                if (RenderCanvas.DrawingTool.HandleCharInput('-'))
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+            }
+            // Backspace
+            else if (e.Key == Key.Back)
+            {
+                if (RenderCanvas.DrawingTool.HandleBackspace())
+                {
+                    RenderCanvas.Refresh();
+                    UpdateDrawingInputStatus();
+                    e.Handled = true;
+                }
+            }
+            // Enter to confirm input and place point
+            else if (e.Key == Key.Enter)
+            {
+                if (RenderCanvas.DrawingTool.HandleEnterInput())
+                {
+                    // Simulate a click at the effective position
+                    var effectivePoint = RenderCanvas.DrawingTool.GetEffectiveEndPoint();
+                    if (effectivePoint != null)
+                    {
+                        RenderCanvas.DrawingTool.OnLeftClick(effectivePoint);
+                        RenderCanvas.Refresh();
+                        UpdateDrawingStatus();
+                    }
+                    e.Handled = true;
+                }
+            }
+        }
         else if (e.Key == Key.Escape)
         {
+            // First check if we need to cancel input mode
+            if (RenderCanvas.DrawingTool.InputMode != Canvas.DrawingInputMode.None)
+            {
+                RenderCanvas.DrawingTool.HandleEscapeInput();
+                RenderCanvas.Refresh();
+                UpdateDrawingStatus();
+                e.Handled = true;
+            }
             // Cancel drawing tool if active
-            if (RenderCanvas.DrawingTool.Mode != Canvas.DrawingMode.None)
+            else if (RenderCanvas.DrawingTool.Mode != Canvas.DrawingMode.None)
             {
                 CancelDrawingTool();
                 EnableSelectionMode();
@@ -4808,6 +4993,27 @@ public partial class MainWindow : Window
         RenderCanvas.Cursor = Cursors.Arrow;
 
         RenderCanvas.Refresh();
+    }
+
+    private void UpdateDrawingStatus()
+    {
+        var tool = RenderCanvas.DrawingTool;
+        SetStatus(tool.StatusMessage, isError: false);
+    }
+
+    private void UpdateDrawingInputStatus()
+    {
+        var tool = RenderCanvas.DrawingTool;
+        if (tool.InputMode != Canvas.DrawingInputMode.None)
+        {
+            var inputText = tool.GetInputDisplayText();
+            var hint = "(Tab: cycle, Enter: confirm, Esc: cancel)";
+            SetStatus($"{inputText}  {hint}", isError: false);
+        }
+        else
+        {
+            SetStatus(tool.StatusMessage, isError: false);
+        }
     }
 
     private void OnShapeCompleted(object? sender, Geometry.Shape shape)

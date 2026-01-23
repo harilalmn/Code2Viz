@@ -23,6 +23,16 @@ public enum DrawingMode
 }
 
 /// <summary>
+/// Input modes for precise value entry during drawing (Tab to cycle).
+/// </summary>
+public enum DrawingInputMode
+{
+    None,
+    Distance,
+    Angle
+}
+
+/// <summary>
 /// Manages the interactive drawing tool state and shape creation logic.
 /// </summary>
 public class DrawingTool
@@ -57,6 +67,36 @@ public class DrawingTool
     /// The snap engine used for detecting snap points.
     /// </summary>
     public SnapEngine SnapEngine { get; }
+
+    /// <summary>
+    /// Current input mode for precise value entry (Tab to cycle).
+    /// </summary>
+    public DrawingInputMode InputMode { get; private set; } = DrawingInputMode.None;
+
+    /// <summary>
+    /// Current input buffer for typed values.
+    /// </summary>
+    public string InputBuffer { get; private set; } = "";
+
+    /// <summary>
+    /// Whether the buffer content is "selected" (first keystroke will replace all).
+    /// </summary>
+    public bool IsBufferSelected { get; private set; } = false;
+
+    /// <summary>
+    /// Override distance value (when user types a distance).
+    /// </summary>
+    public double? OverrideDistance { get; private set; }
+
+    /// <summary>
+    /// Override angle value in degrees (when user types an angle).
+    /// </summary>
+    public double? OverrideAngle { get; private set; }
+
+    /// <summary>
+    /// Event raised when input mode or buffer changes.
+    /// </summary>
+    public event EventHandler? InputChanged;
 
     /// <summary>
     /// Event raised when a shape is completed.
@@ -109,10 +149,293 @@ public class DrawingTool
         CurrentPoint = null;
         CurrentSnap = null;
         SnapEngine.ReferencePoint = null;
+        ResetInputMode();
         if (wasDrawing)
         {
             ModeChanged?.Invoke(this, Mode);
         }
+    }
+
+    /// <summary>
+    /// Cycles through input modes (None -> Distance -> Angle -> None).
+    /// Only active when there's an extension snap or when drawing after first point.
+    /// </summary>
+    /// <returns>True if Tab was handled.</returns>
+    public bool CycleInputMode()
+    {
+        // Only allow input mode when drawing and we have at least one point
+        if (Mode == DrawingMode.None || Points.Count == 0)
+            return false;
+
+        InputMode = InputMode switch
+        {
+            DrawingInputMode.None => DrawingInputMode.Distance,
+            DrawingInputMode.Distance => DrawingInputMode.Angle,
+            DrawingInputMode.Angle => DrawingInputMode.None,
+            _ => DrawingInputMode.None
+        };
+
+        // Clear buffer when switching modes but keep override values
+        InputBuffer = "";
+        IsBufferSelected = false;
+
+        // Pre-populate buffer with current snap values if available
+        if (CurrentSnap?.Type == SnapType.Extension && CurrentSnap.ExtensionSource != null)
+        {
+            if (InputMode == DrawingInputMode.Distance)
+            {
+                var dist = OverrideDistance ?? CurrentSnap.ExtensionSource.DistanceTo(CurrentSnap.Point);
+                InputBuffer = dist.ToString("F2");
+                IsBufferSelected = true;
+            }
+            else if (InputMode == DrawingInputMode.Angle)
+            {
+                var angle = OverrideAngle ?? CurrentSnap.ExtensionAngle;
+                InputBuffer = angle.ToString("F0");
+                IsBufferSelected = true;
+            }
+        }
+        else if (Points.Count > 0 && CurrentPoint != null)
+        {
+            // Use current point distance/angle from last placed point
+            var lastPoint = Points[^1];
+            if (InputMode == DrawingInputMode.Distance)
+            {
+                var dist = OverrideDistance ?? lastPoint.DistanceTo(CurrentPoint);
+                InputBuffer = dist.ToString("F2");
+                IsBufferSelected = true;
+            }
+            else if (InputMode == DrawingInputMode.Angle)
+            {
+                var angle = OverrideAngle ?? Math.Atan2(CurrentPoint.Y - lastPoint.Y, CurrentPoint.X - lastPoint.X) * 180 / Math.PI;
+                InputBuffer = angle.ToString("F0");
+                IsBufferSelected = true;
+            }
+        }
+
+        InputChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>
+    /// Starts Distance input mode directly (called when user types a digit while drawing).
+    /// Pre-populates the buffer with current distance so user can see and replace it.
+    /// </summary>
+    public void StartDistanceInput()
+    {
+        if (Mode == DrawingMode.None || Points.Count == 0)
+            return;
+
+        InputMode = DrawingInputMode.Distance;
+
+        // Pre-populate with current distance from last point to cursor/snap position
+        var lastPoint = Points[^1];
+        var targetPoint = CurrentSnap?.Point ?? CurrentPoint;
+        if (targetPoint != null)
+        {
+            var distance = lastPoint.DistanceTo(targetPoint);
+            InputBuffer = distance.ToString("F2");
+            IsBufferSelected = true; // First keystroke will replace the value
+        }
+        else
+        {
+            InputBuffer = "";
+            IsBufferSelected = false;
+        }
+
+        InputChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Handles character input for distance/angle entry.
+    /// </summary>
+    /// <returns>True if the character was handled.</returns>
+    public bool HandleCharInput(char c)
+    {
+        if (InputMode == DrawingInputMode.None)
+            return false;
+
+        // Allow digits, decimal point, minus sign
+        if (char.IsDigit(c) || c == '.' || c == '-')
+        {
+            // If buffer is selected, first keystroke replaces the entire value
+            if (IsBufferSelected)
+            {
+                InputBuffer = "";
+                IsBufferSelected = false;
+            }
+
+            // Only allow one decimal point
+            if (c == '.' && InputBuffer.Contains('.'))
+                return true;
+
+            // Only allow minus at the start
+            if (c == '-' && InputBuffer.Length > 0)
+                return true;
+
+            InputBuffer += c;
+            ApplyInputValue();
+            InputChanged?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Handles backspace for input editing.
+    /// </summary>
+    /// <returns>True if backspace was handled.</returns>
+    public bool HandleBackspace()
+    {
+        if (InputMode == DrawingInputMode.None)
+            return false;
+
+        // If buffer is selected, clear entire buffer
+        if (IsBufferSelected)
+        {
+            InputBuffer = "";
+            IsBufferSelected = false;
+            ApplyInputValue();
+            InputChanged?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+
+        if (InputBuffer.Length == 0)
+            return false;
+
+        InputBuffer = InputBuffer[..^1];
+        ApplyInputValue();
+        InputChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>
+    /// Handles Enter key to confirm input and place point.
+    /// </summary>
+    /// <returns>True if Enter was handled and a point should be placed.</returns>
+    public bool HandleEnterInput()
+    {
+        if (InputMode == DrawingInputMode.None)
+            return false;
+
+        // Apply the current input value
+        ApplyInputValue();
+
+        // Reset input mode but keep override values for the click
+        InputMode = DrawingInputMode.None;
+        InputBuffer = "";
+        InputChanged?.Invoke(this, EventArgs.Empty);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Handles Escape key to cancel input mode.
+    /// </summary>
+    /// <returns>True if Escape was handled.</returns>
+    public bool HandleEscapeInput()
+    {
+        if (InputMode == DrawingInputMode.None)
+            return false;
+
+        ResetInputMode();
+        InputChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>
+    /// Resets input mode and clears all override values.
+    /// </summary>
+    public void ResetInputMode()
+    {
+        InputMode = DrawingInputMode.None;
+        InputBuffer = "";
+        OverrideDistance = null;
+        OverrideAngle = null;
+    }
+
+    /// <summary>
+    /// Applies the current input buffer value to the appropriate override.
+    /// </summary>
+    private void ApplyInputValue()
+    {
+        if (string.IsNullOrEmpty(InputBuffer))
+        {
+            if (InputMode == DrawingInputMode.Distance)
+                OverrideDistance = null;
+            else if (InputMode == DrawingInputMode.Angle)
+                OverrideAngle = null;
+            return;
+        }
+
+        if (double.TryParse(InputBuffer, out var value))
+        {
+            if (InputMode == DrawingInputMode.Distance)
+                OverrideDistance = Math.Abs(value); // Distance is always positive
+            else if (InputMode == DrawingInputMode.Angle)
+                OverrideAngle = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the effective end point considering override distance/angle.
+    /// </summary>
+    public VPoint? GetEffectiveEndPoint()
+    {
+        if (Points.Count == 0)
+            return CurrentSnap?.Point ?? CurrentPoint;
+
+        var basePoint = Points[^1];
+
+        // If we have override values, calculate the point from those
+        if (OverrideDistance.HasValue || OverrideAngle.HasValue)
+        {
+            double distance;
+            double angleRad;
+
+            if (CurrentSnap?.Type == SnapType.Extension && CurrentSnap.ExtensionSource != null)
+            {
+                // Use extension snap as base
+                distance = OverrideDistance ?? CurrentSnap.ExtensionSource.DistanceTo(CurrentSnap.Point);
+                angleRad = (OverrideAngle ?? CurrentSnap.ExtensionAngle) * Math.PI / 180;
+                basePoint = CurrentSnap.ExtensionSource;
+            }
+            else
+            {
+                // Use cursor position to determine base direction
+                var endPoint = CurrentSnap?.Point ?? CurrentPoint;
+                if (endPoint == null)
+                    return null;
+
+                distance = OverrideDistance ?? basePoint.DistanceTo(endPoint);
+                angleRad = OverrideAngle.HasValue
+                    ? OverrideAngle.Value * Math.PI / 180
+                    : Math.Atan2(endPoint.Y - basePoint.Y, endPoint.X - basePoint.X);
+            }
+
+            return new VPoint(
+                basePoint.X + distance * Math.Cos(angleRad),
+                basePoint.Y + distance * Math.Sin(angleRad)
+            );
+        }
+
+        return CurrentSnap?.Point ?? CurrentPoint;
+    }
+
+    /// <summary>
+    /// Gets the input display text for the current mode.
+    /// </summary>
+    public string GetInputDisplayText()
+    {
+        if (InputMode == DrawingInputMode.None)
+            return "";
+
+        var label = InputMode == DrawingInputMode.Distance ? "Distance" : "Angle";
+        var unit = InputMode == DrawingInputMode.Angle ? "°" : "";
+        var cursor = "_";
+
+        return $"{label}: {InputBuffer}{cursor}{unit}";
     }
 
     /// <summary>
@@ -185,7 +508,19 @@ public class DrawingTool
             constrainedPos = ApplyOrthoConstraint(worldPos, Points[^1]);
         }
 
-        var clickPoint = CurrentSnap?.Point ?? constrainedPos;
+        // Use effective end point if override values are set (from Tab input)
+        VPoint clickPoint;
+        if (Points.Count > 0 && (OverrideDistance.HasValue || OverrideAngle.HasValue))
+        {
+            clickPoint = GetEffectiveEndPoint() ?? CurrentSnap?.Point ?? constrainedPos;
+        }
+        else
+        {
+            clickPoint = CurrentSnap?.Point ?? constrainedPos;
+        }
+
+        // Reset input mode after placing a point
+        ResetInputMode();
 
         // Special handling for Text mode - request text input via event
         if (Mode == DrawingMode.Text)
@@ -273,7 +608,8 @@ public class DrawingTool
         if (Mode == DrawingMode.None || Points.Count == 0)
             return null;
 
-        var endPoint = CurrentSnap?.Point ?? CurrentPoint;
+        // Use effective end point which considers override distance/angle
+        var endPoint = GetEffectiveEndPoint();
         if (endPoint == null)
             return null;
 

@@ -103,6 +103,14 @@ namespace Code2Viz.Documentation
                 { "DxfExporter", "Exports shapes to AutoCAD DXF format (R12 ASCII). Supports all shape types including lines, circles, arcs, ellipses, polygons, polylines, text, and arrows." },
                 { "PdfExporter", "Exports shapes to vector PDF format using PdfSharp library. Preserves colors, stroke styles, and produces high-quality vector output suitable for printing." },
                 { "SvgExporter", "Exports shapes to SVG (Scalable Vector Graphics) format. Web-compatible vector format that opens in browsers and vector editors. Supports all shape types with full color and styling." },
+
+                // Canvas and Snap System
+                { "Code2Viz.Canvas", "Contains classes for the interactive canvas, drawing tools, and snap detection system." },
+                { "SnapType", "Enumeration of snap point types: Endpoint (line/arc ends), Midpoint (center of segments), Center (circle/ellipse/arc centers), Intersection (where curves cross), Nearest (closest point on curve), Perpendicular (90° from reference point), Extension (line extended beyond endpoint), Tangent (tangent point on circles/arcs)." },
+                { "SnapResult", "Represents a detected snap point with its type, position, and distance from cursor. For Extension snaps, includes ExtensionSource (the endpoint the extension originates from) and ExtensionAngle (direction in degrees). For Perpendicular/Tangent snaps, includes ReferenceSource (your first click) and ConstraintPoint (the perpendicular/tangent point on the shape)." },
+                { "SnapEngine", "Engine for detecting snap points on shapes. Supports 8 snap types (Endpoint, Midpoint, Center, Intersection, Nearest, Perpendicular, Extension, Tangent). Each snap type can be individually enabled/disabled via Settings. Uses spatial indexing for efficient detection even with many shapes." },
+                { "DrawingInputMode", "Enumeration for precise input modes while drawing: None (mouse-controlled), Distance (typing distance value), Angle (typing angle value). Press Tab to cycle between modes when drawing. Type numbers to enter precise values, Enter to confirm." },
+                { "DrawingTool", "Manages interactive drawing state and shape creation. Supports all shape types with visual preview. Features: snap detection with 8 snap types, orthogonal constraint (Shift key), precise distance/angle input (Tab to cycle, type value, Enter to confirm). The InputMode property indicates current input state; InputBuffer holds the typed value." },
             };
         }
 

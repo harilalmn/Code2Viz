@@ -441,14 +441,67 @@ The drawing toolbar appears below the menu bar with buttons for all shape types.
 | **Text** | Click position | 1 |
 
 ### Snap Support
-While drawing, the tool automatically snaps to:
-- **Endpoints** - Start/end points of existing shapes
-- **Midpoints** - Middle points of lines and curves
-- **Centers** - Center of circles, arcs, ellipses
-- **Intersections** - Where two shapes cross
-- **Nearest** - Closest point on any curve
+While drawing, the tool automatically snaps to various geometric features. Visual indicators show snap points as you move the cursor.
 
-Visual indicators show snap points as you move the cursor.
+#### Basic Snap Types
+| Snap Type | Marker | Description |
+|-----------|--------|-------------|
+| **Endpoint** | Yellow square | Start/end points of lines, arcs, polylines |
+| **Midpoint** | Cyan triangle | Middle point of lines and curves |
+| **Center** | Magenta circle | Center of circles, arcs, ellipses |
+| **Intersection** | Red X | Where two shapes cross |
+| **Nearest** | Green diamond | Closest point on any curve |
+
+#### Advanced Snap Types
+
+##### Extension Snap
+When placing the second point (or subsequent points), the **Extension** snap shows a dotted line extending from endpoints of existing lines, polylines, polygons, and rectangles.
+
+- **Visual**: A dotted cyan line extends along the direction of the edge
+- **Label**: Shows "Extension: [distance] < [angle]°" with the distance from the endpoint and the angle
+- **Magnetic Effect**: The cursor stays snapped to the extension line within a tolerance, allowing you to draw precise aligned lines
+- **Reach**: Extension lines are detected up to 300 pixels from the source endpoint
+
+##### Perpendicular Snap
+When picking the second point, the **Perpendicular** snap shows the point that creates a perpendicular relationship from your first click to an existing line or curve.
+
+- **Visual**: An orange dotted line from your first point to the perpendicular point on the target shape
+- **Use Case**: Perfect for drawing lines at 90° to existing geometry
+
+##### Tangent Snap
+When picking the second point near a circle or arc, the **Tangent** snap shows the tangent point where a line from your first click would touch the circle.
+
+- **Visual**: A violet dotted line from your first point to the tangent point on the circle/arc
+- **Use Case**: Drawing lines that touch circles at exactly one point
+
+### Precise Distance and Angle Input
+
+While drawing (after placing the first point), you can type precise values for distance and angle instead of clicking.
+
+#### How to Use
+1. **Start drawing** (e.g., Line tool) and click to place the first point
+2. **Move cursor** over the canvas - you'll see the preview line
+3. **Type a number** (e.g., "100") - Distance input mode activates automatically
+   - The current distance is shown pre-selected; typing replaces it
+4. **Press Tab** to switch to Angle input mode
+5. **Type the angle** in degrees (e.g., "45")
+6. **Press Enter** to place the point at the specified distance and angle
+7. **Press Escape** to cancel input mode
+
+#### Input Mode Indicators
+- When typing distance: `Extension: [100_] < 45°` (brackets show active field)
+- When typing angle: `Extension: 100.00 < [45_]°`
+
+#### Keys in Input Mode
+| Key | Action |
+|-----|--------|
+| `0-9`, `.`, `-` | Type value (first keystroke replaces pre-selected value) |
+| `Tab` | Cycle through modes: Distance → Angle → None |
+| `Backspace` | Delete last character (or clear all if value is selected) |
+| `Enter` | Confirm and place point at specified distance/angle |
+| `Escape` | Cancel input mode |
+
+This feature works for all multi-point drawing tools (Line, Polyline, Polygon, etc.) and enables CAD-style precise drawing without needing to calculate coordinates manually.
 
 ### Orthogonal Constraint (Shift Key)
 When drawing lines, polylines, polygons, splines, arrows, or bezier curves:
@@ -527,7 +580,7 @@ Press **Ctrl+M** to toggle the Measuring Tape tool. Press **Esc** to cancel.
 6. Tool stays active for additional measurements; press **Esc** to exit
 
 ### Snap Types
-The measuring tool supports 6 snap types (configurable in Settings):
+The measuring and drawing tools support 8 snap types (configurable in Settings):
 
 | Snap Type | Marker | Description |
 |-----------|--------|-------------|
@@ -536,11 +589,14 @@ The measuring tool supports 6 snap types (configurable in Settings):
 | **Center** | Magenta circle | Center of circles, arcs, ellipses |
 | **Intersection** | Red X | Where two shapes cross |
 | **Nearest** | Green diamond | Closest point on any curve |
-| **Perpendicular** | Orange right-angle | Perpendicular from first click point |
+| **Perpendicular** | Orange right-angle | Perpendicular from first click point to existing geometry |
+| **Extension** | Cyan dotted line | Extended line along existing edges |
+| **Tangent** | Violet line | Tangent point from first click to circles/arcs |
 
 ### Snap Settings
 Configure snap behavior in the Settings tab (Application Settings > Snap Settings):
 - Toggle each snap type on/off individually
+- All 8 snap types can be independently enabled/disabled
 - Settings are saved globally and persist across sessions
 
 ---
