@@ -1627,6 +1627,8 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="200" />
@@ -1918,7 +1920,7 @@
 
                                                 <!--  Canvas Settings Sub-header  -->
                                                 <TextBlock
-                                                    Grid.Row="13"
+                                                    Grid.Row="15"
                                                     Grid.ColumnSpan="3"
                                                     Margin="0,8,0,12"
                                                     FontSize="14"
@@ -1928,7 +1930,7 @@
 
                                                 <!--  Zoom to Fit on Run  -->
                                                 <TextBlock
-                                                    Grid.Row="14"
+                                                    Grid.Row="16"
                                                     Grid.Column="0"
                                                     Margin="0,0,0,0"
                                                     VerticalAlignment="Center"
@@ -1936,7 +1938,7 @@
                                                     Text="Zoom to Fit on Run:" />
                                                 <CheckBox
                                                     x:Name="SettingsZoomToFitCheck"
-                                                    Grid.Row="14"
+                                                    Grid.Row="16"
                                                     Grid.Column="1"
                                                     Margin="0,0,0,0"
                                                     VerticalAlignment="Center"
