@@ -23,7 +23,7 @@
                     Height="120"
                     Margin="0,0,0,10"
                     HorizontalAlignment="Left"
-                    Source="/img/logo.png" />
+                    Source="pack://application:,,,/img/logo.png" />
                 <TextBlock
                     Margin="0,0,0,20"
                     FontSize="18"
