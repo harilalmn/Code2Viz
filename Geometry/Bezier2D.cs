@@ -302,24 +302,26 @@ public class VBezier : Shape, ICurve
     {
         double t = GetClosestParameter(point);
         // De Casteljau subdivision at t
-        
-        VPoint p0 = P0;
+
+        // Clone original control points to ensure independent curves
+        VPoint p0 = (VPoint)P0.Clone();
         VPoint p1 = P1;
         VPoint p2 = P2;
-        VPoint p3 = P3;
-        
+        VPoint p3 = (VPoint)P3.Clone();
+
         VPoint p01 = Lerp(p0, p1, t);
         VPoint p12 = Lerp(p1, p2, t);
         VPoint p23 = Lerp(p2, p3, t);
-        
+
         VPoint p012 = Lerp(p01, p12, t);
         VPoint p123 = Lerp(p12, p23, t);
-        
+
         VPoint p0123 = Lerp(p012, p123, t); // This is point at t
-        
-        var c1 = new VBezier(p0, p01, p012, p0123);
-        var c2 = new VBezier(p0123, p123, p23, p3);
-        
+
+        // Clone shared split point for second curve
+        var c1 = new VBezier(p0, p01, p012, (VPoint)p0123.Clone());
+        var c2 = new VBezier((VPoint)p0123.Clone(), p123, p23, p3);
+
         return (c1, c2);
     }
     

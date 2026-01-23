@@ -852,21 +852,22 @@ public class VPolygon : Shape, ICurve
         }
         
         if (segmentIndex == -1) segmentIndex = 0;
-        
+
         // Loop: 0 -> 1 -> ... -> segmentIndex -> P -> segmentIndex+1 -> ... -> 0
         // Split at P means:
         // L1: 0 -> ... -> segmentIndex -> P
         // L2: P -> segmentIndex+1 -> ... -> 0
-        
+
+        // Clone all points to ensure independent curves
         var l1 = new List<VPoint>();
-        for(int i=0; i<=segmentIndex; i++) l1.Add(Points[i]);
-        l1.Add(p);
-        
+        for(int i=0; i<=segmentIndex; i++) l1.Add((VPoint)Points[i].Clone());
+        l1.Add((VPoint)p.Clone());
+
         var l2 = new List<VPoint>();
-        l2.Add(p);
-        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add(Points[i]);
-        l2.Add(Points[0]); // Close the second part back to Start
-        
+        l2.Add((VPoint)p.Clone());
+        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add((VPoint)Points[i].Clone());
+        l2.Add((VPoint)Points[0].Clone()); // Close the second part back to Start
+
         return (new VPolyline(l1), new VPolyline(l2));
     }
 
@@ -987,11 +988,11 @@ public class VPolygon : Shape, ICurve
             double dy = edgeStart.Y - p1.Y;
 
             // Parameter t on the edge (0 to 1 means intersection is on the edge)
-            double t = (lineDx * dy - lineDy * dx) / cross;
+            // Using line-line intersection formula: t = ((P2-P1) × D1) / (D1 × D2)
+            double t = (dx * lineDy - dy * lineDx) / cross;
 
             // Parameter s on the slice line (we don't restrict this - line is infinite)
-            // But we can calculate it to get the intersection point
-            double s = (edgeDx * dy - edgeDy * dx) / cross;
+            double s = (dx * edgeDy - dy * edgeDx) / cross;
 
             // Check if intersection is within the edge segment (t in [0, 1])
             // Use small epsilon to avoid issues at vertices
@@ -1035,6 +1036,7 @@ public class VPolygon : Shape, ICurve
 
     /// <summary>
     /// Builds the resulting polygons after slicing.
+    /// Points are cloned to ensure independent polygons.
     /// </summary>
     private List<VPolygon> BuildSlicedPolygons(List<(int edgeIndex, double t, VPoint point)> intersections)
     {
@@ -1048,14 +1050,14 @@ public class VPolygon : Shape, ICurve
 
             // Polygon 1: from int1 along edges to int2, then back via slice line
             var poly1Points = new List<VPoint>();
-            poly1Points.Add(int1.point);
+            poly1Points.Add((VPoint)int1.point.Clone());
 
             // Add vertices from after int1's edge to int2's edge
             for (int i = int1.edgeIndex + 1; i <= int2.edgeIndex; i++)
             {
-                poly1Points.Add(Points[i]);
+                poly1Points.Add((VPoint)Points[i].Clone());
             }
-            poly1Points.Add(int2.point);
+            poly1Points.Add((VPoint)int2.point.Clone());
 
             if (poly1Points.Count >= 3)
             {
@@ -1064,18 +1066,18 @@ public class VPolygon : Shape, ICurve
 
             // Polygon 2: from int2 along remaining edges to int1, then back via slice line
             var poly2Points = new List<VPoint>();
-            poly2Points.Add(int2.point);
+            poly2Points.Add((VPoint)int2.point.Clone());
 
             // Add vertices from after int2's edge, wrapping around to int1's edge
             for (int i = int2.edgeIndex + 1; i < Points.Count; i++)
             {
-                poly2Points.Add(Points[i]);
+                poly2Points.Add((VPoint)Points[i].Clone());
             }
             for (int i = 0; i <= int1.edgeIndex; i++)
             {
-                poly2Points.Add(Points[i]);
+                poly2Points.Add((VPoint)Points[i].Clone());
             }
-            poly2Points.Add(int1.point);
+            poly2Points.Add((VPoint)int1.point.Clone());
 
             if (poly2Points.Count >= 3)
             {
@@ -1093,6 +1095,7 @@ public class VPolygon : Shape, ICurve
 
     /// <summary>
     /// General algorithm for building sliced polygons with multiple intersection pairs.
+    /// Points are cloned to ensure independent polygons.
     /// </summary>
     private List<VPolygon> BuildSlicedPolygonsGeneral(List<(int edgeIndex, double t, VPoint point)> intersections)
     {
@@ -1159,7 +1162,8 @@ public class VPolygon : Shape, ICurve
 
             do
             {
-                polyPoints.Add(augmentedPoints[currentPos].point);
+                // Clone the point to ensure independence
+                polyPoints.Add((VPoint)augmentedPoints[currentPos].point.Clone());
 
                 currentPos = (currentPos + 1) % augmentedPoints.Count;
 
@@ -1169,8 +1173,8 @@ public class VPolygon : Shape, ICurve
                     int hitInt = augmentedPoints[currentPos].intersectionIndex;
                     if (hitInt != startInt && !used.Contains(hitInt))
                     {
-                        // Add this intersection point and close the polygon via the slice line
-                        polyPoints.Add(augmentedPoints[currentPos].point);
+                        // Add this intersection point (cloned) and close the polygon via the slice line
+                        polyPoints.Add((VPoint)augmentedPoints[currentPos].point.Clone());
                         used.Add(startInt);
                         used.Add(hitInt);
                         foundPair = true;

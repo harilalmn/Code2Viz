@@ -94,9 +94,9 @@ public static partial class CodeFormatter
             return " " + op + " ";
         });
 
-        // Fix any accidentally split lambda arrows (= >) back to =>
-        maskedLine = maskedLine.Replace("= >", "=>");
-        maskedLine = maskedLine.Replace("= >", "=>"); // In case of multiple spaces
+        // Fix any accidentally split lambda arrows (= >) back to => with proper spacing
+        // Use regex to handle variable spacing: "= >" or "=  >" etc.
+        maskedLine = SplitLambdaRegex().Replace(maskedLine, " => ");
 
         // Clean up multiple spaces
         maskedLine = MultiSpaceRegex().Replace(maskedLine, " ");
@@ -458,4 +458,8 @@ public static partial class CodeFormatter
 
     [GeneratedRegex(@"\s+\)")]
     private static partial Regex SpaceBeforeCloseParenRegex();
+
+    // Match split lambda arrows: "= >" or "=  >" etc. (= followed by spaces then >)
+    [GeneratedRegex(@"=\s+>")]
+    private static partial Regex SplitLambdaRegex();
 }

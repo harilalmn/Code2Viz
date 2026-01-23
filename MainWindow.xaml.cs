@@ -1388,8 +1388,8 @@ public partial class MainWindow : Window
         // Add space after keywords
         content = System.Text.RegularExpressions.Regex.Replace(content, @"\b(if|else|for|foreach|while|switch|using|return|throw|new|var|catch|finally)\(", "$1 (");
 
-        // Add space around = but not ==, !=, <=, >=, +=, -=, etc.
-        content = System.Text.RegularExpressions.Regex.Replace(content, @"([^=!<>+\-*/%&|^])=([^=])", "$1 = $2");
+        // Add space around = but not ==, !=, <=, >=, +=, -=, =>, etc.
+        content = System.Text.RegularExpressions.Regex.Replace(content, @"([^=!<>+\-*/%&|^])=(?!>)([^=])", "$1 = $2");
 
         // Add space after comma (but not inside strings)
         content = System.Text.RegularExpressions.Regex.Replace(content, @",([^\s])", ", $1");

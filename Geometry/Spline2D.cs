@@ -335,20 +335,21 @@ public class VSpline : Shape, ICurve
         int numSpans = ControlPoints.Count - 1;
         double scaledT = t * numSpans;
         int spanIndex = Math.Min((int)scaledT, numSpans - 1);
-        
+
         var splitP = Evaluate(t);
-        
+
         // Curve 1: P0 ... P(spanIndex), splitP
         // Curve 2: splitP, P(spanIndex+1) ... Pn
-        
+
+        // Clone all points to ensure independent curves
         var list1 = new List<VPoint>();
-        for(int i=0; i<=spanIndex; i++) list1.Add(ControlPoints[i]);
-        list1.Add(splitP);
-        
+        for(int i=0; i<=spanIndex; i++) list1.Add((VPoint)ControlPoints[i].Clone());
+        list1.Add((VPoint)splitP.Clone());
+
         var list2 = new List<VPoint>();
-        list2.Add(splitP);
-        for(int i=spanIndex+1; i<ControlPoints.Count; i++) list2.Add(ControlPoints[i]);
-        
+        list2.Add((VPoint)splitP.Clone());
+        for(int i=spanIndex+1; i<ControlPoints.Count; i++) list2.Add((VPoint)ControlPoints[i].Clone());
+
         return (new VSpline(list1), new VSpline(list2));
     }
 

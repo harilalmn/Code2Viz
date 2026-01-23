@@ -207,8 +207,10 @@ public class VLine : Shape, ICurve
         // The requirement says "spliting a curve at a given point".
         // Robustness: Project point to line segment first.
         var splitPoint = Project(point);
-        
-        return (new VLine(Start, splitPoint), new VLine(splitPoint, End));
+
+        // Clone all points to ensure independent curves
+        return (new VLine((VPoint)Start.Clone(), (VPoint)splitPoint.Clone()),
+                new VLine((VPoint)splitPoint.Clone(), (VPoint)End.Clone()));
     }
 
     public override Shape? Intersect(Shape other)

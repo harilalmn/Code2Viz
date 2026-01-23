@@ -343,15 +343,15 @@ public class VPolyline : Shape, ICurve
     public (ICurve, ICurve) SplitAtPoint(VPoint point)
     {
         VPoint p = Project(point);
-        
+
         // Find segment
         int segmentIndex = -1;
-        
+
         // We need to know which segment 'p' lies on.
         // It matches the 'Project' logic if it was robust.
         // Let's re-scan for closest segment
         double minK = double.MaxValue;
-        
+
         for (int i = 0; i < Points.Count - 1; i++)
         {
             VPoint proj = ProjectOnSegment(Points[i], Points[i+1], p);
@@ -367,17 +367,18 @@ public class VPolyline : Shape, ICurve
                 segmentIndex = i; // Fallback to closest
             }
         }
-        
+
         if (segmentIndex == -1) segmentIndex = 0; // Should not happen
-        
+
+        // Clone all points to ensure independent curves
         var l1 = new List<VPoint>();
-        for(int i=0; i<=segmentIndex; i++) l1.Add(Points[i]);
-        l1.Add(p);
-        
+        for(int i=0; i<=segmentIndex; i++) l1.Add((VPoint)Points[i].Clone());
+        l1.Add((VPoint)p.Clone());
+
         var l2 = new List<VPoint>();
-        l2.Add(p);
-        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add(Points[i]);
-        
+        l2.Add((VPoint)p.Clone());
+        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add((VPoint)Points[i].Clone());
+
         return (new VPolyline(l1), new VPolyline(l2));
     }
 
