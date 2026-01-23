@@ -6324,7 +6324,16 @@ public partial class MainWindow : Window
                 }
             }
 
-            // No error marker - try to show type information for identifier under cursor
+            // Check if hovering over a method call - show signature
+            var methodInfo = GetMethodSignatureAtOffset(offset);
+            if (methodInfo != null)
+            {
+                ShowMethodSignatureTooltip(methodInfo.Value.typeName, methodInfo.Value.methodName, methodInfo.Value.signatures);
+                e.Handled = true;
+                return;
+            }
+
+            // No method call - try to show type information for identifier under cursor
             var typeInfo = GetTypeInfoAtOffset(offset);
             if (typeInfo != null)
             {
@@ -6414,6 +6423,375 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Gets method signature information at the given offset if the identifier is a method call.
+    /// </summary>
+    private (string typeName, string methodName, List<string> signatures)? GetMethodSignatureAtOffset(int offset)
+    {
+        var document = CodeEditor.Document;
+        if (document == null) return null;
+
+        // Find the identifier at this position
+        var wordStart = offset;
+        var wordEnd = offset;
+
+        // Expand backwards to find word start
+        while (wordStart > 0)
+        {
+            var c = document.GetCharAt(wordStart - 1);
+            if (!char.IsLetterOrDigit(c) && c != '_')
+                break;
+            wordStart--;
+        }
+
+        // Expand forwards to find word end
+        while (wordEnd < document.TextLength)
+        {
+            var c = document.GetCharAt(wordEnd);
+            if (!char.IsLetterOrDigit(c) && c != '_')
+                break;
+            wordEnd++;
+        }
+
+        if (wordStart >= wordEnd)
+            return null;
+
+        var methodName = document.GetText(wordStart, wordEnd - wordStart);
+        if (string.IsNullOrEmpty(methodName))
+            return null;
+
+        // Check if this is followed by '(' (it's a method call)
+        var afterWord = wordEnd;
+        while (afterWord < document.TextLength && char.IsWhiteSpace(document.GetCharAt(afterWord)))
+            afterWord++;
+
+        if (afterWord >= document.TextLength || document.GetCharAt(afterWord) != '(')
+            return null; // Not a method call
+
+        // Check if there's a '.' before the method name (instance method call)
+        var beforeWord = wordStart - 1;
+        while (beforeWord >= 0 && char.IsWhiteSpace(document.GetCharAt(beforeWord)))
+            beforeWord--;
+
+        if (beforeWord < 0 || document.GetCharAt(beforeWord) != '.')
+        {
+            // Could be a static method call or constructor - check if it's a type name
+            var type = Editor.TypeInspector.ResolveType(methodName);
+            if (type != null)
+            {
+                // It's a constructor call
+                var ctorSignatures = Editor.TypeInspector.GetConstructorSignatures(methodName);
+                if (ctorSignatures.Count > 0)
+                {
+                    return (methodName, methodName, ctorSignatures);
+                }
+            }
+            return null;
+        }
+
+        // Find the expression before the dot
+        var exprEnd = beforeWord; // Position of the '.'
+        var exprStart = exprEnd - 1;
+
+        // Handle chained calls like obj.Method1().Method2() - find the complete expression
+        int parenDepth = 0;
+        int bracketDepth = 0;
+        while (exprStart >= 0)
+        {
+            var c = document.GetCharAt(exprStart);
+
+            if (c == ')')
+                parenDepth++;
+            else if (c == '(')
+            {
+                if (parenDepth > 0)
+                    parenDepth--;
+                else
+                    break; // Unmatched open paren
+            }
+            else if (c == ']')
+                bracketDepth++;
+            else if (c == '[')
+            {
+                if (bracketDepth > 0)
+                    bracketDepth--;
+                else
+                    break;
+            }
+            else if (parenDepth == 0 && bracketDepth == 0)
+            {
+                if (!char.IsLetterOrDigit(c) && c != '_' && c != '.')
+                    break;
+            }
+
+            exprStart--;
+        }
+        exprStart++; // Move back to first char of expression
+
+        if (exprStart > exprEnd)
+            return null;
+
+        var expression = document.GetText(exprStart, exprEnd - exprStart).Trim();
+        if (string.IsNullOrEmpty(expression))
+            return null;
+
+        // Get the type of the expression
+        var textBeforeCursor = document.GetText(0, exprStart);
+        var allCode = GetAllProjectCode();
+        string? typeName = null;
+
+        // If expression contains dots, resolve the chain
+        if (expression.Contains('.'))
+        {
+            typeName = Editor.CompletionProvider.ResolveChainedExpression(textBeforeCursor, expression, allCode);
+        }
+        else
+        {
+            // Simple variable name
+            typeName = Editor.CompletionProvider.FindVariableType(textBeforeCursor, expression, allCode);
+        }
+
+        if (string.IsNullOrEmpty(typeName))
+        {
+            // Try to resolve as a type name (for static method calls)
+            var type = Editor.TypeInspector.ResolveType(expression);
+            if (type != null)
+            {
+                typeName = type.Name;
+            }
+        }
+
+        if (string.IsNullOrEmpty(typeName))
+            return null;
+
+        // Get method signatures
+        var signatures = Editor.TypeInspector.GetMethodSignatures(typeName, methodName);
+
+        // If no signatures found, try extension methods
+        if (signatures.Count == 0)
+        {
+            signatures = GetExtensionMethodSignatures(typeName, methodName);
+        }
+
+        if (signatures.Count > 0)
+        {
+            return (typeName, methodName, signatures);
+        }
+
+        return null;
+    }
+
+    private List<string> GetExtensionMethodSignatures(string typeName, string methodName)
+    {
+        var signatures = new List<string>();
+
+        // Check LINQ extension methods
+        var linqMethods = typeof(System.Linq.Enumerable).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(m => m.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase) &&
+                        m.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false))
+            .ToList();
+
+        foreach (var method in linqMethods.Take(3)) // Limit to 3 overloads
+        {
+            var parameters = method.GetParameters().Skip(1); // Skip 'this' parameter
+            var paramStr = string.Join(", ", parameters.Select(p => $"{Editor.TypeInspector.GetTypeName(p.ParameterType)} {p.Name}"));
+            signatures.Add($"{Editor.TypeInspector.GetTypeName(method.ReturnType)} {method.Name}({paramStr})");
+        }
+
+        return signatures;
+    }
+
+    private void ShowMethodSignatureTooltip(string typeName, string methodName, List<string> signatures)
+    {
+        if (_currentToolTip != null)
+        {
+            _currentToolTip.IsOpen = false;
+        }
+
+        _currentToolTip = new ToolTip();
+        _currentToolTip.PlacementTarget = CodeEditor;
+        _currentToolTip.Background = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        _currentToolTip.BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+
+        var mainPanel = new StackPanel();
+
+        // Show overload count if multiple signatures
+        if (signatures.Count > 1)
+        {
+            mainPanel.Children.Add(new TextBlock
+            {
+                Text = $"({signatures.Count} overloads)",
+                Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+        }
+
+        // Display each signature
+        foreach (var signature in signatures.Take(5)) // Limit display to 5 overloads
+        {
+            var sigPanel = new WrapPanel();
+
+            // Parse signature: "returnType methodName(params)"
+            var parenIndex = signature.IndexOf('(');
+            if (parenIndex > 0)
+            {
+                var beforeParen = signature.Substring(0, parenIndex).Trim();
+                var paramsAndClose = signature.Substring(parenIndex);
+
+                // Split return type and method name
+                var lastSpace = beforeParen.LastIndexOf(' ');
+                if (lastSpace > 0)
+                {
+                    var returnType = beforeParen.Substring(0, lastSpace).Trim();
+                    var mName = beforeParen.Substring(lastSpace + 1).Trim();
+
+                    // Return type in teal
+                    sigPanel.Children.Add(new TextBlock
+                    {
+                        Text = returnType + " ",
+                        Foreground = new SolidColorBrush(Color.FromRgb(78, 201, 176)),
+                        FontSize = 12
+                    });
+
+                    // Method name in yellow
+                    sigPanel.Children.Add(new TextBlock
+                    {
+                        Text = mName,
+                        Foreground = new SolidColorBrush(Color.FromRgb(220, 220, 170)),
+                        FontSize = 12
+                    });
+                }
+                else
+                {
+                    // No return type (constructor)
+                    sigPanel.Children.Add(new TextBlock
+                    {
+                        Text = beforeParen,
+                        Foreground = new SolidColorBrush(Color.FromRgb(78, 201, 176)),
+                        FontSize = 12
+                    });
+                }
+
+                // Parameters with syntax coloring
+                var paramText = paramsAndClose.Trim('(', ')');
+                sigPanel.Children.Add(new TextBlock
+                {
+                    Text = "(",
+                    Foreground = Brushes.White,
+                    FontSize = 12
+                });
+
+                if (!string.IsNullOrWhiteSpace(paramText))
+                {
+                    var paramParts = SplitParameters(paramText);
+                    for (int i = 0; i < paramParts.Count; i++)
+                    {
+                        var param = paramParts[i].Trim();
+                        var paramLastSpace = param.LastIndexOf(' ');
+                        if (paramLastSpace > 0)
+                        {
+                            var paramType = param.Substring(0, paramLastSpace);
+                            var paramName = param.Substring(paramLastSpace + 1);
+
+                            // Parameter type in teal
+                            sigPanel.Children.Add(new TextBlock
+                            {
+                                Text = paramType + " ",
+                                Foreground = new SolidColorBrush(Color.FromRgb(78, 201, 176)),
+                                FontSize = 12
+                            });
+
+                            // Parameter name in light blue
+                            sigPanel.Children.Add(new TextBlock
+                            {
+                                Text = paramName,
+                                Foreground = new SolidColorBrush(Color.FromRgb(156, 220, 254)),
+                                FontSize = 12
+                            });
+                        }
+                        else
+                        {
+                            sigPanel.Children.Add(new TextBlock
+                            {
+                                Text = param,
+                                Foreground = Brushes.White,
+                                FontSize = 12
+                            });
+                        }
+
+                        if (i < paramParts.Count - 1)
+                        {
+                            sigPanel.Children.Add(new TextBlock
+                            {
+                                Text = ", ",
+                                Foreground = Brushes.White,
+                                FontSize = 12
+                            });
+                        }
+                    }
+                }
+
+                sigPanel.Children.Add(new TextBlock
+                {
+                    Text = ")",
+                    Foreground = Brushes.White,
+                    FontSize = 12
+                });
+            }
+            else
+            {
+                // Fallback: display as plain text
+                sigPanel.Children.Add(new TextBlock
+                {
+                    Text = signature,
+                    Foreground = Brushes.White,
+                    FontSize = 12
+                });
+            }
+
+            mainPanel.Children.Add(sigPanel);
+        }
+
+        if (signatures.Count > 5)
+        {
+            mainPanel.Children.Add(new TextBlock
+            {
+                Text = $"... and {signatures.Count - 5} more",
+                Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+                FontSize = 11,
+                Margin = new Thickness(0, 4, 0, 0)
+            });
+        }
+
+        _currentToolTip.Content = mainPanel;
+        _currentToolTip.IsOpen = true;
+    }
+
+    private List<string> SplitParameters(string paramText)
+    {
+        var result = new List<string>();
+        int depth = 0;
+        int start = 0;
+
+        for (int i = 0; i < paramText.Length; i++)
+        {
+            char c = paramText[i];
+            if (c == '<' || c == '(' || c == '[') depth++;
+            else if (c == '>' || c == ')' || c == ']') depth--;
+            else if (c == ',' && depth == 0)
+            {
+                result.Add(paramText.Substring(start, i - start));
+                start = i + 1;
+            }
+        }
+
+        if (start < paramText.Length)
+            result.Add(paramText.Substring(start));
+
+        return result;
     }
 
     private void ShowTooltip(string message, bool isError = false)

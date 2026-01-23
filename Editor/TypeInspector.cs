@@ -584,9 +584,9 @@ public static class TypeInspector
     }
 
     /// <summary>
-    /// Get a friendly type name.
+    /// Get a friendly type name (e.g., "int" instead of "Int32", "List&lt;T&gt;" instead of "List`1").
     /// </summary>
-    private static string GetTypeName(Type type)
+    public static string GetTypeName(Type type)
     {
         if (type == typeof(void)) return "void";
         if (type == typeof(int)) return "int";
@@ -764,6 +764,30 @@ public static class TypeInspector
         if (field != null)
         {
             return FormatTypeName(field.FieldType);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Get the return type of a method on a type.
+    /// Returns the type name as a string, or null if not found.
+    /// </summary>
+    public static string? GetMethodReturnType(string typeName, string methodName)
+    {
+        var type = ResolveType(typeName);
+        if (type == null || string.IsNullOrEmpty(methodName))
+            return null;
+
+        // Check methods (instance and static)
+        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+            .Where(m => m.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (methods.Count > 0)
+        {
+            // Return the first method's return type (all overloads should have same return type typically)
+            return FormatTypeName(methods[0].ReturnType);
         }
 
         return null;

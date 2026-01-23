@@ -730,6 +730,32 @@ public static class CompletionProvider
             }
         }
 
+        // Pattern: var variableName = object.MethodCall(...) - method call on a variable
+        // Need to resolve object's type and then get the method's return type
+        var methodCallPattern = $@"\bvar\s+{escapedVarName}\s*=\s*([\w]+)\s*\.\s*(\w+)\s*\(";
+        match = Regex.Match(text, methodCallPattern);
+        if (match.Success)
+        {
+            var objectName = match.Groups[1].Value;
+            var methodName = match.Groups[2].Value;
+
+            // Skip if it's a known type (handled by factory pattern above)
+            if (!TypeInspector.IsKnownType(objectName))
+            {
+                // Resolve the object's type
+                var objectType = FindVariableType(text, objectName, allCode);
+                if (!string.IsNullOrEmpty(objectType))
+                {
+                    // Get the method's return type
+                    var methodReturnType = TypeInspector.GetMethodReturnType(objectType, methodName);
+                    if (!string.IsNullOrEmpty(methodReturnType))
+                    {
+                        return methodReturnType;
+                    }
+                }
+            }
+        }
+
         // Pattern: Type PropertyName { get; - property declaration
         var propPattern = $@"\b(\w+)\s+{escapedVarName}\s*\{{";
         match = Regex.Match(text, propPattern);
