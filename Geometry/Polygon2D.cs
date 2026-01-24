@@ -47,6 +47,7 @@ public class VPolygon : Shape, ICurve
         StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightBlue";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
         _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(GetClosedPoints());
+        BuildCurvesFromPoints();
     }
 
     public VPolygon(IEnumerable<VPoint> points)
@@ -55,6 +56,23 @@ public class VPolygon : Shape, ICurve
         StrokeColor = "LightBlue";
         FillColor = "Transparent";
         _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(GetClosedPoints());
+        BuildCurvesFromPoints();
+    }
+
+    /// <summary>
+    /// Builds the Curves list from the Points list.
+    /// Each edge becomes a VLine in the Curves collection.
+    /// </summary>
+    protected void BuildCurvesFromPoints()
+    {
+        Curves.Clear();
+        if (Points.Count < 2) return;
+
+        for (int i = 0; i < Points.Count; i++)
+        {
+            int nextIndex = (i + 1) % Points.Count;
+            Curves.Add(new VLine(Points[i], Points[nextIndex]));
+        }
     }
 
     private List<VPoint> GetClosedPoints()
@@ -581,11 +599,13 @@ public class VPolygon : Shape, ICurve
     public void AddPoint(VPoint point)
     {
         Points.Add(point);
+        BuildCurvesFromPoints();
     }
 
     public void AddPoint(double x, double y)
     {
         Points.Add(new VPoint(x, y));
+        BuildCurvesFromPoints();
     }
 
     public override void Draw()
@@ -952,6 +972,32 @@ public class VPolygon : Shape, ICurve
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Slices the polygon along an infinite construction line (VXLine).
+    /// Returns a list of resulting polygons. If the line doesn't intersect the polygon
+    /// or only touches it at one point, returns a list containing a clone of the original.
+    /// </summary>
+    /// <param name="xline">The infinite construction line to slice along</param>
+    /// <returns>List of polygons resulting from the slice operation</returns>
+    public List<VPolygon> Slice(VXLine xline)
+    {
+        var (p1, p2) = xline.GetTwoPoints();
+        return Slice(p1, p2);
+    }
+
+    /// <summary>
+    /// Slices the polygon along a ray (VRay).
+    /// Returns a list of resulting polygons. If the ray doesn't intersect the polygon
+    /// or only touches it at one point, returns a list containing a clone of the original.
+    /// </summary>
+    /// <param name="ray">The ray to slice along (treated as an infinite line)</param>
+    /// <returns>List of polygons resulting from the slice operation</returns>
+    public List<VPolygon> Slice(VRay ray)
+    {
+        // Treat the ray as an infinite line for slicing purposes
+        return Slice(ray.Origin, ray.GetPointAtDistance(1));
     }
 
     /// <summary>

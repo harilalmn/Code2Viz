@@ -527,52 +527,67 @@ public static class TypeInspector
         // since they're meant to be used as method references for delegate properties
         bool isEasingFunctions = type.Name == "EasingFunctions";
 
-        // Get properties
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-        foreach (var prop in properties)
+        // Get all types to inspect (including inherited interfaces for interface types)
+        var typesToInspect = new List<Type> { type };
+        if (type.IsInterface)
         {
-            if (seenNames.Add(prop.Name))
-            {
-                var isStatic = prop.GetMethod?.IsStatic ?? false;
-                var staticStr = isStatic ? " (static)" : "";
-                members.Add((prop.Name, $"{GetTypeName(prop.PropertyType)}{staticStr}", CompletionKind.Property));
-            }
+            // For interfaces, we need to explicitly get all inherited interfaces
+            // because reflection doesn't automatically include them
+            typesToInspect.AddRange(type.GetInterfaces());
         }
 
-        // Get fields (for constants like Math.PI)
-        var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-        foreach (var field in fields)
+        foreach (var inspectType in typesToInspect)
         {
-            if (seenNames.Add(field.Name))
+            // Get properties
+            var properties = inspectType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            foreach (var prop in properties)
             {
-                var isConst = field.IsLiteral;
-                var isStatic = field.IsStatic;
-                var modifier = isConst ? " (const)" : isStatic ? " (static)" : "";
-                members.Add((field.Name, $"{GetTypeName(field.FieldType)}{modifier}", CompletionKind.Property));
+                if (seenNames.Add(prop.Name))
+                {
+                    var isStatic = prop.GetMethod?.IsStatic ?? false;
+                    var staticStr = isStatic ? " (static)" : "";
+                    members.Add((prop.Name, $"{GetTypeName(prop.PropertyType)}{staticStr}", CompletionKind.Property));
+                }
             }
-        }
 
-        // Get methods (excluding property accessors and object methods)
-        var objectMethods = new HashSet<string> { "GetType", "ToString", "Equals", "GetHashCode", "MemberwiseClone", "Finalize" };
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName) // Exclude property accessors
-            .Where(m => !objectMethods.Contains(m.Name) || type == typeof(object))
-            .GroupBy(m => m.Name)
-            .Select(g => g.First()); // Take first overload
-
-        foreach (var method in methods)
-        {
-            if (seenNames.Add(method.Name))
+            // Get fields (for constants like Math.PI) - interfaces don't have fields
+            if (!inspectType.IsInterface)
             {
-                var isStatic = method.IsStatic;
-                var staticStr = isStatic ? " (static)" : "";
-                var returnType = GetTypeName(method.ReturnType);
-                var parameters = string.Join(", ", method.GetParameters().Select(p => $"{GetTypeName(p.ParameterType)} {p.Name}"));
-                var description = $"{returnType} {method.Name}({parameters}){staticStr}";
+                var fields = inspectType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                foreach (var field in fields)
+                {
+                    if (seenNames.Add(field.Name))
+                    {
+                        var isConst = field.IsLiteral;
+                        var isStatic = field.IsStatic;
+                        var modifier = isConst ? " (const)" : isStatic ? " (static)" : "";
+                        members.Add((field.Name, $"{GetTypeName(field.FieldType)}{modifier}", CompletionKind.Property));
+                    }
+                }
+            }
 
-                // Mark EasingFunctions methods as Delegate (no parentheses on completion)
-                var kind = isEasingFunctions ? CompletionKind.Delegate : CompletionKind.Method;
-                members.Add((method.Name, description, kind));
+            // Get methods (excluding property accessors and object methods)
+            var objectMethods = new HashSet<string> { "GetType", "ToString", "Equals", "GetHashCode", "MemberwiseClone", "Finalize" };
+            var methods = inspectType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => !m.IsSpecialName) // Exclude property accessors
+                .Where(m => !objectMethods.Contains(m.Name) || inspectType == typeof(object))
+                .GroupBy(m => m.Name)
+                .Select(g => g.First()); // Take first overload
+
+            foreach (var method in methods)
+            {
+                if (seenNames.Add(method.Name))
+                {
+                    var isStatic = method.IsStatic;
+                    var staticStr = isStatic ? " (static)" : "";
+                    var returnType = GetTypeName(method.ReturnType);
+                    var parameters = string.Join(", ", method.GetParameters().Select(p => $"{GetTypeName(p.ParameterType)} {p.Name}"));
+                    var description = $"{returnType} {method.Name}({parameters}){staticStr}";
+
+                    // Mark EasingFunctions methods as Delegate (no parentheses on completion)
+                    var kind = isEasingFunctions ? CompletionKind.Delegate : CompletionKind.Method;
+                    members.Add((method.Name, description, kind));
+                }
             }
         }
 
@@ -752,18 +767,31 @@ public static class TypeInspector
         if (type == null || string.IsNullOrEmpty(memberName))
             return null;
 
-        // Check properties (instance and static, including inherited)
-        var property = type.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-        if (property != null)
+        // Get all types to inspect (including inherited interfaces for interface types)
+        var typesToInspect = new List<Type> { type };
+        if (type.IsInterface)
         {
-            return FormatTypeName(property.PropertyType);
+            typesToInspect.AddRange(type.GetInterfaces());
         }
 
-        // Check fields (instance and static, including inherited)
-        var field = type.GetField(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-        if (field != null)
+        foreach (var inspectType in typesToInspect)
         {
-            return FormatTypeName(field.FieldType);
+            // Check properties (instance and static, including inherited)
+            var property = inspectType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            if (property != null)
+            {
+                return FormatTypeName(property.PropertyType);
+            }
+
+            // Check fields (instance and static, including inherited) - interfaces don't have fields
+            if (!inspectType.IsInterface)
+            {
+                var field = inspectType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                if (field != null)
+                {
+                    return FormatTypeName(field.FieldType);
+                }
+            }
         }
 
         return null;
@@ -779,15 +807,25 @@ public static class TypeInspector
         if (type == null || string.IsNullOrEmpty(methodName))
             return null;
 
-        // Check methods (instance and static)
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-            .Where(m => m.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        if (methods.Count > 0)
+        // Get all types to inspect (including inherited interfaces for interface types)
+        var typesToInspect = new List<Type> { type };
+        if (type.IsInterface)
         {
-            // Return the first method's return type (all overloads should have same return type typically)
-            return FormatTypeName(methods[0].ReturnType);
+            typesToInspect.AddRange(type.GetInterfaces());
+        }
+
+        foreach (var inspectType in typesToInspect)
+        {
+            // Check methods (instance and static)
+            var methods = inspectType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (methods.Count > 0)
+            {
+                // Return the first method's return type (all overloads should have same return type typically)
+                return FormatTypeName(methods[0].ReturnType);
+            }
         }
 
         return null;
@@ -852,16 +890,33 @@ public static class TypeInspector
         if (type == null)
             return signatures;
 
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-            .Where(m => m.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        foreach (var method in methods)
+        // Get all types to inspect (including inherited interfaces for interface types)
+        var typesToInspect = new List<Type> { type };
+        if (type.IsInterface)
         {
-            var parameters = method.GetParameters();
-            var paramStr = string.Join(", ", parameters.Select(p => $"{GetTypeName(p.ParameterType)} {p.Name}"));
-            var staticStr = method.IsStatic ? "static " : "";
-            signatures.Add($"{staticStr}{GetTypeName(method.ReturnType)} {method.Name}({paramStr})");
+            typesToInspect.AddRange(type.GetInterfaces());
+        }
+
+        var seenSignatures = new HashSet<string>();
+
+        foreach (var inspectType in typesToInspect)
+        {
+            var methods = inspectType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var method in methods)
+            {
+                var parameters = method.GetParameters();
+                var paramStr = string.Join(", ", parameters.Select(p => $"{GetTypeName(p.ParameterType)} {p.Name}"));
+                var staticStr = method.IsStatic ? "static " : "";
+                var signature = $"{staticStr}{GetTypeName(method.ReturnType)} {method.Name}({paramStr})";
+
+                if (seenSignatures.Add(signature))
+                {
+                    signatures.Add(signature);
+                }
+            }
         }
 
         return signatures;

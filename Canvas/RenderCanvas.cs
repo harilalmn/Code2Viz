@@ -124,7 +124,7 @@ public class RenderCanvas : FrameworkElement
 
     // Brush cache for performance
     private static readonly Dictionary<string, Brush> _brushCache = new();
-    private static readonly Dictionary<(string color, double thickness), Pen> _penCache = new();
+    private static readonly Dictionary<(string color, double thickness, StrokeStyle style), Pen> _penCache = new();
 
     // Pre-frozen brushes for common colors
     // Removed static BackgroundBrush to allow dynamic changes
@@ -611,17 +611,40 @@ public class RenderCanvas : FrameworkElement
         }
     }
 
-    private static Pen GetCachedPen(string colorName, double thickness)
+    private static Pen GetCachedPen(string colorName, double thickness, StrokeStyle style = StrokeStyle.Continuous)
     {
-        var key = (colorName, thickness);
+        var key = (colorName, thickness, style);
         if (_penCache.TryGetValue(key, out var cached))
             return cached;
 
         var brush = GetCachedBrush(colorName);
         var pen = new Pen(brush, thickness);
+
+        // Apply dash pattern based on stroke style
+        if (style != StrokeStyle.Continuous)
+        {
+            pen.DashStyle = GetDashStyle(style);
+            pen.DashCap = PenLineCap.Round;
+        }
+
         pen.Freeze();
         _penCache[key] = pen;
         return pen;
+    }
+
+    private static DashStyle GetDashStyle(StrokeStyle style)
+    {
+        return style switch
+        {
+            StrokeStyle.Dashed => new DashStyle(new double[] { 4, 2 }, 0),
+            StrokeStyle.Dotted => new DashStyle(new double[] { 1, 2 }, 0),
+            StrokeStyle.DashDot => new DashStyle(new double[] { 4, 2, 1, 2 }, 0),
+            StrokeStyle.DashDotDot => new DashStyle(new double[] { 4, 2, 1, 2, 1, 2 }, 0),
+            StrokeStyle.Center => new DashStyle(new double[] { 6, 2, 2, 2 }, 0),
+            StrokeStyle.Phantom => new DashStyle(new double[] { 6, 2, 2, 2, 2, 2 }, 0),
+            StrokeStyle.Hidden => new DashStyle(new double[] { 2, 2 }, 0),
+            _ => DashStyles.Solid
+        };
     }
 
     private void RedrawAll()
@@ -675,6 +698,14 @@ public class RenderCanvas : FrameworkElement
 
                 case VLine line:
                     DrawLine(dc, line);
+                    break;
+
+                case VXLine xline:
+                    DrawXLine(dc, xline);
+                    break;
+
+                case VRay ray:
+                    DrawRay(dc, ray);
                     break;
 
                 case VArc arc:
@@ -1520,7 +1551,7 @@ public class RenderCanvas : FrameworkElement
         // Apply offset for move animation
         var screenPos = WorldToScreen(point.X + point.OffsetX, point.Y + point.OffsetY);
         var fill = GetCachedBrush(point.FillColor);
-        var pen = GetCachedPen(point.StrokeColor, point.StrokeThickness);
+        var pen = GetCachedPen(point.StrokeColor, point.StrokeThickness, point.StrokeStyle);
 
         dc.DrawEllipse(fill, pen, screenPos, PointRadius, PointRadius);
 
@@ -1549,7 +1580,7 @@ public class RenderCanvas : FrameworkElement
 
         var start = WorldToScreen(line.Start.X + offsetX, line.Start.Y + offsetY);
         var end = WorldToScreen(line.End.X + offsetX, line.End.Y + offsetY);
-        var pen = GetCachedPen(line.StrokeColor, line.StrokeThickness);
+        var pen = GetCachedPen(line.StrokeColor, line.StrokeThickness, line.StrokeStyle);
 
         // Apply DrawFactor for animation (partial line drawing)
         if (line.DrawFactor < 1.0)
@@ -1563,6 +1594,95 @@ public class RenderCanvas : FrameworkElement
 
         if (applyRotation) dc.Pop();
         if (applyOpacity) dc.Pop();
+    }
+
+    private void DrawXLine(DrawingContext dc, VXLine xline)
+    {
+        if (xline.DrawFactor <= 0 || xline.Opacity <= 0) return;
+
+        var applyOpacity = xline.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(xline.Opacity);
+
+        // Apply offset for move animation
+        var offsetX = xline.OffsetX;
+        var offsetY = xline.OffsetY;
+
+        // Get the visible canvas bounds in world coordinates
+        var (minWorld, maxWorld) = GetVisibleWorldBounds();
+
+        // Calculate intersection of the infinite line with a large bounding box
+        // Use the larger of the render extent or canvas bounds
+        double extent = Math.Max(xline.RenderExtent, Math.Max(maxWorld.X - minWorld.X, maxWorld.Y - minWorld.Y) * 2);
+
+        var p1 = xline.GetPointAtParameter(-extent);
+        var p2 = xline.GetPointAtParameter(extent);
+
+        var start = WorldToScreen(p1.X + offsetX, p1.Y + offsetY);
+        var end = WorldToScreen(p2.X + offsetX, p2.Y + offsetY);
+        var pen = GetCachedPen(xline.StrokeColor, xline.StrokeThickness, xline.StrokeStyle);
+
+        // Apply DrawFactor for animation
+        if (xline.DrawFactor < 1.0)
+        {
+            var dx = end.X - start.X;
+            var dy = end.Y - start.Y;
+            var midX = (start.X + end.X) / 2;
+            var midY = (start.Y + end.Y) / 2;
+            start = new Point(midX - dx * xline.DrawFactor / 2, midY - dy * xline.DrawFactor / 2);
+            end = new Point(midX + dx * xline.DrawFactor / 2, midY + dy * xline.DrawFactor / 2);
+        }
+
+        dc.DrawLine(pen, start, end);
+
+        if (applyOpacity) dc.Pop();
+    }
+
+    private void DrawRay(DrawingContext dc, VRay ray)
+    {
+        if (ray.DrawFactor <= 0 || ray.Opacity <= 0) return;
+
+        var applyOpacity = ray.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(ray.Opacity);
+
+        // Apply offset for move animation
+        var offsetX = ray.OffsetX;
+        var offsetY = ray.OffsetY;
+
+        // Get the visible canvas bounds in world coordinates
+        var (minWorld, maxWorld) = GetVisibleWorldBounds();
+
+        // Calculate extent based on render extent or canvas size
+        double extent = Math.Max(ray.RenderExtent, Math.Max(maxWorld.X - minWorld.X, maxWorld.Y - minWorld.Y) * 2);
+
+        var p1 = ray.Origin;
+        var p2 = ray.GetPointAtDistance(extent);
+
+        var start = WorldToScreen(p1.X + offsetX, p1.Y + offsetY);
+        var end = WorldToScreen(p2.X + offsetX, p2.Y + offsetY);
+        var pen = GetCachedPen(ray.StrokeColor, ray.StrokeThickness, ray.StrokeStyle);
+
+        // Apply DrawFactor for animation (draws from origin outward)
+        if (ray.DrawFactor < 1.0)
+        {
+            var dx = end.X - start.X;
+            var dy = end.Y - start.Y;
+            end = new Point(start.X + dx * ray.DrawFactor, start.Y + dy * ray.DrawFactor);
+        }
+
+        dc.DrawLine(pen, start, end);
+
+        if (applyOpacity) dc.Pop();
+    }
+
+    private (VPoint min, VPoint max) GetVisibleWorldBounds()
+    {
+        var minScreen = new Point(0, 0);
+        var maxScreen = new Point(ActualWidth, ActualHeight);
+        var minWorld = ScreenToWorld(minScreen.X, minScreen.Y);
+        var maxWorld = ScreenToWorld(maxScreen.X, maxScreen.Y);
+        // Swap Y values since screen Y is inverted
+        return (new VPoint(Math.Min(minWorld.X, maxWorld.X), Math.Min(minWorld.Y, maxWorld.Y)),
+                new VPoint(Math.Max(minWorld.X, maxWorld.X), Math.Max(minWorld.Y, maxWorld.Y)));
     }
 
     private void DrawArc(DrawingContext dc, VArc arc)
@@ -1595,7 +1715,7 @@ public class RenderCanvas : FrameworkElement
         var isLargeArc = angleDiff > 180;
 
         var screenRadius = arc.Radius * _viewport.Scale;
-        var pen = GetCachedPen(arc.StrokeColor, arc.StrokeThickness);
+        var pen = GetCachedPen(arc.StrokeColor, arc.StrokeThickness, arc.StrokeStyle);
 
         // Use StreamGeometry for better performance
         var geometry = new StreamGeometry();
@@ -1633,7 +1753,7 @@ public class RenderCanvas : FrameworkElement
         var centerScreen = WorldToScreen(circle.Center.X + offsetX, circle.Center.Y + offsetY);
         var screenRadius = circle.Radius * _viewport.Scale;
         var fill = GetCachedBrush(circle.FillColor);
-        var pen = GetCachedPen(circle.StrokeColor, circle.StrokeThickness);
+        var pen = GetCachedPen(circle.StrokeColor, circle.StrokeThickness, circle.StrokeStyle);
 
         // Apply DrawFactor - draw as arc from 0 to DrawFactor*360 degrees
         if (circle.DrawFactor < 1.0)
@@ -1679,7 +1799,7 @@ public class RenderCanvas : FrameworkElement
         var offsetY = rect.OffsetY;
 
         var fill = GetCachedBrush(rect.FillColor);
-        var pen = GetCachedPen(rect.StrokeColor, rect.StrokeThickness);
+        var pen = GetCachedPen(rect.StrokeColor, rect.StrokeThickness, rect.StrokeStyle);
 
         // If rectangle has internal rotation, draw as polygon
         if (Math.Abs(rect.RotationAngle) > 1e-9)
@@ -1778,7 +1898,7 @@ public class RenderCanvas : FrameworkElement
         var screenRadiusX = ellipse.RadiusX * _viewport.Scale;
         var screenRadiusY = ellipse.RadiusY * _viewport.Scale;
         var fill = GetCachedBrush(ellipse.FillColor);
-        var pen = GetCachedPen(ellipse.StrokeColor, ellipse.StrokeThickness);
+        var pen = GetCachedPen(ellipse.StrokeColor, ellipse.StrokeThickness, ellipse.StrokeStyle);
 
         dc.DrawEllipse(fill, pen, centerScreen, screenRadiusX, screenRadiusY);
 
@@ -1797,7 +1917,7 @@ public class RenderCanvas : FrameworkElement
         var offsetY = polygon.OffsetY;
 
         var fill = GetCachedBrush(polygon.FillColor);
-        var pen = GetCachedPen(polygon.StrokeColor, polygon.StrokeThickness);
+        var pen = GetCachedPen(polygon.StrokeColor, polygon.StrokeThickness, polygon.StrokeStyle);
 
         // Apply DrawFactor - draw partial polygon outline
         var totalSegments = polygon.Points.Count; // includes closing segment
@@ -1851,7 +1971,7 @@ public class RenderCanvas : FrameworkElement
         var offsetX = polyline.OffsetX;
         var offsetY = polyline.OffsetY;
 
-        var pen = GetCachedPen(polyline.StrokeColor, polyline.StrokeThickness);
+        var pen = GetCachedPen(polyline.StrokeColor, polyline.StrokeThickness, polyline.StrokeStyle);
 
         // Apply DrawFactor - draw partial polyline
         var totalSegments = polyline.Points.Count - 1;
@@ -1932,7 +2052,7 @@ public class RenderCanvas : FrameworkElement
         var offsetX = bezier.OffsetX;
         var offsetY = bezier.OffsetY;
 
-        var pen = GetCachedPen(bezier.StrokeColor, bezier.StrokeThickness);
+        var pen = GetCachedPen(bezier.StrokeColor, bezier.StrokeThickness, bezier.StrokeStyle);
         var points = bezier.GetRenderPoints();
         if (points.Count < 2)
         {
@@ -1968,7 +2088,7 @@ public class RenderCanvas : FrameworkElement
         var applyOpacity = spline.Opacity < 1.0;
         if (applyOpacity) dc.PushOpacity(spline.Opacity);
 
-        var pen = GetCachedPen(spline.StrokeColor, spline.StrokeThickness);
+        var pen = GetCachedPen(spline.StrokeColor, spline.StrokeThickness, spline.StrokeStyle);
         var points = spline.GetRenderPoints();
         if (points.Count < 2)
         {
@@ -2008,7 +2128,7 @@ public class RenderCanvas : FrameworkElement
             dc.PushTransform(new RotateTransform(-arrow.RotationAngle, pivot.X, pivot.Y));
         }
 
-        var pen = GetCachedPen(arrow.StrokeColor, arrow.StrokeThickness);
+        var pen = GetCachedPen(arrow.StrokeColor, arrow.StrokeThickness, arrow.StrokeStyle);
         var brush = GetCachedBrush(arrow.StrokeColor);  // Use stroke color for filled arrowhead
         var start = WorldToScreen(arrow.Start.X + arrow.OffsetX, arrow.Start.Y + arrow.OffsetY);
         var fullEnd = WorldToScreen(arrow.End.X + arrow.OffsetX, arrow.End.Y + arrow.OffsetY);
@@ -2088,7 +2208,7 @@ public class RenderCanvas : FrameworkElement
         var applyOpacity = dim.Opacity < 1.0;
         if (applyOpacity) dc.PushOpacity(dim.Opacity);
 
-        var pen = GetCachedPen(dim.StrokeColor, dim.StrokeThickness);
+        var pen = GetCachedPen(dim.StrokeColor, dim.StrokeThickness, dim.StrokeStyle);
         var (dimStart, dimEnd, textPos, ext1Start, ext1End, ext2Start, ext2End) = dim.GetDimensionGeometry();
 
         // Draw dimension line

@@ -43,10 +43,12 @@ namespace Code2Viz.Documentation
                 // Shapes
                 { "VArc", "Represents a 2D arc defined by a center point, radius, start angle, and end angle (in degrees). The arc is drawn counter-clockwise from start to end angle." },
                 { "VCircle", "Represents a 2D circle defined by a center point and a radius. Can be filled and/or stroked." },
-                { "VRectangle", "Represents a 2D axis-aligned rectangle defined by a corner point (bottom-left), width, and height." },
+                { "VRectangle", "Represents a 2D rectangle defined by a corner point (bottom-left), width, and height. Inherits from VPolygon, so all polygon methods (Area, Slice, etc.) are available. Supports rotation via RotationAngle property. Can also be created from two corner points (bottom-left and top-right)." },
                 { "VPolygon", "Represents a closed 2D polygon defined by a list of vertices. Automatically closes the shape by connecting last point to first." },
                 { "VPolyline", "Represents an open sequence of connected line segments. Unlike polygon, does not close automatically." },
                 { "VLine", "Represents a straight line segment between two points. The most basic geometric primitive." },
+                { "VXLine", "Represents an infinite construction line (like AutoCAD's XLine). Extends infinitely in both directions through a base point along a direction. Useful for construction geometry and slicing polygons. Static helpers: Horizontal(y), Vertical(x)." },
+                { "VRay", "Represents a semi-infinite ray (like AutoCAD's Ray). Starts at an origin point and extends infinitely in one direction. Static helpers: HorizontalRight, HorizontalLeft, VerticalUp, VerticalDown, AtAngle." },
                 { "VEllipse", "Represents a 2D ellipse defined by a center point, X radius (horizontal), and Y radius (vertical)." },
                 { "VPoint", "Represents a point in 2D Cartesian space (X, Y). Can be drawn as a small dot on the canvas." },
                 { "VBezier", "Represents a 2D cubic Bezier curve defined by four control points: start, control1, control2, and end." },
@@ -78,7 +80,8 @@ namespace Code2Viz.Documentation
                 { "VTransform", "Represents a 3D transformation matrix for rotation and reflection operations." },
                 { "VCoordinateSystem", "Represents a 3D coordinate system with origin and orthonormal basis vectors (X, Y, Z axes)." },
                 { "GeometryHelper", "Static helper class providing common geometric algorithms like intersection, projection, distance calculations, and angle measurements." },
-                { "ShapeDefaults", "Static class holding global default settings for shapes (GlobalStrokeColor, GlobalFillColor, GlobalStrokeThickness). These are populated from Project Settings." },
+                { "ShapeDefaults", "Static class holding global default settings for shapes (GlobalStrokeColor, GlobalFillColor, GlobalStrokeThickness, GlobalStrokeStyle). These are populated from Project Settings." },
+                { "StrokeStyle", "Enum defining the stroke style (line pattern) for shape outlines. Options: Continuous (solid, default), Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden." },
                 { "VColor", "Static utility class for easy color access and random color generation. Provides named color properties (Red, Blue, Green, etc.), GetRandomColor(pastel) for random colors, FromRgb/FromArgb for custom colors. Use with StrokeColor and FillColor properties." },
                 { "ColorName", "Enum containing common color names (Red, Green, Blue, Yellow, Orange, etc.). Use VColor.FromEnum(ColorName.Red) to convert to string." },
 
@@ -399,8 +402,10 @@ namespace Code2Viz.Documentation
             {
                 { "VPoint", "let p = VPoint(100.0, 200.0)" },
                 { "VLine", "let start = VPoint(0.0, 0.0)\nlet endP = VPoint(200.0, 200.0)\nlet line = VLine(start, endP)\nline.StrokeColor <- \"#00FF00\"\nline.StrokeThickness <- 2.0\nline.Draw()" },
+                { "VXLine", "// Infinite construction line\nlet xline = VXLine(VPoint(0.0, 0.0), VXYZ(1.0, 1.0, 0.0))\nxline.StrokeColor <- \"Gray\"\nxline.Draw()\n\n// Horizontal and vertical helpers\nlet hLine = VXLine.Horizontal(100.0)\nlet vLine = VXLine.Vertical(50.0)\nhLine.Draw()\nvLine.Draw()" },
+                { "VRay", "// Semi-infinite ray\nlet ray = VRay(VPoint(0.0, 0.0), VXYZ(1.0, 0.5, 0.0))\nray.StrokeColor <- \"Orange\"\nray.Draw()\n\n// Static helpers\nlet rightRay = VRay.HorizontalRight(VPoint(0.0, 0.0))\nlet angledRay = VRay.AtAngle(VPoint(0.0, 0.0), 45.0)\nrightRay.Draw()\nangledRay.Draw()" },
                 { "VCircle", "let center = VPoint(300.0, 200.0)\nlet radius = 50.0\nlet circle = VCircle(center, radius)\ncircle.FillColor <- \"Blue\"\ncircle.Draw()" },
-                { "VRectangle", "let rect = VRectangle(VPoint(50.0, 50.0), 150.0, 100.0)\nrect.FillColor <- \"#800000FF\"\nrect.Draw()" },
+                { "VRectangle", "let rect = VRectangle(VPoint(50.0, 50.0), 150.0, 100.0)\nrect.FillColor <- \"#800000FF\"\nrect.Draw()\n\n// Create from two corner points (bottom-left and top-right)\nlet rect2 = VRectangle(VPoint(0.0, 0.0), VPoint(100.0, 75.0))\nrect2.Draw()" },
                 { "VEllipse", "let ellipse = VEllipse(VPoint(400.0, 300.0), 80.0, 40.0)\nellipse.StrokeThickness <- 3.0\nellipse.Draw()" },
                 { "VArc", "let arc = VArc(VPoint(200.0, 200.0), 100.0, 0.0, 180.0)\narc.Draw()" },
                 { "VPolygon", "let pts = [| VPoint(100.0,100.0); VPoint(200.0,100.0); VPoint(150.0,200.0) |]\nlet poly = VPolygon(pts)\npoly.FillColor <- \"Yellow\"\npoly.Draw()" },
@@ -672,6 +677,48 @@ line.Draw();
 var line2 = new VLine(0, 100, 150, 100);
 line2.Draw();" },
 
+                { "VXLine", @"// Create an infinite construction line through a point with direction
+var xline = new VXLine(new VPoint(0, 0), new VXYZ(1, 1, 0));
+xline.StrokeColor = ""Gray"";
+xline.Draw();
+
+// Create from two points (line passes through both, extends infinitely)
+var xline2 = new VXLine(new VPoint(0, 50), new VPoint(100, 50));
+xline2.Draw();
+
+// Static helpers for horizontal and vertical lines
+var hLine = VXLine.Horizontal(100);  // Horizontal at Y=100
+var vLine = VXLine.Vertical(50);     // Vertical at X=50
+hLine.Draw();
+vLine.Draw();
+
+// Use for slicing polygons
+var polygon = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var sliced = polygon.Slice(xline);
+foreach (var p in sliced) p.Draw();" },
+
+                { "VRay", @"// Create a ray from origin in a direction
+var ray = new VRay(new VPoint(0, 0), new VXYZ(1, 0.5, 0));
+ray.StrokeColor = ""Orange"";
+ray.Draw();
+
+// Create from origin through a point
+var ray2 = new VRay(new VPoint(50, 50), new VPoint(100, 75));
+ray2.Draw();
+
+// Static helpers for common rays
+var rightRay = VRay.HorizontalRight(new VPoint(0, 0));
+var upRay = VRay.VerticalUp(new VPoint(100, 0));
+var angledRay = VRay.AtAngle(new VPoint(0, 0), 45);  // 45 degrees from origin
+rightRay.Draw();
+upRay.Draw();
+angledRay.Draw();
+
+// Use for slicing polygons
+var polygon = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var sliced = polygon.Slice(ray);
+foreach (var p in sliced) p.Draw();" },
+
                 { "VCircle", @"// Create a circle with center and radius
 var circle = new VCircle(new VPoint(50, 50), 30);
 circle.StrokeColor = ""Yellow"";
@@ -697,7 +744,16 @@ rect.Draw();
 
 // Or using coordinates
 var rect2 = new VRectangle(100, 0, 60, 40);
-rect2.Draw();" },
+rect2.Draw();
+
+// Create from two corner points (bottom-left and top-right)
+var bottomLeft = new VPoint(0, 0);
+var topRight = new VPoint(100, 75);
+var rect3 = new VRectangle(bottomLeft, topRight);
+rect3.Draw();
+
+// VRectangle inherits from VPolygon, so all polygon methods work
+double area = rect.Area;  // Signed area from VPolygon" },
 
                 { "VEllipse", @"// Create an ellipse with center and radii
 var ellipse = new VEllipse(new VPoint(100, 100), 60, 30);
@@ -873,6 +929,7 @@ var reflection = VTransform.CreateReflection(plane);" },
 ShapeDefaults.GlobalStrokeColor = ""Cyan"";
 ShapeDefaults.GlobalFillColor = ""#20FFFFFF"";
 ShapeDefaults.GlobalStrokeThickness = 2.0;
+ShapeDefaults.GlobalStrokeStyle = StrokeStyle.Continuous;
 
 // Now all new shapes use these defaults
 var circle = new VCircle(0, 0, 50);  // Uses Cyan stroke
@@ -881,12 +938,40 @@ circle.Draw();
 // Reset to original defaults
 ShapeDefaults.Reset();" },
 
+                { "StrokeStyle", @"// StrokeStyle controls the line pattern for shape outlines
+
+// Solid line (default)
+var line1 = new VLine(0, 0, 100, 0);
+line1.StrokeStyle = StrokeStyle.Continuous;
+line1.Draw();
+
+// Dashed line
+var line2 = new VLine(0, 20, 100, 20);
+line2.StrokeStyle = StrokeStyle.Dashed;
+line2.Draw();
+
+// Dotted line
+var line3 = new VLine(0, 40, 100, 40);
+line3.StrokeStyle = StrokeStyle.Dotted;
+line3.Draw();
+
+// Dash-dot pattern (commonly used for centerlines)
+var line4 = new VLine(0, 60, 100, 60);
+line4.StrokeStyle = StrokeStyle.DashDot;
+line4.Draw();
+
+// Hidden line (short dashes for hidden edges)
+var rect = new VRectangle(0, 100, 80, 50);
+rect.StrokeStyle = StrokeStyle.Hidden;
+rect.Draw();" },
+
                 { "Shape", @"// Shape is the base class for all drawable shapes
 // Common properties available on all shapes:
 
 shape.StrokeColor = ""Cyan"";           // Outline color
 shape.FillColor = ""Transparent"";      // Fill color
 shape.StrokeThickness = 2.0;           // Line thickness
+shape.StrokeStyle = StrokeStyle.Continuous;  // Line pattern (Continuous, Dashed, Dotted, etc.)
 
 // Animation properties
 shape.DrawFactor = 1.0;    // 0-1, for progressive drawing
@@ -1242,23 +1327,107 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VCircle.Intersect", "Computes intersection with another curve." },
                 { "VCircle.ToString", "Returns a string representation of the circle." },
 
-                // VRectangle Properties
-                { "VRectangle.Corner", "Gets or sets the bottom-left corner point of the rectangle." },
-                { "VRectangle.Width", "Gets or sets the width of the rectangle (along X axis)." },
-                { "VRectangle.Height", "Gets or sets the height of the rectangle (along Y axis)." },
-                { "VRectangle.Area", "Gets the area of the rectangle (Width × Height)." },
+                // VXLine Properties (infinite construction line)
+                { "VXLine.BasePoint", "Gets or sets the base point that the infinite line passes through." },
+                { "VXLine.Direction", "Gets or sets the direction vector of the line (normalized)." },
+                { "VXLine.RenderExtent", "Gets or sets the extent used for rendering (default: 10000). Points at ±RenderExtent define the visual segment." },
+                { "VXLine.StartPoint", "Gets a point far in the negative direction (for rendering)." },
+                { "VXLine.EndPoint", "Gets a point far in the positive direction (for rendering)." },
+                { "VXLine.SelfIntersecting", "Always returns false (infinite lines cannot self-intersect)." },
+                { "VXLine.Vertices", "Gets the base point as the only vertex." },
+
+                // VXLine Constructors
+                { "VXLine(VPoint, VXYZ)", "Creates an infinite line through a base point in the specified direction." },
+                { "VXLine(VPoint, VPoint)", "Creates an infinite line passing through two points." },
+                { "VXLine(double, double, double, double)", "Creates an infinite line through two points specified by coordinates." },
+
+                // VXLine Static Methods
+                { "VXLine.Horizontal", "Creates a horizontal infinite line at the specified Y coordinate." },
+                { "VXLine.Vertical", "Creates a vertical infinite line at the specified X coordinate." },
+
+                // VXLine Methods
+                { "VXLine.Draw", "Renders the infinite line to the canvas (clipped to render extent)." },
+                { "VXLine.Clone", "Creates a deep copy of this infinite line." },
+                { "VXLine.Move", "Translates the line by moving the base point." },
+                { "VXLine.Rotate", "Rotates the line around the specified pivot by the given angle in degrees." },
+                { "VXLine.Flip", "Mirrors the line across the specified axis line." },
+                { "VXLine.Scale", "Scales the line by moving the base point relative to a center." },
+                { "VXLine.GetBounds", "Returns bounds based on render extent." },
+                { "VXLine.GetLength", "Returns positive infinity (infinite line)." },
+                { "VXLine.Project", "Projects a point onto the infinite line." },
+                { "VXLine.GetPointAtParameter", "Gets a point on the line at the specified parameter (0 = BasePoint)." },
+                { "VXLine.PointAtParameter", "Returns a point at normalized parameter (0 to 1 maps to -RenderExtent to +RenderExtent)." },
+                { "VXLine.GetTwoPoints", "Gets two distinct points on the line for algorithms requiring two points." },
+                { "VXLine.ToFiniteLine", "Converts to a finite VLine segment for intersection calculations." },
+                { "VXLine.SplitAtPoint", "Splits the line at a point, returning two rays going in opposite directions." },
+                { "VXLine.Intersect", "Computes intersection with another curve." },
+                { "VXLine.ToString", "Returns a string representation of the infinite line." },
+
+                // VRay Properties (semi-infinite ray)
+                { "VRay.Origin", "Gets or sets the origin point where the ray starts." },
+                { "VRay.Direction", "Gets or sets the direction vector of the ray (normalized)." },
+                { "VRay.RenderExtent", "Gets or sets the extent used for rendering (default: 10000)." },
+                { "VRay.StartPoint", "Gets the origin (same as Origin property)." },
+                { "VRay.EndPoint", "Gets a point at RenderExtent distance from origin (for rendering)." },
+                { "VRay.SelfIntersecting", "Always returns false (rays cannot self-intersect)." },
+                { "VRay.Vertices", "Gets the origin as the only vertex." },
+
+                // VRay Constructors
+                { "VRay(VPoint, VXYZ)", "Creates a ray starting at origin in the specified direction." },
+                { "VRay(VPoint, VPoint)", "Creates a ray starting at origin passing through a second point." },
+                { "VRay(double, double, double, double)", "Creates a ray from coordinates (originX, originY, throughX, throughY)." },
+
+                // VRay Static Methods
+                { "VRay.HorizontalRight", "Creates a horizontal ray pointing right from the specified point." },
+                { "VRay.HorizontalLeft", "Creates a horizontal ray pointing left from the specified point." },
+                { "VRay.VerticalUp", "Creates a vertical ray pointing up from the specified point." },
+                { "VRay.VerticalDown", "Creates a vertical ray pointing down from the specified point." },
+                { "VRay.AtAngle", "Creates a ray at a specified angle from the origin (degrees, counter-clockwise from +X)." },
+
+                // VRay Methods
+                { "VRay.Draw", "Renders the ray to the canvas (from origin to render extent)." },
+                { "VRay.Clone", "Creates a deep copy of this ray." },
+                { "VRay.Move", "Translates the ray by moving the origin." },
+                { "VRay.Rotate", "Rotates the ray around the specified pivot by the given angle in degrees." },
+                { "VRay.Flip", "Mirrors the ray across the specified axis line." },
+                { "VRay.Scale", "Scales the ray by moving the origin relative to a center." },
+                { "VRay.GetBounds", "Returns bounds from origin to render extent." },
+                { "VRay.GetLength", "Returns positive infinity (semi-infinite ray)." },
+                { "VRay.Project", "Projects a point onto the ray. Returns origin if projection is behind the ray." },
+                { "VRay.GetPointAtDistance", "Gets a point on the ray at the specified distance from origin." },
+                { "VRay.PointAtParameter", "Returns a point at normalized parameter (0 = origin, 1 = RenderExtent)." },
+                { "VRay.ContainsPoint", "Checks if a point is on the ray (within tolerance)." },
+                { "VRay.ToFiniteLine", "Converts to a finite VLine segment for intersection calculations." },
+                { "VRay.ToXLine", "Converts to an infinite VXLine." },
+                { "VRay.SplitAtPoint", "Splits the ray at a point, returning a line segment and a continuing ray." },
+                { "VRay.Intersect", "Computes intersection with another curve." },
+                { "VRay.ToString", "Returns a string representation of the ray." },
+
+                // VRectangle Properties (inherits from VPolygon)
+                { "VRectangle.Corner", "Gets or sets the bottom-left corner point of the rectangle. Setting this updates the underlying polygon points." },
+                { "VRectangle.Width", "Gets or sets the width of the rectangle (along X axis). Setting this updates the underlying polygon points." },
+                { "VRectangle.Height", "Gets or sets the height of the rectangle (along Y axis). Setting this updates the underlying polygon points." },
+                { "VRectangle.RotationAngle", "Gets or sets the rotation angle in degrees (counter-clockwise) for the rectangle's intrinsic orientation." },
+                { "VRectangle.Area", "Inherited from VPolygon. Gets the signed area using the shoelace formula. Positive for counter-clockwise vertices." },
+                { "VRectangle.Points", "Inherited from VPolygon. Gets the four corner vertices as a list of VPoints." },
+
+                // VRectangle Constructors
+                { "VRectangle(VPoint, double, double)", "Creates a rectangle from a corner point, width, and height." },
+                { "VRectangle(double, double, double, double)", "Creates a rectangle from x, y coordinates, width, and height." },
+                { "VRectangle(VPoint, VPoint)", "Creates a rectangle from two corner points (bottom-left and top-right)." },
 
                 // VRectangle Methods
                 { "VRectangle.Draw", "Renders the rectangle to the canvas." },
                 { "VRectangle.Clone", "Creates a deep copy of this rectangle with all properties duplicated." },
                 { "VRectangle.Move", "Translates the rectangle by the specified displacement vector." },
-                { "VRectangle.Rotate", "Rotates the rectangle around the specified pivot by the given angle in degrees." },
+                { "VRectangle.Rotate", "Rotates the rectangle around the specified pivot by the given angle in degrees. Also accumulates the RotationAngle." },
                 { "VRectangle.Flip", "Mirrors the rectangle across the specified axis line." },
                 { "VRectangle.Scale", "Scales the rectangle relative to a center point by the specified factor." },
                 { "VRectangle.GetBounds", "Returns the axis-aligned bounding box of the rectangle." },
-                { "VRectangle.Contains", "Returns true if the specified point is inside or on the rectangle." },
+                { "VRectangle.Contains", "Returns true if the specified point is inside or on the rectangle. Uses simple bounds check for axis-aligned, polygon containment for rotated." },
                 { "VRectangle.DistanceTo", "Returns the minimum distance from the rectangle to the specified point." },
                 { "VRectangle.PointAtParameter", "Returns a point on the rectangle perimeter at the given normalized parameter (0 to 1)." },
+                { "VRectangle.Slice", "Inherited from VPolygon. Slices the rectangle along an infinite line defined by two points." },
                 { "VRectangle.ToString", "Returns a string representation of the rectangle." },
 
                 // VArc Properties
@@ -1465,6 +1634,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "Shape.StrokeColor", "Gets or sets the outline/stroke color as a string (named color or hex code like '#FF0000' or '#80FF0000')." },
                 { "Shape.FillColor", "Gets or sets the fill color as a string. Use 'Transparent' for no fill." },
                 { "Shape.StrokeThickness", "Gets or sets the thickness of the outline stroke in pixels." },
+                { "Shape.StrokeStyle", "Gets or sets the stroke style (line pattern). Options: Continuous (solid), Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden." },
                 { "Shape.DrawFactor", "Gets or sets the draw factor (0.0 to 1.0) for progressive drawing animations." },
                 { "Shape.OffsetX", "Gets or sets the X offset for translation animations." },
                 { "Shape.OffsetY", "Gets or sets the Y offset for translation animations." },
@@ -1664,7 +1834,18 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "ShapeDefaults.GlobalStrokeColor", "Gets or sets the default stroke color for new shapes." },
                 { "ShapeDefaults.GlobalFillColor", "Gets or sets the default fill color for new shapes." },
                 { "ShapeDefaults.GlobalStrokeThickness", "Gets or sets the default stroke thickness for new shapes." },
+                { "ShapeDefaults.GlobalStrokeStyle", "Gets or sets the default stroke style for new shapes. Options: Continuous, Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden." },
                 { "ShapeDefaults.Reset", "Resets all global defaults to their original values." },
+
+                // StrokeStyle enum values
+                { "StrokeStyle.Continuous", "Solid continuous line (default). Standard line with no gaps." },
+                { "StrokeStyle.Dashed", "Dashed line pattern with long dashes and short gaps." },
+                { "StrokeStyle.Dotted", "Dotted line pattern with short dots and gaps." },
+                { "StrokeStyle.DashDot", "Alternating dash and dot pattern (dash-dot-dash-dot)." },
+                { "StrokeStyle.DashDotDot", "Alternating dash and two dots pattern (dash-dot-dot-dash)." },
+                { "StrokeStyle.Center", "Center line pattern (long-short-long), commonly used for centerlines in technical drawings." },
+                { "StrokeStyle.Phantom", "Phantom line pattern (long-short-short), used for alternate positions or hidden features." },
+                { "StrokeStyle.Hidden", "Hidden line pattern with short dashes, used for hidden edges in technical drawings." },
 
                 // VCoordinateSystem
                 { "VCoordinateSystem.Origin", "Gets or sets the origin point of the coordinate system." },

@@ -24,6 +24,11 @@ public static class ShapeDefaults
     public static double? GlobalStrokeThickness { get; set; } = null;
 
     /// <summary>
+    /// Global default stroke style. If null, shapes use default (Continuous).
+    /// </summary>
+    public static StrokeStyle? GlobalStrokeStyle { get; set; } = null;
+
+    /// <summary>
     /// Resets defaults to initial state (nulls).
     /// </summary>
     public static void Reset()
@@ -31,5 +36,6 @@ public static class ShapeDefaults
         GlobalStrokeColor = null;
         GlobalFillColor = null;
         GlobalStrokeThickness = null;
+        GlobalStrokeStyle = null;
     }
 }

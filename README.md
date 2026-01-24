@@ -61,8 +61,10 @@ Press **F5** or click the **Run** button to execute and see results on the canva
 |-------|-------------|---------------------|
 | **VPoint** | A point marker | `new VPoint(x, y)` |
 | **VLine** | A line segment | `new VLine(p1, p2)` or `new VLine(x1, y1, x2, y2)` |
+| **VXLine** | An infinite construction line | `new VXLine(basePoint, direction)` or `new VXLine(p1, p2)` |
+| **VRay** | A semi-infinite ray | `new VRay(origin, direction)` or `new VRay(origin, throughPoint)` |
 | **VCircle** | A circle | `new VCircle(center, radius)` or `new VCircle(x, y, radius)` or `new VCircle(p1, p2, p3)` (circumcircle) |
-| **VRectangle** | A rectangle | `new VRectangle(corner, width, height)` |
+| **VRectangle** | A rectangle (inherits from VPolygon) | `new VRectangle(corner, width, height)` or `new VRectangle(bottomLeft, topRight)` |
 | **VEllipse** | An ellipse | `new VEllipse(center, radiusX, radiusY)` |
 | **VArc** | A circular arc | `new VArc(center, radius, startAngle, endAngle)` |
 | **VPolygon** | A closed polygon | `new VPolygon(p1, p2, p3, ...)` |
@@ -254,7 +256,33 @@ var circle = new VCircle(0, 0, 50);
 circle.StrokeColor = "Cyan";           // Outline color
 circle.FillColor = "#4000FFFF";        // Fill color (with transparency)
 circle.StrokeThickness = 2.5;          // Border thickness
+circle.StrokeStyle = StrokeStyle.Dashed;  // Line pattern
 circle.Draw();
+```
+
+### Stroke Styles
+
+The `StrokeStyle` property controls the line pattern for shape outlines:
+
+| Style | Description | Pattern |
+|-------|-------------|---------|
+| `Continuous` | Solid line (default) | ───────── |
+| `Dashed` | Long dashes | ── ── ── |
+| `Dotted` | Short dots | · · · · · |
+| `DashDot` | Dash-dot alternating | ── · ── · |
+| `DashDotDot` | Dash-dot-dot pattern | ── · · ── |
+| `Center` | Center line (long-short) | ─── ─ ─── |
+| `Phantom` | Phantom line | ─── ─ ─ ─── |
+| `Hidden` | Hidden line (short dashes) | - - - - - |
+
+```csharp
+var line1 = new VLine(0, 0, 100, 0);
+line1.StrokeStyle = StrokeStyle.Dashed;
+line1.Draw();
+
+var line2 = new VLine(0, 20, 100, 20);
+line2.StrokeStyle = StrokeStyle.DashDot;
+line2.Draw();
 ```
 
 ### Color Formats
@@ -297,6 +325,7 @@ Set default styling for all new shapes:
 ShapeDefaults.GlobalStrokeColor = "Cyan";
 ShapeDefaults.GlobalFillColor = "Transparent";
 ShapeDefaults.GlobalStrokeThickness = 2.0;
+ShapeDefaults.GlobalStrokeStyle = StrokeStyle.Continuous;
 
 // All shapes created after this use these defaults
 var circle = new VCircle(0, 0, 50);

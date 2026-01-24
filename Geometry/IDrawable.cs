@@ -3,6 +3,29 @@ using System;
 namespace Code2Viz.Geometry;
 
 /// <summary>
+/// Defines the stroke style (line pattern) for shape outlines.
+/// </summary>
+public enum StrokeStyle
+{
+    /// <summary>Solid continuous line (default).</summary>
+    Continuous,
+    /// <summary>Dashed line pattern (long dashes).</summary>
+    Dashed,
+    /// <summary>Dotted line pattern (short dots).</summary>
+    Dotted,
+    /// <summary>Alternating dash and dot pattern.</summary>
+    DashDot,
+    /// <summary>Alternating dash and two dots pattern.</summary>
+    DashDotDot,
+    /// <summary>Center line pattern (long-short-long).</summary>
+    Center,
+    /// <summary>Phantom line pattern (long-short-short).</summary>
+    Phantom,
+    /// <summary>Hidden line pattern (short dashes).</summary>
+    Hidden
+}
+
+/// <summary>
 /// Types of control points for shape editing.
 /// </summary>
 public enum ControlPointType
@@ -48,6 +71,7 @@ public interface IDrawable
     string StrokeColor { get; set; }
     string FillColor { get; set; }
     double StrokeThickness { get; set; }
+    StrokeStyle StrokeStyle { get; set; }
 }
 
 public abstract class Shape : IDrawable
@@ -65,6 +89,7 @@ public abstract class Shape : IDrawable
     public string StrokeColor { get; set; } = ShapeDefaults.GlobalStrokeColor ?? "Cyan";
     public string FillColor { get; set; } = ShapeDefaults.GlobalFillColor ?? "Transparent";
     public double StrokeThickness { get; set; } = ShapeDefaults.GlobalStrokeThickness ?? 2;
+    public StrokeStyle StrokeStyle { get; set; } = ShapeDefaults.GlobalStrokeStyle ?? StrokeStyle.Continuous;
 
     // Animation properties
     /// <summary>
@@ -229,5 +254,6 @@ public abstract class Shape : IDrawable
         target.StrokeColor = StrokeColor;
         target.FillColor = FillColor;
         target.StrokeThickness = StrokeThickness;
+        target.StrokeStyle = StrokeStyle;
     }
 }
