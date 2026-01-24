@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 
 namespace Code2Viz
 {
@@ -12,6 +13,15 @@ namespace Code2Viz
             NameTextBox.Text = currentName;
             NameTextBox.SelectAll();
             NameTextBox.Focus();
+        }
+
+        private void NameTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                OkButton_Click(sender, e);
+            }
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
