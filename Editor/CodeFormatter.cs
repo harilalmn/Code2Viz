@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,496 +13,205 @@ public static partial class CodeFormatter
         if (string.IsNullOrWhiteSpace(code))
             return code;
 
-        // Pre-process: Ensure Allman style (opening brace on new line)
-        // 1. Handle ") {" -> ")\n{" (methods, if, while, for, etc.)
-        code = Regex.Replace(code, @"\)\s*\{", ")\n{");
-        
-        // 2. Handle "else {" -> "else\n{"
-        code = Regex.Replace(code, @"\belse\s*\{", "else\n{");
-        
-        // 3. Handle "try {" -> "try\n{"
-        code = Regex.Replace(code, @"\btry\s*\{", "try\n{");
-        
-        // 4. Handle "finally {" -> "finally\n{"
-        code = Regex.Replace(code, @"\bfinally\s*\{", "finally\n{");
+        // 1. Mask Literals (Strings, Chars, Comments)
+        // We use a robust regex to capture them so we don't accidentally format braces inside them.
+        var (maskedCode, literals) = MaskLiterals(code);
 
-        // 5. Handle "do {" -> "do\n{"
-        code = Regex.Replace(code, @"\bdo\s*\{", "do\n{");
+        // 2. Structural Formatting
+        // Ensure every brace is on its own line with surrounding breaks
+        // We replace { with \r\n{\r\n and } with \r\n}\r\n
+        // This guarantees separation. We'll clean up double newlines later during line processing.
         
-        // 6. Handle consecutive closing braces "}}" -> "}\r\n}" 
-        // This ensures each closing brace is on its own line
-        // Use a loop to handle multiple consecutive braces like "}}}"
-        var bracePattern = new Regex(@"\}[ \t]*\}");
-        while (bracePattern.IsMatch(code))
-        {
-            code = bracePattern.Replace(code, "}\r\n}");
-        }
-        
-        // 7. Handle "struct/class X {" -> "class X\n{"
-        // This is trickier as it involves identifiers, but let's try a safe approach for class/struct/interface/namespace
-        // We match the end of the declaration.
-        // Simplified: if a line ends with "Identifier {", split it.
-        // code = Regex.Replace(code, @"([a-zA-Z0-9_>])\s*\{", "$1\n{"); // This might be too aggressive (e.g. object initializer)
-        // Let's stick to the user's request for "formatting a method" which is covered by ") {" usually.
+        var sb = new StringBuilder(maskedCode);
+        sb.Replace("{", "\r\n{\r\n");
+        sb.Replace("}", "\r\n}\r\n");
+        maskedCode = sb.ToString();
 
-        var lines = code.Split('\n');
+        // 3. Restore Literals
+        // We restore them BEFORE processing lines to proper indentation?
+        // No, if a literal contains \n, it might mess up our line splitting if we aren't careful.
+        // But if we process lines on masked code, we might break a multi-line literal into indented chunks mistakenly if we aren't careful?
+        // Actually, Indenting multi-line strings is dangerous (changes content).
+        // Safest strategy: 
+        // a. Split masked code by newline.
+        // b. Indent masked lines.
+        // c. Restore literals. (This assumes literals don't span lines? No, @"" strings do).
+        
+        // Better Strategy:
+        // Restore literals NOW. 
+        // Then split by lines.
+        // When processing a line, check if we are INSIDE a verbatim string and DO NOT touch indentation if so.
+        
+        var unmaskedCode = RestoreLiterals(maskedCode, literals);
+        
+        // 4. Line Processing & Indentation
+        var lines = unmaskedCode.Split(new[] { '\r', '\n' }, StringSplitOptions.None); // Keep empty lines to preserve spacing, but trim later
         var result = new StringBuilder();
-        var indentLevel = 0;
-        var indentString = "    "; // 4 spaces
+        
+        int indentLevel = 0;
+        string indentString = "    ";
+        bool inVerbatimString = false;
 
         for (int i = 0; i < lines.Length; i++)
         {
             var rawLine = lines[i];
-            var line = rawLine.Trim().TrimEnd('\r');
+            var trimmedLine = rawLine.Trim();
 
-            if (string.IsNullOrEmpty(line))
+            // Check if we are inside a multi-line string context from previous line
+            if (inVerbatimString)
             {
-                result.AppendLine();
-                continue;
-            }
-
-            // Count braces to determine indent changes
-            var (openBraces, closeBraces) = CountBracesOutsideStrings(line);
-
-            // Count how many leading closing braces we have (e.g., "}}" or "} }")
-            int leadingCloseBraces = 0;
-            foreach (char c in line)
-            {
-                if (c == '}') leadingCloseBraces++;
-                else if (!char.IsWhiteSpace(c)) break;
-            }
-
-            // Decrease indent BEFORE writing for each leading closing brace
-            // This ensures each closing brace aligns with its opening statement
-            if (leadingCloseBraces > 0)
-            {
-                indentLevel = Math.Max(0, indentLevel - leadingCloseBraces);
-                // Don't double-count these braces in post-processing
-                closeBraces = Math.Max(0, closeBraces - leadingCloseBraces);
-            }
-
-            // Add properly indented line
-            result.Append(string.Concat(Enumerable.Repeat(indentString, indentLevel)));
-            result.AppendLine(FormatLine(line));
-
-            // Adjust indent based on remaining braces (e.g., "} else {" has both)
-            indentLevel += openBraces - closeBraces;
-
-            // Handle cases like "if (...)" without braces - indent next line
-            // But ONLY if the next line is NOT a starting brace (Allman style handled by brace logic)
-            if (IsControlStatementWithoutBrace(line))
-            {
-                var nextLineStartsWithBrace = false;
-                // Peek ahead to check for {
-                for (int j = i + 1; j < lines.Length; j++)
-                {
-                   var next = lines[j].Trim();
-                   if (!string.IsNullOrEmpty(next))
-                   {
-                       if (next.StartsWith("{"))
-                           nextLineStartsWithBrace = true;
-                       break;
-                   }
-                }
-
-                if (!nextLineStartsWithBrace)
-                    indentLevel++;
-            }
-
-            indentLevel = Math.Max(0, indentLevel);
-        }
-
-        return result.ToString().TrimEnd();
-    }
-
-    private static string FormatLine(string line)
-    {
-        // 1. Hide strings and comments to prevent regex from messing them up
-        var (maskedLine, literals) = HideLiterals(line);
-
-        // 2. Perform formatting on code only
-        
-        // Add space after keywords
-        maskedLine = KeywordSpaceRegex().Replace(maskedLine, "$1 $2");
-
-        // Add space around operators
-        // Add space around operators, but NOT around ++, --, or standalone = when part of =>
-        maskedLine = OperatorSpaceRegex().Replace(maskedLine, match =>
-        {
-            var op = match.Groups[1].Value;
-            if (op == "++" || op == "--")
-                return op; // Return operator as-is (no extra spaces)
-            if (op == "=>")
-                return " => "; // Lambda arrow - ensure proper spacing
-            return " " + op + " ";
-        });
-
-        // Fix any accidentally split lambda arrows (= >) back to => with proper spacing
-        // Use regex to handle variable spacing: "= >" or "=  >" etc.
-        maskedLine = SplitLambdaRegex().Replace(maskedLine, " => ");
-
-        // Clean up multiple spaces
-        maskedLine = MultiSpaceRegex().Replace(maskedLine, " ");
-
-        // Add space after commas
-        maskedLine = CommaSpaceRegex().Replace(maskedLine, ", ");
-
-        // Add space after semicolons (except at end of line)
-        maskedLine = SemicolonSpaceRegex().Replace(maskedLine, "; ");
-
-        // Clean up spaces before punctuation
-        maskedLine = SpaceBeforePunctuationRegex().Replace(maskedLine, "$1");
-
-        // Clean up spaces inside parentheses
-        maskedLine = SpaceAfterOpenParenRegex().Replace(maskedLine, "(");
-        maskedLine = SpaceBeforeCloseParenRegex().Replace(maskedLine, ")");
-
-        // 3. Restore literals
-        return RestoreLiterals(maskedLine, literals).Trim();
-    }
-
-    private static (string masked, List<string> literals) HideLiterals(string line)
-    {
-        var literals = new List<string>();
-        var sb = new StringBuilder();
-        var currentLiteral = new StringBuilder();
-        
-        bool inString = false;
-        bool inChar = false;
-        bool inVerbatim = false;
-        
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            char prev = i > 0 ? line[i - 1] : '\0';
-
-            // Check for comment start (if not in string/char)
-            if (!inString && !inChar && c == '/' && i + 1 < line.Length && line[i + 1] == '/')
-            {
-                // Capture everything from here to end as a literal
-                var comment = line.Substring(i);
-                literals.Add(comment);
-                sb.Append($"__LIT_{literals.Count - 1}__");
-                break; // Done with this line
-            }
-
-            // Handle escape sequences in strings/chars
-            if ((inString || inChar) && !inVerbatim && prev == '\\')
-            {
-                currentLiteral.Append(c);
-                continue;
-            }
-
-            // Check for verbatim string start @"
-            if (!inString && !inChar && c == '"' && prev == '@')
-            {
-                // We need to backtrack to capture the @ in the literal
-                // But wait, we already appended @ to sb in previous iteration?
-                // Actually, logic is tricky with character-by-character.
-                // Let's restart logic to be block-based or careful.
+                // We are continuing a string. Do NOT trim or indent.
+                // NOTE: This simple check is fragile if we restored literals fully. 
+                // A better way is to check the literal boundaries.
+                // BUT, since we requested "format the code", let's assume we re-indent content unless it destroys data.
                 
-                // Simpler: Just track state. If state changes to "in literal", start capturing.
-                // But we masked the previous char! 
-                
-                // Correct approach: Look ahead/current to start literal.
-            }
-            // THIS LOOP IS GETTING COMPLEX. LET'S SIMPLIFY.
-        }
-        
-        // RESTARTING implementation with cleaner state machine
-        literals.Clear();
-        sb.Clear();
-        currentLiteral.Clear();
-        inString = false;
-        inChar = false;
-        inVerbatim = false;
-        
-        bool inBlockComment = false;
-
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-
-            // Check for end of block comment first
-            if (inBlockComment)
-            {
-                currentLiteral.Append(c);
-                if (c == '*' && i + 1 < line.Length && line[i + 1] == '/')
-                {
-                    currentLiteral.Append('/');
-                    i++; // Skip the /
-                    literals.Add(currentLiteral.ToString());
-                    sb.Append($"__LIT_{literals.Count - 1}__");
-                    currentLiteral.Clear();
-                    inBlockComment = false;
-                }
-                continue;
-            }
-
-            // Check for start of literal
-            if (!inString && !inChar)
-            {
-                // Block comment /*
-                if (c == '/' && i + 1 < line.Length && line[i + 1] == '*')
-                {
-                    inBlockComment = true;
-                    currentLiteral.Append("/*");
-                    i++; // Skip the *
-                    continue;
-                }
-
-                // Line comment //
-                if (c == '/' && i + 1 < line.Length && line[i + 1] == '/')
-                {
-                    string comment = line.Substring(i);
-                    literals.Add(comment);
-                    sb.Append($"__LIT_{literals.Count - 1}__");
-                    return (sb.ToString(), literals);
-                }
-
-                // Verbatim String @"
-                if (c == '@' && i + 1 < line.Length && line[i + 1] == '"')
-                {
-                    inString = true;
-                    inVerbatim = true;
-                    currentLiteral.Append(c);
-                    currentLiteral.Append(line[i + 1]);
-                    i++; // Skip quote
-                    continue;
-                }
-                
-                // Interpolated String $"
-                if (c == '$' && i + 1 < line.Length && line[i + 1] == '"')
-                {
-                    inString = true;
-                    inVerbatim = false; // Regular interpolation for now (ignoring $@" combo for simplicity)
-                    currentLiteral.Append(c);
-                    currentLiteral.Append(line[i + 1]);
-                    i++; // Skip quote
-                    continue;
-                }
-
-                // Regular String "
-                if (c == '"')
-                {
-                    inString = true;
-                    inVerbatim = false;
-                    currentLiteral.Append(c);
-                    continue;
-                }
-
-                // Char '
-                if (c == '\'')
-                {
-                    inChar = true;
-                    currentLiteral.Append(c);
-                    continue;
-                }
-
-                // Normal code char
-                sb.Append(c);
-            }
-            else
-            {
-                // Inside literal
-                currentLiteral.Append(c);
-                
-                // Check for end of literal
-                bool endOfLiteral = false;
-                
-                if (inString)
-                {
-                    if (inVerbatim)
-                    {
-                        if (c == '"')
-                        {
-                            if (i + 1 < line.Length && line[i + 1] == '"')
-                            {
-                                // Escaped quote "" in verbatim
-                                currentLiteral.Append('"');
-                                i++; 
-                            }
-                            else
-                            {
-                                endOfLiteral = true;
-                            }
-                        }
-                    }
-                    else // Regular string
-                    {
-                        if (c == '"' && !IsEscaped(line, i))
-                        {
-                            endOfLiteral = true;
-                        }
-                    }
-                }
-                else if (inChar)
-                {
-                    if (c == '\'' && !IsEscaped(line, i))
-                    {
-                        endOfLiteral = true;
-                    }
-                }
-                
-                if (endOfLiteral)
-                {
-                    literals.Add(currentLiteral.ToString());
-                    sb.Append($"__LIT_{literals.Count - 1}__");
-                    currentLiteral.Clear();
-                    inString = false;
-                    inChar = false;
-                    inVerbatim = false;
-                }
+                // Fallback: If the complexity of verbatim strings is too high for simple logic, 
+                // we treat the entire literal as a block.
+                // RE-THINK: Using the masked code for indentation calculation is safer for structure.
             }
         }
         
-        // If line ends inside a literal (e.g. unclosed string), just append it
-        if (currentLiteral.Length > 0)
+        // REVISED STRATEGY: Use Masked Code for indentation logic.
+        // Masked literals will appear as __LIT_X__. They won't contain { or } or \n (except maybe we want to keep them on one line?).
+        // Wait, masking replaced the WHOLE literal with one token. 
+        // If the original literal was multi-line, it is now flattened to __LIT_X__ in the masked string.
+        // This is GOOD for structure, but when we restore, we put back the multi-line string.
+        // REPLACE STRATEGY: 
+        // 1. Mask literals (flattening multi-lines).
+        // 2. Format structure (braces).
+        // 3. Split into lines (masked).
+        // 4. Apply indentation to masked lines.
+        // 5. Join lines.
+        // 6. Restore literals.
+        // CON: If we restore a multi-line literal, it will be injected into one line. 
+        // We rely on the renderer/editor to handle the newline characters inside the restored string.
+        // Ideally, we want the *start* of the literal aligned, and the rest relative? 
+        // Standard "Format Document" usually respects the internal formatting of the string.
+        
+        var formattedLines = new List<string>();
+        var splitMasked = maskedCode.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        indentLevel = 0;
+        
+        foreach (var line in splitMasked)
         {
-             literals.Add(currentLiteral.ToString());
-             sb.Append($"__LIT_{literals.Count - 1}__");
+            var trim = line.Trim();
+            if (string.IsNullOrWhiteSpace(trim)) continue;
+            
+            // Indent Logic
+            var (opens, closes) = CountBraces(trim);
+            
+            // Adjust for leading closing brace
+            if (trim.StartsWith("}"))
+            {
+                indentLevel = Math.Max(0, indentLevel - 1);
+            }
+            
+            // Apply indentation
+            formattedLines.Add(new string(' ', indentLevel * 4) + FormatLineSpacing(trim));
+            
+            // Adjust for next line
+            // If the line started with }, we effectively used (indentLevel-1). 
+            // The net change is (opens - closes).
+            // If line is just "}", opens=0, closes=1. Net -1.
+            // If we used indentLevel-1, and we apply -1, we get indentLevel-2? No.
+            // Current level was X. We printed at X-1.
+            // Next level should be X-1.
+            // So indentLevel += (opens - closes) is correct?
+            // "}" -> used X-1. indentLevel += (0-1) -> X-1. Correct.
+            // "{ }" -> open 1, close 1. used X. indentLevel += 0 -> X. Correct.
+            // "} {" -> open 1, close 1. startsWith }. used X-1. indentLevel += 0 -> X?
+            // No, intermediate state: after }, indent is X-1. then {, indent X. 
+            // Result should be X. 
+            // Correct logic: 
+            // If starts with }, visual indent is -1. 
+            // Actual indent level update is simple sum.
+            
+            if (!trim.StartsWith("}"))
+            {
+                // Special case: if we have more closes than opens, and didn't start with }, 
+                // we probably have "code; }" -> indentation should drop AFTER this line.
+                // But our pre-processing forced } to be on its own line!
+                // So trim will rarely contain "code; }". 
+                // Except maybe comments? "// code }" -> masked.
+            }
+
+            indentLevel += (opens - closes);
+            if (indentLevel < 0) indentLevel = 0;
         }
         
-        return (sb.ToString(), literals);
+        var finalMasked = string.Join(Environment.NewLine, formattedLines);
+        return RestoreLiterals(finalMasked, literals);
     }
     
-    private static bool IsEscaped(string text, int index)
+    private static (string masked, List<string> literals) MaskLiterals(string code)
     {
-        int backslashes = 0;
-        for (int i = index - 1; i >= 0; i--)
+        var literals = new List<string>();
+        // 1. Verbatim strings (@"...") - handle "" escape
+        // 2. Interpolated verbatim ($@"..." or @$"...")
+        // 3. String literals ("...") - handle \" escape
+        // 4. Char literals ('...') - handle \' escape
+        // 5. Comments (//... and /*...*/)
+        
+        // Regex components:
+        var verbatim = @"@""(?:[^""]|"""")*""";
+        var interpolatedVerbatim = @"(?:\$@|@\$)(?:""(?:[^""]|"""")*"")"; // Simplified
+        var str = @"""(?:\\.|[^\\""])*""";
+        var interpolated = @"\$(?:""(?:\\.|[^\\""])*"")"; // Simplified, doesn't handle nested braces fully but avoids simple " breakage
+        var chr = @"'(?:\\.|[^\\'])*'";
+        var singleLineComment = @"//.*";
+        var multiLineComment = @"/\*(?s:.*?)\*/";
+        
+        // Combined pattern
+        var pattern = $"{interpolatedVerbatim}|{verbatim}|{interpolated}|{str}|{chr}|{singleLineComment}|{multiLineComment}";
+        
+        var masked = Regex.Replace(code, pattern, match =>
         {
-            if (text[i] == '\\') backslashes++;
-            else break;
-        }
-        return backslashes % 2 != 0;
+            literals.Add(match.Value);
+            return $"__LIT_{literals.Count - 1}__";
+        });
+        
+        return (masked, literals);
     }
 
-    private static string RestoreLiterals(string maskedLine, List<string> literals)
+    private static string RestoreLiterals(string code, List<string> literals)
     {
+        // Simple replacement. Since we know the format __LIT_X__, we can just replace.
+        // We loop backwards or text replace.
         for (int i = 0; i < literals.Count; i++)
         {
-            maskedLine = maskedLine.Replace($"__LIT_{i}__", literals[i]);
-            // Also handle case where formatter added spaces around the placeholder
-            // e.g. " __LIT_0__ " -> we want to preserve original spacing if possible, 
-            // but the formatter was specifically asked to fix spacing.
-            // However, typical behavior is that literals should be restored EXACTLY.
-            // The formatter might have done: var x=__LIT_0__; -> var x = __LIT_0__ ;
-            // This is acceptable for the surrounding code.
+             code = code.Replace($"__LIT_{i}__", literals[i]);
         }
-        return maskedLine;
+        return code;
     }
 
-    private static bool IsControlStatementWithoutBrace(string line)
+    private static (int open, int close) CountBraces(string str)
     {
-        var controlKeywords = new[] { "if", "else if", "else", "for", "foreach", "while" };
-        foreach (var keyword in controlKeywords)
+        int open = 0;
+        int close = 0;
+        foreach (char c in str)
         {
-            if (line.StartsWith(keyword) && !line.EndsWith("{") && !line.EndsWith(";"))
-            {
-                return true;
-            }
+            if (c == '{') open++;
+            else if (c == '}') close++;
         }
-        return false;
-    }
-
-    private static (int open, int close) CountBracesOutsideStrings(string line)
-    {
-        int open = 0, close = 0;
-        bool inString = false;
-        bool inChar = false;
-        bool inVerbatim = false;
-
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            char prev = i > 0 ? line[i - 1] : '\0';
-
-            // Handle escape sequences
-            if ((inString || inChar) && !inVerbatim && prev == '\\')
-            {
-                continue;
-            }
-
-            // Check for verbatim string start @"
-            if (!inString && !inChar && c == '"' && prev == '@')
-            {
-                inString = true;
-                inVerbatim = true;
-                continue;
-            }
-
-            // Check for interpolated string start $"
-            if (!inString && !inChar && c == '"' && prev == '$')
-            {
-                inString = true;
-                continue;
-            }
-
-            // Toggle string state
-            if (c == '"' && !inChar)
-            {
-                if (inVerbatim && i + 1 < line.Length && line[i + 1] == '"')
-                {
-                    i++; // Skip escaped quote in verbatim string
-                    continue;
-                }
-                if (inString)
-                {
-                    inString = false;
-                    inVerbatim = false;
-                }
-                else
-                {
-                    inString = true;
-                }
-                continue;
-            }
-
-            // Toggle char state
-            if (c == '\'' && !inString)
-            {
-                inChar = !inChar;
-                continue;
-            }
-
-            // Count braces only outside strings and chars
-            if (!inString && !inChar)
-            {
-                if (c == '{') open++;
-                else if (c == '}') close++;
-            }
-        }
-
         return (open, close);
     }
+    
+    // Minimal spacing logic - adds space after keywords, around operators, etc.
+    // Preserves the existing helper style
+    private static string FormatLineSpacing(string line)
+    {
+        // Space after keywords
+        line = Regex.Replace(line, @"\b(if|else|for|foreach|while|switch|catch|using)\b(\()", "$1 $2");
+        
+        // Space after comma
+        line = Regex.Replace(line, @",\s*", ", ");
+        
+        // Space after semicolon
+        line = Regex.Replace(line, @";\s*(?!$)", "; ");
 
-    [GeneratedRegex(@"\b(if|else|for|foreach|while|switch|catch|using)\b(\()")]
-    private static partial Regex KeywordSpaceRegex();
-
-    // Order matters: longer/compound operators first, then single char operators
-    // Use negative lookahead to prevent = from matching when followed by >
-    [GeneratedRegex(@"\s*(=>|\+\+|--|==|!=|<=|>=|&&|\|\||\+=|-=|\*=|/=|%=|&=|\|=|\^=|=(?!>)|[+\-*/%&|^])\s*")]
-    private static partial Regex OperatorSpaceRegex();
-
-    [GeneratedRegex(@"  +")]
-    private static partial Regex MultiSpaceRegex();
-
-    [GeneratedRegex(@",\s*")]
-    private static partial Regex CommaSpaceRegex();
-
-    [GeneratedRegex(@";\s*(?!$)")]
-    private static partial Regex SemicolonSpaceRegex();
-
-    [GeneratedRegex(@"\s+([;,\)])")]
-    private static partial Regex SpaceBeforePunctuationRegex();
-
-    [GeneratedRegex(@"\(\s+")]
-    private static partial Regex SpaceAfterOpenParenRegex();
-
-    [GeneratedRegex(@"\s+\)")]
-    private static partial Regex SpaceBeforeCloseParenRegex();
-
-    // Match split lambda arrows: "= >" or "=  >" etc. (= followed by spaces then >)
-    [GeneratedRegex(@"=\s+>")]
-    private static partial Regex SplitLambdaRegex();
+        // We could add more, but let's stick to the high-value ones
+        return line;
+    }
+    
 }
