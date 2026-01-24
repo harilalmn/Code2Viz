@@ -101,41 +101,18 @@ public static partial class CodeFormatter
             // Indent Logic
             var (opens, closes) = CountBraces(trim);
             
-            // Adjust for leading closing brace
+            var printIndent = indentLevel;
+            
+            // Adjust for leading closing brace (visual only for this line)
             if (trim.StartsWith("}"))
             {
-                indentLevel = Math.Max(0, indentLevel - 1);
+                printIndent = Math.Max(0, printIndent - 1);
             }
             
             // Apply indentation
-            formattedLines.Add(new string(' ', indentLevel * 4) + FormatLineSpacing(trim));
+            formattedLines.Add(new string(' ', printIndent * 4) + FormatLineSpacing(trim));
             
-            // Adjust for next line
-            // If the line started with }, we effectively used (indentLevel-1). 
-            // The net change is (opens - closes).
-            // If line is just "}", opens=0, closes=1. Net -1.
-            // If we used indentLevel-1, and we apply -1, we get indentLevel-2? No.
-            // Current level was X. We printed at X-1.
-            // Next level should be X-1.
-            // So indentLevel += (opens - closes) is correct?
-            // "}" -> used X-1. indentLevel += (0-1) -> X-1. Correct.
-            // "{ }" -> open 1, close 1. used X. indentLevel += 0 -> X. Correct.
-            // "} {" -> open 1, close 1. startsWith }. used X-1. indentLevel += 0 -> X?
-            // No, intermediate state: after }, indent is X-1. then {, indent X. 
-            // Result should be X. 
-            // Correct logic: 
-            // If starts with }, visual indent is -1. 
-            // Actual indent level update is simple sum.
-            
-            if (!trim.StartsWith("}"))
-            {
-                // Special case: if we have more closes than opens, and didn't start with }, 
-                // we probably have "code; }" -> indentation should drop AFTER this line.
-                // But our pre-processing forced } to be on its own line!
-                // So trim will rarely contain "code; }". 
-                // Except maybe comments? "// code }" -> masked.
-            }
-
+            // Adjust state for next line
             indentLevel += (opens - closes);
             if (indentLevel < 0) indentLevel = 0;
         }
