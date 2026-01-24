@@ -26,6 +26,7 @@ using Code2Viz.Execution;
 using Code2Viz.Export;
 using Code2Viz.Project;
 using ICSharpCode.AvalonEdit.Rendering;
+using Microsoft.CodeAnalysis;
 
 namespace Code2Viz;
 
@@ -7256,7 +7257,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void PerformQuickAction(Code2Viz.Editor.RefactoringProvider.QuickActionItem action)
+    private async void PerformQuickAction(Code2Viz.Editor.RefactoringProvider.QuickActionItem action)
     {
         if (action.ActionId == "Rename")
         {
@@ -7331,6 +7332,214 @@ public partial class MainWindow : Window
                     // Fallback: insert before last brace if only one found
                     CodeEditor.Document.Insert(text.LastIndexOf('}'), stub);
                 }
+            }
+        }
+        else if (action.ActionId == "GenerateConstructor")
+        {
+            if (action.Data.TryGetValue("TypeName", out var typeName))
+            {
+                // Generate a constructor stub
+                var stub = $"\r\n\r\n        public {typeName}()\r\n        {{\r\n            // TODO: Initialize fields\r\n        }}";
+                
+                // Find the class opening brace and insert after the first line inside
+                var text = CodeEditor.Text;
+                var classPattern = $"class\\s+{System.Text.RegularExpressions.Regex.Escape(typeName)}";
+                var match = System.Text.RegularExpressions.Regex.Match(text, classPattern);
+                
+                if (match.Success)
+                {
+                    // Find the opening brace after the class declaration
+                    var bracePos = text.IndexOf('{', match.Index);
+                    if (bracePos > 0)
+                    {
+                        // Insert after the opening brace
+                        CodeEditor.Document.Insert(bracePos + 1, stub);
+                    }
+                }
+            }
+        }
+        else if (action.ActionId == "AddParameter")
+        {
+            if (action.Data.TryGetValue("MethodName", out var methodName))
+            {
+                // Prompt for parameter details
+                var paramType = PromptForInput("Add Parameter", "Enter parameter type:", "string");
+                if (string.IsNullOrEmpty(paramType)) return;
+                
+                var paramName = PromptForInput("Add Parameter", "Enter parameter name:", "value");
+                if (string.IsNullOrEmpty(paramName)) return;
+                
+                var newParam = $"{paramType} {paramName}";
+                
+                // Find the method DECLARATION (not call site)
+                // Method declarations have a return type before the method name
+                var text = CodeEditor.Text;
+                var escapedName = System.Text.RegularExpressions.Regex.Escape(methodName);
+                // Pattern: return_type methodName( - the return type includes modifiers
+                var methodDeclPattern = $@"(?:void|int|string|bool|double|float|object|var|\w+)\s+{escapedName}\s*\(";
+                var match = System.Text.RegularExpressions.Regex.Match(text, methodDeclPattern);
+                
+                if (match.Success)
+                {
+                    var openParen = match.Index + match.Length - 1;
+                    var closeParen = text.IndexOf(')', openParen);
+                    
+                    if (closeParen > openParen)
+                    {
+                        var existingParams = text.Substring(openParen + 1, closeParen - openParen - 1).Trim();
+                        
+                        if (string.IsNullOrEmpty(existingParams))
+                        {
+                            // No existing params, just insert
+                            CodeEditor.Document.Insert(openParen + 1, newParam);
+                        }
+                        else
+                        {
+                            // Add comma and new param
+                            CodeEditor.Document.Insert(closeParen, $", {newParam}");
+                        }
+                    }
+                }
+            }
+        }
+        else if (action.ActionId == "RemoveUnusedUsings")
+        {
+            try
+            {
+                // Use Roslyn to properly detect unused usings
+                var text = CodeEditor.Text;
+                
+                // Parse the code and get compilation with diagnostics
+                var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(text);
+                var root = tree.GetRoot();
+                
+                // Get all using directives
+                var usingDirectives = root.DescendantNodes()
+                    .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.UsingDirectiveSyntax>()
+                    .ToList();
+                
+                if (usingDirectives.Count == 0)
+                {
+                    SetStatus("No using statements found", false);
+                    return;
+                }
+                
+                // Get compilation with the current project to check for unused usings
+                var (compilation, _) = await _compiler.CreateCompilationAsync(_currentProject!);
+                
+                // Replace the tree in compilation for accurate analysis
+                var oldTree = compilation.SyntaxTrees.FirstOrDefault(t => 
+                    string.Equals(System.IO.Path.GetFileName(t.FilePath), 
+                                  System.IO.Path.GetFileName(_activeFile!.FilePath), 
+                                  StringComparison.OrdinalIgnoreCase));
+                
+                var newTree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(
+                    text, 
+                    options: new Microsoft.CodeAnalysis.CSharp.CSharpParseOptions(Microsoft.CodeAnalysis.CSharp.LanguageVersion.Latest),
+                    path: _activeFile.FilePath ?? "");
+                
+                if (oldTree != null)
+                {
+                    compilation = compilation.ReplaceSyntaxTree(oldTree, newTree);
+                }
+                else
+                {
+                    compilation = compilation.AddSyntaxTrees(newTree);
+                }
+                
+                // Get diagnostics - CS8019 is "Unnecessary using directive"
+                var diagnostics = compilation.GetDiagnostics()
+                    .Where(d => d.Id == "CS8019" || d.Id == "IDE0005")
+                    .ToList();
+                
+                if (diagnostics.Count == 0)
+                {
+                    // Fallback: Check for CS0246 "type or namespace not found" after removing each using
+                    // If removing a using causes CS0246, it's needed
+                    var usedUsings = new HashSet<int>();
+                    var model = compilation.GetSemanticModel(newTree);
+                    var newRoot = await newTree.GetRootAsync();
+                    var newUsingDirectives = newRoot.DescendantNodes()
+                        .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.UsingDirectiveSyntax>()
+                        .ToList();
+                    
+                    // Get all type references in the code
+                    var typeRefs = newRoot.DescendantNodes()
+                        .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax>()
+                        .ToList();
+                    
+                    foreach (var typeRef in typeRefs)
+                    {
+                        var symbolInfo = model.GetSymbolInfo(typeRef);
+                        if (symbolInfo.Symbol != null)
+                        {
+                            var containingNs = symbolInfo.Symbol.ContainingNamespace?.ToDisplayString();
+                            if (containingNs != null)
+                            {
+                                for (int i = 0; i < newUsingDirectives.Count; i++)
+                                {
+                                    var usingNs = newUsingDirectives[i].Name?.ToString();
+                                    if (usingNs != null && containingNs.StartsWith(usingNs))
+                                    {
+                                        usedUsings.Add(i);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Remove unused usings (those not in usedUsings set)
+                    var lines = text.Split('\n').ToList();
+                    var removedCount = 0;
+                    
+                    for (int i = newUsingDirectives.Count - 1; i >= 0; i--)
+                    {
+                        if (!usedUsings.Contains(i))
+                        {
+                            var usingLine = newUsingDirectives[i].GetLocation().GetLineSpan().StartLinePosition.Line;
+                            if (usingLine < lines.Count)
+                            {
+                                lines.RemoveAt(usingLine);
+                                removedCount++;
+                            }
+                        }
+                    }
+                    
+                    if (removedCount > 0)
+                    {
+                        CodeEditor.Document.Replace(0, CodeEditor.Document.TextLength, string.Join("\n", lines));
+                        SetStatus($"Removed {removedCount} unused using(s)", false);
+                    }
+                    else
+                    {
+                        SetStatus("No unused usings found", false);
+                    }
+                }
+                else
+                {
+                    // Use the diagnostics to find unused usings
+                    var lines = text.Split('\n').ToList();
+                    var linesToRemove = diagnostics
+                        .Select(d => d.Location.GetLineSpan().StartLinePosition.Line)
+                        .Distinct()
+                        .OrderByDescending(x => x)
+                        .ToList();
+                    
+                    foreach (var lineNum in linesToRemove)
+                    {
+                        if (lineNum < lines.Count)
+                        {
+                            lines.RemoveAt(lineNum);
+                        }
+                    }
+                    
+                    CodeEditor.Document.Replace(0, CodeEditor.Document.TextLength, string.Join("\n", lines));
+                    SetStatus($"Removed {linesToRemove.Count} unused using(s)", false);
+                }
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"Failed to remove unused usings: {ex.Message}", true);
             }
         }
         else

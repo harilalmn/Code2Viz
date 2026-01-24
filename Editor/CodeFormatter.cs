@@ -26,7 +26,16 @@ public static partial class CodeFormatter
         // 5. Handle "do {" -> "do\n{"
         code = Regex.Replace(code, @"\bdo\s*\{", "do\n{");
         
-        // 6. Handle "struct/class X {" -> "class X\n{"
+        // 6. Handle consecutive closing braces "}}" -> "}\r\n}" 
+        // This ensures each closing brace is on its own line
+        // Use a loop to handle multiple consecutive braces like "}}}"
+        var bracePattern = new Regex(@"\}[ \t]*\}");
+        while (bracePattern.IsMatch(code))
+        {
+            code = bracePattern.Replace(code, "}\r\n}");
+        }
+        
+        // 7. Handle "struct/class X {" -> "class X\n{"
         // This is trickier as it involves identifiers, but let's try a safe approach for class/struct/interface/namespace
         // We match the end of the declaration.
         // Simplified: if a line ends with "Identifier {", split it.
@@ -52,13 +61,21 @@ public static partial class CodeFormatter
             // Count braces to determine indent changes
             var (openBraces, closeBraces) = CountBracesOutsideStrings(line);
 
-            // Decrease indent BEFORE writing if line starts with closing brace
-            // This ensures the closing brace aligns with its opening statement
-            if (line.StartsWith('}') || line.StartsWith(')'))
+            // Count how many leading closing braces we have (e.g., "}}" or "} }")
+            int leadingCloseBraces = 0;
+            foreach (char c in line)
             {
-                indentLevel = Math.Max(0, indentLevel - 1);
-                // Don't double-count this brace in post-processing
-                closeBraces = Math.Max(0, closeBraces - 1);
+                if (c == '}') leadingCloseBraces++;
+                else if (!char.IsWhiteSpace(c)) break;
+            }
+
+            // Decrease indent BEFORE writing for each leading closing brace
+            // This ensures each closing brace aligns with its opening statement
+            if (leadingCloseBraces > 0)
+            {
+                indentLevel = Math.Max(0, indentLevel - leadingCloseBraces);
+                // Don't double-count these braces in post-processing
+                closeBraces = Math.Max(0, closeBraces - leadingCloseBraces);
             }
 
             // Add properly indented line
