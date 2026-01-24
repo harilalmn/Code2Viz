@@ -7542,6 +7542,43 @@ public partial class MainWindow : Window
                 SetStatus($"Failed to remove unused usings: {ex.Message}", true);
             }
         }
+        else if (action.ActionId == "ChangeSignature")
+        {
+            if (action.Data.TryGetValue("MethodName", out var methodName))
+            {
+                // Find the method declaration
+                // Method declarations have a return type before the method name
+                var text = CodeEditor.Text;
+                var escapedName = System.Text.RegularExpressions.Regex.Escape(methodName);
+                
+                // Pattern: return_type methodName(parameters)
+                // Use a non-greedy match for return type: (?:...)\s+
+                var methodDeclPattern = $@"(?:void|int|string|bool|double|float|object|var|\w+)\s+{escapedName}\s*\((.*?)\)";
+                var match = System.Text.RegularExpressions.Regex.Match(text, methodDeclPattern, System.Text.RegularExpressions.RegexOptions.Singleline);
+                
+                if (match.Success)
+                {
+                    var currentParams = match.Groups[1].Value.Trim();
+                    
+                    // Prompt user for new parameters
+                    var newParams = PromptForInput("Change Signature", $"Edit parameters for '{methodName}':", currentParams);
+                    
+                    if (newParams != null && newParams != currentParams)
+                    {
+                        var methodIndex = match.Index;
+                        var paramStartIndex = match.Groups[1].Index;
+                        var paramLength = match.Groups[1].Length;
+                        
+                        CodeEditor.Document.Replace(paramStartIndex, paramLength, newParams);
+                        SetStatus($"Signature changed for '{methodName}'", false);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show($"Could not find method declaration for '{methodName}'.", "Change Signature", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
         else
         {
              MessageBox.Show($"Action '{action.Title}' ({action.ActionId}) initiated.\nContext: {string.Join(", ", action.Data.Keys)}", "Quick Action", MessageBoxButton.OK, MessageBoxImage.Information);
