@@ -288,7 +288,10 @@ public class ModuleCompiler
 
             // Transform animation variable declarations to include Name property
             var newRoot = rewriter.Visit(tree.GetRoot());
-            return newRoot.SyntaxTree;
+            
+            // IMPORTANT: Preserve the original file path when creating the new tree
+            // Using newRoot.SyntaxTree loses the file path!
+            return tree.WithRootAndOptions(newRoot, tree.Options);
         }).ToList();
 
         // Resolve NuGet packages

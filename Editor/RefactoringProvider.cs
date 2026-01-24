@@ -19,6 +19,305 @@ namespace Code2Viz.Editor
             _compiler = compiler;
         }
 
+        public class QuickActionItem
+        {
+            public string Title { get; set; } = "";
+            public string ActionId { get; set; } = ""; // e.g., "Rename", "MoveType", "ExtractInterface"
+            public Dictionary<string, string> Data { get; set; } = new();
+        }
+
+        // Overload that uses current editor content directly to avoid line ending/caching issues
+        public async Task<List<QuickActionItem>> GetQuickActionsAsync(VizCodeProject project, string filePath, string currentContent, int offset, int selectionLength)
+        {
+            var actions = new List<QuickActionItem>();
+
+            try
+            {
+                // Parse the current content directly to ensure offset matches
+                var tree = CSharpSyntaxTree.ParseText(
+                    currentContent,
+                    path: filePath,
+                    options: new CSharpParseOptions(LanguageVersion.Latest));
+                
+                // Still need compilation for semantic model
+                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                
+                // Replace the tree in compilation for semantic analysis
+                var oldTree = compilation.SyntaxTrees.FirstOrDefault(t => 
+                    string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(System.IO.Path.GetFileName(t.FilePath), System.IO.Path.GetFileName(filePath), StringComparison.OrdinalIgnoreCase));
+                
+                if (oldTree != null)
+                {
+                    compilation = compilation.ReplaceSyntaxTree(oldTree, tree);
+                }
+                else
+                {
+                    compilation = compilation.AddSyntaxTrees(tree);
+                }
+
+                var root = await tree.GetRootAsync();
+                var model = compilation.GetSemanticModel(tree);
+                var token = root.FindToken(offset);
+
+                // Adjust token if we are at the end of an identifier
+                if (!token.IsKind(SyntaxKind.IdentifierToken) && offset > 0)
+                {
+                    var prev = root.FindToken(offset - 1);
+                    if (prev.IsKind(SyntaxKind.IdentifierToken))
+                    {
+                        token = prev;
+                    }
+                }
+
+                var node = token.Parent;
+
+                // 1. Rename (General)
+                if (token.IsKind(SyntaxKind.IdentifierToken))
+                {
+                    actions.Add(new QuickActionItem 
+                    { 
+                        Title = "Rename...", 
+                        ActionId = "Rename",
+                        Data = { ["Name"] = token.Text }
+                    });
+                }
+
+                // Generate Method Check - look for invocation in ancestors
+                InvocationExpressionSyntax? invocation = null;
+                
+                // Check if we're directly on the method name of an invocation
+                if (node != null && node.Parent is InvocationExpressionSyntax inv1 && node == inv1.Expression)
+                {
+                    invocation = inv1;
+                }
+                // Also check if the identifier is part of a member access being invoked
+                else if (node != null && node.Parent is MemberAccessExpressionSyntax memberAccess && 
+                         memberAccess.Parent is InvocationExpressionSyntax inv2)
+                {
+                    invocation = inv2;
+                }
+                // Fallback: look up the tree for any invocation
+                else if (token.IsKind(SyntaxKind.IdentifierToken))
+                {
+                    var potentialInvocation = node?.Ancestors().OfType<InvocationExpressionSyntax>().FirstOrDefault();
+                    if (potentialInvocation != null)
+                    {
+                        // Check if this identifier is the method name being called
+                        var exprText = potentialInvocation.Expression.ToString();
+                        if (exprText == token.Text || exprText.EndsWith("." + token.Text))
+                        {
+                            invocation = potentialInvocation;
+                        }
+                    }
+                }
+                
+                if (invocation != null)
+                {
+                    var symbolInfo = model.GetSymbolInfo(invocation);
+                    if (symbolInfo.Symbol == null)
+                    {
+                        // Method likely doesn't exist
+                        var tokenText = token.Text;
+                        
+                        // Check if we're in a static method context
+                        var enclosingMethod = node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+                        bool isStatic = enclosingMethod?.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ?? false;
+                        
+                        // Infer parameter types from arguments
+                        var parameters = new List<string>();
+                        var argIndex = 0;
+                        foreach (var arg in invocation.ArgumentList.Arguments)
+                        {
+                            var argType = model.GetTypeInfo(arg.Expression);
+                            var typeName = argType.Type?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat) ?? "object";
+                            var paramName = $"arg{argIndex}";
+                            
+                            // Try to use the argument's name if it's an identifier
+                            if (arg.Expression is IdentifierNameSyntax argId)
+                            {
+                                paramName = argId.Identifier.Text;
+                            }
+                            
+                            parameters.Add($"{typeName} {paramName}");
+                            argIndex++;
+                        }
+                        
+                        var parametersStr = string.Join(", ", parameters);
+                        
+                        actions.Add(new QuickActionItem 
+                        { 
+                            Title = $"Generate method '{tokenText}'", 
+                            ActionId = "GenerateMethod",
+                            Data = { 
+                                ["MethodName"] = tokenText, 
+                                ["InvocationSpan"] = invocation.Span.ToString(),
+                                ["IsStatic"] = isStatic.ToString(),
+                                ["Parameters"] = parametersStr
+                            }
+                        });
+                    }
+                }
+                // Fallback: Check if we are on a standalone identifier in a statement position that isn't resolved
+                else if (token.IsKind(SyntaxKind.IdentifierToken) && node is IdentifierNameSyntax idName && node.Parent is ExpressionStatementSyntax)
+                {
+                     // Standalone unknown identifier call like "Method();"
+                     var symbolInfo = model.GetSymbolInfo(idName);
+                     if (symbolInfo.Symbol == null)
+                     {
+                        // Check if we're in a static method context
+                        var enclosingMethod = node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+                        bool isStatic = enclosingMethod?.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ?? false;
+                        
+                        actions.Add(new QuickActionItem 
+                        { 
+                            Title = $"Generate method '{token.Text}'", 
+                            ActionId = "GenerateMethod",
+                            Data = { 
+                                ["MethodName"] = token.Text, 
+                                ["InvocationSpan"] = idName.Span.ToString(),
+                                ["IsStatic"] = isStatic.ToString(),
+                                ["Parameters"] = ""
+                            }
+                        });
+                     }
+                }
+
+
+                // 2. Class Context
+                var classDecl = node?.AncestorsAndSelf().OfType<ClassDeclarationSyntax>().FirstOrDefault();
+                if (classDecl != null)
+                {
+                    // If cursor is on the class identifier
+                    if (token.Parent == classDecl && token.IsKind(SyntaxKind.IdentifierToken))
+                    {
+                        actions.Add(new QuickActionItem 
+                        { 
+                            Title = "Move type to file matching name", 
+                            ActionId = "MoveTypeToFile",
+                            Data = { ["TypeName"] = classDecl.Identifier.Text }
+                        });
+
+                        actions.Add(new QuickActionItem 
+                        { 
+                            Title = "Extract Interface...", 
+                            ActionId = "ExtractInterface",
+                            Data = { ["TypeName"] = classDecl.Identifier.Text }
+                        });
+                        
+                        actions.Add(new QuickActionItem 
+                        { 
+                            Title = "Sync File Name", 
+                            ActionId = "SyncFileName",
+                            Data = { ["TypeName"] = classDecl.Identifier.Text }
+                        });
+                    }
+
+                    // Constructor generation (if inside class body)
+                    actions.Add(new QuickActionItem 
+                    { 
+                        Title = "Generate Constructor...", 
+                        ActionId = "GenerateConstructor",
+                        Data = { ["TypeName"] = classDecl.Identifier.Text }
+                    });
+                }
+
+                // 3. Method Context
+                var methodDecl = node?.AncestorsAndSelf().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+                if (methodDecl != null)
+                {
+                    // Cursor on method name
+                    if (token.Parent == methodDecl && token.IsKind(SyntaxKind.IdentifierToken))
+                    {
+                         actions.Add(new QuickActionItem 
+                        { 
+                            Title = "Change Signature...", 
+                            ActionId = "ChangeSignature",
+                            Data = { ["MethodName"] = methodDecl.Identifier.Text }
+                        });
+
+                        if (!methodDecl.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)))
+                        {
+                            actions.Add(new QuickActionItem 
+                            { 
+                                Title = "Make Method Static", 
+                                ActionId = "MakeStatic",
+                                Data = { ["MethodName"] = methodDecl.Identifier.Text }
+                            });
+                        }
+                    }
+
+                    actions.Add(new QuickActionItem 
+                    { 
+                        Title = "Add Parameter...", 
+                        ActionId = "AddParameter",
+                        Data = { ["MethodName"] = methodDecl.Identifier.Text }
+                    });
+                }
+
+                // 4. Variable/Field Context
+                var fieldDecl = node?.AncestorsAndSelf().OfType<FieldDeclarationSyntax>().FirstOrDefault();
+                if (fieldDecl != null)
+                {
+                    // If private field, offer encapsulation
+                    if (fieldDecl.Modifiers.Any(m => m.IsKind(SyntaxKind.PrivateKeyword) || m.IsKind(SyntaxKind.InternalKeyword)))
+                    {
+                        var variable = fieldDecl.Declaration.Variables.FirstOrDefault();
+                        if (variable != null)
+                        {
+                             actions.Add(new QuickActionItem 
+                            { 
+                                Title = "Encapsulate Field", 
+                                ActionId = "EncapsulateField",
+                                Data = { ["FieldName"] = variable.Identifier.Text }
+                            });
+                        }
+                    }
+                }
+
+                var localDecl = node?.AncestorsAndSelf().OfType<LocalDeclarationStatementSyntax>().FirstOrDefault();
+                if (localDecl != null && localDecl.Declaration.Type.IsVar)
+                {
+                     actions.Add(new QuickActionItem 
+                    { 
+                        Title = "Use Explicit Type", 
+                        ActionId = "UseExplicitType",
+                    });
+                }
+                else if (localDecl != null && !localDecl.Declaration.Type.IsVar)
+                {
+                    actions.Add(new QuickActionItem 
+                    { 
+                        Title = "Use 'var'", 
+                        ActionId = "UseImplicitType",
+                    });
+                }
+
+                // 5. Selection based (Extract Method)
+                if (selectionLength > 0)
+                {
+                    actions.Add(new QuickActionItem 
+                    { 
+                        Title = "Extract Method...", 
+                        ActionId = "ExtractMethod",
+                        Data = { ["SelectionLength"] = selectionLength.ToString() }
+                    });
+                }
+
+                // 6. General
+                actions.Add(new QuickActionItem { Title = "Fix Formatting", ActionId = "FixFormatting" });
+                actions.Add(new QuickActionItem { Title = "Remove Unused Usings", ActionId = "RemoveUnusedUsings" });
+
+                return actions;
+            }
+            catch (Exception ex)
+            {
+                // Fallback
+                System.Diagnostics.Debug.WriteLine($"GetQuickActionsAsync failed: {ex.Message}");
+                return actions;
+            }
+        }
+
         public class RenameResult
         {
             public bool Success { get; set; }

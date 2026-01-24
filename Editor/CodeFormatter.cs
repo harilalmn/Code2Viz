@@ -10,6 +10,29 @@ public static partial class CodeFormatter
         if (string.IsNullOrWhiteSpace(code))
             return code;
 
+        // Pre-process: Ensure Allman style (opening brace on new line)
+        // 1. Handle ") {" -> ")\n{" (methods, if, while, for, etc.)
+        code = Regex.Replace(code, @"\)\s*\{", ")\n{");
+        
+        // 2. Handle "else {" -> "else\n{"
+        code = Regex.Replace(code, @"\belse\s*\{", "else\n{");
+        
+        // 3. Handle "try {" -> "try\n{"
+        code = Regex.Replace(code, @"\btry\s*\{", "try\n{");
+        
+        // 4. Handle "finally {" -> "finally\n{"
+        code = Regex.Replace(code, @"\bfinally\s*\{", "finally\n{");
+
+        // 5. Handle "do {" -> "do\n{"
+        code = Regex.Replace(code, @"\bdo\s*\{", "do\n{");
+        
+        // 6. Handle "struct/class X {" -> "class X\n{"
+        // This is trickier as it involves identifiers, but let's try a safe approach for class/struct/interface/namespace
+        // We match the end of the declaration.
+        // Simplified: if a line ends with "Identifier {", split it.
+        // code = Regex.Replace(code, @"([a-zA-Z0-9_>])\s*\{", "$1\n{"); // This might be too aggressive (e.g. object initializer)
+        // Let's stick to the user's request for "formatting a method" which is covered by ") {" usually.
+
         var lines = code.Split('\n');
         var result = new StringBuilder();
         var indentLevel = 0;

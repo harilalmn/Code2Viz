@@ -208,6 +208,12 @@
                             Style="{StaticResource MenuItemStyle}" />
                         <Separator />
                         <MenuItem
+                            Click="RefactorMenuItem_Click"
+                            Header="_Quick Actions / Refactor..."
+                            InputGestureText="Ctrl+."
+                            Style="{StaticResource MenuItemStyle}" />
+                        <Separator />
+                        <MenuItem
                             x:Name="InsertColorMenuItem"
                             Click="InsertColorMenuItem_Click"
                             Header="_Insert Color..."

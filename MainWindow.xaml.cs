@@ -4284,6 +4284,12 @@ public partial class MainWindow : Window
         ToggleComment();
     }
 
+    private void RefactorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        // Trigger the same logic as the keyboard shortcut
+        Rename_Executed(sender, null);
+    }
+
     private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
     {
         var helpWindow = new HelpWindow();
@@ -7144,30 +7150,52 @@ public partial class MainWindow : Window
 
     private async void Rename_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (_currentProject == null || _activeFile == null || _refactoringProvider == null) return;
+        // Debug checks
+        if (_currentProject == null)
+        {
+            MessageBox.Show("No project loaded.", "Quick Actions Debug");
+            return;
+        }
+        if (_activeFile == null)
+        {
+            MessageBox.Show("No active file.", "Quick Actions Debug");
+            return;
+        }
+        if (_refactoringProvider == null)
+        {
+            MessageBox.Show("Provider not initialized.", "Quick Actions Debug");
+            return;
+        }
         
         // Sync current content
         _activeFile.Content = CodeEditor.Text;
+        var currentContent = CodeEditor.Text;
         var offset = CodeEditor.CaretOffset;
+        var selectionLength = CodeEditor.SelectionLength;
         
-        // 1. Try to resolve symbol for renaming
+        // 1. Get Quick Actions from RefactoringProvider (pass current content directly)
         SetStatus("Analyzing...", false);
-        var checkResult = await _refactoringProvider.GetRenameEditsAsync(_currentProject, _activeFile.FilePath, offset, "check");
+        var quickActions = await _refactoringProvider.GetQuickActionsAsync(_currentProject, _activeFile.FilePath, currentContent, offset, selectionLength);
+        SetStatus("Ready", false);
         
         var contextMenu = new ContextMenu();
         bool hasItems = false;
 
-        // 2. If valid symbol, add Rename option
-        if (checkResult.Success)
+        // Add Refactoring Items
+        foreach (var action in quickActions)
         {
-            var renameItem = new MenuItemHeader { Header = "Rename Symbol..." };
-            renameItem.Click += (s, args) => PerformRename(checkResult.OriginalName ?? "");
-            // Add icon if possible, or just text
-            contextMenu.Items.Add(renameItem);
+            var item = new MenuItem { Header = action.Title };
+            
+            // Add shortcut hint if applicable
+            if (action.ActionId == "Rename") item.InputGestureText = "Ctrl+R, R";
+            
+            item.Click += (s, args) => PerformQuickAction(action);
+            contextMenu.Items.Add(item);
             hasItems = true;
         }
 
-        // 3. Check for missing namespaces (types and extension methods)
+        // 2. Check for missing namespaces (types and extension methods)
+        // Keep existing logic for now as it's robust
         var word = GetWordAtOffset(CodeEditor.Document, offset);
         if (!string.IsNullOrEmpty(word))
         {
@@ -7196,7 +7224,7 @@ public partial class MainWindow : Window
 
                 foreach (var ns in newNamespaces)
                 {
-                    var item = new MenuItemHeader { Header = $"using {ns};" };
+                    var item = new MenuItem { Header = $"using {ns};" };
                     item.Click += (s, args) => AddUsingStatement(ns);
                     contextMenu.Items.Add(item);
                 }
@@ -7218,17 +7246,96 @@ public partial class MainWindow : Window
 
             // Position relative to TextView
             contextMenu.PlacementTarget = textView;
-            contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.RelativePoint;
-            contextMenu.HorizontalOffset = pos.X;
-            contextMenu.VerticalOffset = pos.Y;
-
-            CodeEditor.ContextMenu = contextMenu;
+            contextMenu.PlacementRectangle = new Rect(pos, new Size(1, 1));
             contextMenu.IsOpen = true;
             SetStatus("Quick actions available", false);
         }
         else
         {
-            SetStatus(checkResult.Error ?? "No actions available", true);
+            SetStatus($"No quick actions. File: {System.IO.Path.GetFileName(_activeFile.FilePath)}, Offset: {offset}", true);
+        }
+    }
+
+    private void PerformQuickAction(Code2Viz.Editor.RefactoringProvider.QuickActionItem action)
+    {
+        if (action.ActionId == "Rename")
+        {
+             if (action.Data.TryGetValue("Name", out var name))
+             {
+                 PerformRename(name);
+             }
+        }
+        else if (action.ActionId == "MoveTypeToFile")
+        {
+            // Trigger existing logic if possible, or new logic
+            // Using existing handler for now if applicable
+            MoveTypeMenuItem_Click(null, null);
+        }
+        else if (action.ActionId == "ExtractInterface")
+        {
+             MessageBox.Show("Extract Interface: Coming soon!", "Refactoring", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        else if (action.ActionId == "FixFormatting")
+        {
+             try 
+             {
+                 var newText = Code2Viz.Editor.CodeFormatter.Format(CodeEditor.Text);
+                 CodeEditor.Document.Replace(0, CodeEditor.Document.TextLength, newText);
+             }
+             catch (Exception ex)
+             {
+                 SetStatus($"Formatting failed: {ex.Message}", true);
+             }
+        }
+        else if (action.ActionId == "GenerateMethod")
+        {
+            if (action.Data.TryGetValue("MethodName", out var methodName))
+            {
+                // Check if method should be static
+                action.Data.TryGetValue("IsStatic", out var isStaticStr);
+                bool isStatic = isStaticStr == "True";
+                
+                // Get inferred parameters
+                action.Data.TryGetValue("Parameters", out var parameters);
+                parameters ??= "";
+                
+                // Build the method signature
+                var staticModifier = isStatic ? "static " : "";
+                var stub = $"\r\n\r\n        private {staticModifier}void {methodName}({parameters})\r\n        {{\r\n            throw new NotImplementedException();\r\n        }}";
+                
+                // Find the class closing brace (second-to-last '}' in the file)
+                // The last '}' is typically the namespace closing brace
+                var text = CodeEditor.Text;
+                var braceCount = 0;
+                var insertPosition = -1;
+                
+                for (int i = text.Length - 1; i >= 0; i--)
+                {
+                    if (text[i] == '}')
+                    {
+                        braceCount++;
+                        if (braceCount == 2) // Found the class closing brace
+                        {
+                            insertPosition = i;
+                            break;
+                        }
+                    }
+                }
+                
+                if (insertPosition > 0)
+                {
+                    CodeEditor.Document.Insert(insertPosition, stub);
+                }
+                else if (text.LastIndexOf('}') > 0)
+                {
+                    // Fallback: insert before last brace if only one found
+                    CodeEditor.Document.Insert(text.LastIndexOf('}'), stub);
+                }
+            }
+        }
+        else
+        {
+             MessageBox.Show($"Action '{action.Title}' ({action.ActionId}) initiated.\nContext: {string.Join(", ", action.Data.Keys)}", "Quick Action", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
