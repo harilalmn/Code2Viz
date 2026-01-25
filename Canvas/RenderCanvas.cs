@@ -4,6 +4,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Code2Viz.Geometry;
 using Point = System.Windows.Point;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
+using Colors = System.Windows.Media.Colors;
+using Pen = System.Windows.Media.Pen;
+using Size = System.Windows.Size;
+using Rect = System.Windows.Rect;
+using DashStyle = System.Windows.Media.DashStyle;
+using DashStyles = System.Windows.Media.DashStyles;
+using PenLineCap = System.Windows.Media.PenLineCap;
 // Direct usage of VPoint, VLine etc. No alias needed.
 
 namespace Code2Viz.Canvas;
@@ -688,6 +698,10 @@ public class RenderCanvas : FrameworkElement
         {
             // Skip if spatial index exists and shape not in visible set
             if (visibleSet != null && !visibleSet.Contains(shape))
+                continue;
+
+            // Skip hidden shapes
+            if (shape is Shape s && !s.IsVisible)
                 continue;
 
             switch (shape)
@@ -2326,6 +2340,10 @@ public class RenderCanvas : FrameworkElement
 
         foreach (var shape in shapeList)
         {
+            // Skip hidden shapes
+            if (shape is Shape shp && !shp.IsVisible)
+                continue;
+
             switch (shape)
             {
                 case VPoint point:
@@ -2455,6 +2473,10 @@ public class RenderCanvas : FrameworkElement
 
         foreach (var shape in shapeList)
         {
+            // Skip hidden shapes
+            if (shape is Shape shp && !shp.IsVisible)
+                continue;
+
             switch (shape)
             {
                 case VPoint point:

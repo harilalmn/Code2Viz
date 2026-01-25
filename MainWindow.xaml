@@ -1635,6 +1635,7 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="200" />
@@ -1952,6 +1953,25 @@
                                                     Content="Enabled"
                                                     Foreground="{StaticResource ForegroundBrush}"
                                                     Unchecked="SettingsZoomToFitCheck_Changed" />
+
+                                                <!--  Auto-update Canvas  -->
+                                                <TextBlock
+                                                    Grid.Row="17"
+                                                    Grid.Column="0"
+                                                    Margin="0,8,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    Text="Auto-update Canvas:" />
+                                                <CheckBox
+                                                    x:Name="SettingsAutoUpdateCanvasCheck"
+                                                    Grid.Row="17"
+                                                    Grid.Column="1"
+                                                    Margin="0,8,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Checked="SettingsAutoUpdateCanvasCheck_Changed"
+                                                    Content="Enabled (updates after 500ms pause)"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    Unchecked="SettingsAutoUpdateCanvasCheck_Changed" />
                                             </Grid>
 
                                             <!--  Note about auto-save  -->

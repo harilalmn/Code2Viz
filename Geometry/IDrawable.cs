@@ -1,4 +1,5 @@
 using System;
+using Code2Viz.Canvas;
 
 namespace Code2Viz.Geometry;
 
@@ -82,6 +83,16 @@ public abstract class Shape : IDrawable
     public string Name { get; set; } = "";
 
     /// <summary>
+    /// Base constructor that auto-registers the shape with the canvas.
+    /// Shapes are automatically displayed when created - no need to call Draw().
+    /// </summary>
+    protected Shape()
+    {
+        // Auto-register with canvas (Draw() calls will be no-ops due to IsPlaced check)
+        CanvasRenderer.Instance.AddShape(this);
+    }
+
+    /// <summary>
     /// Indicates whether this shape is currently selected.
     /// </summary>
     public bool IsSelected { get; set; } = false;
@@ -137,7 +148,30 @@ public abstract class Shape : IDrawable
     /// </summary>
     public bool IsPlaced { get; internal set; } = false;
 
+    /// <summary>
+    /// Indicates whether this shape is visible on the canvas.
+    /// Hidden shapes are not rendered but remain in the shape collection.
+    /// </summary>
+    public bool IsVisible { get; set; } = true;
+
     public abstract void Draw();
+
+    /// <summary>
+    /// Shows this shape on the canvas (sets IsVisible to true).
+    /// </summary>
+    public void Show()
+    {
+        IsVisible = true;
+    }
+
+    /// <summary>
+    /// Hides this shape from the canvas (sets IsVisible to false).
+    /// The shape remains in the shape collection but is not rendered.
+    /// </summary>
+    public void Hide()
+    {
+        IsVisible = false;
+    }
 
     /// <summary>
     /// Creates a deep copy of this shape.

@@ -25,8 +25,8 @@ public static class Templates
                     public static void Main()
                     {
                         VizConsole.Log("Hello World");
+                        // Shapes appear on canvas automatically when created
                         var p = new VPoint(0, 0);
-                        p.Draw();
                     }
                 }
             }

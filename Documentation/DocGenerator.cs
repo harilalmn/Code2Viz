@@ -1640,6 +1640,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "Shape.OffsetY", "Gets or sets the Y offset for translation animations." },
                 { "Shape.RotationAngle", "Gets or sets the rotation angle in degrees for rotation animations." },
                 { "Shape.RotationPivot", "Gets or sets the pivot point for rotation animations. Null uses shape center." },
+                { "Shape.IsVisible", "Gets or sets whether this shape is visible on the canvas. Hidden shapes are not rendered but remain in the shape collection." },
 
                 // Shape base class methods
                 { "Shape.Draw", "Renders the shape to the canvas. Must be called for the shape to be visible." },
@@ -1654,6 +1655,8 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "Shape.Intersect", "Computes geometric intersection with another shape." },
                 { "Shape.CopyStyleTo", "Copies this shape's style properties to another shape." },
                 { "Shape.ToString", "Returns a string representation of the shape." },
+                { "Shape.Show", "Shows this shape on the canvas by setting IsVisible to true." },
+                { "Shape.Hide", "Hides this shape from the canvas by setting IsVisible to false. The shape remains in the collection but is not rendered." },
 
                 // VXYZ Properties
                 { "VXYZ.X", "Gets or sets the X component of the vector." },
@@ -2179,6 +2182,9 @@ namespace StartViz
             };
             AddListItem(tipsList, "Colors", "Use color names (\"Red\", \"Cyan\") or hex codes (\"#FF0000\", \"#80FFFFFF\" for semi-transparent)");
             AddListItem(tipsList, "VizConsole", "Use VizConsole.Log() to output debug messages to the console panel");
+            AddListItem(tipsList, "Auto-update Canvas", "Canvas updates automatically as you type (500ms delay). Disable in Settings > Application Settings if you prefer manual Run");
+            AddListItem(tipsList, "No Draw() Needed", "Shapes appear automatically when created - Draw() is optional and kept for backwards compatibility");
+            AddListItem(tipsList, "Show/Hide Shapes", "Use shape.Hide() and shape.Show() to control visibility without removing from canvas");
             AddListItem(tipsList, "ShapeDefaults", "Set ShapeDefaults.GlobalStrokeColor to apply colors to all new shapes");
             AddListItem(tipsList, "Animation", "Create a Timeline, add animations, and call .Play() to animate shapes");
             AddListItem(tipsList, "Drawing Tools", "Use the toolbar or press P/L/C/R to draw shapes directly on canvas with auto-generated code");

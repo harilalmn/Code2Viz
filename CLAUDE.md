@@ -90,8 +90,10 @@ Example: `[StartViz:15] Hello World`
 - `Shape` implements `IDrawable` interface
 - Curve shapes (VLine, VCircle, VArc, etc.) also implement `ICurve` interface
 - `ICurve` extends `IDrawable`, so all curves can be drawn via the interface
-- Shapes have: `StrokeColor`, `FillColor`, `StrokeThickness`
-- Calling `Draw()` adds shape to `CanvasRenderer.Instance`
+- Shapes have: `StrokeColor`, `FillColor`, `StrokeThickness`, `IsVisible`
+- **Shapes auto-register on construction** - no need to call `Draw()`
+- `Draw()` is kept for backwards compatibility but is a no-op
+- Use `Show()` and `Hide()` methods to control visibility
 
 ### Canvas Features
 - Mouse wheel zoom (centered on cursor position)
@@ -203,6 +205,8 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - PNG export functional
 - Drawing toolbar with auto code generation
 - All keyboard shortcuts working
+- **Auto-update canvas**: Canvas updates automatically when code changes (debounced 500ms)
+- **Shapes auto-register**: No need to call `Draw()` - shapes appear when created
 
 ## Known Issues
 - None currently

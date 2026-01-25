@@ -28,6 +28,34 @@ using Code2Viz.Project;
 using ICSharpCode.AvalonEdit.Rendering;
 using Microsoft.CodeAnalysis;
 
+// Resolve ambiguities between WPF and WinForms/Drawing
+using Color = System.Windows.Media.Color;
+using Point = System.Windows.Point;
+using Size = System.Windows.Size;
+using Pen = System.Windows.Media.Pen;
+using Brush = System.Windows.Media.Brush;
+using FontFamily = System.Windows.Media.FontFamily;
+using FontStyle = System.Windows.FontStyle;
+using FontWeight = System.Windows.FontWeight;
+using ToolTip = System.Windows.Controls.ToolTip;
+using ContextMenu = System.Windows.Controls.ContextMenu;
+using MenuItem = System.Windows.Controls.MenuItem;
+using Control = System.Windows.Controls.Control;
+using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
+using Cursors = System.Windows.Input.Cursors;
+using Cursor = System.Windows.Input.Cursor;
+using Button = System.Windows.Controls.Button;
+using TextBox = System.Windows.Controls.TextBox;
+using ComboBox = System.Windows.Controls.ComboBox;
+using CheckBox = System.Windows.Controls.CheckBox;
+using Label = System.Windows.Controls.Label;
+using Image = System.Windows.Controls.Image;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+
 namespace Code2Viz;
 
 public partial class MainWindow : Window
@@ -53,6 +81,7 @@ public partial class MainWindow : Window
     private RefactoringProvider? _refactoringProvider;
     private BracketHighlightRenderer? _bracketRenderer;
     private MultiSelectionRenderer? _multiSelectionRenderer;
+    private SelectionHighlightRenderer? _selectionHighlightRenderer;
 
     // Real-time error checking
     private DispatcherTimer? _syntaxCheckTimer;
@@ -71,6 +100,9 @@ public partial class MainWindow : Window
     // Semantic Highlighting
     private Editor.SemanticHighlighter? _semanticHighlighter;
     private DispatcherTimer? _semanticUpdateTimer;
+
+    // Auto-update Canvas (debounced auto-run)
+    private DispatcherTimer? _autoUpdateTimer;
 
     // Code Lens
     private Editor.CodeLensGenerator? _codeLensGenerator;
@@ -559,6 +591,14 @@ public partial class MainWindow : Window
         _multiSelectionRenderer?.ClearSelections();
     }
 
+    private void OnCodeEditorSelectionChanged(object? sender, EventArgs e)
+    {
+        if (_selectionHighlightRenderer != null)
+        {
+            _selectionHighlightRenderer.UpdateSelection(CodeEditor.SelectedText);
+        }
+    }
+
     private void TextArea_PreviewMouseDown_ClearMultiSelect(object? sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         // Clear multi-selections when user clicks in the text area
@@ -719,6 +759,11 @@ public partial class MainWindow : Window
         _multiSelectionRenderer = new MultiSelectionRenderer(CodeEditor.TextArea.TextView);
         CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_multiSelectionRenderer);
         CodeEditor.TextArea.SelectionChanged += TextArea_SelectionChanged_ClearMultiSelect;
+
+        // Initialize Selection Highlight Renderer (Draws occurrences of selected text)
+        _selectionHighlightRenderer = new SelectionHighlightRenderer(CodeEditor.TextArea.TextView);
+        CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_selectionHighlightRenderer);
+        CodeEditor.TextArea.SelectionChanged += OnCodeEditorSelectionChanged;
         CodeEditor.TextArea.TextEntering += TextArea_TextEntering_MultiCursor;
         CodeEditor.TextArea.PreviewMouseDown += TextArea_PreviewMouseDown_ClearMultiSelect;
 
@@ -784,6 +829,28 @@ public partial class MainWindow : Window
 
         // Track text changes for syntax checking
         CodeEditor.TextChanged += (s, e) => _textChangedSinceLastCheck = true;
+
+        // Auto-update canvas timer (debounced auto-run)
+        _autoUpdateTimer = new DispatcherTimer();
+        _autoUpdateTimer.Interval = TimeSpan.FromMilliseconds(ApplicationSettings.Instance.AutoUpdateDelayMs);
+        _autoUpdateTimer.Tick += async (s, e) =>
+        {
+            _autoUpdateTimer.Stop();
+            if (ApplicationSettings.Instance.AutoUpdateCanvas && _currentProject != null)
+            {
+                await AutoRunCodeAsync();
+            }
+        };
+
+        // Trigger auto-update on text changes
+        CodeEditor.TextChanged += (s, e) =>
+        {
+            if (ApplicationSettings.Instance.AutoUpdateCanvas)
+            {
+                _autoUpdateTimer.Stop();
+                _autoUpdateTimer.Start();
+            }
+        };
 
         // Ctrl+MouseWheel to change font size
         CodeEditor.PreviewMouseWheel += CodeEditor_PreviewMouseWheel;
@@ -3203,6 +3270,7 @@ public partial class MainWindow : Window
 
         // Canvas Settings
         SettingsZoomToFitCheck.IsChecked = appSettings.ZoomToFitOnRun;
+        SettingsAutoUpdateCanvasCheck.IsChecked = appSettings.AutoUpdateCanvas;
 
         // Update Button colors
         UpdateColorButton(SettingsStrokeColorBtn, SettingsStrokeColorBox.Text);
@@ -3286,6 +3354,12 @@ public partial class MainWindow : Window
     private void SettingsZoomToFitCheck_Changed(object sender, RoutedEventArgs e)
     {
         ApplicationSettings.Instance.ZoomToFitOnRun = SettingsZoomToFitCheck.IsChecked == true;
+        ApplicationSettings.Save();
+    }
+
+    private void SettingsAutoUpdateCanvasCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        ApplicationSettings.Instance.AutoUpdateCanvas = SettingsAutoUpdateCanvasCheck.IsChecked == true;
         ApplicationSettings.Save();
     }
 
@@ -3657,6 +3731,109 @@ public partial class MainWindow : Window
             // Flush any pending console output
             Console.ConsoleOutput.Instance.Flush();
             RunButton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// Silently compiles and runs code for auto-update (no error dialogs, minimal status updates).
+    /// </summary>
+    private async Task AutoRunCodeAsync()
+    {
+        if (_currentProject == null || _currentProject.Files.Count == 0)
+            return;
+
+        // Save current editor content
+        SaveCurrentEditorContent();
+
+        // Verify entry point exists
+        if (_currentProject.EntryPointFile == null)
+            return;
+
+        try
+        {
+            _textMarkerService?.Clear();
+            var result = await _compiler.CompileAndExecuteAsync(_currentProject);
+
+            // Apply project settings
+            _currentProject.ApplySettings();
+            if (_currentProject.ProjectFile.Settings.DefaultCanvasBackgroundColor is string bgCode)
+            {
+                try { RenderCanvas.CanvasBackground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bgCode)); } catch { }
+            }
+
+            if (result.Success)
+            {
+                _animationStopwatch.Restart();
+                TransactionManager.Instance.Clear();
+
+                var shapes = CanvasRenderer.Instance.GetShapes();
+                CanvasRenderer.Instance.RenderTo(RenderCanvas);
+
+                // Zoom to fit if enabled in settings
+                if (ApplicationSettings.Instance.ZoomToFitOnRun && shapes.Count > 0)
+                {
+                    RenderCanvas.ZoomExtents(shapes);
+                }
+
+                SetStatus($"Auto-update: {shapes.Count} shape{(shapes.Count != 1 ? "s" : "")}", isError: false);
+                PopulateOutliner(shapes);
+            }
+            else
+            {
+                // Show error count in status bar only (no dialogs)
+                var errorCount = (result.Diagnostics?.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error) ?? 0)
+                               + (result.FSharpDiagnostics?.Count(d => d.Severity == "Error") ?? 0);
+                if (errorCount > 0)
+                {
+                    SetStatus($"Auto-update: {errorCount} error{(errorCount != 1 ? "s" : "")}", isError: true);
+                }
+
+                // Add error markers to editor silently
+                if (result.Diagnostics != null)
+                {
+                    foreach (var diagnostic in result.Diagnostics.Where(d =>
+                        d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error ||
+                        d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning))
+                    {
+                        var lineSpan = diagnostic.Location.GetLineSpan();
+                        var activePath = _activeFile?.FilePath;
+                        if (activePath == null) continue;
+
+                        bool isMatch = string.IsNullOrEmpty(lineSpan.Path) ||
+                            string.Equals(lineSpan.Path, activePath, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(Path.GetFileName(lineSpan.Path), Path.GetFileName(activePath), StringComparison.OrdinalIgnoreCase);
+
+                        if (isMatch)
+                        {
+                            try
+                            {
+                                var startLine = lineSpan.StartLinePosition.Line + 1;
+                                var startCol = lineSpan.StartLinePosition.Character + 1;
+                                var endLine = lineSpan.EndLinePosition.Line + 1;
+                                var endCol = lineSpan.EndLinePosition.Character + 1;
+                                var offset = CodeEditor.Document.GetOffset(new TextLocation(startLine, startCol));
+                                var endOffset = CodeEditor.Document.GetOffset(new TextLocation(endLine, endCol));
+                                var length = endOffset - offset;
+
+                                if (length > 0)
+                                {
+                                    var color = diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error ? Colors.Red : Colors.Orange;
+                                    _textMarkerService?.Create(offset, length, diagnostic.GetMessage(), color);
+                                }
+                            }
+                            catch { /* Ignore invalid ranges */ }
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Silently ignore errors during auto-update
+        }
+        finally
+        {
+            Console.ConsoleOutput.Instance.Flush();
         }
     }
 

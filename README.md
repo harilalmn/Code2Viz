@@ -12,6 +12,8 @@ Code2Viz is a visual programming environment that lets you write C# or F# code t
 
 ## Features
 
+- **Live Preview**: Canvas updates automatically as you type (debounced auto-run)
+- **No Draw() Required**: Shapes appear automatically when created
 - **Multi-language Support**: Write code in C# or F# with full syntax highlighting
 - **Rich Shape Library**: Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, text, arrows, and dimension annotations
 - **Animation System**: Create timeline-based animations with draw, move, rotate, and flip effects
@@ -40,18 +42,21 @@ namespace StartViz
     {
         public static void Main()
         {
-            // Create and draw a circle
+            // Shapes appear automatically when created - no Draw() needed!
             var circle = new VCircle(0, 0, 50);
             circle.StrokeColor = "Cyan";
             circle.FillColor = "#4000FFFF";
-            circle.Draw();
         }
     }
 }
 ```
 
-### 3. Run Your Code
-Press **F5** or click the **Run** button to execute and see results on the canvas.
+### 3. See Results Instantly
+With **Auto-update Canvas** enabled (default), the canvas updates automatically as you type - no need to press Run!
+
+- **Auto-update**: Canvas refreshes 500ms after you stop typing
+- **Manual mode**: Disable auto-update in Settings to use F5/Run button instead
+- **Draw() is optional**: Shapes appear when created; `Draw()` is kept for backwards compatibility
 
 ---
 
@@ -1000,7 +1005,7 @@ var z = VXYZ.BasisZ;  // (0, 0, 1)
 ### Common Shape Methods
 All shapes inherit from `Shape` and support these methods:
 ```csharp
-shape.Draw();                    // Render to canvas
+// Shapes appear automatically - Draw() is optional (kept for backwards compatibility)
 var copy = shape.Clone();        // Create a copy
 shape.Move(new VXYZ(10, 20, 0)); // Translate
 shape.Rotate(pivot, 45);         // Rotate 45 degrees around pivot
@@ -1008,6 +1013,8 @@ shape.Scale(center, 2.0);        // Scale by factor
 var bounds = shape.GetBounds();  // Get bounding box
 bool hit = shape.Contains(point);// Point containment test
 double d = shape.DistanceTo(pt); // Distance to point
+shape.Hide();                    // Hide shape from canvas
+shape.Show();                    // Show hidden shape
 ```
 
 ### ICurve Interface
