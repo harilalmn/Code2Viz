@@ -1292,7 +1292,7 @@ public partial class MainWindow : Window
         }
         else if (e.Text == " ")
         {
-            // Check if we just typed "new " - show type completions
+            // Close completion window when space is typed after keywords
             var offset = CodeEditor.CaretOffset;
             if (offset >= 4)
             {
@@ -1300,6 +1300,11 @@ public partial class MainWindow : Window
                 if (textBefore == "new")
                 {
                     TriggerManualCompletion();
+                }
+                else if (textBefore == "var")
+                {
+                    // Close completion window after 'var '
+                    _completionWindow?.Close();
                 }
             }
         }
@@ -1310,8 +1315,60 @@ public partial class MainWindow : Window
         }
         else if (char.IsLetter(e.Text[0]))
         {
-            // Show general completions after typing a letter
-            TriggerManualCompletion();
+            var offset = CodeEditor.CaretOffset;
+            var wordStart = offset - 1;
+            while (wordStart > 0 && char.IsLetterOrDigit(CodeEditor.Document.GetCharAt(wordStart - 1)))
+            {
+                wordStart--;
+            }
+            var currentWord = CodeEditor.Document.GetText(wordStart, offset - wordStart);
+            
+            // Type keywords that shouldn't trigger completion for themselves OR for the variable name after them
+            var typeKeywords = new[] { "var", "int", "string", "bool", "double", "float", "char", "byte", 
+                "short", "long", "decimal", "object", "void" };
+            
+            // Control flow keywords - no completion for themselves
+            var controlKeywords = new[] { "using", "namespace", "class", "struct", 
+                "interface", "enum", "return", "if", "else", "while", "for", "foreach", "switch", "case",
+                "break", "continue", "try", "catch", "finally", "throw", "public", "private", "protected",
+                "internal", "static", "const", "readonly", "virtual", "override", "abstract", "sealed" };
+            
+            if (typeKeywords.Contains(currentWord) || controlKeywords.Contains(currentWord))
+            {
+                // Close any existing completion window when a keyword is fully typed
+                _completionWindow?.Close();
+            }
+            else
+            {
+                // Check if the PREVIOUS word (before current word) is a type keyword
+                // This detects "var arc|" or "int count|" patterns
+                var prevWordEnd = wordStart;
+                // Skip whitespace before current word
+                while (prevWordEnd > 0 && char.IsWhiteSpace(CodeEditor.Document.GetCharAt(prevWordEnd - 1)))
+                {
+                    prevWordEnd--;
+                }
+                // Find start of previous word
+                var prevWordStart = prevWordEnd;
+                while (prevWordStart > 0 && char.IsLetterOrDigit(CodeEditor.Document.GetCharAt(prevWordStart - 1)))
+                {
+                    prevWordStart--;
+                }
+                
+                if (prevWordStart < prevWordEnd)
+                {
+                    var prevWord = CodeEditor.Document.GetText(prevWordStart, prevWordEnd - prevWordStart);
+                    if (typeKeywords.Contains(prevWord))
+                    {
+                        // User is typing a variable name after a type - don't show completion
+                        _completionWindow?.Close();
+                        return;
+                    }
+                }
+                
+                // Show general completions after typing a letter
+                TriggerManualCompletion();
+            }
         }
     }
 
@@ -1935,6 +1992,16 @@ public partial class MainWindow : Window
                 _completionWindow.Top += insightHeight + 2;
             };
         }
+
+        // Close window if it becomes empty after filtering
+        _completionWindow.CompletionList.ListBox.Items.CurrentChanged += (s, e) =>
+        {
+            if (_completionWindow != null && 
+                _completionWindow.CompletionList.ListBox.Items.Count == 0)
+            {
+                _completionWindow.Close();
+            }
+        };
 
         _completionWindow.Show();
         _completionWindow.Closed += (s, e) => _completionWindow = null;
@@ -3643,20 +3710,69 @@ public partial class MainWindow : Window
 
     private void SetProjectBrowserVisibility(bool isVisible)
     {
-        ProjectBrowserPanel.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-        ProjectBrowserSplitter.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-
+        // Update Project Browser row visibility within the right panel
         if (isVisible)
         {
-            ProjectBrowserColumn.Width = new GridLength(250);
-            ProjectBrowserColumn.MinWidth = 150;
-            ProjectBrowserSplitterColumn.Width = GridLength.Auto;
+            // Show Project Browser rows
+            // The grid rows for explorer header and tree will be visible by default
+        }
+
+        // Update right panel visibility based on whether Project Browser OR Outliner is visible
+        UpdateRightPanelVisibility();
+    }
+
+    private void UpdateRightPanelVisibility()
+    {
+        // Right panel is visible if either Project Browser or Outliner is checked
+        var showRightPanel = ShowProjectBrowserMenuItem.IsChecked || ShowOutlinerMenuItem.IsChecked;
+
+        ProjectBrowserPanel.Visibility = showRightPanel ? Visibility.Visible : Visibility.Collapsed;
+        RightPanelSplitter.Visibility = showRightPanel ? Visibility.Visible : Visibility.Collapsed;
+
+        if (showRightPanel)
+        {
+            RightPanelColumn.Width = new GridLength(250);
+            RightPanelColumn.MinWidth = 150;
         }
         else
         {
-            ProjectBrowserColumn.Width = new GridLength(0);
-            ProjectBrowserColumn.MinWidth = 0;
-            ProjectBrowserSplitterColumn.Width = new GridLength(0);
+            RightPanelColumn.Width = new GridLength(0);
+            RightPanelColumn.MinWidth = 0;
+        }
+
+        // Update internal row heights based on which panels are visible
+        var showProjectBrowser = ShowProjectBrowserMenuItem.IsChecked;
+        var showOutliner = ShowOutlinerMenuItem.IsChecked;
+
+        if (showProjectBrowser && showOutliner)
+        {
+            // Both visible - split space
+            OutlinerSplitterRow.Height = GridLength.Auto;
+            OutlinerSplitter.Visibility = Visibility.Visible;
+            OutlinerHeaderRow.Height = GridLength.Auto;
+            OutlinerHeader.Visibility = Visibility.Visible;
+            OutlinerTreeRow.Height = new GridLength(1, GridUnitType.Star);
+            OutlinerTreeView.Visibility = Visibility.Visible;
+        }
+        else if (showProjectBrowser)
+        {
+            // Only Project Browser - hide outliner rows
+            OutlinerSplitterRow.Height = new GridLength(0);
+            OutlinerSplitter.Visibility = Visibility.Collapsed;
+            OutlinerHeaderRow.Height = new GridLength(0);
+            OutlinerHeader.Visibility = Visibility.Collapsed;
+            OutlinerTreeRow.Height = new GridLength(0);
+            OutlinerTreeView.Visibility = Visibility.Collapsed;
+        }
+        else if (showOutliner)
+        {
+            // Only Outliner - hide project browser, show outliner in full space
+            OutlinerSplitterRow.Height = new GridLength(0);
+            OutlinerSplitter.Visibility = Visibility.Collapsed;
+            OutlinerHeaderRow.Height = GridLength.Auto;
+            OutlinerHeader.Visibility = Visibility.Visible;
+            OutlinerTreeRow.Height = new GridLength(1, GridUnitType.Star);
+            OutlinerTreeView.Visibility = Visibility.Visible;
         }
     }
 
@@ -3671,24 +3787,8 @@ public partial class MainWindow : Window
 
     private void SetOutlinerVisibility(bool isVisible)
     {
-        var visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-        OutlinerSplitter.Visibility = visibility;
-        OutlinerHeader.Visibility = visibility;
-        OutlinerTreeView.Visibility = visibility;
-
-        // Adjust row heights
-        if (isVisible)
-        {
-            OutlinerSplitterRow.Height = GridLength.Auto;
-            OutlinerHeaderRow.Height = GridLength.Auto;
-            OutlinerTreeRow.Height = new GridLength(1, GridUnitType.Star);
-        }
-        else
-        {
-            OutlinerSplitterRow.Height = new GridLength(0);
-            OutlinerHeaderRow.Height = new GridLength(0);
-            OutlinerTreeRow.Height = new GridLength(0);
-        }
+        // Update right panel visibility based on whether Project Browser OR Outliner is visible
+        UpdateRightPanelVisibility();
     }
 
     private void ShowTimelineMenuItem_Click(object sender, RoutedEventArgs e)
@@ -3709,11 +3809,7 @@ public partial class MainWindow : Window
 
     private void ShowToolbarMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        var isVisible = ShowToolbarMenuItem.IsChecked;
-        DrawingToolbarPanel.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-
-        ApplicationSettings.Instance.ShowToolbar = isVisible;
-        ApplicationSettings.Save();
+        // Toolbar menu item has been removed
     }
 
     private void ShowConsoleMenuItem_Click(object sender, RoutedEventArgs e)
@@ -3732,6 +3828,40 @@ public partial class MainWindow : Window
         ConsoleRow.Height = isVisible ? new GridLength(200) : new GridLength(0);
     }
 
+    private void ShowCanvasMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var isVisible = ShowCanvasMenuItem.IsChecked;
+        SetCanvasVisibility(isVisible);
+
+        ApplicationSettings.Instance.ShowCanvas = isVisible;
+        ApplicationSettings.Save();
+    }
+
+    private void SetCanvasVisibility(bool isVisible)
+    {
+        RenderCanvas.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        ConsoleSplitter.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+
+        if (isVisible)
+        {
+            CanvasRow.Height = new GridLength(1, GridUnitType.Star);
+            CanvasRow.MinHeight = 200;
+            ConsoleRow.Height = new GridLength(200);
+        }
+        else
+        {
+            CanvasRow.Height = new GridLength(0);
+            CanvasRow.MinHeight = 0;
+            // Let Console take up the space
+            ConsoleRow.Height = new GridLength(1, GridUnitType.Star);
+        }
+
+        // Disable Run and Draw when canvas is not visible
+        RunButton.IsEnabled = isVisible;
+        RunMenuItem.IsEnabled = isVisible;
+        DrawMenu.IsEnabled = isVisible;
+    }
+
     private void ApplyWindowVisibilitySettings()
     {
         // Apply saved settings on startup
@@ -3746,11 +3876,13 @@ public partial class MainWindow : Window
         ShowTimelineMenuItem.IsChecked = settings.ShowTimeline;
         SetTimelineVisibility(settings.ShowTimeline);
 
-        ShowToolbarMenuItem.IsChecked = settings.ShowToolbar;
-        DrawingToolbarPanel.Visibility = settings.ShowToolbar ? Visibility.Visible : Visibility.Collapsed;
+        // Toolbar has been removed
 
         ShowConsoleMenuItem.IsChecked = settings.ShowConsole;
         SetConsoleVisibility(settings.ShowConsole);
+
+        ShowCanvasMenuItem.IsChecked = settings.ShowCanvas;
+        SetCanvasVisibility(settings.ShowCanvas);
     }
 
     #endregion
@@ -4457,9 +4589,34 @@ public partial class MainWindow : Window
         SetDrawingMode(Canvas.DrawingMode.Line);
     }
 
-    private void DrawCircle_Click(object sender, RoutedEventArgs e)
+    private void DrawCircle_CenterRadius_Click(object sender, RoutedEventArgs e)
     {
         SetDrawingMode(Canvas.DrawingMode.Circle);
+    }
+
+    private void DrawCircle_CenterDiameter_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.CircleDiameter);
+    }
+
+    private void DrawCircle_TwoPoints_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.CircleTwoPoints);
+    }
+
+    private void DrawCircle_ThreePoints_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.CircleThreePoints);
+    }
+
+    private void DrawCircle_TanTanRadius_Click(object sender, RoutedEventArgs e)
+    {
+        SetStatus("Circle (Tan, Tan, Radius) - Not yet implemented", true);
+    }
+
+    private void DrawCircle_TanTanTan_Click(object sender, RoutedEventArgs e)
+    {
+        SetStatus("Circle (Tan, Tan, Tan) - Not yet implemented", true);
     }
 
     private void DrawRect_Click(object sender, RoutedEventArgs e)
@@ -4472,9 +4629,62 @@ public partial class MainWindow : Window
         SetDrawingMode(Canvas.DrawingMode.Ellipse);
     }
 
-    private void DrawArc_Click(object sender, RoutedEventArgs e)
+    private void DrawArc_ThreePoints_Click(object sender, RoutedEventArgs e)
     {
         SetDrawingMode(Canvas.DrawingMode.Arc);
+    }
+
+    private void DrawArc_StartCenterEnd_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Start, Center, End) - Click start, center, then end point", false);
+    }
+
+    private void DrawArc_StartCenterAngle_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Start, Center, Angle) - Click start, center, then sweep angle", false);
+    }
+
+    private void DrawArc_StartCenterLength_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Start, Center, Length) - Click start, center, then arc length", false);
+    }
+
+    private void DrawArc_StartEndAngle_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Start, End, Angle) - Click start, end, then sweep angle", false);
+    }
+
+    private void DrawArc_StartEndRadius_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Start, End, Radius) - Click start, end, then radius point", false);
+    }
+
+    private void DrawArc_CenterStartEnd_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Center, Start, End) - Click center, start, then end point", false);
+    }
+
+    private void DrawArc_CenterStartAngle_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Center, Start, Angle) - Click center, start, then sweep angle", false);
+    }
+
+    private void DrawArc_CenterStartLength_Click(object sender, RoutedEventArgs e)
+    {
+        SetDrawingMode(Canvas.DrawingMode.Arc);
+        SetStatus("Arc (Center, Start, Length) - Click center, start, then arc length", false);
+    }
+
+    private void DrawArc_Continue_Click(object sender, RoutedEventArgs e)
+    {
+        SetStatus("Arc (Continue) - Not yet implemented", true);
     }
 
     private void DrawPolygon_Click(object sender, RoutedEventArgs e)
@@ -4683,21 +4893,7 @@ public partial class MainWindow : Window
 
     private void UpdateDrawingToolbarButtons()
     {
-        var mode = RenderCanvas.DrawingTool.Mode;
-
-        SelectToolBtn.Tag = mode == Canvas.DrawingMode.None ? "Active" : null;
-        DrawPointBtn.Tag = mode == Canvas.DrawingMode.Point ? "Active" : null;
-        DrawLineBtn.Tag = mode == Canvas.DrawingMode.Line ? "Active" : null;
-        DrawCircleBtn.Tag = mode == Canvas.DrawingMode.Circle ? "Active" : null;
-        DrawRectBtn.Tag = mode == Canvas.DrawingMode.Rectangle ? "Active" : null;
-        DrawEllipseBtn.Tag = mode == Canvas.DrawingMode.Ellipse ? "Active" : null;
-        DrawArcBtn.Tag = mode == Canvas.DrawingMode.Arc ? "Active" : null;
-        DrawPolygonBtn.Tag = mode == Canvas.DrawingMode.Polygon ? "Active" : null;
-        DrawPolylineBtn.Tag = mode == Canvas.DrawingMode.Polyline ? "Active" : null;
-        DrawBezierBtn.Tag = mode == Canvas.DrawingMode.Bezier ? "Active" : null;
-        DrawSplineBtn.Tag = mode == Canvas.DrawingMode.Spline ? "Active" : null;
-        DrawArrowBtn.Tag = mode == Canvas.DrawingMode.Arrow ? "Active" : null;
-        DrawTextBtn.Tag = mode == Canvas.DrawingMode.Text ? "Active" : null;
+        // Toolbar has been removed - this method is now a no-op
     }
 
     private void InsertShapeCode(string code)

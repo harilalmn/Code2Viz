@@ -230,7 +230,7 @@
                     </MenuItem>
 
                     <!--  Draw Menu  -->
-                    <MenuItem Header="_Draw">
+                    <MenuItem x:Name="DrawMenu" Header="_Draw">
                         <MenuItem
                             Click="DrawPoint_Click"
                             Header="_Point"
@@ -241,11 +241,73 @@
                             Header="_Line"
                             InputGestureText="L"
                             Style="{StaticResource MenuItemStyle}" />
-                        <MenuItem
-                            Click="DrawCircle_Click"
-                            Header="_Circle"
-                            InputGestureText="C"
-                            Style="{StaticResource MenuItemStyle}" />
+                        <!--  Circle Submenu  -->
+                        <MenuItem Header="_Circle" Style="{StaticResource MenuItemStyle}">
+                            <MenuItem
+                                Click="DrawCircle_CenterRadius_Click"
+                                Header="Center, _Radius"
+                                InputGestureText="C"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawCircle_CenterDiameter_Click"
+                                Header="Center, _Diameter"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawCircle_TwoPoints_Click"
+                                Header="_2 Points"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawCircle_ThreePoints_Click"
+                                Header="_3 Points"
+                                Style="{StaticResource MenuItemStyle}" />
+                        </MenuItem>
+                        <!--  Arc Submenu  -->
+                        <MenuItem Header="_Arc" Style="{StaticResource MenuItemStyle}">
+                            <MenuItem
+                                Click="DrawArc_ThreePoints_Click"
+                                Header="_3 Points"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <Separator />
+                            <MenuItem
+                                Click="DrawArc_StartCenterEnd_Click"
+                                Header="Start, Center, End"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawArc_StartCenterAngle_Click"
+                                Header="Start, Center, Angle"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawArc_StartCenterLength_Click"
+                                Header="Start, Center, Length"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <Separator />
+                            <MenuItem
+                                Click="DrawArc_StartEndAngle_Click"
+                                Header="Start, End, Angle"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawArc_StartEndRadius_Click"
+                                Header="Start, End, Radius"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <Separator />
+                            <MenuItem
+                                Click="DrawArc_CenterStartEnd_Click"
+                                Header="Center, Start, End"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawArc_CenterStartAngle_Click"
+                                Header="Center, Start, Angle"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <MenuItem
+                                Click="DrawArc_CenterStartLength_Click"
+                                Header="Center, Start, Length"
+                                Style="{StaticResource MenuItemStyle}" />
+                            <Separator />
+                            <MenuItem
+                                Click="DrawArc_Continue_Click"
+                                Header="Continue"
+                                Style="{StaticResource MenuItemStyle}" />
+                        </MenuItem>
                         <MenuItem
                             Click="DrawRect_Click"
                             Header="_Rectangle"
@@ -254,10 +316,6 @@
                         <MenuItem
                             Click="DrawEllipse_Click"
                             Header="_Ellipse"
-                            Style="{StaticResource MenuItemStyle}" />
-                        <MenuItem
-                            Click="DrawArc_Click"
-                            Header="_Arc"
                             Style="{StaticResource MenuItemStyle}" />
                         <Separator />
                         <MenuItem
@@ -364,11 +422,11 @@
                             IsChecked="False"
                             Style="{StaticResource MenuItemStyle}" />
                         <MenuItem
-                            x:Name="ShowToolbarMenuItem"
-                            Click="ShowToolbarMenuItem_Click"
-                            Header="Tool_bar"
+                            x:Name="ShowCanvasMenuItem"
+                            Click="ShowCanvasMenuItem_Click"
+                            Header="C_anvas"
                             IsCheckable="True"
-                            IsChecked="False"
+                            IsChecked="True"
                             Style="{StaticResource MenuItemStyle}" />
                         <MenuItem
                             x:Name="ShowConsoleMenuItem"
@@ -420,145 +478,39 @@
             </Grid>
         </Border>
 
-        <!--  Drawing Toolbar  -->
-        <Border
-            x:Name="DrawingToolbarPanel"
-            Grid.Row="2"
-            Background="{StaticResource SecondaryBackgroundBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
-            BorderThickness="0,0,0,1"
-            Visibility="Collapsed">
-            <StackPanel Margin="8,4" Orientation="Horizontal">
-                <!--  Selection Tool (default)  -->
-                <Button
-                    x:Name="SelectToolBtn"
-                    Margin="0,0,4,0"
-                    Click="SelectTool_Click"
-                    Content="Select"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Select (Esc)" />
-                <Rectangle
-                    Width="1"
-                    Margin="4,2"
-                    Fill="{StaticResource BorderBrush}" />
-                <!--  Basic Shape Tools  -->
-                <Button
-                    x:Name="DrawPointBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawPoint_Click"
-                    Content="Point"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Point (P)" />
-                <Button
-                    x:Name="DrawLineBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawLine_Click"
-                    Content="Line"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Line (L)" />
-                <Button
-                    x:Name="DrawCircleBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawCircle_Click"
-                    Content="Circle"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Circle (C)" />
-                <Button
-                    x:Name="DrawRectBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawRect_Click"
-                    Content="Rect"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Rectangle (R)" />
-                <Button
-                    x:Name="DrawEllipseBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawEllipse_Click"
-                    Content="Ellipse"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Ellipse" />
-                <Button
-                    x:Name="DrawArcBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawArc_Click"
-                    Content="Arc"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Arc" />
-                <Rectangle
-                    Width="1"
-                    Margin="4,2"
-                    Fill="{StaticResource BorderBrush}" />
-                <!--  Multi-Point Shape Tools  -->
-                <Button
-                    x:Name="DrawPolygonBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawPolygon_Click"
-                    Content="Polygon"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Polygon" />
-                <Button
-                    x:Name="DrawPolylineBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawPolyline_Click"
-                    Content="Polyline"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Polyline" />
-                <Button
-                    x:Name="DrawBezierBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawBezier_Click"
-                    Content="Bezier"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Bezier Curve" />
-                <Button
-                    x:Name="DrawSplineBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawSpline_Click"
-                    Content="Spline"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Spline" />
-                <Rectangle
-                    Width="1"
-                    Margin="4,2"
-                    Fill="{StaticResource BorderBrush}" />
-                <!--  Special Shape Tools  -->
-                <Button
-                    x:Name="DrawArrowBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawArrow_Click"
-                    Content="Arrow"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Arrow" />
-                <Button
-                    x:Name="DrawTextBtn"
-                    Margin="4,0,0,0"
-                    Click="DrawText_Click"
-                    Content="Text"
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Draw Text" />
-            </StackPanel>
-        </Border>
+        <!--  Drawing Toolbar removed - use Draw menu instead  -->
 
-        <!--  Main Content: Project Browser + Canvas + Editor + Properties  -->
+        <!--  Main Content: Code Editor + Canvas/Console + Project Browser/Outliner  -->
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
+                <!--  Column 0: Code Editor (largest)  -->
                 <ColumnDefinition
-                    x:Name="ProjectBrowserColumn"
+                    x:Name="CodeEditorColumn"
+                    Width="2*"
+                    MinWidth="300" />
+                <!--  Column 1: Splitter  -->
+                <ColumnDefinition Width="Auto" />
+                <!--  Column 2: Canvas/Console  -->
+                <ColumnDefinition
+                    x:Name="CanvasConsoleColumn"
+                    Width="*"
+                    MinWidth="200" />
+                <!--  Column 3: Splitter  -->
+                <ColumnDefinition Width="Auto" />
+                <!--  Column 4: Project Browser/Outliner  -->
+                <ColumnDefinition
+                    x:Name="RightPanelColumn"
                     Width="0"
                     MinWidth="0" />
-                <ColumnDefinition x:Name="ProjectBrowserSplitterColumn" Width="0" />
-                <ColumnDefinition Width="*" MinWidth="200" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" MinWidth="300" />
             </Grid.ColumnDefinitions>
 
-            <!--  Project Browser and Outliner  -->
+            <!--  Project Browser and Outliner (Right Panel)  -->
             <Border
                 x:Name="ProjectBrowserPanel"
-                Grid.Column="0"
+                Grid.Column="4"
                 Background="{StaticResource SecondaryBackgroundBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="0,0,1,0"
+                BorderThickness="1,0,0,0"
                 Visibility="Collapsed">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -903,14 +855,15 @@
                 </Grid>
             </Border>
 
-            <!--  Splitter 1  -->
+            <!--  Splitter between Canvas/Console and Right Panel  -->
             <GridSplitter
-                x:Name="ProjectBrowserSplitter"
-                Grid.Column="1"
+                x:Name="RightPanelSplitter"
+                Grid.Column="3"
                 Width="4"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Stretch"
                 Background="{StaticResource BorderBrush}"
+                Cursor="SizeWE"
                 ResizeBehavior="PreviousAndNext"
                 Visibility="Collapsed" />
 
@@ -1176,9 +1129,10 @@
                 </Border>
             </Grid>
 
-            <!--  Splitter 2  -->
+            <!--  Splitter between Code Editor and Canvas/Console  -->
             <GridSplitter
-                Grid.Column="3"
+                x:Name="CodeEditorSplitter"
+                Grid.Column="1"
                 Width="4"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Stretch"
@@ -1187,7 +1141,7 @@
                 ResizeBehavior="PreviousAndNext" />
 
             <!--  Code Editor with Tabs  -->
-            <Border Grid.Column="4" Background="{StaticResource SecondaryBackgroundBrush}">
+            <Border Grid.Column="0" Background="{StaticResource SecondaryBackgroundBrush}">
                 <TabControl
                     x:Name="MainTabControl"
                     Background="{StaticResource SecondaryBackgroundBrush}"
