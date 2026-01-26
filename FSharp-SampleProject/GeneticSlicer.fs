@@ -290,7 +290,7 @@ module GeneticSlicer =
                 let error = abs(actualRatio - targetRatio) * 100.0
 
                 piece.FillColor <- colors.[i % colors.Length]
-                piece.StrokeColor <- "White"
+                piece.Color <- "White"
                 piece.StrokeThickness <- 2.0
 
                 printfn "  Piece %d: Target=%.1f%%, Actual=%.1f%%, Error=%.2f%%"

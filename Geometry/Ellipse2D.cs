@@ -16,7 +16,7 @@ public class VEllipse : Shape, ICurve
         Center = center;
         RadiusX = radiusX;
         RadiusY = radiusY;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Pink";
+        Color = ShapeDefaults.GlobalColor ?? "Pink";
     }
 
     public VEllipse(double centerX, double centerY, double radiusX, double radiusY)
@@ -24,7 +24,7 @@ public class VEllipse : Shape, ICurve
         Center = new VPoint(centerX, centerY);
         RadiusX = radiusX;
         RadiusY = radiusY;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Pink";
+        Color = ShapeDefaults.GlobalColor ?? "Pink";
     }
     
     // Additional constructor for partial ellipse

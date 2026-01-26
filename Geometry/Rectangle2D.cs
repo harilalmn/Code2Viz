@@ -57,7 +57,7 @@ public class VRectangle : VPolygon
         _width = width;
         _height = height;
         _rotationAngle = 0;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Magenta";
+        Color = ShapeDefaults.GlobalColor ?? "Magenta";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 

@@ -11,7 +11,7 @@ public static class ShapeDefaults
     /// <summary>
     /// Global default stroke color. If null, shapes use their specific defaults.
     /// </summary>
-    public static string? GlobalStrokeColor { get; set; } = null;
+    public static string? GlobalColor { get; set; } = null;
 
     /// <summary>
     /// Global default fill color. If null, shapes use their specific defaults.
@@ -39,7 +39,7 @@ public static class ShapeDefaults
     /// </summary>
     public static void Reset()
     {
-        GlobalStrokeColor = null;
+        GlobalColor = null;
         GlobalFillColor = null;
         GlobalLineWeight = null;
         GlobalLineType = null;

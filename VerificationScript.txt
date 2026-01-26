@@ -24,7 +24,7 @@ namespace Verification
             var l6 = new VLine(50, 0, 150, 0);
             var i3 = l5.Intersect(l6);
             VizConsole.Log($"Line-Line Overlap: {i3}"); // Expected: VLine(50, 0, 100, 0)
-            if(i3 != null) { i3.StrokeColor = "Red"; i3.StrokeThickness=5; i3.Draw(); }
+            if(i3 != null) { i3.Color = "Red"; i3.StrokeThickness=5; i3.Draw(); }
 
            // Test 4: Rect-Rect Intersection
            var r1 = new VRectangle(0, 0, 100, 100);
@@ -38,7 +38,7 @@ namespace Verification
            var l7 = new VLine(-50, 50, 150, 50);
            var i5 = r3.Intersect(l7);
            VizConsole.Log($"Line-Rect Intersection: {i5}"); // Expected: VLine(0, 50, 100, 50)
-           if(i5 != null) { i5.StrokeColor = "Blue"; i5.StrokeThickness=4; i5.Draw(); }
+           if(i5 != null) { i5.Color = "Blue"; i5.StrokeThickness=4; i5.Draw(); }
         }
     }
 }

@@ -32,7 +32,7 @@ public class VBezier : Shape, ICurve
         P1 = p1;
         P2 = p2;
         P3 = p3;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Purple";
+        Color = ShapeDefaults.GlobalColor ?? "Purple";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
@@ -42,7 +42,7 @@ public class VBezier : Shape, ICurve
         P1 = new VPoint(x1, y1);
         P2 = new VPoint(x2, y2);
         P3 = new VPoint(x3, y3);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Purple";
+        Color = ShapeDefaults.GlobalColor ?? "Purple";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 

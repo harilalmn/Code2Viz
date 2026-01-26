@@ -127,7 +127,7 @@ public class CodeSyncManager
                 // If we have a variable name, also remove subsequent lines that use it
                 if (!string.IsNullOrEmpty(varName))
                 {
-                    // Look for lines like: varName.StrokeColor = ...; varName.Draw();
+                    // Look for lines like: varName.Color = ...; varName.Draw();
                     var varUsagePattern = new Regex($@"^\s*{Regex.Escape(varName)}\.\w+.*;\s*$", RegexOptions.Multiline);
                     var searchStart = endIndex;
 

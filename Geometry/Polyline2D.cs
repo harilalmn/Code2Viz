@@ -22,14 +22,14 @@ public class VPolyline : Shape, ICurve
     public VPolyline(params VPoint[] points)
     {
         Points = points.ToList();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightGreen";
+        Color = ShapeDefaults.GlobalColor ?? "LightGreen";
         _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 
     public VPolyline(IEnumerable<VPoint> points)
     {
         Points = points.ToList();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "LightGreen";
+        Color = ShapeDefaults.GlobalColor ?? "LightGreen";
         _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 

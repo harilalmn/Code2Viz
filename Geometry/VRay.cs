@@ -41,7 +41,7 @@ public class VRay : Shape, ICurve
     {
         Origin = origin;
         Direction = direction.Normalize();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Gray";
+        Color = ShapeDefaults.GlobalColor ?? "Gray";
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class VRay : Shape, ICurve
         Origin = origin;
         var dir = throughPoint.AsVXYZ() - origin.AsVXYZ();
         Direction = dir.Normalize();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Gray";
+        Color = ShapeDefaults.GlobalColor ?? "Gray";
     }
 
     /// <summary>

@@ -27,14 +27,14 @@ public class VArrow : Shape
     {
         Start = start;
         End = end;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+        Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
     public VArrow(double x1, double y1, double x2, double y2)
     {
         Start = new VPoint(x1, y1);
         End = new VPoint(x2, y2);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+        Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
     public VArrow(VPoint startPoint, VXYZ direction, double length)
@@ -42,7 +42,7 @@ public class VArrow : Shape
         Start = startPoint;
         var normalizedDir = direction.Normalize();
         End = new VPoint(startPoint.X + normalizedDir.X * length, startPoint.Y + normalizedDir.Y * length);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+        Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
     /// <summary>

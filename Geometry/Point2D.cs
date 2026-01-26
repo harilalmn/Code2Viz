@@ -11,7 +11,7 @@ public class VPoint : Shape
     {
         X = x;
         Y = y;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "LimeGreen";
     }
 
@@ -23,7 +23,7 @@ public class VPoint : Shape
     {
         X = x;
         Y = y;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "LimeGreen";
     }
 

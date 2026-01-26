@@ -1,7 +1,7 @@
 namespace Code2Viz.Geometry;
 
 /// <summary>
-/// Common color names for use with shape StrokeColor and FillColor properties.
+/// Common color names for use with shape Color and FillColor properties.
 /// </summary>
 public enum ColorName
 {
@@ -137,7 +137,7 @@ public static class VColor
     /// Gets a random color string.
     /// </summary>
     /// <param name="returnPastelColor">If true, returns softer pastel colors; if false, returns vibrant colors.</param>
-    /// <returns>A color name string that can be used for StrokeColor or FillColor.</returns>
+    /// <returns>A color name string that can be used for Color or FillColor.</returns>
     public static string GetRandomColor(bool returnPastelColor = true)
     {
         var colors = returnPastelColor ? PastelColors : VibrantColors;

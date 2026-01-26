@@ -13,59 +13,59 @@ namespace StartViz
             // ===== VPoint =====
             VizConsole.Log("Creating VPoint...");
             var point1 = new VPoint(0, 0);
-            point1.StrokeColor = "Red";
+            point1.Color = "Red";
             point1.Draw();
 
             var point2 = new VPoint(-200, 150);
-            point2.StrokeColor = "Yellow";
+            point2.Color = "Yellow";
             point2.Draw();
 
             // ===== VLine =====
             VizConsole.Log("Creating VLine...");
             var line1 = new VLine(0, 0, 100, 100);
-            line1.StrokeColor = "Lime";
+            line1.Color = "Lime";
             line1.StrokeThickness = 2;
             line1.Draw();
 
             // Line from points
             var line2 = new VLine(new VPoint(-50, 0), new VPoint(-50, 100));
-            line2.StrokeColor = "Cyan";
+            line2.Color = "Cyan";
             line2.Draw();
 
             // ===== VCircle =====
             VizConsole.Log("Creating VCircle...");
             var circle1 = new VCircle(150, 100, 40);
-            circle1.StrokeColor = "Magenta";
+            circle1.Color = "Magenta";
             circle1.FillColor = "Transparent";
             circle1.StrokeThickness = 3;
             circle1.Draw();
 
             // Filled circle
             var circle2 = new VCircle(150, 100, 20);
-            circle2.StrokeColor = "White";
+            circle2.Color = "White";
             circle2.FillColor = "Purple";
             circle2.Draw();
 
             // ===== VArc =====
             VizConsole.Log("Creating VArc...");
             var arc1 = new VArc(-150, 100, 50, 0, 180);
-            arc1.StrokeColor = "Orange";
+            arc1.Color = "Orange";
             arc1.StrokeThickness = 3;
             arc1.Draw();
 
             var arc2 = new VArc(-150, 100, 30, 45, 315);
-            arc2.StrokeColor = "Gold";
+            arc2.Color = "Gold";
             arc2.Draw();
 
             // ===== VRectangle =====
             VizConsole.Log("Creating VRectangle...");
             var rect1 = new VRectangle(-100, -50, 80, 40);
-            rect1.StrokeColor = "DeepSkyBlue";
+            rect1.Color = "DeepSkyBlue";
             rect1.FillColor = "DarkSlateBlue";
             rect1.Draw();
 
             var rect2 = new VRectangle(-90, -40, 60, 20);
-            rect2.StrokeColor = "White";
+            rect2.Color = "White";
             rect2.FillColor = "Transparent";
             rect2.StrokeThickness = 1;
             rect2.Draw();
@@ -73,12 +73,12 @@ namespace StartViz
             // ===== VEllipse =====
             VizConsole.Log("Creating VEllipse...");
             var ellipse1 = new VEllipse(50, -80, 60, 30);
-            ellipse1.StrokeColor = "HotPink";
+            ellipse1.Color = "HotPink";
             ellipse1.FillColor = "Transparent";
             ellipse1.Draw();
 
             var ellipse2 = new VEllipse(50, -80, 40, 15);
-            ellipse2.StrokeColor = "LightPink";
+            ellipse2.Color = "LightPink";
             ellipse2.FillColor = "MediumVioletRed";
             ellipse2.Draw();
 
@@ -90,7 +90,7 @@ namespace StartViz
                 new VPoint(-150, -50),
                 new VPoint(-250, -50)
             );
-            triangle.StrokeColor = "SpringGreen";
+            triangle.Color = "SpringGreen";
             triangle.FillColor = "DarkGreen";
             triangle.Draw();
 
@@ -105,7 +105,7 @@ namespace StartViz
                 ));
             }
             var pentagon = new VPolygon(pentagonPoints);
-            pentagon.StrokeColor = "Coral";
+            pentagon.Color = "Coral";
             pentagon.FillColor = "DarkOrange";
             pentagon.Draw();
 
@@ -118,7 +118,7 @@ namespace StartViz
                 new VPoint(-160, 80),
                 new VPoint(-130, 50)
             );
-            polyline.StrokeColor = "Aqua";
+            polyline.Color = "Aqua";
             polyline.StrokeThickness = 2;
             polyline.Draw();
 
@@ -130,15 +130,15 @@ namespace StartViz
                 new VPoint(-100, -100),
                 new VPoint(-50, -150)
             );
-            bezier.StrokeColor = "Violet";
+            bezier.Color = "Violet";
             bezier.StrokeThickness = 3;
             bezier.Draw();
 
             // Show control points
-            new VPoint(-250, -150) { StrokeColor = "Red" }.Draw();
-            new VPoint(-200, -200) { StrokeColor = "Yellow" }.Draw();
-            new VPoint(-100, -100) { StrokeColor = "Yellow" }.Draw();
-            new VPoint(-50, -150) { StrokeColor = "Red" }.Draw();
+            new VPoint(-250, -150) { Color = "Red" }.Draw();
+            new VPoint(-200, -200) { Color = "Yellow" }.Draw();
+            new VPoint(-100, -100) { Color = "Yellow" }.Draw();
+            new VPoint(-50, -150) { Color = "Red" }.Draw();
 
             // ===== VSpline =====
             VizConsole.Log("Creating VSpline...");
@@ -151,7 +151,7 @@ namespace StartViz
                 new VPoint(250, -140)
             };
             var spline = new VSpline(splinePoints);
-            spline.StrokeColor = "Turquoise";
+            spline.Color = "Turquoise";
             spline.StrokeThickness = 3;
             spline.Draw();
 
@@ -159,7 +159,7 @@ namespace StartViz
             foreach (var pt in splinePoints)
             {
                 var marker = new VCircle(pt.X, pt.Y, 3);
-                marker.StrokeColor = "White";
+                marker.Color = "White";
                 marker.FillColor = "Turquoise";
                 marker.Draw();
             }
@@ -167,18 +167,18 @@ namespace StartViz
             // ===== VArrow =====
             VizConsole.Log("Creating VArrow...");
             var arrow1 = new VArrow(-50, 150, 50, 150);
-            arrow1.StrokeColor = "OrangeRed";
+            arrow1.Color = "OrangeRed";
             arrow1.HeadLength = 15;
             arrow1.Draw();
 
             var arrow2 = new VArrow(100, 120, 100, 180);
-            arrow2.StrokeColor = "LimeGreen";
+            arrow2.Color = "LimeGreen";
             arrow2.StrokeThickness = 2;
             arrow2.Draw();
 
             // Diagonal arrow
             var arrow3 = new VArrow(130, 120, 180, 170);
-            arrow3.StrokeColor = "DodgerBlue";
+            arrow3.Color = "DodgerBlue";
             arrow3.HeadLength = 12;
             arrow3.Draw();
 
@@ -186,28 +186,28 @@ namespace StartViz
             VizConsole.Log("Creating VDimension...");
             var dim1 = new VDimension(-100, 180, 0, 180);
             dim1.Offset = 20;
-            dim1.StrokeColor = "Yellow";
+            dim1.Color = "Yellow";
             dim1.Draw();
 
             var dim2 = new VDimension(200, 50, 200, 150);
             dim2.Offset = 25;
-            dim2.StrokeColor = "Cyan";
+            dim2.Color = "Cyan";
             dim2.Draw();
 
             // ===== VText =====
             VizConsole.Log("Creating VText...");
             var text1 = new VText(0, 200, "Viz2D Shape Demo");
-            text1.StrokeColor = "White";
+            text1.Color = "White";
             text1.Height = 20;
             text1.Draw();
 
             var text2 = new VText(-250, 200, "Points & Lines");
-            text2.StrokeColor = "Lime";
+            text2.Color = "Lime";
             text2.Height = 12;
             text2.Draw();
 
             var text3 = new VText(150, 200, "Curves & Arrows");
-            text3.StrokeColor = "Magenta";
+            text3.Color = "Magenta";
             text3.Height = 12;
             text3.Draw();
 
@@ -215,19 +215,19 @@ namespace StartViz
             VizConsole.Log("Creating VGroup...");
             // Create a grouped shape (face)
             var faceCircle = new VCircle(0, 50, 30);
-            faceCircle.StrokeColor = "Yellow";
+            faceCircle.Color = "Yellow";
             faceCircle.FillColor = "Gold";
 
             var leftEye = new VCircle(-10, 60, 5);
-            leftEye.StrokeColor = "Black";
+            leftEye.Color = "Black";
             leftEye.FillColor = "Black";
 
             var rightEye = new VCircle(10, 60, 5);
-            rightEye.StrokeColor = "Black";
+            rightEye.Color = "Black";
             rightEye.FillColor = "Black";
 
             var smile = new VArc(0, 45, 15, 200, 340);
-            smile.StrokeColor = "Black";
+            smile.Color = "Black";
             smile.StrokeThickness = 2;
 
             var faceGroup = new VGroup(faceCircle, leftEye, rightEye, smile);
@@ -251,7 +251,7 @@ namespace StartViz
             }
 
             var star = new VPolygon(starPoints);
-            star.StrokeColor = "Gold";
+            star.Color = "Gold";
             star.FillColor = "DarkGoldenrod";
             star.Draw();
 
@@ -266,7 +266,7 @@ namespace StartViz
                 double y = 100 + Math.Sin(angle) * radius;
 
                 var dot = new VCircle(x, y, 5);
-                dot.StrokeColor = "White";
+                dot.Color = "White";
                 dot.FillColor = "DeepPink";
                 dot.Draw();
             }
@@ -289,7 +289,7 @@ namespace StartViz
             VizConsole.Log("  - VText: Text label");
             VizConsole.Log("  - VGroup: Group of shapes");
             VizConsole.Log("-----------------------------------");
-            VizConsole.Log("Shape properties: StrokeColor, FillColor, StrokeThickness");
+            VizConsole.Log("Shape properties: Color, FillColor, StrokeThickness");
             VizConsole.Log("Call Draw() to render shapes on canvas");
         }
     }

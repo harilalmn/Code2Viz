@@ -32,14 +32,14 @@ public class VDimension : Shape
     {
         Point1 = point1;
         Point2 = point2;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Yellow";
+        Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
 
     public VDimension(double x1, double y1, double x2, double y2)
     {
         Point1 = new VPoint(x1, y1);
         Point2 = new VPoint(x2, y2);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Yellow";
+        Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
 
     /// <summary>

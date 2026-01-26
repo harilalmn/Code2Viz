@@ -127,7 +127,7 @@ public class PdfExporter
 
     private XPen CreatePen(Shape shape)
     {
-        var color = ParseColor(shape.StrokeColor);
+        var color = ParseColor(shape.Color);
         return new XPen(color, shape.LineWeight);
     }
 
@@ -323,7 +323,7 @@ public class PdfExporter
 
     private void DrawText(XGraphics gfx, VText text)
     {
-        var color = ParseColor(text.StrokeColor);
+        var color = ParseColor(text.Color);
         var brush = new XSolidBrush(color);
         var font = new XFont("Arial", text.Height, XFontStyleEx.Regular);
 

@@ -41,7 +41,7 @@ public class VXLine : Shape, ICurve
     {
         BasePoint = basePoint;
         Direction = direction.Normalize();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Gray";
+        Color = ShapeDefaults.GlobalColor ?? "Gray";
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class VXLine : Shape, ICurve
         BasePoint = point1;
         var dir = point2.AsVXYZ() - point1.AsVXYZ();
         Direction = dir.Normalize();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Gray";
+        Color = ShapeDefaults.GlobalColor ?? "Gray";
     }
 
     /// <summary>

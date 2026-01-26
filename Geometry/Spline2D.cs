@@ -28,14 +28,14 @@ public class VSpline : Shape, ICurve
     public VSpline(params VPoint[] points)
     {
         ControlPoints = points.ToList();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Violet";
+        Color = ShapeDefaults.GlobalColor ?? "Violet";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
     public VSpline(IEnumerable<VPoint> points)
     {
         ControlPoints = points.ToList();
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Violet";
+        Color = ShapeDefaults.GlobalColor ?? "Violet";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 

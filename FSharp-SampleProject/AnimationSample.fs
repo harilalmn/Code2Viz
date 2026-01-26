@@ -33,7 +33,7 @@ module AnimationSample =
                 VPoint(380.0, 0.0),
                 VPoint(400.0, 50.0)
             )
-        bezierShape.StrokeColor <- "Magenta"
+        bezierShape.Color <- "Magenta"
 
         // Collect all shapes for animation
         let shapesArray =

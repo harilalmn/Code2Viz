@@ -79,12 +79,12 @@ let withFill (color: string) (shape: #Shape) =
 
 /// Set the stroke color of a shape
 let withStroke (color: string) (shape: #Shape) =
-    shape.StrokeColor <- color
+    shape.Color <- color
     shape
 
 /// Set stroke color and thickness together
 let withStrokeStyle color thickness (shape: #Shape) =
-    shape.StrokeColor <- color
+    shape.Color <- color
     shape.StrokeThickness <- thickness
     shape
 

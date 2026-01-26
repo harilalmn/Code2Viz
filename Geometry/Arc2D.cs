@@ -30,7 +30,7 @@ public class VArc : Shape, ICurve
         Radius = radius;
         StartAngle = startAngle;
         EndAngle = endAngle;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+        Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
     public VArc(double centerX, double centerY, double radius, double startAngle, double endAngle)
@@ -39,7 +39,7 @@ public class VArc : Shape, ICurve
         Radius = radius;
         StartAngle = startAngle;
         EndAngle = endAngle;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+        Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public class VArc : Shape, ICurve
         
         Center = new VPoint(cx, cy);
         Radius = Center.DistanceTo(start);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Orange";
+        Color = ShapeDefaults.GlobalColor ?? "Orange";
 
         // Calculate Angles
         double a1 = Math.Atan2(start.Y - cy, start.X - cx) * 180.0 / Math.PI;

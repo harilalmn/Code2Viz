@@ -69,7 +69,7 @@ public interface IDrawable
     void Draw();
 
     // Styling properties with defaults
-    string StrokeColor { get; set; }
+    string Color { get; set; }
     string FillColor { get; set; }
     double LineWeight { get; set; }
     LineType LineType { get; set; }
@@ -133,7 +133,7 @@ public abstract class Shape : IDrawable
     /// </summary>
     public bool IsSelected { get; set; } = false;
     
-    public string StrokeColor { get; set; } = ShapeDefaults.GlobalStrokeColor ?? "Cyan";
+    public string Color { get; set; } = ShapeDefaults.GlobalColor ?? "Cyan";
     public string FillColor { get; set; } = ShapeDefaults.GlobalFillColor ?? "Transparent";
     public double LineWeight { get; set; } = ShapeDefaults.GlobalLineWeight ?? 2;
     public LineType LineType { get; set; } = ShapeDefaults.GlobalLineType ?? LineType.Continuous;
@@ -331,7 +331,7 @@ public abstract class Shape : IDrawable
     /// </summary>
     protected void CopyStyleTo(Shape target)
     {
-        target.StrokeColor = StrokeColor;
+        target.Color = Color;
         target.FillColor = FillColor;
         target.LineWeight = LineWeight;
         target.LineType = LineType;

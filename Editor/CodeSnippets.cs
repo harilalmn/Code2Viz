@@ -382,18 +382,18 @@ $0
 
         ["circle"] = ("Create a circle",
 @"var $1circle = new VCircle($20, $30, $450);
-$1circle.StrokeColor = ""$5Cyan"";
+$1circle.Color = ""$5Cyan"";
 $1circle.FillColor = ""Transparent"";
 $1circle.Draw();$0"),
 
         ["vline"] = ("Create a line",
 @"var $1line = new VLine($20, $30, $4100, $5100);
-$1line.StrokeColor = ""$6Lime"";
+$1line.Color = ""$6Lime"";
 $1line.Draw();$0"),
 
         ["vrect"] = ("Create a rectangle",
 @"var $1rect = new VRectangle($20, $30, $4100, $550);
-$1rect.StrokeColor = ""$6Yellow"";
+$1rect.Color = ""$6Yellow"";
 $1rect.FillColor = ""$7DarkGoldenrod"";
 $1rect.Draw();$0"),
 
@@ -403,7 +403,7 @@ $1rect.Draw();$0"),
     new VPoint($450, $5100),
     new VPoint($6100, $70)
 );
-$1poly.StrokeColor = ""Pink"";
+$1poly.Color = ""Pink"";
 $1poly.FillColor = ""DarkMagenta"";
 $1poly.Draw();$0"),
 
@@ -414,7 +414,7 @@ $1poly.Draw();$0"),
     new VPoint($675, $750),  // Control 2
     new VPoint($8100, $90)   // End
 );
-$1bezier.StrokeColor = ""Purple"";
+$1bezier.Color = ""Purple"";
 $1bezier.Draw();$0"),
 
         ["vspline"] = ("Create a smooth spline",
@@ -425,19 +425,19 @@ $1bezier.Draw();$0"),
     new VPoint(75, 50),
     new VPoint(100, 0)
 );
-$1spline.StrokeColor = ""$2Violet"";
+$1spline.Color = ""$2Violet"";
 $1spline.Draw();$0"),
 
         ["varrow"] = ("Create an arrow",
 @"var $1arrow = new VArrow($20, $30, $4100, $50);
-$1arrow.StrokeColor = ""$6Orange"";
+$1arrow.Color = ""$6Orange"";
 $1arrow.HeadLength = $715;
 $1arrow.Draw();$0"),
 
         ["vdim"] = ("Create a dimension line",
 @"var $1dim = new VDimension($20, $30, $4100, $50);
 $1dim.Offset = $620;
-$1dim.StrokeColor = ""$7Yellow"";
+$1dim.Color = ""$7Yellow"";
 $1dim.Draw();$0"),
 
         ["vgroup"] = ("Create a shape group",
@@ -448,24 +448,24 @@ $3group.Draw();$0"),
 
         ["vtext"] = ("Create text label",
 @"var $1text = new VText($20, $30, ""$4Hello World"");
-$1text.StrokeColor = ""$5White"";
+$1text.Color = ""$5White"";
 $1text.Height = $616;
 $1text.Draw();$0"),
 
         ["vellipse"] = ("Create an ellipse",
 @"var $1ellipse = new VEllipse($20, $30, $480, $540);
-$1ellipse.StrokeColor = ""$6Magenta"";
+$1ellipse.Color = ""$6Magenta"";
 $1ellipse.FillColor = ""Transparent"";
 $1ellipse.Draw();$0"),
 
         ["varc"] = ("Create an arc",
 @"var $1arc = new VArc($20, $30, $450, $50, $690);
-$1arc.StrokeColor = ""$7Cyan"";
+$1arc.Color = ""$7Cyan"";
 $1arc.Draw();$0"),
 
         ["vpoint"] = ("Create a point",
 @"var $1point = new VPoint($20, $30);
-$1point.StrokeColor = ""$4White"";
+$1point.Color = ""$4White"";
 $1point.Draw();$0"),
 
         // ===== Pattern Snippets =====
@@ -476,7 +476,7 @@ $1point.Draw();$0"),
     for (int y = 0; y < $25; y++)
     {
         var circle = new VCircle(x * $330, y * $330, $410);
-        circle.StrokeColor = ""$5Cyan"";
+        circle.Color = ""$5Cyan"";
         circle.Draw();
     }
 }$0"),
@@ -490,7 +490,7 @@ for (int i = 0; i < count; i++)
     double x = Math.Cos(angle) * radius;
     double y = Math.Sin(angle) * radius;
     var circle = new VCircle(x, y, $310);
-    circle.StrokeColor = ""$4Lime"";
+    circle.Color = ""$4Lime"";
     circle.Draw();
 }$0"),
 
@@ -503,7 +503,7 @@ for (int i = 0; i < points; i++)
     double x = Math.Cos(angle) * radius;
     double y = Math.Sin(angle) * radius;
     var pt = new VPoint(x, y);
-    pt.StrokeColor = ""$4Purple"";
+    pt.Color = ""$4Purple"";
     pt.Draw();
 }$0"),
 
@@ -521,7 +521,7 @@ for (int i = 0; i < starPoints * 2; i++)
 }
 
 var star = new VPolygon(points);
-star.StrokeColor = ""$4Gold"";
+star.Color = ""$4Gold"";
 star.FillColor = ""$5DarkOrange"";
 star.Draw();$0"),
 
@@ -533,7 +533,7 @@ for (double x = $1-100; x <= $2100; x += $35)
     points.Add(new VPoint(x, y));
 }
 var wave = new VSpline(points);
-wave.StrokeColor = ""$6Aqua"";
+wave.Color = ""$6Aqua"";
 wave.Draw();$0")
     };
 

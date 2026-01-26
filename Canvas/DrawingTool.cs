@@ -906,7 +906,7 @@ public class DrawingTool
     private VPoint CreatePreviewPoint()
     {
         var point = new VPoint(Points[0].X, Points[0].Y);
-        point.StrokeColor = "Gray";
+        point.Color = "Gray";
         point.FillColor = "DarkGray";
         return point;
     }
@@ -915,7 +915,7 @@ public class DrawingTool
     {
         if (Points.Count < 1) return null;
         var line = new VLine(Points[0], endPoint);
-        line.StrokeColor = "Gray";
+        line.Color = "Gray";
         return line;
     }
 
@@ -924,7 +924,7 @@ public class DrawingTool
         if (Points.Count < 1) return null;
         var radius = Points[0].DistanceTo(endPoint);
         var circle = new VCircle(Points[0], radius);
-        circle.StrokeColor = "Gray";
+        circle.Color = "Gray";
         circle.FillColor = "Transparent";
         return circle;
     }
@@ -935,7 +935,7 @@ public class DrawingTool
         // Distance is diameter, not radius
         var diameter = Points[0].DistanceTo(endPoint);
         var circle = new VCircle(Points[0], diameter / 2.0);
-        circle.StrokeColor = "Gray";
+        circle.Color = "Gray";
         circle.FillColor = "Transparent";
         return circle;
     }
@@ -947,7 +947,7 @@ public class DrawingTool
         var center = new VPoint((Points[0].X + endPoint.X) / 2.0, (Points[0].Y + endPoint.Y) / 2.0);
         var radius = Points[0].DistanceTo(endPoint) / 2.0;
         var circle = new VCircle(center, radius);
-        circle.StrokeColor = "Gray";
+        circle.Color = "Gray";
         circle.FillColor = "Transparent";
         return circle;
     }
@@ -960,7 +960,7 @@ public class DrawingTool
         {
             // Only have first point, show line to cursor
             var line = new VLine(Points[0], endPoint);
-            line.StrokeColor = "Gray";
+            line.Color = "Gray";
             return line;
         }
 
@@ -968,7 +968,7 @@ public class DrawingTool
         try
         {
             var circle = new VCircle(Points[0], Points[1], endPoint);
-            circle.StrokeColor = "Gray";
+            circle.Color = "Gray";
             circle.FillColor = "Transparent";
             return circle;
         }
@@ -976,7 +976,7 @@ public class DrawingTool
         {
             // Points are collinear, show polyline instead
             var polyline = new VPolyline(Points[0], Points[1], endPoint);
-            polyline.StrokeColor = "Gray";
+            polyline.Color = "Gray";
             return polyline;
         }
     }
@@ -990,7 +990,7 @@ public class DrawingTool
         var width = Math.Abs(endPoint.X - Points[0].X);
         var height = Math.Abs(endPoint.Y - Points[0].Y);
         var rect = new VRectangle(minX, minY, width, height);
-        rect.StrokeColor = "Gray";
+        rect.Color = "Gray";
         rect.FillColor = "Transparent";
         return rect;
     }
@@ -1001,7 +1001,7 @@ public class DrawingTool
         var radiusX = Math.Abs(endPoint.X - Points[0].X);
         var radiusY = Math.Abs(endPoint.Y - Points[0].Y);
         var ellipse = new VEllipse(Points[0], radiusX, radiusY);
-        ellipse.StrokeColor = "Gray";
+        ellipse.Color = "Gray";
         ellipse.FillColor = "Transparent";
         return ellipse;
     }
@@ -1016,7 +1016,7 @@ public class DrawingTool
         {
             // Only have start point, show line to current position as preview
             var line = new VLine(p1, endPoint);
-            line.StrokeColor = "Gray";
+            line.Color = "Gray";
             return line;
         }
 
@@ -1027,7 +1027,7 @@ public class DrawingTool
 
         // Return a polyline showing: start -> mid -> end (cursor)
         var polyline = new VPolyline(p1, p2, p3);
-        polyline.StrokeColor = "Gray";
+        polyline.Color = "Gray";
         return polyline;
     }
 
@@ -1036,7 +1036,7 @@ public class DrawingTool
         if (Points.Count < 1) return null;
         var previewPoints = Points.Concat(new[] { endPoint }).Select(p => new VPoint(p.X, p.Y)).ToArray();
         var polygon = new VPolygon(previewPoints);
-        polygon.StrokeColor = "Gray";
+        polygon.Color = "Gray";
         polygon.FillColor = "Transparent";
         return polygon;
     }
@@ -1046,7 +1046,7 @@ public class DrawingTool
         if (Points.Count < 1) return null;
         var previewPoints = Points.Concat(new[] { endPoint }).Select(p => new VPoint(p.X, p.Y)).ToArray();
         var polyline = new VPolyline(previewPoints);
-        polyline.StrokeColor = "Gray";
+        polyline.Color = "Gray";
         return polyline;
     }
 
@@ -1061,7 +1061,7 @@ public class DrawingTool
         VPoint p3 = Points.Count > 3 ? Points[3] : endPoint;
 
         var bezier = new VBezier(p0, p1, p2, p3);
-        bezier.StrokeColor = "Gray";
+        bezier.Color = "Gray";
         return bezier;
     }
 
@@ -1070,7 +1070,7 @@ public class DrawingTool
         if (Points.Count < 1) return null;
         var previewPoints = Points.Concat(new[] { endPoint }).Select(p => new VPoint(p.X, p.Y)).ToArray();
         var spline = new VSpline(previewPoints);
-        spline.StrokeColor = "Gray";
+        spline.Color = "Gray";
         return spline;
     }
 
@@ -1078,7 +1078,7 @@ public class DrawingTool
     {
         if (Points.Count < 1) return null;
         var arrow = new VArrow(Points[0], endPoint);
-        arrow.StrokeColor = "Gray";
+        arrow.Color = "Gray";
         return arrow;
     }
 
@@ -1086,7 +1086,7 @@ public class DrawingTool
     {
         if (Points.Count < 1) return null;
         var text = new VText(Points[0], "Text");
-        text.StrokeColor = "Gray";
+        text.Color = "Gray";
         return text;
     }
 

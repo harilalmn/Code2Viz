@@ -77,7 +77,7 @@ public class VGrid : Shape
         YSpacing = ySpacing;
         Centered = centered;
 
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "LimeGreen";
 
         GeneratePoints();
@@ -136,7 +136,7 @@ public class VGrid : Shape
                 double x = offsetX + col * XSpacing;
                 double y = offsetY + row * YSpacing;
                 var point = new VPoint(x, y);
-                point.StrokeColor = StrokeColor;
+                point.Color = Color;
                 point.FillColor = FillColor;
                 point.LineWeight = LineWeight;
                 Points.Add(point);
@@ -258,7 +258,7 @@ public class VGrid : Shape
     {
         foreach (var point in Points)
         {
-            point.StrokeColor = StrokeColor;
+            point.Color = Color;
             point.FillColor = FillColor;
             point.LineWeight = LineWeight;
         }

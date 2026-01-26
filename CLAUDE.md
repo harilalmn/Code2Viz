@@ -90,7 +90,7 @@ Example: `[StartViz:15] Hello World`
 - `Shape` implements `IDrawable` interface
 - Curve shapes (VLine, VCircle, VArc, etc.) also implement `ICurve` interface
 - `ICurve` extends `IDrawable`, so all curves can be drawn via the interface
-- Shapes have: `StrokeColor`, `FillColor`, `LineWeight`, `LineType`, `LineTypeScale`, `IsVisible`
+- Shapes have: `Color`, `FillColor`, `LineWeight`, `LineType`, `LineTypeScale`, `IsVisible`
 - **Shapes auto-register on construction** - no need to call `Draw()`
 - `Draw()` is kept for backwards compatibility but is a no-op
 - Use `Show()` and `Hide()` methods to control visibility

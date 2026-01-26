@@ -175,19 +175,19 @@ public static class CodeGenerator
         language == ProjectLanguage.FSharp ? "        " : "            ";
 
     /// <summary>
-    /// Generates style property assignments for a shape (StrokeColor, etc.).
+    /// Generates style property assignments for a shape (Color, etc.).
     /// </summary>
     private static string GenerateStyleCode(Shape shape, string varName, string indent, ProjectLanguage language)
     {
         var lines = new List<string>();
 
-        // Always include StrokeColor so the shape looks the same when code is re-run
-        if (!string.IsNullOrEmpty(shape.StrokeColor))
+        // Always include Color so the shape looks the same when code is re-run
+        if (!string.IsNullOrEmpty(shape.Color))
         {
             if (language == ProjectLanguage.FSharp)
-                lines.Add($"{varName}.StrokeColor <- \"{shape.StrokeColor}\"");
+                lines.Add($"{varName}.Color <- \"{shape.Color}\"");
             else
-                lines.Add($"{varName}.StrokeColor = \"{shape.StrokeColor}\";");
+                lines.Add($"{varName}.Color = \"{shape.Color}\";");
         }
 
         // Include FillColor if it's not Transparent (the default)

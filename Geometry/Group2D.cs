@@ -28,7 +28,7 @@ public class VGroup : Shape
     /// </summary>
     public VGroup()
     {
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 
@@ -38,7 +38,7 @@ public class VGroup : Shape
     public VGroup(params Shape[] shapes)
     {
         Shapes.AddRange(shapes);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 
@@ -48,7 +48,7 @@ public class VGroup : Shape
     public VGroup(IEnumerable<Shape> shapes)
     {
         Shapes.AddRange(shapes);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 
@@ -58,7 +58,7 @@ public class VGroup : Shape
     public VGroup(List<Shape> shapes)
     {
         Shapes.AddRange(shapes);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 
@@ -266,10 +266,10 @@ public class VGroup : Shape
     /// <summary>
     /// Applies the group's stroke color to all shapes.
     /// </summary>
-    public VGroup ApplyStrokeColor()
+    public VGroup ApplyColor()
     {
         foreach (var shape in Shapes)
-            shape.StrokeColor = StrokeColor;
+            shape.Color = Color;
         return this;
     }
 
@@ -300,7 +300,7 @@ public class VGroup : Shape
     {
         foreach (var shape in Shapes)
         {
-            shape.StrokeColor = StrokeColor;
+            shape.Color = Color;
             shape.FillColor = FillColor;
             shape.LineWeight = LineWeight;
         }

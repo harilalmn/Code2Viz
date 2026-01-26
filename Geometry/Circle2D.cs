@@ -23,14 +23,14 @@ public class VCircle : Shape, ICurve
     {
         Center = center;
         Radius = radius;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Yellow";
+        Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
 
     public VCircle(double centerX, double centerY, double radius)
     {
         Center = new VPoint(centerX, centerY);
         Radius = radius;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Yellow";
+        Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public class VCircle : Shape, ICurve
 
         Center = new VPoint(cx, cy);
         Radius = Math.Sqrt((x1 - cx) * (x1 - cx) + (y1 - cy) * (y1 - cy));
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Yellow";
+        Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
 
     /// <summary>

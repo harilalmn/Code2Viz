@@ -26,7 +26,7 @@ public class VLine : Shape, ICurve
     {
         Start = start;
         End = end;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Cyan";
+        Color = ShapeDefaults.GlobalColor ?? "Cyan";
     }
 
     public VLine(double x1, double y1, double x2, double y2)
@@ -34,7 +34,7 @@ public class VLine : Shape, ICurve
         // Use Internal() to avoid auto-registering intermediate points
         Start = VPoint.Internal(x1, y1);
         End = VPoint.Internal(x2, y2);
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "Cyan";
+        Color = ShapeDefaults.GlobalColor ?? "Cyan";
     }
 
     /// <summary>
