@@ -4,7 +4,7 @@
   "Packages": [],
   "References": [],
   "Settings": {
-    "DefaultStrokeColor": "White",
+    "DefaultColor": "White",
     "DefaultFillColor": null,
     "DefaultCanvasBackgroundColor": null,
     "DefaultExportBackground": null,

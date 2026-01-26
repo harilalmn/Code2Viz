@@ -2935,7 +2935,7 @@ public partial class MainWindow : Window
         SettingsIncludeGridCheck.IsChecked = appSettings.IncludeGridInExport;
 
         // Application-level Default Shape Settings
-        AppSettingsColorBox.Text = appSettings.AppDefaultStrokeColor ?? "";
+        AppSettingsColorBox.Text = appSettings.AppDefaultColor ?? "";
         AppSettingsFillColorBox.Text = appSettings.AppDefaultFillColor ?? "";
         AppSettingsCanvasColorBox.Text = appSettings.AppDefaultCanvasBackground ?? "";
         AppSettingsThicknessBox.Text = appSettings.AppDefaultLineWeight.HasValue
@@ -3134,8 +3134,8 @@ public partial class MainWindow : Window
         ApplicationSettings.Instance.IncludeGridInExport = SettingsIncludeGridCheck.IsChecked == true;
 
         // Save Application-level default shape settings
-        string? appStrokeColor = AppSettingsColorBox.Text.Trim();
-        ApplicationSettings.Instance.AppDefaultStrokeColor = string.IsNullOrEmpty(appStrokeColor) ? null : appStrokeColor;
+        string? appColor = AppSettingsColorBox.Text.Trim();
+        ApplicationSettings.Instance.AppDefaultColor = string.IsNullOrEmpty(appColor) ? null : appColor;
 
         string? appFillColor = AppSettingsFillColorBox.Text.Trim();
         ApplicationSettings.Instance.AppDefaultFillColor = string.IsNullOrEmpty(appFillColor) ? null : appFillColor;

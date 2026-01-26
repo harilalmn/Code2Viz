@@ -35,7 +35,7 @@ public class AppSettingsData
     public int HighlightOpacity { get; set; } = 40; // 0-100 percentage
 
     // Default Shape Settings (Application-level defaults, used when project settings are empty)
-    public string? AppDefaultStrokeColor { get; set; }
+    public string? AppDefaultColor { get; set; }
     public string? AppDefaultFillColor { get; set; }
     public string? AppDefaultCanvasBackground { get; set; }
     public double? AppDefaultLineWeight { get; set; }

@@ -210,7 +210,7 @@ namespace CSharpSample
                     // Create new visible polygon from the piece's points
                     VPolygon visiblePiece = new VPolygon(piece.Points);
                     visiblePiece.FillColor = colors[i];
-                    visiblePiece.StrokeColor = "White";
+                    visiblePiece.Color = "White";
                     visiblePiece.LineWeight = 2;
 
                     double actual = piece.Area / totalArea * 100;
