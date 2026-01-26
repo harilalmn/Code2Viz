@@ -666,14 +666,37 @@ File > Export GIF Animation exports animations as animated GIF files with option
 - **Include Grid**: Optionally include grid and axes
 
 ### Video Export (MP4)
-File > Export Video (MP4) exports animations as H.264 MP4 video files with options:
-- **Duration**: Animation length in seconds (1-60s)
-- **Frame Rate**: 15, 30, 45, or 60 FPS
-- **Bitrate**: 1-20 Mbps (affects quality and file size)
-- **Background**: Current canvas, white, or black
-- **Include Grid**: Optionally include grid and axes
+File > Export Video (MP4) exports animations as H.264 MP4 video files. The export renders vector graphics at the target resolution for crisp, sharp output.
 
-Uses Windows Media Foundation for encoding - no external dependencies required.
+#### Animation Settings
+| Setting | Range | Description |
+|---------|-------|-------------|
+| **Duration** | 1-60 seconds | Length of the exported video |
+| **Frame Rate** | 15, 30, 45, 60 FPS | Higher = smoother motion, larger file |
+| **Bitrate** | 1-20 Mbps | Higher = better quality, larger file |
+
+#### Resolution Presets
+| Preset | Dimensions | Use Case |
+|--------|------------|----------|
+| **Canvas Size** | Current window size | Quick export at screen resolution |
+| **720p** | 1280×720 | Web/social media, smaller files |
+| **1080p** | 1920×1080 | Full HD, good balance of quality/size |
+| **4K** | 3840×2160 | Maximum quality, large files |
+| **Custom** | User-defined | Any resolution from 64 to 4096 pixels |
+
+#### Background Options
+- **Current Canvas Background**: Uses your canvas background color
+- **White**: Clean white background
+- **Black**: Dark background for contrast
+
+#### Additional Options
+- **Include Grid & Axes**: Toggle grid lines in the export
+
+#### Technical Notes
+- Uses Windows Media Foundation H.264 encoder (no external dependencies)
+- Renders vectors at target resolution using high DPI for sharp lines and text
+- Aspect ratio is preserved; letterbox/pillarbox filled with background color
+- Dimensions automatically adjusted to even numbers (H.264 requirement)
 
 ### DXF Export
 File > Export > DXF exports shapes to AutoCAD DXF format (R12 ASCII):

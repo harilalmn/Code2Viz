@@ -104,10 +104,12 @@ namespace Code2Viz.Documentation
                 { "ArrayOps", "Static class providing array and pattern generation for shapes. Includes LinearArray (copies along direction), RectangularArray (grid pattern), CircularArray (polar pattern around center), PathArray (copies along curve), SpiralArray (spiral pattern), and Mirror (create mirrored copy)." },
 
                 // Export
-                { "Code2Viz.Export", "Contains classes for exporting shapes to various file formats." },
+                { "Code2Viz.Export", "Contains classes for exporting shapes and animations to various file formats." },
                 { "DxfExporter", "Exports shapes to AutoCAD DXF format (R12 ASCII). Supports all shape types including lines, circles, arcs, ellipses, polygons, polylines, text, and arrows." },
                 { "PdfExporter", "Exports shapes to vector PDF format using PdfSharp library. Preserves colors, stroke styles, and produces high-quality vector output suitable for printing." },
                 { "SvgExporter", "Exports shapes to SVG (Scalable Vector Graphics) format. Web-compatible vector format that opens in browsers and vector editors. Supports all shape types with full color and styling." },
+                { "VideoExporter", "Exports animations to MP4 video using Windows Media Foundation H.264 encoder. Renders vector graphics at target resolution using high DPI for sharp output. Supports resolution presets (Canvas Size, 720p, 1080p, 4K, Custom), configurable frame rate (15-60 FPS), and bitrate (1-20 Mbps). No external dependencies required." },
+                { "GifEncoder", "Exports animations to animated GIF format. Supports configurable frame rate and duration. Good for short animations and web sharing." },
 
                 // Canvas and Snap System
                 { "Code2Viz.Canvas", "Contains classes for the interactive canvas, drawing tools, and snap detection system." },
@@ -1938,6 +1940,10 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "GifEncoder.Save", "Saves the GIF to a file." },
                 { "GifEncoder.FrameDelay", "Gets or sets the delay between frames in milliseconds." },
                 { "GifEncoder.Repeat", "Gets or sets whether the GIF loops infinitely." },
+
+                // VideoExporter
+                { "VideoExporter.AddFrame", "Adds a frame (RenderTargetBitmap) to the video. Frames are encoded in sequence at the configured frame rate." },
+                { "VideoExporter.Dispose", "Finalizes the video encoding and releases resources. Must be called to produce a valid MP4 file." },
 
                 // ShapeArrayExtensions (extension methods)
                 { "ShapeArrayExtensions.DrawAll", "Draws all shapes in the collection." },
