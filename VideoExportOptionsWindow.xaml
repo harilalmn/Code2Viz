@@ -72,8 +72,12 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Text="Preset:" Foreground="{StaticResource ForegroundBrush}" VerticalAlignment="Center"/>
-                <ComboBox x:Name="ComboResolution" Grid.Column="1" SelectionChanged="ComboResolution_SelectionChanged"
-                          Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource ForegroundBrush}">
+                <ComboBox x:Name="ComboResolution" Grid.Column="1" SelectionChanged="ComboResolution_SelectionChanged">
+                    <ComboBox.Resources>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Foreground" Value="Black"/>
+                        </Style>
+                    </ComboBox.Resources>
                     <ComboBoxItem Content="Canvas Size" IsSelected="True"/>
                     <ComboBoxItem Content="720p (1280×720)"/>
                     <ComboBoxItem Content="1080p (1920×1080)"/>
