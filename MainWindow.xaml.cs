@@ -1255,6 +1255,10 @@ public partial class MainWindow : Window
              if (completions.Count > 0)
              {
                  _completionWindow = new CompletionWindow(CodeEditor.TextArea);
+
+                 // Explicitly set StartOffset based on the prefix length to fix off-by-one replacement bugs
+                 _completionWindow.StartOffset = offset - prefix.Length;
+
                  var data = _completionWindow.CompletionList.CompletionData;
 
                  // Sort completions: expected type first, then types when after 'new', then by match quality
@@ -4118,6 +4122,7 @@ public partial class MainWindow : Window
         ConsolePanel.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         ConsoleSplitter.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         ConsoleRow.Height = isVisible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        ConsoleRow.MinHeight = isVisible ? 80 : 0;
         ShowConsoleMenuItem.IsChecked = isVisible || ConsoleTab.Visibility == Visibility.Visible;
     }
 

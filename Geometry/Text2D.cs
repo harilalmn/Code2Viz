@@ -2,27 +2,66 @@ using Code2Viz.Canvas;
 
 namespace Code2Viz.Geometry;
 
+/// <summary>
+/// Available font families for text rendering.
+/// </summary>
+public enum VFont
+{
+    /// <summary>Arial - clean sans-serif font (default).</summary>
+    Arial,
+    /// <summary>Times New Roman - classic serif font.</summary>
+    TimesNewRoman,
+    /// <summary>Courier New - monospace font.</summary>
+    CourierNew,
+    /// <summary>Verdana - wide sans-serif font.</summary>
+    Verdana,
+    /// <summary>Georgia - elegant serif font.</summary>
+    Georgia,
+    /// <summary>Tahoma - compact sans-serif font.</summary>
+    Tahoma,
+    /// <summary>Trebuchet MS - humanist sans-serif font.</summary>
+    TrebuchetMS,
+    /// <summary>Consolas - modern monospace font.</summary>
+    Consolas,
+    /// <summary>Calibri - default Office font.</summary>
+    Calibri,
+    /// <summary>Cambria - serif font for body text.</summary>
+    Cambria,
+    /// <summary>Segoe UI - Windows system font.</summary>
+    SegoeUI,
+    /// <summary>Comic Sans MS - casual script font.</summary>
+    ComicSansMS,
+    /// <summary>Impact - bold display font.</summary>
+    Impact,
+    /// <summary>Lucida Console - monospace font.</summary>
+    LucidaConsole
+}
+
+/// <summary>
+/// Font weight for text rendering.
+/// </summary>
+public enum VFontWeight
+{
+    /// <summary>Normal weight (400).</summary>
+    Normal,
+    /// <summary>Bold weight (700).</summary>
+    Bold
+}
+
 public class VText : Shape
 {
     public VPoint Location { get; set; }
     public string Content { get; set; }
     public double Height { get; set; } = 12;
     public double Width { get; set; } = 0; // 0 = auto (measured)
-
-    /// <summary>
-    /// Text color (alias for StrokeColor)
-    /// </summary>
-    public string Color
-    {
-        get => StrokeColor;
-        set => StrokeColor = value;
-    }
+    public VFont Font { get; set; } = VFont.Arial;
+    public VFontWeight FontWeight { get; set; } = VFontWeight.Normal;
 
     public VText(VPoint location, string content)
     {
         Location = location;
         Content = content;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 
@@ -30,7 +69,7 @@ public class VText : Shape
     {
         Location = new VPoint(x, y);
         Content = content;
-        StrokeColor = ShapeDefaults.GlobalStrokeColor ?? "White";
+        Color = ShapeDefaults.GlobalColor ?? "White";
         FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
     }
 
@@ -38,7 +77,13 @@ public class VText : Shape
 
     public override Shape Clone()
     {
-        var clone = new VText((VPoint)Location.Clone(), Content) { Height = Height, Width = Width };
+        var clone = new VText((VPoint)Location.Clone(), Content)
+        {
+            Height = Height,
+            Width = Width,
+            Font = Font,
+            FontWeight = FontWeight
+        };
         CopyStyleTo(clone);
         return clone;
     }

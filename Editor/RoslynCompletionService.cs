@@ -55,27 +55,90 @@ public class RoslynCompletionService
             // 3. Lookup Symbols
             ImmutableArray<ISymbol> symbols;
             bool isEnumMemberAccess = false;
+            bool isStaticTypeAccess = false;
+            ITypeSymbol? memberAccessType = null;
 
             // Handle Member Access (dot)
             var tokenLeft = position > 0 ? root.FindToken(position - 1) : default; // Get token BEFORE cursor
+
+            // Check for proper MemberAccessExpressionSyntax
             if (tokenLeft != default && tokenLeft.IsKind(SyntaxKind.DotToken) && tokenLeft.Parent is MemberAccessExpressionSyntax memberAccess)
             {
-                 var lhsType = semanticModel.GetTypeInfo(memberAccess.Expression).Type;
-                 if (lhsType != null)
-                 {
-                     // Check if we're accessing an enum type (for static enum value completion)
-                     if (lhsType.TypeKind == TypeKind.Enum)
-                     {
-                         isEnumMemberAccess = true;
-                     }
+                 // First try to get the type of the expression (for instance members)
+                 memberAccessType = semanticModel.GetTypeInfo(memberAccess.Expression).Type;
 
-                     symbols = await Task.Run(() =>
-                        semanticModel.LookupSymbols(position, container: lhsType, includeReducedExtensionMethods: true));
-                 }
-                 else
+                 // If that fails, check if it's a type name (for static members/enum values)
+                 if (memberAccessType == null)
                  {
-                     symbols = ImmutableArray<ISymbol>.Empty;
+                     var symbolInfo = semanticModel.GetSymbolInfo(memberAccess.Expression);
+                     if (symbolInfo.Symbol is INamedTypeSymbol typeSymbol)
+                     {
+                         memberAccessType = typeSymbol;
+                         isStaticTypeAccess = true;
+                     }
                  }
+            }
+            // Fallback: Check for incomplete member access (e.g., "VFont." with cursor after dot)
+            else if (position > 1 && code[position - 1] == '.')
+            {
+                // Find the identifier before the dot
+                var dotPos = position - 1;
+                var identEnd = dotPos;
+                var identStart = dotPos - 1;
+                while (identStart >= 0 && (char.IsLetterOrDigit(code[identStart]) || code[identStart] == '_'))
+                {
+                    identStart--;
+                }
+                identStart++;
+
+                if (identStart < identEnd)
+                {
+                    var identName = code.Substring(identStart, identEnd - identStart);
+
+                    // Try to find this identifier as a type or variable
+                    var availableSymbols = semanticModel.LookupSymbols(identStart);
+                    foreach (var sym in availableSymbols)
+                    {
+                        if (sym.Name == identName)
+                        {
+                            if (sym is INamedTypeSymbol typeSymbol)
+                            {
+                                memberAccessType = typeSymbol;
+                                isStaticTypeAccess = true;
+                            }
+                            else if (sym is ILocalSymbol local)
+                            {
+                                memberAccessType = local.Type;
+                            }
+                            else if (sym is IParameterSymbol param)
+                            {
+                                memberAccessType = param.Type;
+                            }
+                            else if (sym is IFieldSymbol field)
+                            {
+                                memberAccessType = field.Type;
+                            }
+                            else if (sym is IPropertySymbol prop)
+                            {
+                                memberAccessType = prop.Type;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If we found a member access type, lookup its members
+            if (memberAccessType != null)
+            {
+                // Check if we're accessing an enum type (for static enum value completion)
+                if (memberAccessType.TypeKind == TypeKind.Enum)
+                {
+                    isEnumMemberAccess = true;
+                }
+
+                symbols = await Task.Run(() =>
+                    semanticModel.LookupSymbols(position, container: memberAccessType, includeReducedExtensionMethods: true));
             }
             else
             {
@@ -116,6 +179,13 @@ public class RoslynCompletionService
                         continue;
                 }
 
+                // For static type access (not enum), only show static members
+                if (isStaticTypeAccess && !isEnumMemberAccess)
+                {
+                    if (!symbol.IsStatic)
+                        continue;
+                }
+
                 // Create CompletionData based on symbol kind
                 var kind = ConvertToCompletionKind(symbol.Kind);
 
@@ -142,7 +212,13 @@ public class RoslynCompletionService
                 }
             }
 
-            // 5. Add Keywords (Simple fallback if not handled by LookupSymbols which primarily does identifiers)
+            // 5. Add Code2Viz.Geometry types even when not imported (for convenience)
+            if (memberAccessType == null && !isAfterNew)
+            {
+                AddCode2VizTypes(completions, compilation, prefix);
+            }
+
+            // 6. Add Keywords (Simple fallback if not handled by LookupSymbols which primarily does identifiers)
             // Roslyn's RecommendSymbols API is better for keywords but internal/more complex.
             // We can stick to a basic list or use the existing keyword list from CompletionProvider for now.
         }
@@ -294,14 +370,135 @@ public class RoslynCompletionService
         return null;
     }
 
+    /// <summary>
+    /// Adds Code2Viz.Geometry types to completions even when not imported.
+    /// This makes it easier for users to discover and use geometry types.
+    /// </summary>
+    private void AddCode2VizTypes(List<ICompletionData> completions, CSharpCompilation compilation, string prefix)
+    {
+        var existingNames = new HashSet<string>(completions.Select(c => c.Text));
+
+        // Find Code2Viz.Geometry namespace in the compilation
+        foreach (var reference in compilation.References)
+        {
+            var assemblySymbol = compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+            if (assemblySymbol == null) continue;
+
+            // Look for Code2Viz.Geometry namespace
+            var geometryNs = assemblySymbol.GlobalNamespace
+                .GetNamespaceMembers()
+                .FirstOrDefault(ns => ns.Name == "Code2Viz")?
+                .GetNamespaceMembers()
+                .FirstOrDefault(ns => ns.Name == "Geometry");
+
+            if (geometryNs != null)
+            {
+                foreach (var type in geometryNs.GetTypeMembers())
+                {
+                    // Only add public types that start with V (our naming convention)
+                    if (type.DeclaredAccessibility == Microsoft.CodeAnalysis.Accessibility.Public &&
+                        type.Name.StartsWith("V") &&
+                        !existingNames.Contains(type.Name))
+                    {
+                        var kind = type.TypeKind == TypeKind.Enum ? CompletionKind.Type : CompletionKind.Type;
+                        completions.Add(new CompletionData(type.Name, GetDescription(type), kind));
+                        existingNames.Add(type.Name);
+                    }
+                }
+
+                // Also add enums like VFont, VFontWeight, LineType
+                foreach (var type in geometryNs.GetTypeMembers())
+                {
+                    if (type.DeclaredAccessibility == Microsoft.CodeAnalysis.Accessibility.Public &&
+                        type.TypeKind == TypeKind.Enum &&
+                        !type.Name.StartsWith("V") &&
+                        !existingNames.Contains(type.Name))
+                    {
+                        completions.Add(new CompletionData(type.Name, GetDescription(type), CompletionKind.Type));
+                        existingNames.Add(type.Name);
+                    }
+                }
+            }
+
+            // Also check Code2Viz.Console namespace
+            var consoleNs = assemblySymbol.GlobalNamespace
+                .GetNamespaceMembers()
+                .FirstOrDefault(ns => ns.Name == "Code2Viz")?
+                .GetNamespaceMembers()
+                .FirstOrDefault(ns => ns.Name == "Console");
+
+            if (consoleNs != null)
+            {
+                foreach (var type in consoleNs.GetTypeMembers())
+                {
+                    if (type.DeclaredAccessibility == Microsoft.CodeAnalysis.Accessibility.Public &&
+                        !existingNames.Contains(type.Name))
+                    {
+                        completions.Add(new CompletionData(type.Name, GetDescription(type), CompletionKind.Type));
+                        existingNames.Add(type.Name);
+                    }
+                }
+            }
+        }
+    }
+
     private bool ShouldHide(ISymbol symbol)
     {
         // Hide backing fields, generated code, etc.
         if (symbol.Name.Contains("<") || symbol.Name.Contains("$")) return true;
-        
+
         // Hide constructor methods (they appear as .ctor)
         if (symbol.IsImplicitlyDeclared && symbol.Kind == SymbolKind.Method) return true;
         if (symbol.Name == ".ctor") return true;
+
+        // For types, filter out irrelevant system types
+        if (symbol is INamedTypeSymbol typeSymbol)
+        {
+            var ns = typeSymbol.ContainingNamespace?.ToDisplayString() ?? "";
+
+            // Hide types from low-level runtime namespaces
+            if (ns.StartsWith("System.Runtime") ||
+                ns.StartsWith("System.Reflection") ||
+                ns.StartsWith("System.Diagnostics") ||
+                ns.StartsWith("System.Threading") ||
+                ns.StartsWith("System.Security") ||
+                ns.StartsWith("System.Globalization") ||
+                ns.StartsWith("System.ComponentModel") ||
+                ns.StartsWith("System.CodeDom") ||
+                ns.StartsWith("System.Configuration") ||
+                ns.StartsWith("System.Resources") ||
+                ns.StartsWith("System.Text.RegularExpressions") ||
+                ns.StartsWith("Microsoft."))
+            {
+                return true;
+            }
+
+            // Hide Action/Func delegates with many type parameters (keep simple ones)
+            if ((typeSymbol.Name == "Action" || typeSymbol.Name == "Func") &&
+                typeSymbol.TypeParameters.Length > 4)
+            {
+                return true;
+            }
+
+            // Hide obscure System types that aren't useful for geometry coding
+            var hiddenTypes = new HashSet<string>
+            {
+                "Buffer", "DBNull", "GCKind", "GCNotificationStatus", "GCCollectionMode",
+                "IntPtr", "UIntPtr", "Int128", "UInt128", "Half", "NFloat",
+                "RuntimeTypeHandle", "RuntimeMethodHandle", "RuntimeFieldHandle",
+                "TypedReference", "ArgIterator", "ModuleHandle", "GCHandle",
+                "Span", "ReadOnlySpan", "Memory", "ReadOnlyMemory",
+                "Index", "Range", "HashCode", "MemoryExtensions",
+                "ArraySegment", "Nullable", "WeakReference",
+                "Activator", "AppDomain", "AppContext", "Environment",
+                "GC", "BitConverter", "Convert", "FormattableString",
+                "Progress", "Lazy", "Lookup", "Grouping"
+            };
+            if (hiddenTypes.Contains(typeSymbol.Name))
+            {
+                return true;
+            }
+        }
 
         return false;
     }

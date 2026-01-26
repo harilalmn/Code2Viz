@@ -1580,7 +1580,7 @@ public class RenderCanvas : FrameworkElement
         // Apply offset for move animation
         var screenPos = WorldToScreen(point.X + point.OffsetX, point.Y + point.OffsetY);
         var fill = GetCachedBrush(point.FillColor);
-        var pen = GetCachedPen(point.StrokeColor, point.LineWeight, point.LineType, point.LineTypeScale);
+        var pen = GetCachedPen(point.Color, point.LineWeight, point.LineType, point.LineTypeScale);
 
         dc.DrawEllipse(fill, pen, screenPos, PointRadius, PointRadius);
 
@@ -1609,7 +1609,7 @@ public class RenderCanvas : FrameworkElement
 
         var start = WorldToScreen(line.Start.X + offsetX, line.Start.Y + offsetY);
         var end = WorldToScreen(line.End.X + offsetX, line.End.Y + offsetY);
-        var pen = GetCachedPen(line.StrokeColor, line.LineWeight, line.LineType, line.LineTypeScale);
+        var pen = GetCachedPen(line.Color, line.LineWeight, line.LineType, line.LineTypeScale);
 
         // Apply DrawFactor for animation (partial line drawing)
         if (line.DrawFactor < 1.0)
@@ -1648,7 +1648,7 @@ public class RenderCanvas : FrameworkElement
 
         var start = WorldToScreen(p1.X + offsetX, p1.Y + offsetY);
         var end = WorldToScreen(p2.X + offsetX, p2.Y + offsetY);
-        var pen = GetCachedPen(xline.StrokeColor, xline.LineWeight, xline.LineType, xline.LineTypeScale);
+        var pen = GetCachedPen(xline.Color, xline.LineWeight, xline.LineType, xline.LineTypeScale);
 
         // Apply DrawFactor for animation
         if (xline.DrawFactor < 1.0)
@@ -1688,7 +1688,7 @@ public class RenderCanvas : FrameworkElement
 
         var start = WorldToScreen(p1.X + offsetX, p1.Y + offsetY);
         var end = WorldToScreen(p2.X + offsetX, p2.Y + offsetY);
-        var pen = GetCachedPen(ray.StrokeColor, ray.LineWeight, ray.LineType, ray.LineTypeScale);
+        var pen = GetCachedPen(ray.Color, ray.LineWeight, ray.LineType, ray.LineTypeScale);
 
         // Apply DrawFactor for animation (draws from origin outward)
         if (ray.DrawFactor < 1.0)
@@ -1744,7 +1744,7 @@ public class RenderCanvas : FrameworkElement
         var isLargeArc = angleDiff > 180;
 
         var screenRadius = arc.Radius * _viewport.Scale;
-        var pen = GetCachedPen(arc.StrokeColor, arc.LineWeight, arc.LineType, arc.LineTypeScale);
+        var pen = GetCachedPen(arc.Color, arc.LineWeight, arc.LineType, arc.LineTypeScale);
 
         // Use StreamGeometry for better performance
         var geometry = new StreamGeometry();
@@ -1782,7 +1782,7 @@ public class RenderCanvas : FrameworkElement
         var centerScreen = WorldToScreen(circle.Center.X + offsetX, circle.Center.Y + offsetY);
         var screenRadius = circle.Radius * _viewport.Scale;
         var fill = GetCachedBrush(circle.FillColor);
-        var pen = GetCachedPen(circle.StrokeColor, circle.LineWeight, circle.LineType, circle.LineTypeScale);
+        var pen = GetCachedPen(circle.Color, circle.LineWeight, circle.LineType, circle.LineTypeScale);
 
         // Apply DrawFactor - draw as arc from 0 to DrawFactor*360 degrees
         if (circle.DrawFactor < 1.0)
@@ -1828,7 +1828,7 @@ public class RenderCanvas : FrameworkElement
         var offsetY = rect.OffsetY;
 
         var fill = GetCachedBrush(rect.FillColor);
-        var pen = GetCachedPen(rect.StrokeColor, rect.LineWeight, rect.LineType, rect.LineTypeScale);
+        var pen = GetCachedPen(rect.Color, rect.LineWeight, rect.LineType, rect.LineTypeScale);
 
         // If rectangle has internal rotation, draw as polygon
         if (Math.Abs(rect.RotationAngle) > 1e-9)
@@ -1927,7 +1927,7 @@ public class RenderCanvas : FrameworkElement
         var screenRadiusX = ellipse.RadiusX * _viewport.Scale;
         var screenRadiusY = ellipse.RadiusY * _viewport.Scale;
         var fill = GetCachedBrush(ellipse.FillColor);
-        var pen = GetCachedPen(ellipse.StrokeColor, ellipse.LineWeight, ellipse.LineType, ellipse.LineTypeScale);
+        var pen = GetCachedPen(ellipse.Color, ellipse.LineWeight, ellipse.LineType, ellipse.LineTypeScale);
 
         dc.DrawEllipse(fill, pen, centerScreen, screenRadiusX, screenRadiusY);
 
@@ -1946,7 +1946,7 @@ public class RenderCanvas : FrameworkElement
         var offsetY = polygon.OffsetY;
 
         var fill = GetCachedBrush(polygon.FillColor);
-        var pen = GetCachedPen(polygon.StrokeColor, polygon.LineWeight, polygon.LineType, polygon.LineTypeScale);
+        var pen = GetCachedPen(polygon.Color, polygon.LineWeight, polygon.LineType, polygon.LineTypeScale);
 
         // Apply DrawFactor - draw partial polygon outline
         var totalSegments = polygon.Points.Count; // includes closing segment
@@ -2000,7 +2000,7 @@ public class RenderCanvas : FrameworkElement
         var offsetX = polyline.OffsetX;
         var offsetY = polyline.OffsetY;
 
-        var pen = GetCachedPen(polyline.StrokeColor, polyline.LineWeight, polyline.LineType, polyline.LineTypeScale);
+        var pen = GetCachedPen(polyline.Color, polyline.LineWeight, polyline.LineType, polyline.LineTypeScale);
 
         // Apply DrawFactor - draw partial polyline
         var totalSegments = polyline.Points.Count - 1;
@@ -2048,13 +2048,15 @@ public class RenderCanvas : FrameworkElement
         if (applyOpacity) dc.PushOpacity(text.Opacity);
 
         var screenPos = WorldToScreen(text.Location.X, text.Location.Y);
-        var brush = GetCachedBrush(text.StrokeColor);
+        var brush = GetCachedBrush(text.Color);
 
         // Scale font size with zoom, but keep it readable
         var fontSize = text.Height * _viewport.Scale;
         fontSize = Math.Max(fontSize, 6); // Minimum readable size
 
-        var typeface = new Typeface("Segoe UI");
+        var fontFamily = GetFontFamilyName(text.Font);
+        var fontWeight = text.FontWeight == VFontWeight.Bold ? FontWeights.Bold : FontWeights.Normal;
+        var typeface = new Typeface(new FontFamily(fontFamily), FontStyles.Normal, fontWeight, FontStretches.Normal);
         var formattedText = new FormattedText(
             text.Content,
             CultureInfo.CurrentCulture,
@@ -2070,6 +2072,25 @@ public class RenderCanvas : FrameworkElement
         if (applyOpacity) dc.Pop();
     }
 
+    private static string GetFontFamilyName(VFont font) => font switch
+    {
+        VFont.Arial => "Arial",
+        VFont.TimesNewRoman => "Times New Roman",
+        VFont.CourierNew => "Courier New",
+        VFont.Verdana => "Verdana",
+        VFont.Georgia => "Georgia",
+        VFont.Tahoma => "Tahoma",
+        VFont.TrebuchetMS => "Trebuchet MS",
+        VFont.Consolas => "Consolas",
+        VFont.Calibri => "Calibri",
+        VFont.Cambria => "Cambria",
+        VFont.SegoeUI => "Segoe UI",
+        VFont.ComicSansMS => "Comic Sans MS",
+        VFont.Impact => "Impact",
+        VFont.LucidaConsole => "Lucida Console",
+        _ => "Arial"
+    };
+
     private void DrawBezier(DrawingContext dc, VBezier bezier)
     {
         if (bezier.DrawFactor <= 0 || bezier.Opacity <= 0) return;
@@ -2081,7 +2102,7 @@ public class RenderCanvas : FrameworkElement
         var offsetX = bezier.OffsetX;
         var offsetY = bezier.OffsetY;
 
-        var pen = GetCachedPen(bezier.StrokeColor, bezier.LineWeight, bezier.LineType, bezier.LineTypeScale);
+        var pen = GetCachedPen(bezier.Color, bezier.LineWeight, bezier.LineType, bezier.LineTypeScale);
         var points = bezier.GetRenderPoints();
         if (points.Count < 2)
         {
@@ -2117,7 +2138,7 @@ public class RenderCanvas : FrameworkElement
         var applyOpacity = spline.Opacity < 1.0;
         if (applyOpacity) dc.PushOpacity(spline.Opacity);
 
-        var pen = GetCachedPen(spline.StrokeColor, spline.LineWeight, spline.LineType, spline.LineTypeScale);
+        var pen = GetCachedPen(spline.Color, spline.LineWeight, spline.LineType, spline.LineTypeScale);
         var points = spline.GetRenderPoints();
         if (points.Count < 2)
         {
@@ -2157,8 +2178,8 @@ public class RenderCanvas : FrameworkElement
             dc.PushTransform(new RotateTransform(-arrow.RotationAngle, pivot.X, pivot.Y));
         }
 
-        var pen = GetCachedPen(arrow.StrokeColor, arrow.LineWeight, arrow.LineType, arrow.LineTypeScale);
-        var brush = GetCachedBrush(arrow.StrokeColor);  // Use stroke color for filled arrowhead
+        var pen = GetCachedPen(arrow.Color, arrow.LineWeight, arrow.LineType, arrow.LineTypeScale);
+        var brush = GetCachedBrush(arrow.Color);  // Use stroke color for filled arrowhead
         var start = WorldToScreen(arrow.Start.X + arrow.OffsetX, arrow.Start.Y + arrow.OffsetY);
         var fullEnd = WorldToScreen(arrow.End.X + arrow.OffsetX, arrow.End.Y + arrow.OffsetY);
 
@@ -2237,7 +2258,7 @@ public class RenderCanvas : FrameworkElement
         var applyOpacity = dim.Opacity < 1.0;
         if (applyOpacity) dc.PushOpacity(dim.Opacity);
 
-        var pen = GetCachedPen(dim.StrokeColor, dim.LineWeight, dim.LineType, dim.LineTypeScale);
+        var pen = GetCachedPen(dim.Color, dim.LineWeight, dim.LineType, dim.LineTypeScale);
         var (dimStart, dimEnd, textPos, ext1Start, ext1End, ext2Start, ext2End) = dim.GetDimensionGeometry();
 
         // Draw dimension line
@@ -2250,7 +2271,7 @@ public class RenderCanvas : FrameworkElement
         dc.DrawLine(pen, WorldToScreen(ext2Start.X, ext2Start.Y), WorldToScreen(ext2End.X, ext2End.Y));
 
         // Draw text
-        var brush = GetCachedBrush(dim.StrokeColor);
+        var brush = GetCachedBrush(dim.Color);
         var fontSize = dim.TextHeight * _viewport.Scale;
         fontSize = Math.Max(fontSize, 8);
         var typeface = new Typeface("Segoe UI");
