@@ -725,6 +725,180 @@ public class MultiSelectionRenderer : IBackgroundRenderer
         _textView.InvalidateLayer(Layer);
     }
 
+    /// <summary>
+    /// Moves all cursors to the beginning of their respective lines, collapsing any selections.
+    /// </summary>
+    public void MoveAllCursorsHome()
+    {
+        var document = _textView.Document;
+
+        // Move additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            var sel = _selections[i];
+            int offset = sel.Length > 0 ? sel.StartOffset : sel.StartOffset;
+            var line = document.GetLineByOffset(offset);
+            int newOffset = line.Offset;
+            _selections[i] = new TextSegment { StartOffset = newOffset, Length = 0 };
+            _anchors[i] = newOffset;
+            _carets[i] = newOffset;
+        }
+
+        // Move main caret
+        var mainSel = _textArea.Selection;
+        var mainSegment = mainSel.SurroundingSegment;
+        int mainOffset = mainSegment != null && mainSegment.Length > 0 ? mainSegment.Offset : _textArea.Caret.Offset;
+        var mainLine = document.GetLineByOffset(mainOffset);
+        int mainNewOffset = mainLine.Offset;
+        _textArea.Caret.Offset = mainNewOffset;
+        _textArea.Selection = Selection.Create(_textArea, mainNewOffset, mainNewOffset);
+
+        _textView.InvalidateLayer(Layer);
+    }
+
+    /// <summary>
+    /// Moves all cursors to the end of their respective lines, collapsing any selections.
+    /// </summary>
+    public void MoveAllCursorsEnd()
+    {
+        var document = _textView.Document;
+
+        // Move additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            var sel = _selections[i];
+            int offset = sel.Length > 0 ? sel.EndOffset : sel.EndOffset;
+            var line = document.GetLineByOffset(offset);
+            int newOffset = line.EndOffset;
+            _selections[i] = new TextSegment { StartOffset = newOffset, Length = 0 };
+            _anchors[i] = newOffset;
+            _carets[i] = newOffset;
+        }
+
+        // Move main caret
+        var mainSel = _textArea.Selection;
+        var mainSegment = mainSel.SurroundingSegment;
+        int mainOffset = mainSegment != null && mainSegment.Length > 0 ? mainSegment.EndOffset : _textArea.Caret.Offset;
+        var mainLine = document.GetLineByOffset(mainOffset);
+        int mainNewOffset = mainLine.EndOffset;
+        _textArea.Caret.Offset = mainNewOffset;
+        _textArea.Selection = Selection.Create(_textArea, mainNewOffset, mainNewOffset);
+
+        _textView.InvalidateLayer(Layer);
+    }
+
+    /// <summary>
+    /// Extends all selections to the beginning of their respective lines (Shift+Home behavior).
+    /// </summary>
+    public void ExtendAllSelectionsHome()
+    {
+        var document = _textView.Document;
+
+        // Extend additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            int anchor = _anchors[i];
+            int caret = _carets[i];
+
+            // Move caret to line start
+            var line = document.GetLineByOffset(caret);
+            int newCaret = line.Offset;
+            _carets[i] = newCaret;
+
+            // Create selection from anchor to new caret
+            int start = Math.Min(anchor, newCaret);
+            int end = Math.Max(anchor, newCaret);
+            _selections[i] = new TextSegment { StartOffset = start, Length = end - start };
+        }
+
+        // Extend main selection
+        var mainSel = _textArea.Selection;
+        int mainAnchor, mainCaret;
+        if (mainSel.IsEmpty)
+        {
+            mainAnchor = mainCaret = _textArea.Caret.Offset;
+        }
+        else
+        {
+            var seg = mainSel.SurroundingSegment;
+            if (_textArea.Caret.Offset == seg.EndOffset)
+            {
+                mainAnchor = seg.Offset;
+                mainCaret = seg.EndOffset;
+            }
+            else
+            {
+                mainAnchor = seg.EndOffset;
+                mainCaret = seg.Offset;
+            }
+        }
+
+        var mainLine = document.GetLineByOffset(mainCaret);
+        int mainNewCaret = mainLine.Offset;
+        int mainStart = Math.Min(mainAnchor, mainNewCaret);
+        int mainEnd = Math.Max(mainAnchor, mainNewCaret);
+        _textArea.Selection = Selection.Create(_textArea, mainStart, mainEnd);
+        _textArea.Caret.Offset = mainNewCaret;
+
+        _textView.InvalidateLayer(Layer);
+    }
+
+    /// <summary>
+    /// Extends all selections to the end of their respective lines (Shift+End behavior).
+    /// </summary>
+    public void ExtendAllSelectionsEnd()
+    {
+        var document = _textView.Document;
+
+        // Extend additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            int anchor = _anchors[i];
+            int caret = _carets[i];
+
+            // Move caret to line end
+            var line = document.GetLineByOffset(caret);
+            int newCaret = line.EndOffset;
+            _carets[i] = newCaret;
+
+            // Create selection from anchor to new caret
+            int start = Math.Min(anchor, newCaret);
+            int end = Math.Max(anchor, newCaret);
+            _selections[i] = new TextSegment { StartOffset = start, Length = end - start };
+        }
+
+        // Extend main selection
+        var mainSel = _textArea.Selection;
+        int mainAnchor, mainCaret;
+        if (mainSel.IsEmpty)
+        {
+            mainAnchor = mainCaret = _textArea.Caret.Offset;
+        }
+        else
+        {
+            var seg = mainSel.SurroundingSegment;
+            if (_textArea.Caret.Offset == seg.EndOffset)
+            {
+                mainAnchor = seg.Offset;
+                mainCaret = seg.EndOffset;
+            }
+            else
+            {
+                mainAnchor = seg.EndOffset;
+                mainCaret = seg.Offset;
+            }
+        }
+
+        var mainLine = document.GetLineByOffset(mainCaret);
+        int mainNewCaret = mainLine.EndOffset;
+        int mainStart = Math.Min(mainAnchor, mainNewCaret);
+        int mainEnd = Math.Max(mainAnchor, mainNewCaret);
+        _textArea.Selection = Selection.Create(_textArea, mainStart, mainEnd);
+        _textArea.Caret.Offset = mainNewCaret;
+
+        _textView.InvalidateLayer(Layer);
+    }
+
     public void Draw(TextView textView, DrawingContext drawingContext)
     {
         if (_selections.Count == 0) return;

@@ -34,9 +34,9 @@ namespace Code2Viz.Documentation
                 { "Code2Viz.Editor", "Contains classes related to the code editor, including formatting, completion, and snippets." },
 
                 // Base classes
-                { "Shape", "Abstract base class for all drawable shapes. Provides common properties like StrokeColor, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains(), DistanceTo()." },
+                { "Shape", "Abstract base class for all drawable shapes. Provides common properties like Color, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains(), DistanceTo()." },
                 { "IDrawable", "Interface for any object that can be drawn on the canvas. Defines Draw() method and styling properties." },
-                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), StrokeColor, FillColor, and LineWeight. Provides curve operations: StartPoint, EndPoint, SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(). The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve." },
+                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), Color, FillColor, and LineWeight. Provides curve operations: StartPoint, EndPoint, SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(). The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve." },
                 { "IntersectionResult", "Represents the result of an intersection operation between curves. Contains Points (list of intersection points) and Curves (list of overlapping segments). Properties: HasIntersection (true if any intersection), IsSinglePoint (exactly one point), HasOverlap (curves share a segment), Count (total elements). Use Intersect() method on any ICurve to compute intersections." },
                 { "CurveIntersection", "Static utility class providing curve intersection algorithms. Supports Line-Line, Line-Circle, Line-Arc, Line-Ellipse, Circle-Circle, Circle-Arc, Arc-Arc intersections with specialized algorithms. Complex curves use segment-based approximation. Also provides IsSelfIntersecting() for detecting self-intersections." },
 
@@ -54,7 +54,7 @@ namespace Code2Viz.Documentation
                 { "VBezier", "Represents a 2D cubic Bezier curve defined by four control points: start, control1, control2, and end." },
                 { "VSpline", "Represents a smooth Catmull-Rom spline curve passing through a series of points." },
                 { "VText", "Represents text drawn at a specific position. Supports font size (Height property) and styling." },
-                { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyStrokeColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
+                { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
                 { "VGrid", "Represents a rectangular grid of VPoints. Constructor: VGrid(location, xcount, ycount, xSpacing, ySpacing, centered). If centered=true, grid is centered at location; if false, location is bottom-left corner. Access points via Points property, indexers [index] or [col, row], or GetRow()/GetColumn() methods. Supports all Shape transformations (Move, Rotate, Scale, Flip) and ApplyStyle() to set colors on all points." },
                 { "VArrow", "Represents an arrow (line with arrowhead). Supports single or double-ended arrows with configurable head size and angle." },
                 { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. Useful for technical drawings." },
@@ -80,19 +80,21 @@ namespace Code2Viz.Documentation
                 { "VTransform", "Represents a 3D transformation matrix for rotation and reflection operations." },
                 { "VCoordinateSystem", "Represents a 3D coordinate system with origin and orthonormal basis vectors (X, Y, Z axes)." },
                 { "GeometryHelper", "Static helper class providing common geometric algorithms like intersection, projection, distance calculations, and angle measurements." },
-                { "ShapeDefaults", "Static class holding global default settings for shapes (GlobalStrokeColor, GlobalFillColor, GlobalLineWeight, GlobalLineType). These are populated from Project Settings." },
+                { "ShapeDefaults", "Static class holding global default settings for shapes (GlobalColor, GlobalFillColor, GlobalLineWeight, GlobalLineType). These are populated from Project Settings." },
                 { "LineType", "Enum defining the stroke style (line pattern) for shape outlines. Options: Continuous (solid, default), Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden." },
-                { "VColor", "Static utility class for easy color access and random color generation. Provides named color properties (Red, Blue, Green, etc.), GetRandomColor(pastel) for random colors, FromRgb/FromArgb for custom colors. Use with StrokeColor and FillColor properties." },
+                { "VColor", "Static utility class for easy color access and random color generation. Provides named color properties (Red, Blue, Green, etc.), GetRandomColor(pastel) for random colors, FromRgb/FromArgb for custom colors. Use with Color and FillColor properties." },
                 { "ColorName", "Enum containing common color names (Red, Green, Blue, Yellow, Orange, etc.). Use VColor.FromEnum(ColorName.Red) to convert to string." },
 
                 // Animation
-                { "Code2Viz.Animation", "Contains classes for animating shapes over time using a timeline-based system." },
-                { "Timeline", "Manages a collection of shapes and animations, controlling playback timing and state. Supports looping (Repeat), speed control, and multiple concurrent animations." },
-                { "Animation", "Abstract base class for all animations. Defines Target shape, StartTime, Duration, and EasingFunction. Subclasses implement the Apply() method." },
-                { "DrawAnimation", "Animates the DrawFactor property to progressively draw a shape from 0% to 100%. Creates a 'drawing' effect where shapes appear to be drawn over time." },
-                { "MoveAnimation", "Animates moving a shape by a specified displacement vector over time. The shape smoothly translates from its original position." },
-                { "RotateAnimation", "Animates rotating a shape around a specified pivot point by a given angle in degrees. Useful for spinning or orbiting effects." },
-                { "FlipAnimation", "Animates flipping (mirroring) a shape across a specified axis line. Creates a reflection transformation over time." },
+                { "Code2Viz.Animation", "Contains classes for animating shapes over time. Use the Animator class to manage animation sequencing automatically." },
+                { "Animator", "Main class for creating animations. Manages sequencing automatically - animations added with AddToAnimations() play sequentially; pass a List<Animation> for parallel playback. Call Animate() to start." },
+                { "Animation", "Abstract base class for all animations. Defines Target shape, Duration, and EasingFunction. Subclasses implement the Apply() method. StartTime is set automatically by Animator." },
+                { "DrawAnimation", "Animates the DrawFactor property to progressively draw a shape from 0% to 100%. Constructor: new DrawAnimation(shape, duration)." },
+                { "MoveAnimation", "Animates moving a shape by a displacement vector. Constructor: new MoveAnimation(shape, displacement, duration)." },
+                { "RotateAnimation", "Animates rotating a shape around a pivot point. Constructor: new RotateAnimation(shape, pivot, angleDegrees, duration)." },
+                { "FlipAnimation", "Animates flipping (mirroring) a shape across an axis line. Constructor: new FlipAnimation(shape, mirrorAxis, duration)." },
+                { "FadeInAnimation", "Animates fading in a shape from transparent to opaque. Constructor: new FadeInAnimation(shape, duration)." },
+                { "FadeOutAnimation", "Animates fading out a shape from opaque to transparent. Constructor: new FadeOutAnimation(shape, duration, targetOpacity)." },
                 { "EasingFunctions", "Static class providing common easing functions for smooth animations: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic, EaseOutCubic, EaseInOutCubic." },
 
                 // Boolean Operations
@@ -401,9 +403,9 @@ namespace Code2Viz.Documentation
             _fsharpSamples = new Dictionary<string, string>
             {
                 { "VPoint", "let p = VPoint(100.0, 200.0)" },
-                { "VLine", "let start = VPoint(0.0, 0.0)\nlet endP = VPoint(200.0, 200.0)\nlet line = VLine(start, endP)\nline.StrokeColor <- \"#00FF00\"\nline.LineWeight <- 2.0\nline.Draw()" },
-                { "VXLine", "// Infinite construction line\nlet xline = VXLine(VPoint(0.0, 0.0), VXYZ(1.0, 1.0, 0.0))\nxline.StrokeColor <- \"Gray\"\nxline.Draw()\n\n// Horizontal and vertical helpers\nlet hLine = VXLine.Horizontal(100.0)\nlet vLine = VXLine.Vertical(50.0)\nhLine.Draw()\nvLine.Draw()" },
-                { "VRay", "// Semi-infinite ray\nlet ray = VRay(VPoint(0.0, 0.0), VXYZ(1.0, 0.5, 0.0))\nray.StrokeColor <- \"Orange\"\nray.Draw()\n\n// Static helpers\nlet rightRay = VRay.HorizontalRight(VPoint(0.0, 0.0))\nlet angledRay = VRay.AtAngle(VPoint(0.0, 0.0), 45.0)\nrightRay.Draw()\nangledRay.Draw()" },
+                { "VLine", "let start = VPoint(0.0, 0.0)\nlet endP = VPoint(200.0, 200.0)\nlet line = VLine(start, endP)\nline.Color <- \"#00FF00\"\nline.LineWeight <- 2.0\nline.Draw()" },
+                { "VXLine", "// Infinite construction line\nlet xline = VXLine(VPoint(0.0, 0.0), VXYZ(1.0, 1.0, 0.0))\nxline.Color <- \"Gray\"\nxline.Draw()\n\n// Horizontal and vertical helpers\nlet hLine = VXLine.Horizontal(100.0)\nlet vLine = VXLine.Vertical(50.0)\nhLine.Draw()\nvLine.Draw()" },
+                { "VRay", "// Semi-infinite ray\nlet ray = VRay(VPoint(0.0, 0.0), VXYZ(1.0, 0.5, 0.0))\nray.Color <- \"Orange\"\nray.Draw()\n\n// Static helpers\nlet rightRay = VRay.HorizontalRight(VPoint(0.0, 0.0))\nlet angledRay = VRay.AtAngle(VPoint(0.0, 0.0), 45.0)\nrightRay.Draw()\nangledRay.Draw()" },
                 { "VCircle", "let center = VPoint(300.0, 200.0)\nlet radius = 50.0\nlet circle = VCircle(center, radius)\ncircle.FillColor <- \"Blue\"\ncircle.Draw()" },
                 { "VRectangle", "let rect = VRectangle(VPoint(50.0, 50.0), 150.0, 100.0)\nrect.FillColor <- \"#800000FF\"\nrect.Draw()\n\n// Create from two corner points (bottom-left and top-right)\nlet rect2 = VRectangle(VPoint(0.0, 0.0), VPoint(100.0, 75.0))\nrect2.Draw()" },
                 { "VEllipse", "let ellipse = VEllipse(VPoint(400.0, 300.0), 80.0, 40.0)\nellipse.LineWeight <- 3.0\nellipse.Draw()" },
@@ -425,7 +427,7 @@ group.Move(VXYZ(100.0, 100.0, 0.0))
 group.Rotate(VPoint(100.0, 100.0), 45.0)
 
 // Apply styling to all shapes
-group.StrokeColor <- ""Cyan""
+group.Color <- ""Cyan""
 group.ApplyStyle() |> ignore
 
 // Draw as a single selectable entity
@@ -458,63 +460,83 @@ grid.Rotate(VPoint(0.0, 0.0), 45.0)" },
                 { "VizConsole", "VizConsole.Log(\"Debug info\")\nVizConsole.Log($\"Value: {someVariable}\")" },
 
                 // Animation
-                { "Timeline", @"// Create shapes
+                { "Animator", @"// Create shapes
 let line = VLine(0.0, 0.0, 100.0, 50.0)
 let circle = VCircle(50.0, 50.0, 30.0)
 
-// Create timeline with shapes (use array for F#)
-let shapes = [| line :> Shape; circle :> Shape |]
-let timeline = Timeline(shapes)
-timeline.Duration <- 5.0
-timeline.Repeat <- true
+// Create animator
+let anim = Animator()
+anim.Repeat <- true  // Loop animation
 
-// Add animations
-timeline.AddAnimation(DrawAnimation(line, 0.0, 2.0))
-timeline.AddAnimation(DrawAnimation(circle, 0.5, 2.0))
-timeline.AddAnimation(MoveAnimation(line, VXYZ(0.0, 50.0, 0.0), 2.0, 2.0))
+// Add animations sequentially
+anim.AddToAnimations(DrawAnimation(line, 2.0))      // 0-2s
+anim.AddToAnimations(DrawAnimation(circle, 2.0))   // 2-4s
+anim.AddToAnimations(MoveAnimation(circle, VXYZ(50.0, 0.0, 0.0), 2.0)) // 4-6s
 
 // Start playback
-timeline.Play()" },
+anim.Animate()
+
+// For parallel animations, pass a List:
+anim.AddToAnimations(ResizeArray([
+    FadeInAnimation(line, 1.0) :> Animation
+    FadeInAnimation(circle, 1.0) :> Animation
+]))" },
 
                 { "DrawAnimation", @"// Animates shape drawing from 0% to 100%
 let line = VLine(0.0, 0.0, 100.0, 0.0)
-let timeline = Timeline([| line :> Shape |])
+let anim = Animator()
 
-// Draw the line over 2 seconds starting at t=0
-timeline.AddAnimation(DrawAnimation(line, 0.0, 2.0))
-timeline.Play()" },
+// Draw the line over 2 seconds
+anim.AddToAnimations(DrawAnimation(line, 2.0))
+anim.Animate()" },
 
                 { "MoveAnimation", @"// Animates moving a shape by a vector
 let circle = VCircle(0.0, 0.0, 30.0)
-let timeline = Timeline([| circle :> Shape |])
+let anim = Animator()
 
-// Move circle by (100, 50) over 3 seconds, starting at t=1
-timeline.AddAnimation(MoveAnimation(circle, VXYZ(100.0, 50.0, 0.0), 1.0, 3.0))
-timeline.Play()" },
+// Move circle by (100, 50) over 3 seconds
+anim.AddToAnimations(MoveAnimation(circle, VXYZ(100.0, 50.0, 0.0), 3.0))
+anim.Animate()" },
 
                 { "RotateAnimation", @"// Animates rotating a shape around a pivot
 let rect = VRectangle(0.0, 0.0, 50.0, 30.0)
 let pivot = VPoint(25.0, 15.0)
-let timeline = Timeline([| rect :> Shape |])
+let anim = Animator()
 
 // Rotate 360 degrees over 4 seconds
-timeline.AddAnimation(RotateAnimation(rect, pivot, 360.0, 0.0, 4.0))
-timeline.Play()" },
+anim.AddToAnimations(RotateAnimation(rect, pivot, 360.0, 4.0))
+anim.Animate()" },
 
                 { "FlipAnimation", @"// Animates flipping a shape across a mirror axis
 let triangle = VPolygon(VPoint(0.0,0.0), VPoint(50.0,0.0), VPoint(25.0,50.0))
 let mirrorAxis = VLine(25.0, -10.0, 25.0, 60.0)
-let timeline = Timeline([| triangle :> Shape |])
+let anim = Animator()
 
 // Flip across the axis over 2 seconds
-timeline.AddAnimation(FlipAnimation(triangle, mirrorAxis, 0.0, 2.0))
-timeline.Play()" },
+anim.AddToAnimations(FlipAnimation(triangle, mirrorAxis, 2.0))
+anim.Animate()" },
+
+                { "FadeInAnimation", @"// Animates fading in a shape
+let circle = VCircle(0.0, 0.0, 50.0)
+let anim = Animator()
+
+// Fade in over 2 seconds
+anim.AddToAnimations(FadeInAnimation(circle, 2.0))
+anim.Animate()" },
+
+                { "FadeOutAnimation", @"// Animates fading out a shape
+let circle = VCircle(0.0, 0.0, 50.0)
+let anim = Animator()
+
+// Fade out over 2 seconds
+anim.AddToAnimations(FadeOutAnimation(circle, 2.0))
+anim.Animate()" },
 
                 { "EasingFunctions", @"// Apply easing to any animation for smooth motion
 let circle = VCircle(0.0, 0.0, 30.0)
-let timeline = Timeline()
+let anim = Animator()
 
-let moveAnim = MoveAnimation(circle, VXYZ(200.0, 0.0, 0.0), 0.0, 3.0)
+let moveAnim = MoveAnimation(circle, VXYZ(200.0, 0.0, 0.0), 3.0)
 
 // Available Easing Functions:
 // ┌─────────────────┬───────────┬──────────────────────────┐
@@ -532,8 +554,8 @@ let moveAnim = MoveAnimation(circle, VXYZ(200.0, 0.0, 0.0), 0.0, 3.0)
 // Set the easing function
 moveAnim.EasingFunction <- EasingFunctions.EaseInOutCubic
 
-timeline.AddAnimation(moveAnim)
-timeline.Play()" }
+anim.AddToAnimations(moveAnim)
+anim.Animate()" }
             };
         }
 
@@ -664,12 +686,12 @@ timeline.Play()" }
                 // Basic shapes
                 { "VPoint", @"// Create a point
 var p = new VPoint(100, 200);
-p.StrokeColor = ""Red"";
+p.Color = ""Red"";
 p.Draw();" },
 
                 { "VLine", @"// Create a line from two points
 var line = new VLine(new VPoint(0, 0), new VPoint(100, 50));
-line.StrokeColor = ""Cyan"";
+line.Color = ""Cyan"";
 line.LineWeight = 2;
 line.Draw();
 
@@ -679,7 +701,7 @@ line2.Draw();" },
 
                 { "VXLine", @"// Create an infinite construction line through a point with direction
 var xline = new VXLine(new VPoint(0, 0), new VXYZ(1, 1, 0));
-xline.StrokeColor = ""Gray"";
+xline.Color = ""Gray"";
 xline.Draw();
 
 // Create from two points (line passes through both, extends infinitely)
@@ -699,7 +721,7 @@ foreach (var p in sliced) p.Draw();" },
 
                 { "VRay", @"// Create a ray from origin in a direction
 var ray = new VRay(new VPoint(0, 0), new VXYZ(1, 0.5, 0));
-ray.StrokeColor = ""Orange"";
+ray.Color = ""Orange"";
 ray.Draw();
 
 // Create from origin through a point
@@ -721,7 +743,7 @@ foreach (var p in sliced) p.Draw();" },
 
                 { "VCircle", @"// Create a circle with center and radius
 var circle = new VCircle(new VPoint(50, 50), 30);
-circle.StrokeColor = ""Yellow"";
+circle.Color = ""Yellow"";
 circle.FillColor = ""#4000FFFF""; // Semi-transparent cyan
 circle.Draw();
 
@@ -738,7 +760,7 @@ circumcircle.Draw();" },
 
                 { "VRectangle", @"// Create a rectangle (corner, width, height)
 var rect = new VRectangle(new VPoint(10, 10), 80, 50);
-rect.StrokeColor = ""LimeGreen"";
+rect.Color = ""LimeGreen"";
 rect.FillColor = ""#2000FF00"";
 rect.Draw();
 
@@ -757,13 +779,13 @@ double area = rect.Area;  // Signed area from VPolygon" },
 
                 { "VEllipse", @"// Create an ellipse with center and radii
 var ellipse = new VEllipse(new VPoint(100, 100), 60, 30);
-ellipse.StrokeColor = ""Magenta"";
+ellipse.Color = ""Magenta"";
 ellipse.LineWeight = 2;
 ellipse.Draw();" },
 
                 { "VArc", @"// Create an arc (center, radius, startAngle, endAngle)
 var arc = new VArc(new VPoint(50, 50), 40, 0, 270);
-arc.StrokeColor = ""Orange"";
+arc.Color = ""Orange"";
 arc.LineWeight = 3;
 arc.Draw();
 
@@ -775,7 +797,7 @@ var triangle = new VPolygon(
     new VPoint(100, 0),
     new VPoint(50, 80)
 );
-triangle.StrokeColor = ""LimeGreen"";
+triangle.Color = ""LimeGreen"";
 triangle.FillColor = ""#4000FF00"";
 triangle.Draw();
 
@@ -791,7 +813,7 @@ var polyline = new VPolyline(
     new VPoint(60, 20),
     new VPoint(100, 60)
 );
-polyline.StrokeColor = ""Cyan"";
+polyline.Color = ""Cyan"";
 polyline.Draw();" },
 
                 { "VBezier", @"// Create a cubic Bezier curve (4 control points)
@@ -801,7 +823,7 @@ var bezier = new VBezier(
     new VPoint(70, 80),    // Control point 2
     new VPoint(100, 0)     // End point
 );
-bezier.StrokeColor = ""Magenta"";
+bezier.Color = ""Magenta"";
 bezier.LineWeight = 2;
 bezier.Draw();" },
 
@@ -812,18 +834,18 @@ var spline = new VSpline(
     new VPoint(60, 20),
     new VPoint(100, 50)
 );
-spline.StrokeColor = ""Cyan"";
+spline.Color = ""Cyan"";
 spline.Draw();" },
 
                 { "VText", @"// Create text at a position
 var text = new VText(new VPoint(50, 50), ""Hello World"");
 text.Height = 24;
-text.StrokeColor = ""White"";
+text.Color = ""White"";
 text.Draw();" },
 
                 { "VArrow", @"// Create an arrow from two points
 var arrow = new VArrow(new VPoint(0, 0), new VPoint(100, 0));
-arrow.StrokeColor = ""Orange"";
+arrow.Color = ""Orange"";
 arrow.HeadLength = 15;
 arrow.HeadAngle = 30;
 arrow.Draw();
@@ -863,7 +885,7 @@ group.Rotate(new VPoint(100, 100), 45);
 group.Scale(group.GetCenter(), 1.5);
 
 // Apply styling to all shapes
-group.StrokeColor = ""Cyan"";
+group.Color = ""Cyan"";
 group.ApplyStyle();
 
 // Utility methods
@@ -926,7 +948,7 @@ var rotation = VTransform.CreateRotation(VXYZ.BasisZ, 90);
 var reflection = VTransform.CreateReflection(plane);" },
 
                 { "ShapeDefaults", @"// Set global defaults for all new shapes
-ShapeDefaults.GlobalStrokeColor = ""Cyan"";
+ShapeDefaults.GlobalColor = ""Cyan"";
 ShapeDefaults.GlobalFillColor = ""#20FFFFFF"";
 ShapeDefaults.GlobalLineWeight = 2.0;
 ShapeDefaults.GlobalLineType = LineType.Continuous;
@@ -968,7 +990,7 @@ rect.Draw();" },
                 { "Shape", @"// Shape is the base class for all drawable shapes
 // Common properties available on all shapes:
 
-shape.StrokeColor = ""Cyan"";           // Outline color
+shape.Color = ""Cyan"";           // Outline color
 shape.FillColor = ""Transparent"";      // Fill color
 shape.LineWeight = 2.0;           // Line thickness
 shape.LineType = LineType.Continuous;  // Line pattern (Continuous, Dashed, Dotted, etc.)
@@ -1046,63 +1068,86 @@ var polyline = new VPolyline(
 bool selfX = CurveIntersection.IsSelfIntersecting(polyline);" },
 
                 // Animation
-                { "Timeline", @"// Create shapes
+                { "Animator", @"// Create shapes
 var line = new VLine(0, 0, 100, 50);
 var circle = new VCircle(50, 50, 30);
 
-// Create timeline with shapes
-var shapes = new List<Shape> { line, circle };
-var timeline = new Timeline(shapes);
-timeline.Duration = 5.0;
-timeline.Repeat = true;
+// Create animator
+var anim = new Animator();
+anim.Repeat = true;  // Loop animation
 
-// Add animations
-timeline.AddAnimation(new DrawAnimation(line, 0.0, 2.0));
-timeline.AddAnimation(new DrawAnimation(circle, 0.5, 2.0));
-timeline.AddAnimation(new MoveAnimation(line, new VXYZ(0, 50, 0), 2.0, 2.0));
+// Add animations sequentially - they auto-sequence
+anim.AddToAnimations(new DrawAnimation(line, 2.0));      // 0-2s
+anim.AddToAnimations(new DrawAnimation(circle, 2.0));   // 2-4s
+anim.AddToAnimations(new MoveAnimation(circle, new VXYZ(50, 0, 0), 2.0)); // 4-6s
 
 // Start playback
-timeline.Play();" },
+anim.Animate();
+
+// For parallel animations, pass a List:
+anim.AddToAnimations(new List<Animation> {
+    new FadeInAnimation(line, 1.0),
+    new FadeInAnimation(circle, 1.0)
+});  // Both run simultaneously" },
 
                 { "DrawAnimation", @"// Animates shape drawing from 0% to 100%
 var line = new VLine(0, 0, 100, 0);
-var timeline = new Timeline(new[] { line });
+var anim = new Animator();
 
-// Draw the line over 2 seconds starting at t=0
-timeline.AddAnimation(new DrawAnimation(line, startTime: 0.0, duration: 2.0));
-timeline.Play();" },
+// Draw the line over 2 seconds
+anim.AddToAnimations(new DrawAnimation(line, 2.0));
+anim.Animate();" },
 
                 { "MoveAnimation", @"// Animates moving a shape by a vector
 var circle = new VCircle(0, 0, 30);
-var timeline = new Timeline(new[] { circle });
+var anim = new Animator();
 
-// Move circle by (100, 50) over 3 seconds, starting at t=1
-timeline.AddAnimation(new MoveAnimation(circle, new VXYZ(100, 50, 0), startTime: 1.0, duration: 3.0));
-timeline.Play();" },
+// Move circle by (100, 50) over 3 seconds
+anim.AddToAnimations(new MoveAnimation(circle, new VXYZ(100, 50, 0), 3.0));
+anim.Animate();" },
 
                 { "RotateAnimation", @"// Animates rotating a shape around a pivot
 var rect = new VRectangle(0, 0, 50, 30);
 var pivot = new VPoint(25, 15); // center of rectangle
-var timeline = new Timeline(new[] { rect });
+var anim = new Animator();
 
 // Rotate 360 degrees over 4 seconds
-timeline.AddAnimation(new RotateAnimation(rect, pivot, angleDegrees: 360.0, startTime: 0.0, duration: 4.0));
-timeline.Play();" },
+anim.AddToAnimations(new RotateAnimation(rect, pivot, 360.0, 4.0));
+anim.Animate();" },
 
                 { "FlipAnimation", @"// Animates flipping a shape across a mirror axis
 var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,50));
 var mirrorAxis = new VLine(25, -10, 25, 60); // vertical line
-var timeline = new Timeline(new[] { triangle });
+var anim = new Animator();
 
 // Flip across the axis over 2 seconds
-timeline.AddAnimation(new FlipAnimation(triangle, mirrorAxis, startTime: 0.0, duration: 2.0));
-timeline.Play();" },
+anim.AddToAnimations(new FlipAnimation(triangle, mirrorAxis, 2.0));
+anim.Animate();" },
+
+                { "FadeInAnimation", @"// Animates fading in a shape from transparent to opaque
+var circle = new VCircle(0, 0, 50);
+var anim = new Animator();
+
+// Fade in over 2 seconds
+anim.AddToAnimations(new FadeInAnimation(circle, 2.0));
+anim.Animate();" },
+
+                { "FadeOutAnimation", @"// Animates fading out a shape from opaque to transparent
+var circle = new VCircle(0, 0, 50);
+var anim = new Animator();
+
+// Fade out over 2 seconds (to fully transparent)
+anim.AddToAnimations(new FadeOutAnimation(circle, 2.0));
+
+// Or fade to partial transparency
+anim.AddToAnimations(new FadeOutAnimation(circle, 2.0, 0.3));  // Fade to 30% opacity
+anim.Animate();" },
 
                 { "EasingFunctions", @"// Apply easing to any animation for smooth motion
 var circle = new VCircle(0, 0, 30);
-var timeline = new Timeline();
+var anim = new Animator();
 
-var moveAnim = new MoveAnimation(circle, new VXYZ(200, 0, 0), 0, 3);
+var moveAnim = new MoveAnimation(circle, new VXYZ(200, 0, 0), 3.0);
 
 // Available Easing Functions:
 // ┌─────────────────┬───────────┬──────────────────────────┐
@@ -1120,8 +1165,8 @@ var moveAnim = new MoveAnimation(circle, new VXYZ(200, 0, 0), 0, 3);
 // Set the easing function
 moveAnim.EasingFunction = EasingFunctions.EaseInOutCubic;
 
-timeline.AddAnimation(moveAnim);
-timeline.Play();" },
+anim.AddToAnimations(moveAnim);
+anim.Animate();" },
 
                 // Boolean Operations
                 { "BooleanOps", @"// Boolean operations on polygons using Clipper2
@@ -1135,7 +1180,7 @@ var poly2 = new VPolygon(
 
 // Union - combine polygons
 var union = poly1.Union(poly2);
-foreach (var p in union) { p.StrokeColor = ""Cyan""; p.Draw(); }
+foreach (var p in union) { p.Color = ""Cyan""; p.Draw(); }
 
 // Intersection - overlapping area
 var intersection = poly1.Intersect(poly2);
@@ -1220,7 +1265,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VGrid.Scale", "Scales all points in the grid relative to a center point by the specified factor. Factor > 1 enlarges, < 1 shrinks." },
                 { "VGrid.GetBounds", "Returns the axis-aligned bounding box of all points as a tuple (minPoint, maxPoint)." },
                 { "VGrid.DistanceTo", "Returns the minimum distance from any point in the grid to the specified point." },
-                { "VGrid.ApplyStyle", "Applies the grid's StrokeColor, FillColor, and LineWeight to all contained points." },
+                { "VGrid.ApplyStyle", "Applies the grid's Color, FillColor, and LineWeight to all contained points." },
                 { "VGrid.GetRow", "Returns a list of all points in the specified row (0-based index, row 0 is the bottom row)." },
                 { "VGrid.GetColumn", "Returns a list of all points in the specified column (0-based index, column 0 is the leftmost)." },
                 { "VGrid.GetCenter", "Calculates and returns the geometric center point of the grid based on its bounding box." },
@@ -1242,8 +1287,8 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VGroup.ForEach", "Executes the specified action on each shape in the group." },
                 { "VGroup.Where", "Returns a new VGroup containing only shapes that match the predicate." },
                 { "VGroup.GetShapesOfType", "Returns all shapes of the specified type T from the group." },
-                { "VGroup.ApplyStyle", "Applies the group's StrokeColor, FillColor, and LineWeight to all contained shapes." },
-                { "VGroup.ApplyStrokeColor", "Applies only the group's StrokeColor to all contained shapes." },
+                { "VGroup.ApplyStyle", "Applies the group's Color, FillColor, and LineWeight to all contained shapes." },
+                { "VGroup.ApplyColor", "Applies only the group's Color to all contained shapes." },
                 { "VGroup.ApplyFillColor", "Applies only the group's FillColor to all contained shapes." },
                 { "VGroup.ApplyLineWeight", "Applies only the group's LineWeight to all contained shapes." },
                 { "VGroup.SetOpacity", "Sets the opacity (0.0 to 1.0) for all shapes in the group by adjusting their fill color alpha." },
@@ -1631,7 +1676,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
 
                 // Shape base class properties
                 { "Shape.Id", "Gets the unique identifier for this shape, automatically assigned on creation." },
-                { "Shape.StrokeColor", "Gets or sets the outline/stroke color as a string (named color or hex code like '#FF0000' or '#80FF0000')." },
+                { "Shape.Color", "Gets or sets the outline/stroke color as a string (named color or hex code like '#FF0000' or '#80FF0000')." },
                 { "Shape.FillColor", "Gets or sets the fill color as a string. Use 'Transparent' for no fill." },
                 { "Shape.LineWeight", "Gets or sets the thickness of the outline stroke in pixels." },
                 { "Shape.LineType", "Gets or sets the stroke style (line pattern). Options: Continuous (solid), Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden." },
@@ -1702,15 +1747,13 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "ICurve.NormalAtPoint", "Returns the normal vector (perpendicular) to the curve at the specified point." },
                 { "ICurve.Intersect", "Computes intersection with another curve, returning an IntersectionResult with points and overlapping segments." },
 
-                // Timeline
-                { "Timeline.Duration", "Gets or sets the total duration of the animation in seconds." },
-                { "Timeline.Repeat", "Gets or sets whether the animation loops continuously." },
-                { "Timeline.CurrentTime", "Gets the current playback time in seconds." },
-                { "Timeline.IsPlaying", "Gets whether the timeline is currently playing." },
-                { "Timeline.Play", "Starts or resumes playback of the animation." },
-                { "Timeline.Pause", "Pauses playback at the current time." },
-                { "Timeline.Stop", "Stops playback and resets to the beginning." },
-                { "Timeline.AddAnimation", "Adds an animation to the timeline." },
+                // Animator
+                { "Animator.Duration", "Gets the total duration of all animations in seconds." },
+                { "Animator.Repeat", "Gets or sets whether the animation loops continuously." },
+                { "Animator.Speed", "Gets or sets the playback speed multiplier (1.0 = normal speed)." },
+                { "Animator.AddToAnimations", "Adds animation(s) to play. Single animation plays sequentially; List<Animation> plays in parallel." },
+                { "Animator.Animate", "Starts playback of all animations." },
+                { "Animator.Stop", "Stops playback of all animations." },
 
                 // IntersectionResult
                 { "IntersectionResult.Points", "Gets the list of intersection points." },
@@ -1721,55 +1764,41 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "IntersectionResult.Count", "Gets the total number of intersection elements (points + curves)." },
 
                 // Animation base class
-                { "Animation.Target", "Gets or sets the shape that this animation affects." },
-                { "Animation.StartTime", "Gets or sets the time in seconds when the animation begins." },
-                { "Animation.Duration", "Gets or sets how long the animation lasts in seconds." },
+                { "Animation.Target", "Gets the shape that this animation affects." },
+                { "Animation.StartTime", "Gets the time in seconds when the animation begins (set automatically by Animator)." },
+                { "Animation.Duration", "Gets the animation duration in seconds (set in constructor)." },
                 { "Animation.EasingFunction", "Gets or sets the easing function for smooth motion (e.g., EaseInOut)." },
                 { "Animation.Apply", "Applies the animation at the specified normalized time (0 to 1)." },
 
                 // DrawAnimation
-                { "DrawAnimation.Target", "Gets or sets the shape to animate drawing." },
-                { "DrawAnimation.StartTime", "Gets or sets when the draw animation begins (in seconds)." },
-                { "DrawAnimation.Duration", "Gets or sets how long the drawing takes (in seconds)." },
+                { "DrawAnimation.Target", "Gets the shape to animate drawing." },
+                { "DrawAnimation.Duration", "Gets how long the drawing takes (in seconds)." },
                 { "DrawAnimation.EasingFunction", "Gets or sets the easing function for the draw effect." },
-                { "DrawAnimation.Apply", "Applies the draw animation, setting DrawFactor on the target shape." },
 
                 // MoveAnimation
-                { "MoveAnimation.Target", "Gets or sets the shape to move." },
-                { "MoveAnimation.Displacement", "Gets or sets the total displacement vector for the movement." },
-                { "MoveAnimation.StartTime", "Gets or sets when the movement begins (in seconds)." },
-                { "MoveAnimation.Duration", "Gets or sets how long the movement takes (in seconds)." },
+                { "MoveAnimation.Target", "Gets the shape to move." },
+                { "MoveAnimation.Duration", "Gets how long the movement takes (in seconds)." },
                 { "MoveAnimation.EasingFunction", "Gets or sets the easing function for smooth movement." },
-                { "MoveAnimation.Apply", "Applies the move animation, updating OffsetX and OffsetY on the target." },
 
                 // RotateAnimation
-                { "RotateAnimation.Target", "Gets or sets the shape to rotate." },
-                { "RotateAnimation.Pivot", "Gets or sets the center point of rotation." },
-                { "RotateAnimation.AngleDegrees", "Gets or sets the total rotation angle in degrees." },
-                { "RotateAnimation.StartTime", "Gets or sets when the rotation begins (in seconds)." },
-                { "RotateAnimation.Duration", "Gets or sets how long the rotation takes (in seconds)." },
+                { "RotateAnimation.Target", "Gets the shape to rotate." },
+                { "RotateAnimation.Duration", "Gets how long the rotation takes (in seconds)." },
                 { "RotateAnimation.EasingFunction", "Gets or sets the easing function for smooth rotation." },
-                { "RotateAnimation.Apply", "Applies the rotate animation, updating RotationAngle on the target." },
 
                 // FlipAnimation
-                { "FlipAnimation.Target", "Gets or sets the shape to flip." },
-                { "FlipAnimation.MirrorAxis", "Gets or sets the line across which to mirror the shape." },
-                { "FlipAnimation.StartTime", "Gets or sets when the flip begins (in seconds)." },
-                { "FlipAnimation.Duration", "Gets or sets how long the flip takes (in seconds)." },
+                { "FlipAnimation.Target", "Gets the shape to flip." },
+                { "FlipAnimation.Duration", "Gets how long the flip takes (in seconds)." },
                 { "FlipAnimation.EasingFunction", "Gets or sets the easing function for the flip effect." },
                 { "FlipAnimation.Apply", "Applies the flip animation, progressively mirroring the shape." },
 
                 // FadeInAnimation
-                { "FadeInAnimation.Target", "Gets or sets the shape to fade in." },
-                { "FadeInAnimation.StartTime", "Gets or sets when the fade-in begins (in seconds)." },
-                { "FadeInAnimation.Duration", "Gets or sets how long the fade-in takes (in seconds)." },
+                { "FadeInAnimation.Target", "Gets the shape to fade in." },
+                { "FadeInAnimation.Duration", "Gets how long the fade-in takes (in seconds)." },
                 { "FadeInAnimation.EasingFunction", "Gets or sets the easing function for smooth fade-in." },
-                { "FadeInAnimation.Apply", "Applies the fade-in animation, increasing opacity from 0 to 1." },
 
                 // FadeOutAnimation
-                { "FadeOutAnimation.Target", "Gets or sets the shape to fade out." },
-                { "FadeOutAnimation.StartTime", "Gets or sets when the fade-out begins (in seconds)." },
-                { "FadeOutAnimation.Duration", "Gets or sets how long the fade-out takes (in seconds)." },
+                { "FadeOutAnimation.Target", "Gets the shape to fade out." },
+                { "FadeOutAnimation.Duration", "Gets how long the fade-out takes (in seconds)." },
                 { "FadeOutAnimation.EasingFunction", "Gets or sets the easing function for smooth fade-out." },
                 { "FadeOutAnimation.Apply", "Applies the fade-out animation, decreasing opacity from 1 to 0." },
 
@@ -1830,13 +1859,13 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
 
                 // IDrawable
                 { "IDrawable.Draw", "Renders the drawable object to the canvas." },
-                { "IDrawable.StrokeColor", "Gets or sets the stroke/outline color." },
+                { "IDrawable.Color", "Gets or sets the stroke/outline color." },
                 { "IDrawable.FillColor", "Gets or sets the fill color." },
                 { "IDrawable.LineWeight", "Gets or sets the stroke thickness." },
                 { "IDrawable.LineTypeScale", "Gets or sets the scale factor for stroke patterns. Default is 1.0." },
 
                 // ShapeDefaults
-                { "ShapeDefaults.GlobalStrokeColor", "Gets or sets the default stroke color for new shapes." },
+                { "ShapeDefaults.GlobalColor", "Gets or sets the default stroke color for new shapes." },
                 { "ShapeDefaults.GlobalFillColor", "Gets or sets the default fill color for new shapes." },
                 { "ShapeDefaults.GlobalLineWeight", "Gets or sets the default stroke thickness for new shapes." },
                 { "ShapeDefaults.GlobalLineType", "Gets or sets the default stroke style for new shapes. Options: Continuous, Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden." },
@@ -2042,7 +2071,7 @@ namespace StartViz
         {
             // Create a circle at origin with radius 50
             var circle = new VCircle(0, 0, 50);
-            circle.StrokeColor = ""Cyan"";
+            circle.Color = ""Cyan"";
             circle.FillColor = ""#4000FFFF"";
             circle.Draw();
 
@@ -2193,7 +2222,7 @@ namespace StartViz
             AddListItem(tipsList, "Auto-update Canvas", "Canvas updates automatically as you type (500ms delay). Disable in Settings > Application Settings if you prefer manual Run");
             AddListItem(tipsList, "No Draw() Needed", "Shapes appear automatically when created - Draw() is optional and kept for backwards compatibility");
             AddListItem(tipsList, "Show/Hide Shapes", "Use shape.Hide() and shape.Show() to control visibility without removing from canvas");
-            AddListItem(tipsList, "ShapeDefaults", "Set ShapeDefaults.GlobalStrokeColor to apply colors to all new shapes");
+            AddListItem(tipsList, "ShapeDefaults", "Set ShapeDefaults.GlobalColor to apply colors to all new shapes");
             AddListItem(tipsList, "Animation", "Create a Timeline, add animations, and call .Play() to animate shapes");
             AddListItem(tipsList, "Drawing Tools", "Use the toolbar or press P/L/C/R to draw shapes directly on canvas with auto-generated code");
             AddListItem(tipsList, "Help Browser", "Select any class from the tree on the left to see its documentation");

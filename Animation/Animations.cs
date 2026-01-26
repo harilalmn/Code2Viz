@@ -9,7 +9,7 @@ namespace Code2Viz.Animation
     public abstract class Animation
     {
         public Shape Target { get; }
-        public double StartTime { get; }
+        public double StartTime { get; internal set; }
         public double Duration { get; }
         public Func<double, double> EasingFunction { get; set; } = EasingFunctions.Linear;
 
@@ -18,10 +18,9 @@ namespace Code2Viz.Animation
         /// </summary>
         public string? Name { get; set; }
 
-        protected Animation(Shape target, double startTime, double duration)
+        protected Animation(Shape target, double duration)
         {
             Target = target;
-            StartTime = startTime;
             Duration = duration;
         }
 
@@ -36,15 +35,27 @@ namespace Code2Viz.Animation
     /// </summary>
     public class DrawAnimation : Animation
     {
-        public DrawAnimation(Shape target, double startTime, double duration)
-            : base(target, startTime, duration)
+        public DrawAnimation(Shape target, double duration)
+            : base(target, duration)
         {
+            // Set DrawFactor to 0 so shape starts invisible (including VGroup children)
+            SetDrawFactorRecursive(target, 0);
         }
 
         public override void Apply(double t)
         {
             double easedT = EasingFunction(t);
-            Target.DrawFactor = easedT;
+            SetDrawFactorRecursive(Target, easedT);
+        }
+
+        private static void SetDrawFactorRecursive(Shape shape, double drawFactor)
+        {
+            shape.DrawFactor = drawFactor;
+            if (shape is VGroup group)
+            {
+                foreach (var child in group.Shapes)
+                    SetDrawFactorRecursive(child, drawFactor);
+            }
         }
     }
 
@@ -56,8 +67,8 @@ namespace Code2Viz.Animation
         private readonly VXYZ _displacement;
         private VXYZ? _initialPosition;
 
-        public MoveAnimation(Shape target, VXYZ displacement, double startTime, double duration)
-            : base(target, startTime, duration)
+        public MoveAnimation(Shape target, VXYZ displacement, double duration)
+            : base(target, duration)
         {
             _displacement = displacement;
         }
@@ -84,8 +95,8 @@ namespace Code2Viz.Animation
         private readonly double _angleDegrees;
         private double? _initialRotation;
 
-        public RotateAnimation(Shape target, VPoint pivot, double angleDegrees, double startTime, double duration)
-            : base(target, startTime, duration)
+        public RotateAnimation(Shape target, VPoint pivot, double angleDegrees, double duration)
+            : base(target, duration)
         {
             _pivot = pivot;
             _angleDegrees = angleDegrees;
@@ -112,8 +123,8 @@ namespace Code2Viz.Animation
         private readonly VLine _mirrorAxis;
         private double? _initialFlipProgress;
 
-        public FlipAnimation(Shape target, VLine mirrorAxis, double startTime, double duration)
-            : base(target, startTime, duration)
+        public FlipAnimation(Shape target, VLine mirrorAxis, double duration)
+            : base(target, duration)
         {
             _mirrorAxis = mirrorAxis;
         }
@@ -136,23 +147,28 @@ namespace Code2Viz.Animation
     /// </summary>
     public class FadeInAnimation : Animation
     {
-        private double? _initialOpacity;
-
-        public FadeInAnimation(Shape target, double startTime, double duration)
-            : base(target, startTime, duration)
+        public FadeInAnimation(Shape target, double duration)
+            : base(target, duration)
         {
+            // Set opacity to 0 for fade-in to work (including VGroup children)
+            SetOpacityRecursive(target, 0);
         }
 
         public override void Apply(double t)
         {
-            if (_initialOpacity == null)
-            {
-                _initialOpacity = Target.Opacity;
-            }
-
             double easedT = EasingFunction(t);
-            // Fade from initial opacity (typically 0) to 1
-            Target.Opacity = _initialOpacity.Value + (1.0 - _initialOpacity.Value) * easedT;
+            // Fade from 0 to 1
+            SetOpacityRecursive(Target, easedT);
+        }
+
+        private static void SetOpacityRecursive(Shape shape, double opacity)
+        {
+            shape.Opacity = opacity;
+            if (shape is VGroup group)
+            {
+                foreach (var child in group.Shapes)
+                    SetOpacityRecursive(child, opacity);
+            }
         }
     }
 
@@ -161,32 +177,38 @@ namespace Code2Viz.Animation
     /// </summary>
     public class FadeOutAnimation : Animation
     {
-        private double? _initialOpacity;
         private double _targetOpacity;
 
         /// <summary>
         /// Creates a fade out animation.
         /// </summary>
         /// <param name="target">The shape to fade.</param>
-        /// <param name="startTime">When the animation starts.</param>
         /// <param name="duration">How long the fade takes.</param>
         /// <param name="targetOpacity">The target opacity (default 0 = fully transparent).</param>
-        public FadeOutAnimation(Shape target, double startTime, double duration, double targetOpacity = 0.0)
-            : base(target, startTime, duration)
+        public FadeOutAnimation(Shape target, double duration, double targetOpacity = 0.0)
+            : base(target, duration)
         {
             _targetOpacity = targetOpacity;
+            // Set opacity to 1 for fade-out to work (including VGroup children)
+            SetOpacityRecursive(target, 1);
         }
 
         public override void Apply(double t)
         {
-            if (_initialOpacity == null)
-            {
-                _initialOpacity = Target.Opacity;
-            }
-
             double easedT = EasingFunction(t);
-            // Interpolate from initial opacity to target opacity
-            Target.Opacity = _initialOpacity.Value + (_targetOpacity - _initialOpacity.Value) * easedT;
+            // Fade from 1 to target opacity (usually 0)
+            double opacity = 1.0 + (_targetOpacity - 1.0) * easedT;
+            SetOpacityRecursive(Target, opacity);
+        }
+
+        private static void SetOpacityRecursive(Shape shape, double opacity)
+        {
+            shape.Opacity = opacity;
+            if (shape is VGroup group)
+            {
+                foreach (var child in group.Shapes)
+                    SetOpacityRecursive(child, opacity);
+            }
         }
     }
 

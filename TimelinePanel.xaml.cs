@@ -31,7 +31,7 @@ public partial class TimelinePanel : UserControl
         InitializeComponent();
     }
 
-    public void SetTimeline(Timeline? timeline)
+    internal void SetTimeline(Timeline? timeline)
     {
         _timeline = timeline;
 

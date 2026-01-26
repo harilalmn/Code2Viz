@@ -1,4 +1,3 @@
-using Code2Viz.Animation;
 using Code2Viz.Canvas;
 using Code2Viz.Geometry;
 
@@ -10,11 +9,6 @@ namespace Code2Viz.Services
     /// </summary>
     public interface ICanvasRenderer
     {
-        /// <summary>
-        /// The currently active timeline for animation playback.
-        /// </summary>
-        Timeline? ActiveTimeline { get; set; }
-
         /// <summary>
         /// Adds a shape to the render collection.
         /// Shapes with IsPlaced = true are skipped to prevent duplicates.

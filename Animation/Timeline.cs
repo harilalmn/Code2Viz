@@ -6,7 +6,7 @@ using Code2Viz.Geometry;
 
 namespace Code2Viz.Animation
 {
-    public class Timeline
+    internal class Timeline
     {
         public List<Shape> Shapes { get; private set; }
         public List<Animation> Animations { get; private set; }
@@ -66,25 +66,21 @@ namespace Code2Viz.Animation
             }
         }
 
-        public void AddAnimation(Animation animation)
+        public void AddAnimation(Animation animation, double startTime)
         {
+            animation.StartTime = startTime;
             Animations.Add(animation);
 
             // Auto-draw shape if not already placed
             if (!animation.Target.IsPlaced)
             {
-                // For DrawAnimation, set DrawFactor=0 so shape starts invisible
-                if (animation is DrawAnimation)
-                {
-                    animation.Target.DrawFactor = 0;
-                }
                 animation.Target.Draw();
             }
 
             // Auto-extend duration if needed
-            if (animation.StartTime + animation.Duration > Duration)
+            if (startTime + animation.Duration > Duration)
             {
-                Duration = animation.StartTime + animation.Duration;
+                Duration = startTime + animation.Duration;
             }
         }
 

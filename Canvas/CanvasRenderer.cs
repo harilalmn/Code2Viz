@@ -13,8 +13,9 @@ public class CanvasRenderer : ICanvasRenderer
 
     /// <summary>
     /// The currently active timeline for animation playback.
+    /// Internal use only - users should use the Animator class.
     /// </summary>
-    public Timeline? ActiveTimeline { get; set; }
+    internal Timeline? ActiveTimeline { get; set; }
 
     public static CanvasRenderer Instance
     {

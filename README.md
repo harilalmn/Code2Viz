@@ -44,7 +44,7 @@ namespace StartViz
         {
             // Shapes appear automatically when created - no Draw() needed!
             var circle = new VCircle(0, 0, 50);
-            circle.StrokeColor = "Cyan";
+            circle.Color = "Cyan";
             circle.FillColor = "#4000FFFF";
         }
     }
@@ -134,7 +134,7 @@ Apply styles to all shapes at once:
 
 ```csharp
 var group = new VGroup(shape1, shape2, shape3);
-group.StrokeColor = "Cyan";
+group.Color = "Cyan";
 group.FillColor = "#4000FFFF";
 group.StrokeThickness = 2;
 
@@ -142,7 +142,7 @@ group.StrokeThickness = 2;
 group.ApplyStyle();
 
 // Or apply individual properties
-group.ApplyStrokeColor();
+group.ApplyColor();
 group.ApplyFillColor();
 group.ApplyStrokeThickness();
 
@@ -165,7 +165,7 @@ var allCircles = group.GetShapesOfType<VCircle>();
 List<Shape> allShapes = group.Flatten();
 
 // Iterate with action
-group.ForEach(s => s.StrokeColor = "Yellow");
+group.ForEach(s => s.Color = "Yellow");
 
 // Filter to new group
 var filtered = group.Where(s => s is VCircle);
@@ -230,7 +230,7 @@ bool centered = grid.Centered;         // true
 var grid = new VGrid(new VPoint(0, 0), 5, 3, 10, true);
 
 // Style all points
-grid.StrokeColor = "White";
+grid.Color = "White";
 grid.FillColor = "Cyan";
 grid.ApplyStyle();  // Apply to all points
 
@@ -258,7 +258,7 @@ All shapes support customizable styling through these properties:
 
 ```csharp
 var circle = new VCircle(0, 0, 50);
-circle.StrokeColor = "Cyan";           // Outline color
+circle.Color = "Cyan";           // Outline color
 circle.FillColor = "#4000FFFF";        // Fill color (with transparency)
 circle.StrokeThickness = 2.5;          // Border thickness
 circle.StrokeStyle = StrokeStyle.Dashed;  // Line pattern
@@ -301,21 +301,21 @@ Use `VColor` for easy color access and random color generation:
 
 ```csharp
 // Static color properties
-circle.StrokeColor = VColor.Red;
+circle.Color = VColor.Red;
 circle.FillColor = VColor.LimeGreen;
 
 // Random colors
-shape.StrokeColor = VColor.GetRandomColor();        // pastel (default)
-shape.StrokeColor = VColor.GetRandomColor(false);   // vibrant
+shape.Color = VColor.GetRandomColor();        // pastel (default)
+shape.Color = VColor.GetRandomColor(false);   // vibrant
 shape.FillColor = VColor.GetRandomPastelColor();    // shorthand for pastel
-shape.StrokeColor = VColor.GetRandomVibrantColor(); // shorthand for vibrant
+shape.Color = VColor.GetRandomVibrantColor(); // shorthand for vibrant
 
 // Custom RGB colors
 shape.FillColor = VColor.FromRgb(255, 128, 0);      // orange
 shape.FillColor = VColor.FromArgb(128, 255, 0, 0);  // semi-transparent red
 
 // From enum
-shape.StrokeColor = VColor.FromEnum(ColorName.Coral);
+shape.Color = VColor.FromEnum(ColorName.Coral);
 ```
 
 **Color categories:**
@@ -327,7 +327,7 @@ shape.StrokeColor = VColor.FromEnum(ColorName.Coral);
 Set default styling for all new shapes:
 
 ```csharp
-ShapeDefaults.GlobalStrokeColor = "Cyan";
+ShapeDefaults.GlobalColor = "Cyan";
 ShapeDefaults.GlobalFillColor = "Transparent";
 ShapeDefaults.GlobalStrokeThickness = 2.0;
 ShapeDefaults.GlobalStrokeStyle = StrokeStyle.Continuous;
@@ -344,16 +344,15 @@ ShapeDefaults.Reset();
 
 ## Animation System
 
-Code2Viz includes a timeline-based animation system for creating animated visualizations.
+Code2Viz includes an animation system using the `Animator` class for creating animated visualizations with automatic sequencing.
 
-> **Note**: The animation timeline panel is automatically hidden when your code has no animations. It appears automatically when you run code that creates a Timeline with animations.
+> **Note**: The animation timeline panel is automatically hidden when your code has no animations. It appears automatically when you run code that creates animations.
 
 ### Basic Animation Example
 
 ```csharp
 using Code2Viz.Geometry;
 using Code2Viz.Animation;
-using System.Collections.Generic;
 
 namespace StartViz
 {
@@ -364,34 +363,53 @@ namespace StartViz
             // Create shapes
             var line = new VLine(0, 0, 100, 50);
             var circle = new VCircle(50, 50, 30);
-            circle.StrokeColor = "Yellow";
+            circle.Color = "Yellow";
 
-            // Create timeline with shapes
-            var shapes = new List<Shape> { line, circle };
-            var timeline = new Timeline(shapes);
-            timeline.Duration = 5.0;  // 5 seconds
-            timeline.Repeat = true;   // Loop animation
+            // Create animator
+            var anim = new Animator();
+            anim.Repeat = true;  // Loop animation
 
-            // Add animations
-            timeline.AddAnimation(new DrawAnimation(line, startTime: 0.0, duration: 2.0));
-            timeline.AddAnimation(new DrawAnimation(circle, startTime: 0.5, duration: 2.0));
-            timeline.AddAnimation(new MoveAnimation(circle, new VXYZ(50, 0, 0), startTime: 2.0, duration: 2.0));
+            // Add animations - they play sequentially
+            anim.AddToAnimations(new DrawAnimation(line, 2.0));           // 0-2s
+            anim.AddToAnimations(new DrawAnimation(circle, 2.0));         // 2-4s
+            anim.AddToAnimations(new MoveAnimation(circle, new VXYZ(50, 0, 0), 2.0)); // 4-6s
 
             // Start playback
-            timeline.Play();
+            anim.Animate();
         }
     }
 }
+```
+
+### Parallel Animations
+
+Add multiple animations as a list to play them simultaneously:
+
+```csharp
+var anim = new Animator();
+
+// These play in parallel (both start at 0s, both last 2s)
+anim.AddToAnimations(new List<Animation> {
+    new FadeInAnimation(shape1, 2.0),
+    new FadeInAnimation(shape2, 2.0)
+});
+
+// This plays after the parallel group finishes (starts at 2s)
+anim.AddToAnimations(new DrawAnimation(line, 1.0));  // 2-3s
+
+anim.Animate();
 ```
 
 ### Animation Types
 
 | Animation | Description | Constructor |
 |-----------|-------------|-------------|
-| **DrawAnimation** | Progressive drawing (0% to 100%) | `new DrawAnimation(shape, startTime, duration)` |
-| **MoveAnimation** | Move by displacement vector | `new MoveAnimation(shape, displacement, startTime, duration)` |
-| **RotateAnimation** | Rotate around a pivot point | `new RotateAnimation(shape, pivot, angleDegrees, startTime, duration)` |
-| **FlipAnimation** | Mirror across an axis line | `new FlipAnimation(shape, mirrorAxis, startTime, duration)` |
+| **DrawAnimation** | Progressive drawing (0% to 100%) | `new DrawAnimation(shape, duration)` |
+| **MoveAnimation** | Move by displacement vector | `new MoveAnimation(shape, displacement, duration)` |
+| **RotateAnimation** | Rotate around a pivot point | `new RotateAnimation(shape, pivot, angleDegrees, duration)` |
+| **FlipAnimation** | Mirror across an axis line | `new FlipAnimation(shape, mirrorAxis, duration)` |
+| **FadeInAnimation** | Fade from transparent to opaque | `new FadeInAnimation(shape, duration)` |
+| **FadeOutAnimation** | Fade from opaque to transparent | `new FadeOutAnimation(shape, duration, targetOpacity)` |
 
 ### Easing Functions
 
@@ -840,8 +858,11 @@ Code2Viz supports VS Code-style multi-cursor editing:
 2. **Ctrl+Alt+Up/Down**: Adds cursors vertically above/below
 3. **Type**: Text is inserted at ALL cursor positions simultaneously
 4. **Backspace/Delete**: Works at all cursor positions
-5. **Escape**: Exits multi-cursor mode
-6. **Click elsewhere**: Clears all multi-cursors
+5. **Arrow Keys**: Move all cursors (Left/Right/Up/Down)
+6. **Home/End**: Move all cursors to line start/end
+7. **Shift+Arrow/Home/End**: Extend selections at all cursors
+8. **Escape**: Exits multi-cursor mode
+9. **Click elsewhere**: Clears all multi-cursors
 
 All cursors are visually indicated with white caret lines, and selections are highlighted.
 
@@ -1151,7 +1172,7 @@ namespace StartViz
         public static void Main()
         {
             // Set global styling
-            ShapeDefaults.GlobalStrokeColor = "Cyan";
+            ShapeDefaults.GlobalColor = "Cyan";
             ShapeDefaults.GlobalStrokeThickness = 2;
 
             // Draw coordinate axes
@@ -1181,7 +1202,7 @@ namespace StartViz
 
             // Sun
             var sun = new VCircle(100, 100, 25);
-            sun.StrokeColor = "Yellow";
+            sun.Color = "Yellow";
             sun.FillColor = "#80FFFF00";
             sun.Draw();
 
@@ -1194,7 +1215,7 @@ namespace StartViz
                 double x2 = 100 + 50 * Math.Cos(angle);
                 double y2 = 100 + 50 * Math.Sin(angle);
                 var ray = new VLine(x1, y1, x2, y2);
-                ray.StrokeColor = "Yellow";
+                ray.Color = "Yellow";
                 ray.Draw();
             }
 

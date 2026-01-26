@@ -1162,6 +1162,44 @@ public partial class MainWindow : Window
                 }
                 return;
             }
+            else if (e.Key == Key.Home)
+            {
+                _isMultiCursorEditing = true;
+                _isAddingNextOccurrence = true;
+                try
+                {
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        _multiSelectionRenderer.ExtendAllSelectionsHome();
+                    else
+                        _multiSelectionRenderer.MoveAllCursorsHome();
+                    e.Handled = true;
+                }
+                finally
+                {
+                    _isAddingNextOccurrence = false;
+                    _isMultiCursorEditing = false;
+                }
+                return;
+            }
+            else if (e.Key == Key.End)
+            {
+                _isMultiCursorEditing = true;
+                _isAddingNextOccurrence = true;
+                try
+                {
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        _multiSelectionRenderer.ExtendAllSelectionsEnd();
+                    else
+                        _multiSelectionRenderer.MoveAllCursorsEnd();
+                    e.Handled = true;
+                }
+                finally
+                {
+                    _isAddingNextOccurrence = false;
+                    _isMultiCursorEditing = false;
+                }
+                return;
+            }
         }
 
         // Handle Tab for snippet placeholder navigation
