@@ -58,6 +58,42 @@
 
             <TextBlock x:Name="TextFrameInfo" Text="Total frames: 150 | Estimated size: ~3 MB" Foreground="Gray" Margin="0,0,0,15" FontSize="11"/>
 
+            <!-- Resolution Settings -->
+            <TextBlock Text="Resolution:" Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,10" FontWeight="SemiBold"/>
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Preset:" Foreground="{StaticResource ForegroundBrush}" VerticalAlignment="Center"/>
+                <ComboBox x:Name="ComboResolution" Grid.Column="1" SelectionChanged="ComboResolution_SelectionChanged"
+                          Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource ForegroundBrush}">
+                    <ComboBoxItem Content="Canvas Size" IsSelected="True"/>
+                    <ComboBoxItem Content="720p (1280×720)"/>
+                    <ComboBoxItem Content="1080p (1920×1080)"/>
+                    <ComboBoxItem Content="4K (3840×2160)"/>
+                    <ComboBoxItem Content="Custom"/>
+                </ComboBox>
+
+                <TextBlock Text="Dimensions:" Foreground="{StaticResource ForegroundBrush}" VerticalAlignment="Center" Grid.Row="1" Margin="0,10,0,0"/>
+                <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="1" Margin="0,10,0,0">
+                    <TextBox x:Name="TextWidth" Width="60" Text="1920" IsEnabled="False"
+                             Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource ForegroundBrush}"
+                             BorderBrush="Gray" Padding="4,2"/>
+                    <TextBlock Text=" × " Foreground="{StaticResource ForegroundBrush}" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TextHeight" Width="60" Text="1080" IsEnabled="False"
+                             Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource ForegroundBrush}"
+                             BorderBrush="Gray" Padding="4,2"/>
+                    <TextBlock x:Name="TextResolutionInfo" Text="" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"/>
+                </StackPanel>
+            </Grid>
+
             <!-- Background Settings -->
             <TextBlock Text="Background:" Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,10" FontWeight="SemiBold"/>
 

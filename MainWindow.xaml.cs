@@ -3928,6 +3928,7 @@ public partial class MainWindow : Window
         var optionsDialog = new VideoExportOptionsWindow();
         optionsDialog.Owner = this;
         optionsDialog.SetDuration(timeline.Duration);
+        optionsDialog.SetCanvasSize((int)RenderCanvas.ActualWidth, (int)RenderCanvas.ActualHeight);
 
         if (optionsDialog.ShowDialog() != true) return;
 
@@ -3950,7 +3951,8 @@ public partial class MainWindow : Window
             try
             {
                 ExportCanvasToVideo(dialog.FileName, timeline, optionsDialog.Duration, optionsDialog.Fps,
-                    optionsDialog.Bitrate, optionsDialog.SelectedBackground, optionsDialog.IncludeGrid, progressDialog);
+                    optionsDialog.Bitrate, optionsDialog.OutputWidth, optionsDialog.OutputHeight,
+                    optionsDialog.SelectedBackground, optionsDialog.IncludeGrid, progressDialog);
                 SetStatus($"Exported: {Path.GetFileName(dialog.FileName)}", isError: false);
             }
             catch (Exception ex)
@@ -3968,7 +3970,8 @@ public partial class MainWindow : Window
     }
 
     private void ExportCanvasToVideo(string filePath, Timeline timeline, double duration, int fps,
-        uint bitrateMbps, Brush? overrideBackground, bool includeGrid, ProgressDialog? progressDialog = null)
+        uint bitrateMbps, int outputWidth, int outputHeight, Brush? overrideBackground, bool includeGrid,
+        ProgressDialog? progressDialog = null)
     {
         bool wasGridShown = RenderCanvas.ShowGrid;
         var originalBackground = RenderCanvas.CanvasBackground;
@@ -3982,18 +3985,21 @@ public partial class MainWindow : Window
                 RenderCanvas.CanvasBackground = overrideBackground;
             }
 
-            var width = (int)RenderCanvas.ActualWidth;
-            var height = (int)RenderCanvas.ActualHeight;
+            var canvasWidth = (int)RenderCanvas.ActualWidth;
+            var canvasHeight = (int)RenderCanvas.ActualHeight;
 
-            // Ensure dimensions are even (required for H.264)
-            width = width - (width % 2);
-            height = height - (height % 2);
+            if (canvasWidth <= 0 || canvasHeight <= 0)
+                throw new InvalidOperationException($"Invalid Canvas Dimensions: {canvasWidth}x{canvasHeight}");
 
-            if (width <= 0 || height <= 0)
-                throw new InvalidOperationException($"Invalid Canvas Dimensions: {width}x{height}");
+            // Ensure output dimensions are even (required for H.264)
+            int width = outputWidth - (outputWidth % 2);
+            int height = outputHeight - (outputHeight % 2);
 
             int totalFrames = (int)(duration * fps);
             double timeStep = duration / totalFrames;
+
+            // Check if we need to scale
+            bool needsScaling = (width != canvasWidth || height != canvasHeight);
 
             using var encoder = new Export.VideoExporter(filePath, width, height, fps, bitrateMbps);
 
@@ -4007,8 +4013,29 @@ public partial class MainWindow : Window
                 RenderCanvas.Refresh();
                 Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
-                var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-                rtb.Render(RenderCanvas);
+                RenderTargetBitmap rtb;
+
+                if (needsScaling)
+                {
+                    // Render canvas at its native size first
+                    var canvasRtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 96, 96, PixelFormats.Pbgra32);
+                    canvasRtb.Render(RenderCanvas);
+
+                    // Scale to output resolution using DrawingVisual
+                    var drawingVisual = new DrawingVisual();
+                    using (var dc = drawingVisual.RenderOpen())
+                    {
+                        dc.DrawImage(canvasRtb, new Rect(0, 0, width, height));
+                    }
+
+                    rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+                    rtb.Render(drawingVisual);
+                }
+                else
+                {
+                    rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+                    rtb.Render(RenderCanvas);
+                }
 
                 encoder.AddFrame(rtb);
             }
