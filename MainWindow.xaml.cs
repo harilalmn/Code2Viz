@@ -4021,11 +4021,27 @@ public partial class MainWindow : Window
                     var canvasRtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 96, 96, PixelFormats.Pbgra32);
                     canvasRtb.Render(RenderCanvas);
 
+                    // Calculate scale factor preserving aspect ratio
+                    double scaleX = (double)width / canvasWidth;
+                    double scaleY = (double)height / canvasHeight;
+                    double scale = Math.Min(scaleX, scaleY);
+
+                    // Calculate scaled dimensions and centering offset
+                    double scaledWidth = canvasWidth * scale;
+                    double scaledHeight = canvasHeight * scale;
+                    double offsetX = (width - scaledWidth) / 2;
+                    double offsetY = (height - scaledHeight) / 2;
+
                     // Scale to output resolution using DrawingVisual
                     var drawingVisual = new DrawingVisual();
                     using (var dc = drawingVisual.RenderOpen())
                     {
-                        dc.DrawImage(canvasRtb, new Rect(0, 0, width, height));
+                        // Fill background first
+                        var bgBrush = overrideBackground ?? RenderCanvas.CanvasBackground ?? Brushes.Black;
+                        dc.DrawRectangle(bgBrush, null, new Rect(0, 0, width, height));
+
+                        // Draw scaled image centered
+                        dc.DrawImage(canvasRtb, new Rect(offsetX, offsetY, scaledWidth, scaledHeight));
                     }
 
                     rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
