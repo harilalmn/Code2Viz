@@ -456,6 +456,15 @@
                             IsCheckable="True"
                             IsChecked="True"
                             Style="{StaticResource MenuItemStyle}" />
+                        <Separator />
+                        <MenuItem
+                            x:Name="ShowPropertiesMenuItem"
+                            Click="ShowPropertiesMenuItem_Click"
+                            Header="_Properties"
+                            InputGestureText="F4"
+                            IsCheckable="True"
+                            IsChecked="False"
+                            Style="{StaticResource MenuItemStyle}" />
                     </MenuItem>
 
                     <!--  Run Menu  -->
@@ -521,6 +530,13 @@
                 <!--  Column 4: Project Browser/Outliner  -->
                 <ColumnDefinition
                     x:Name="RightPanelColumn"
+                    Width="0"
+                    MinWidth="0" />
+                <!--  Column 5: Properties Splitter  -->
+                <ColumnDefinition x:Name="PropertiesSplitterColumn" Width="0" />
+                <!--  Column 6: Docked Properties Panel  -->
+                <ColumnDefinition
+                    x:Name="PropertiesColumn"
                     Width="0"
                     MinWidth="0" />
             </Grid.ColumnDefinitions>
@@ -2227,6 +2243,25 @@
 
                 </TabControl>
             </Border>
+
+            <!--  Column 5: Properties Splitter  -->
+            <GridSplitter
+                x:Name="PropertiesSplitter"
+                Grid.Column="5"
+                Width="4"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+                Visibility="Collapsed" />
+
+            <!--  Column 6: Docked Properties Panel  -->
+            <Border
+                x:Name="DockedPropertiesContainer"
+                Grid.Column="6"
+                Background="{StaticResource SecondaryBackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1,0,0,0"
+                Visibility="Collapsed" />
 
         </Grid>
 

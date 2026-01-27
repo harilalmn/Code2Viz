@@ -3,35 +3,39 @@
 ## High Priority (P0) - Interactive Editing
 
 ### Shape Selection System
-- [ ] **Click to select** - Single shape selection on canvas click
-- [ ] **Multi-select with Shift** - Add to selection with Shift+Click
-- [ ] **Multi-select with Ctrl** - Toggle selection with Ctrl+Click
-- [ ] **Selection box** - Drag rectangle to select multiple shapes
-- [ ] **Select All** - Ctrl+A to select all shapes
-- [ ] **Deselect** - Escape or click on empty canvas
-- [ ] **Visual feedback** - Highlight selected shapes with handles
+- [x] **Click to select** - Single shape selection on canvas click
+- [x] **Multi-select with Shift** - Add to selection with Shift+Click
+- [x] **Multi-select with Ctrl** - Toggle selection with Ctrl+Click
+- [x] **Selection box** - Drag rectangle to select multiple shapes
+- [x] **Select All** - Ctrl+A to select all shapes
+- [x] **Deselect** - Escape or click on empty canvas
+- [x] **Visual feedback** - Highlight selected shapes with handles
 
 ### Shape Editing
-- [ ] **Control point handles** - Show draggable handles on selected shapes
-- [ ] **Drag to modify** - Move control points to edit shape geometry
-- [ ] **Move selected shapes** - Drag selection to reposition
-- [ ] **Resize handles** - Corner/edge handles for scaling
+- [x] **Control point handles** - Shape-specific control points for all 13 shape types
+- [x] **Drag to modify** - Move control points to edit shape geometry (vertex, radius, curve handles)
+- [x] **Move selected shapes** - Drag move handle to reposition
+- [x] **Resize handles** - Corner/edge/radius handles for resizing
 - [ ] **Rotation handle** - Rotate selected shapes
-- [ ] **Sync to code** - Update source code when shapes are edited
+- [x] **Sync to code** - Update source code when shapes are edited
 
 ### Properties Panel
-- [ ] **Panel UI** - Dockable panel showing shape properties
-- [ ] **Coordinate editing** - Edit X, Y, Width, Height, Radius, etc.
-- [ ] **Color picker** - Visual color selection for Stroke/Fill
-- [ ] **Thickness slider** - Adjust stroke thickness
-- [ ] **Opacity slider** - Adjust shape opacity
-- [ ] **Name/ID display** - Show shape identifier
-- [ ] **Multi-selection** - Edit common properties of multiple shapes
+- [x] **Panel UI** - Floating/dockable panel showing shape properties
+- [x] **Coordinate editing** - Edit X, Y, Width, Height, Radius, etc.
+- [x] **Color picker** - Visual color selection for Stroke/Fill via ColorPickerDialog
+- [x] **Thickness slider** - Adjust stroke thickness (0.5-20)
+- [x] **Opacity slider** - Adjust shape opacity (0-100%)
+- [x] **Visibility toggle** - Show/hide shapes with code sync (`IsVisible = false`)
+- [x] **Name/ID display** - Show shape identifier and editable name with variable rename in code
+- [x] **Style code sync** - All style property changes (Color, Fill, Weight, Opacity, Visible) persist as code lines
+- [x] **Multi-selection** - Edit common style properties of multiple shapes
+- [x] **Dock/Float toggle** - Switch between docked column and floating window
+- [x] **Auto-deselect** - Selection cleared on Run and when clicking code editor
 
 ### Delete Shape
-- [ ] **Delete key** - Remove selected shapes
-- [ ] **Right-click context menu** - Delete option
-- [ ] **Code sync** - Remove corresponding code when shape deleted
+- [x] **Delete key** - Remove selected shapes
+- [x] **Right-click context menu** - Delete option
+- [x] **Code sync** - Remove corresponding code when shape deleted
 - [ ] **Undo support** - Restore deleted shapes
 
 ---
@@ -209,6 +213,15 @@
 - [x] Grid and axes
 - [x] Coordinate display
 - [x] Measuring tool
+
+### Shape Editing
+- [x] Shape-specific control points (13 shape types)
+- [x] Drag control points to edit geometry
+- [x] Code sync on drag end
+- [x] Properties panel (floating/dockable)
+- [x] Style property code sync (Color, FillColor, LineWeight, Opacity, IsVisible)
+- [x] Variable rename from Properties panel
+- [x] Auto-deselect on Run and editor click
 
 ---
 

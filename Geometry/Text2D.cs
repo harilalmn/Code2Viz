@@ -93,6 +93,23 @@ public class VText : Shape
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, Location.X, Location.Y, "Location")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        if (index == 0)
+        {
+            Location.X = newPosition.X;
+            Location.Y = newPosition.Y;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VText((VPoint)Location.Clone(), Content)

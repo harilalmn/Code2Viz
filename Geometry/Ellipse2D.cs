@@ -37,6 +37,33 @@ public class VEllipse : Shape, ICurve
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, Center.X, Center.Y, "Center"),
+            new ControlPoint(ControlPointType.Radius, Center.X + RadiusX, Center.Y, "RadiusX"),
+            new ControlPoint(ControlPointType.Radius, Center.X, Center.Y + RadiusY, "RadiusY")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0:
+                var delta = new VXYZ(newPosition.X - Center.X, newPosition.Y - Center.Y, 0);
+                Move(delta);
+                break;
+            case 1:
+                RadiusX = Math.Abs(newPosition.X - Center.X);
+                break;
+            case 2:
+                RadiusY = Math.Abs(newPosition.Y - Center.Y);
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VEllipse((VPoint)Center.Clone(), RadiusX, RadiusY, StartAngle, EndAngle);

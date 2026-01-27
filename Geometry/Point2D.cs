@@ -119,6 +119,23 @@ public class VPoint : Shape
         return null;
     }
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, X, Y, "Position")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        if (index == 0)
+        {
+            X = newPosition.X;
+            Y = newPosition.Y;
+        }
+    }
+
     public override string ToString() => $"VPoint({X}, {Y})";
 }
 

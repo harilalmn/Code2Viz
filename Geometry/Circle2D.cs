@@ -88,6 +88,29 @@ public class VCircle : Shape, ICurve
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, Center.X, Center.Y, "Center"),
+            new ControlPoint(ControlPointType.Radius, Center.X + Radius, Center.Y, "Radius")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0:
+                var delta = new VXYZ(newPosition.X - Center.X, newPosition.Y - Center.Y, 0);
+                Move(delta);
+                break;
+            case 1:
+                Radius = Center.DistanceTo(newPosition);
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VCircle((VPoint)Center.Clone(), Radius);

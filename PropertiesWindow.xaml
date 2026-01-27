@@ -1,0 +1,15 @@
+<Window x:Class="Code2Viz.PropertiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Code2Viz"
+        Title="Properties"
+        Width="280" Height="500"
+        MinWidth="220" MinHeight="300"
+        WindowStartupLocation="Manual"
+        ShowInTaskbar="False"
+        Background="{StaticResource SecondaryBackgroundBrush}"
+        Closing="Window_Closing">
+    <Grid>
+        <local:PropertiesPanel x:Name="PropertiesPanel" />
+    </Grid>
+</Window>

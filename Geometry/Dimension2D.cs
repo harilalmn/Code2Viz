@@ -96,6 +96,39 @@ public class VDimension : Shape
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        double midX = (Point1.X + Point2.X) / 2;
+        double midY = (Point1.Y + Point2.Y) / 2;
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, midX, midY, "Center"),
+            new ControlPoint(ControlPointType.Vertex, Point1.X, Point1.Y, "Point1"),
+            new ControlPoint(ControlPointType.Vertex, Point2.X, Point2.Y, "Point2")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0:
+                double midX = (Point1.X + Point2.X) / 2;
+                double midY = (Point1.Y + Point2.Y) / 2;
+                var delta = new VXYZ(newPosition.X - midX, newPosition.Y - midY, 0);
+                Move(delta);
+                break;
+            case 1:
+                Point1.X = newPosition.X;
+                Point1.Y = newPosition.Y;
+                break;
+            case 2:
+                Point2.X = newPosition.X;
+                Point2.Y = newPosition.Y;
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VDimension((VPoint)Point1.Clone(), (VPoint)Point2.Clone())

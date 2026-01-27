@@ -635,6 +635,44 @@ public class VPolygon : Shape, ICurve
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        var result = new List<ControlPoint>();
+        // Centroid as move handle
+        if (Points.Count > 0)
+        {
+            double cx = Points.Average(p => p.X);
+            double cy = Points.Average(p => p.Y);
+            result.Add(new ControlPoint(ControlPointType.Move, cx, cy, "Center"));
+        }
+        // Each vertex
+        for (int i = 0; i < Points.Count; i++)
+        {
+            result.Add(new ControlPoint(ControlPointType.Vertex, Points[i].X, Points[i].Y, $"P{i}"));
+        }
+        return result;
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        if (index == 0)
+        {
+            // Move entire polygon
+            double cx = Points.Average(p => p.X);
+            double cy = Points.Average(p => p.Y);
+            var delta = new VXYZ(newPosition.X - cx, newPosition.Y - cy, 0);
+            Move(delta);
+        }
+        else if (index > 0 && index <= Points.Count)
+        {
+            // Move individual vertex
+            int ptIdx = index - 1;
+            Points[ptIdx].X = newPosition.X;
+            Points[ptIdx].Y = newPosition.Y;
+            BuildCurvesFromPoints();
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VPolygon(Points.Select(p => (VPoint)p.Clone()));

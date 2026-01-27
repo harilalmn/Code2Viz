@@ -107,6 +107,48 @@ public class VRectangle : VPolygon
         BuildCurvesFromPoints();
     }
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        double cx = _corner.X + _width / 2;
+        double cy = _corner.Y + _height / 2;
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, cx, cy, "Center"),
+            new ControlPoint(ControlPointType.Vertex, _corner.X, _corner.Y, "Corner"),
+            new ControlPoint(ControlPointType.Vertex, _corner.X + _width, _corner.Y + _height, "Opposite")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0: // Move center
+                double cx = _corner.X + _width / 2;
+                double cy = _corner.Y + _height / 2;
+                var delta = new VXYZ(newPosition.X - cx, newPosition.Y - cy, 0);
+                Move(delta);
+                break;
+            case 1: // Bottom-left corner - resize keeping opposite corner fixed
+                double oppX = _corner.X + _width;
+                double oppY = _corner.Y + _height;
+                _corner = VPoint.Internal(Math.Min(newPosition.X, oppX), Math.Min(newPosition.Y, oppY));
+                _width = Math.Abs(oppX - newPosition.X);
+                _height = Math.Abs(oppY - newPosition.Y);
+                UpdatePoints();
+                break;
+            case 2: // Top-right corner - resize keeping corner fixed
+                _width = Math.Abs(newPosition.X - _corner.X);
+                _height = Math.Abs(newPosition.Y - _corner.Y);
+                if (newPosition.X < _corner.X)
+                    _corner = VPoint.Internal(newPosition.X, _corner.Y);
+                if (newPosition.Y < _corner.Y)
+                    _corner = VPoint.Internal(_corner.X, newPosition.Y);
+                UpdatePoints();
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VRectangle((VPoint)_corner.Clone(), _width, _height);

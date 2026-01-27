@@ -114,6 +114,39 @@ public class VSpline : Shape, ICurve
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        var result = new List<ControlPoint>();
+        if (ControlPoints.Count > 0)
+        {
+            double cx = ControlPoints.Average(p => p.X);
+            double cy = ControlPoints.Average(p => p.Y);
+            result.Add(new ControlPoint(ControlPointType.Move, cx, cy, "Center"));
+        }
+        for (int i = 0; i < ControlPoints.Count; i++)
+        {
+            result.Add(new ControlPoint(ControlPointType.CurveControl, ControlPoints[i].X, ControlPoints[i].Y, $"CP{i}"));
+        }
+        return result;
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        if (index == 0)
+        {
+            double cx = ControlPoints.Average(p => p.X);
+            double cy = ControlPoints.Average(p => p.Y);
+            var delta = new VXYZ(newPosition.X - cx, newPosition.Y - cy, 0);
+            Move(delta);
+        }
+        else if (index > 0 && index <= ControlPoints.Count)
+        {
+            int ptIdx = index - 1;
+            ControlPoints[ptIdx].X = newPosition.X;
+            ControlPoints[ptIdx].Y = newPosition.Y;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VSpline(ControlPoints.Select(p => (VPoint)p.Clone()))

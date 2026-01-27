@@ -97,6 +97,7 @@ Example: `[StartViz:15] Hello World`
 - **Shapes auto-register on construction** - no need to call `Draw()`
 - `Draw()` is kept for backwards compatibility but is a no-op
 - Use `Show()` and `Hide()` methods to control visibility
+- **Shape-specific control points**: Each shape overrides `GetControlPoints()` and `MoveControlPoint()` for vertex/radius/curve editing
 
 ### Canvas Features
 - Mouse wheel zoom (centered on cursor position)
@@ -197,6 +198,17 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - `Canvas/DrawingTool.cs` - Tool state machine and shape creation logic
 - `Canvas/CodeGenerator.cs` - Generates C# code strings for shapes
 
+## Properties Panel
+- Floating or dockable panel showing selected shape properties
+- **Files:** `PropertiesPanel.xaml/cs` (UserControl), `PropertiesWindow.xaml/cs` (floating container)
+- **Sections:** Shape info (type, ID, name), Geometry (per-shape numeric properties), Style (color, fill, weight, opacity, visibility)
+- **Dock/Float toggle:** Button in header switches between floating window and docked column 6 in MainWindow
+- **Events:** `ShapePropertyChanged` triggers code sync and canvas refresh (includes `PropertyName` and `OldValue` for targeted sync)
+- **Code sync:** Style property changes (Color, FillColor, LineWeight, Opacity, IsVisible) insert or update assignment lines in code (e.g., `c1.LineWeight = 18.0;`)
+- **Variable rename:** Changing Name in properties renames the variable throughout the code via whole-word replacement
+- **Settings:** `ShowProperties` and `PropertiesDocked` in `ApplicationSettings`
+- **Menu:** Windows > Properties (checkable toggle)
+
 ## Current State (v2.0)
 - Module system with multi-file support
 - Tabbed code editor
@@ -211,13 +223,15 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - **Auto-update canvas**: Canvas updates automatically when code changes (debounced 500ms)
 - **Shapes auto-register**: No need to call `Draw()` - shapes appear when created
 - **Find and Replace**: Full find/replace with RegEx support, project-wide search, tabbed results panel
+- **Shape-specific control points**: All 13 shape types have custom control points for vertex, radius, and curve editing
+- **Properties panel**: Floating/dockable panel for editing shape geometry and style properties with full code sync
+- **Style code sync**: Property changes in Properties panel persist to code (Color, FillColor, LineWeight, Opacity, IsVisible, Name)
+- **Auto-deselect**: Selection cleared on Run and when clicking into the code editor
 
 ## Known Issues
 - None currently
 
 ## Future Plans (see docs/TODO.md)
-- SVG export
-- Shape selection
 - Undo/redo for drawing operations
 
 ## Keyboard Shortcuts
@@ -266,6 +280,7 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - `Double-click` (empty space) - Zoom to fit all shapes
 - `Ctrl+M` - Toggle Measuring Tape tool
 - `Ctrl+G` - Zoom to shape by ID
+- `F4` - Toggle Properties panel
 - `Esc` - Cancel current tool/operation
 
 ### Drawing Tools (when editor not focused)

@@ -1,0 +1,204 @@
+<UserControl x:Class="Code2Viz.PropertiesPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="{StaticResource SecondaryBackgroundBrush}"
+             d:DesignHeight="600" d:DesignWidth="280">
+    <UserControl.Resources>
+        <Style x:Key="PropLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+        <Style x:Key="PropTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource BackgroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,8,0,4" />
+        </Style>
+        <Style x:Key="ColorButton" TargetType="Button">
+            <Setter Property="Width" Value="50" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Header -->
+            <RowDefinition Height="Auto" />
+            <!-- Content -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header Bar -->
+        <Border Grid.Row="0"
+                Padding="10,6"
+                Background="{StaticResource SecondaryBackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource ForegroundBrush}"
+                           Text="PROPERTIES"
+                           VerticalAlignment="Center" />
+                <Button x:Name="DockFloatButton"
+                        Grid.Column="1"
+                        Content="Dock"
+                        Padding="8,2"
+                        FontSize="10"
+                        Click="DockFloatButton_Click"
+                        Background="{StaticResource BackgroundBrush}"
+                        Foreground="{StaticResource ForegroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" />
+            </Grid>
+        </Border>
+
+        <!-- Scrollable Content -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="10,6">
+            <StackPanel x:Name="ContentPanel">
+
+                <!-- No Selection Message -->
+                <TextBlock x:Name="NoSelectionText"
+                           Text="No shape selected"
+                           Foreground="{StaticResource MutedForegroundBrush}"
+                           FontSize="11"
+                           FontStyle="Italic"
+                           Margin="0,8,0,0" />
+
+                <!-- Multi-Selection Message -->
+                <TextBlock x:Name="MultiSelectionText"
+                           Foreground="{StaticResource MutedForegroundBrush}"
+                           FontSize="11"
+                           FontStyle="Italic"
+                           Margin="0,8,0,0"
+                           Visibility="Collapsed" />
+
+                <!-- Shape Info Section -->
+                <StackPanel x:Name="ShapeInfoSection" Visibility="Collapsed">
+                    <TextBlock Text="SHAPE" Style="{StaticResource SectionHeader}" />
+
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Type" Style="{StaticResource PropLabel}" />
+                        <TextBlock x:Name="ShapeTypeLabel" Grid.Row="0" Grid.Column="1"
+                                   Foreground="{StaticResource ForegroundBrush}" FontSize="11" Margin="0,2" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="ID" Style="{StaticResource PropLabel}" />
+                        <TextBlock x:Name="ShapeIdLabel" Grid.Row="1" Grid.Column="1"
+                                   Foreground="{StaticResource ForegroundBrush}" FontSize="11" Margin="0,2" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Name" Style="{StaticResource PropLabel}" />
+                        <TextBox x:Name="ShapeNameBox" Grid.Row="2" Grid.Column="1"
+                                 Style="{StaticResource PropTextBox}"
+                                 LostFocus="ShapeNameBox_LostFocus"
+                                 KeyDown="PropTextBox_KeyDown"
+                                 Margin="0,2" />
+                    </Grid>
+
+                    <!-- Geometry Section -->
+                    <TextBlock Text="GEOMETRY" Style="{StaticResource SectionHeader}" />
+                    <StackPanel x:Name="GeometrySection" />
+
+                    <!-- Style Section -->
+                    <TextBlock Text="STYLE" Style="{StaticResource SectionHeader}" />
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Color -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Color" Style="{StaticResource PropLabel}" />
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,2">
+                            <Button x:Name="ColorButton" Style="{StaticResource ColorButton}"
+                                    Click="ColorButton_Click" />
+                            <TextBlock x:Name="ColorLabel"
+                                       Foreground="{StaticResource ForegroundBrush}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        </StackPanel>
+
+                        <!-- Fill Color -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Fill" Style="{StaticResource PropLabel}" />
+                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,2">
+                            <Button x:Name="FillColorButton" Style="{StaticResource ColorButton}"
+                                    Click="FillColorButton_Click" />
+                            <TextBlock x:Name="FillColorLabel"
+                                       Foreground="{StaticResource ForegroundBrush}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        </StackPanel>
+
+                        <!-- Line Weight -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Weight" Style="{StaticResource PropLabel}" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,2">
+                            <Slider x:Name="LineWeightSlider"
+                                    Width="120" Minimum="0.5" Maximum="20" TickFrequency="0.5"
+                                    IsSnapToTickEnabled="True"
+                                    ValueChanged="LineWeightSlider_ValueChanged" />
+                            <TextBlock x:Name="LineWeightLabel"
+                                       Foreground="{StaticResource ForegroundBrush}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        </StackPanel>
+
+                        <!-- Opacity -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Opacity" Style="{StaticResource PropLabel}" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,2">
+                            <Slider x:Name="OpacitySlider"
+                                    Width="120" Minimum="0" Maximum="100" TickFrequency="5"
+                                    IsSnapToTickEnabled="True"
+                                    ValueChanged="OpacitySlider_ValueChanged" />
+                            <TextBlock x:Name="OpacityLabel"
+                                       Foreground="{StaticResource ForegroundBrush}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        </StackPanel>
+
+                        <!-- Visible -->
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Visible" Style="{StaticResource PropLabel}" />
+                        <CheckBox x:Name="VisibleCheckBox" Grid.Row="4" Grid.Column="1"
+                                  Margin="0,2"
+                                  Click="VisibleCheckBox_Click"
+                                  Foreground="{StaticResource ForegroundBrush}" />
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -19,6 +19,8 @@ public class AppSettingsData
     public bool ShowToolbar { get; set; } = false;
     public bool ShowConsole { get; set; } = true;
     public bool ShowCanvas { get; set; } = true;
+    public bool ShowProperties { get; set; } = false;
+    public bool PropertiesDocked { get; set; } = false;
 
     // Snap Settings
     public bool SnapEndpointEnabled { get; set; } = true;

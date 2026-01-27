@@ -412,6 +412,45 @@ public class VArc : Shape, ICurve
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        var startPt = StartPoint;
+        var endPt = EndPoint;
+        double midAngleRad = (StartAngle + EndAngle) / 2.0 * Math.PI / 180.0;
+        double radiusHandleX = Center.X + Radius * Math.Cos(midAngleRad);
+        double radiusHandleY = Center.Y + Radius * Math.Sin(midAngleRad);
+
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, Center.X, Center.Y, "Center"),
+            new ControlPoint(ControlPointType.Radius, radiusHandleX, radiusHandleY, "Radius"),
+            new ControlPoint(ControlPointType.Vertex, startPt.X, startPt.Y, "Start"),
+            new ControlPoint(ControlPointType.Vertex, endPt.X, endPt.Y, "End")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0: // Move center
+                var delta = new VXYZ(newPosition.X - Center.X, newPosition.Y - Center.Y, 0);
+                Move(delta);
+                break;
+            case 1: // Radius handle
+                Radius = Center.DistanceTo(newPosition);
+                break;
+            case 2: // Start point - update start angle
+                StartAngle = Math.Atan2(newPosition.Y - Center.Y, newPosition.X - Center.X) * 180.0 / Math.PI;
+                Radius = Center.DistanceTo(newPosition);
+                break;
+            case 3: // End point - update end angle
+                EndAngle = Math.Atan2(newPosition.Y - Center.Y, newPosition.X - Center.X) * 180.0 / Math.PI;
+                Radius = Center.DistanceTo(newPosition);
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VArc((VPoint)Center.Clone(), Radius, StartAngle, EndAngle);

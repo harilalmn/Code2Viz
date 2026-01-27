@@ -16,6 +16,8 @@ Code2Viz is a visual programming environment that lets you write C# or F# code t
 - **No Draw() Required**: Shapes appear automatically when created
 - **Multi-language Support**: Write code in C# or F# with full syntax highlighting
 - **Rich Shape Library**: Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, text, arrows, and dimension annotations
+- **Shape Editing**: Select shapes and drag shape-specific control points (vertices, radius handles, curve controls) with live code sync
+- **Properties Panel**: Floating or dockable panel to edit geometry and style properties (color, fill, weight, opacity, visibility, name) with full code sync — changes persist as code lines
 - **Animation System**: Create timeline-based animations with draw, move, rotate, flip, and fade effects
 - **Interactive Canvas**: Zoom with mouse wheel, pan with middle-click, toggle grid display
 - **Export Options**: Save visualizations as PNG images, animated GIFs, or MP4 videos
@@ -483,6 +485,47 @@ Code2Viz uses a **mathematical coordinate system**:
 
 ---
 
+## Shape Editing
+
+### Selecting Shapes
+- **Click** a shape on the canvas to select it
+- **Shift+Click** to add to selection
+- **Ctrl+Click** to toggle selection
+- **Drag** an empty area to box-select multiple shapes
+- **Ctrl+A** to select all shapes
+- **Escape** to deselect
+
+### Control Points
+When a shape is selected, control point handles appear for interactive editing. Each shape type has specific control points:
+
+| Shape | Control Points |
+|-------|---------------|
+| **VPoint** | Move handle at position |
+| **VLine** | Move at midpoint, vertices at start/end |
+| **VCircle** | Move at center, radius handle |
+| **VArc** | Move at center, radius handle, vertices at start/end angles |
+| **VRectangle** | Move at center, vertices at corners |
+| **VEllipse** | Move at center, RadiusX and RadiusY handles |
+| **VPolygon** | Move at centroid, vertex at each point |
+| **VPolyline** | Move at centroid, vertex at each point |
+| **VBezier** | Move at midpoint, vertices at P0/P3, curve controls at P1/P2 |
+| **VSpline** | Move at centroid, curve control at each point |
+| **VArrow** | Move at midpoint, vertices at start/end |
+| **VText** | Move at location |
+| **VDimension** | Move at midpoint, vertices at Point1/Point2 |
+
+Drag any control point to edit the shape geometry. The source code updates automatically when you release.
+
+### Properties Panel
+Open via **Windows > Properties** menu. The panel shows:
+- **Shape info**: Type, ID, and editable Name
+- **Geometry**: Shape-specific numeric properties (coordinates, radii, dimensions)
+- **Style**: Color and fill color (with color picker), line weight slider, opacity slider, visibility toggle
+
+The panel can be **floated** as a separate window or **docked** to the right side of the main window using the Dock/Float button in the panel header. Multi-selection shows common style properties.
+
+---
+
 ## Drawing Tools
 
 Code2Viz includes an interactive drawing toolbar that lets you create shapes directly on the canvas with automatic C#/F# code generation.
@@ -922,6 +965,7 @@ All cursors are visually indicated with white caret lines, and selections are hi
 | `Double-click` (empty space) | Zoom to fit all shapes |
 | `Ctrl+G` | Zoom to shape by ID |
 | `Ctrl+M` | Toggle Measuring Tape tool |
+| `F4` | Toggle Properties panel |
 | `Esc` | Cancel current tool/operation |
 
 ### Code Navigation & Intellisense

@@ -1869,6 +1869,11 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 // ControlPoint
                 { "ControlPoint.Position", "Gets or sets the position of the control point." },
                 { "ControlPoint.Weight", "Gets or sets the weight for NURBS curves (default 1.0)." },
+                { "ControlPoint.Type", "Gets the control point type (Move, Vertex, Radius, Rotation, CurveControl)." },
+                { "ControlPoint.X", "Gets or sets the X coordinate." },
+                { "ControlPoint.Y", "Gets or sets the Y coordinate." },
+                { "ControlPoint.Label", "Gets the display label for this control point." },
+                { "ControlPoint.ToVPoint", "Converts this control point to a VPoint." },
 
                 // CurveIntersection
                 { "CurveIntersection.Intersect", "Computes intersection points between two curves." },

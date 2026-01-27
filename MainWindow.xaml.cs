@@ -119,6 +119,11 @@ public partial class MainWindow : Window
     private FindReplaceService _findReplaceService = new();
     private FindReplaceDialog? _findReplaceDialog;
 
+    // Properties Panel
+    private PropertiesWindow? _propertiesWindow;
+    private PropertiesPanel? _propertiesPanel;
+    private bool _suppressAutoUpdate;
+
     public static RoutedCommand RenameCommand = new RoutedCommand();
     public static RoutedCommand GoToDefinitionCommand = new RoutedCommand();
     public static RoutedCommand FindAllReferencesCommand = new RoutedCommand();
@@ -948,6 +953,7 @@ public partial class MainWindow : Window
         // Trigger auto-update on text changes
         CodeEditor.TextChanged += (s, e) =>
         {
+            if (_suppressAutoUpdate) return;
             if (ApplicationSettings.Instance.AutoUpdateCanvas)
             {
                 _autoUpdateTimer.Stop();
@@ -957,6 +963,17 @@ public partial class MainWindow : Window
 
         // Ctrl+MouseWheel to change font size
         CodeEditor.PreviewMouseWheel += CodeEditor_PreviewMouseWheel;
+
+        // Clear canvas selection when user clicks into the code editor
+        CodeEditor.PreviewMouseDown += (s, e) =>
+        {
+            if (RenderCanvas.SelectionTool.SelectedShapes.Count > 0)
+            {
+                RenderCanvas.SelectionTool.ClearSelection();
+                RenderCanvas.Refresh();
+                _propertiesPanel?.UpdateSelection(new List<Geometry.Shape>());
+            }
+        };
     }
 
     private void CodeEditor_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -3305,6 +3322,10 @@ public partial class MainWindow : Window
         SetStatus("Compiling...", isError: false);
         RunButton.IsEnabled = false;
 
+        // Clear selection before running (shapes will be recreated from code)
+        RenderCanvas.SelectionTool.ClearSelection();
+        _propertiesPanel?.UpdateSelection(new List<Geometry.Shape>());
+
         // Show console tab when running code
         ShowConsoleTab();
 
@@ -4604,6 +4625,233 @@ public partial class MainWindow : Window
 
         ShowCanvasMenuItem.IsChecked = settings.ShowCanvas;
         SetCanvasVisibility(settings.ShowCanvas);
+
+        // Properties panel
+        ShowPropertiesMenuItem.IsChecked = settings.ShowProperties;
+        if (settings.ShowProperties)
+        {
+            InitializePropertiesPanel();
+            SetPropertiesVisibility(true, settings.PropertiesDocked);
+        }
+    }
+
+    #endregion
+
+    #region Properties Panel
+
+    private void InitializePropertiesPanel()
+    {
+        if (_propertiesPanel != null) return;
+
+        _propertiesPanel = new PropertiesPanel();
+        _propertiesPanel.ShapePropertyChanged += OnPropertiesPanelPropertyChanged;
+        _propertiesPanel.DockRequested += OnPropertiesPanelDockRequested;
+        _propertiesPanel.FloatRequested += OnPropertiesPanelFloatRequested;
+    }
+
+    private void ShowPropertiesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var isVisible = ShowPropertiesMenuItem.IsChecked;
+
+        if (isVisible)
+        {
+            InitializePropertiesPanel();
+            SetPropertiesVisibility(true, ApplicationSettings.Instance.PropertiesDocked);
+        }
+        else
+        {
+            SetPropertiesVisibility(false, ApplicationSettings.Instance.PropertiesDocked);
+        }
+
+        ApplicationSettings.Instance.ShowProperties = isVisible;
+        ApplicationSettings.Save();
+    }
+
+    private void SetPropertiesVisibility(bool isVisible, bool docked)
+    {
+        if (_propertiesPanel == null) return;
+
+        if (!isVisible)
+        {
+            // Hide everything
+            if (_propertiesWindow != null)
+                _propertiesWindow.Hide();
+            UndockPropertiesPanel();
+            ShowPropertiesMenuItem.IsChecked = false;
+            return;
+        }
+
+        ShowPropertiesMenuItem.IsChecked = true;
+
+        if (docked)
+        {
+            DockPropertiesPanel();
+        }
+        else
+        {
+            FloatPropertiesPanel();
+        }
+
+        // Update selection in panel
+        _propertiesPanel.UpdateSelection(RenderCanvas.SelectionTool.SelectedShapes.ToList());
+    }
+
+    private void DockPropertiesPanel()
+    {
+        if (_propertiesPanel == null) return;
+
+        // Remove from floating window if present
+        if (_propertiesWindow != null)
+        {
+            _propertiesWindow.Hide();
+            var grid = (System.Windows.Controls.Grid)_propertiesWindow.Content;
+            grid.Children.Remove(_propertiesPanel);
+        }
+
+        // Add to docked container
+        DockedPropertiesContainer.Child = _propertiesPanel;
+        DockedPropertiesContainer.Visibility = Visibility.Visible;
+        PropertiesSplitter.Visibility = Visibility.Visible;
+        PropertiesSplitterColumn.Width = new GridLength(4);
+        PropertiesColumn.Width = new GridLength(280);
+        PropertiesColumn.MinWidth = 200;
+
+        _propertiesPanel.IsDocked = true;
+        _propertiesPanel.UpdateDockFloatButton();
+
+        ApplicationSettings.Instance.PropertiesDocked = true;
+        ApplicationSettings.Save();
+    }
+
+    private void UndockPropertiesPanel()
+    {
+        DockedPropertiesContainer.Child = null;
+        DockedPropertiesContainer.Visibility = Visibility.Collapsed;
+        PropertiesSplitter.Visibility = Visibility.Collapsed;
+        PropertiesSplitterColumn.Width = new GridLength(0);
+        PropertiesColumn.Width = new GridLength(0);
+        PropertiesColumn.MinWidth = 0;
+    }
+
+    private void FloatPropertiesPanel()
+    {
+        if (_propertiesPanel == null) return;
+
+        // Remove from docked container if present
+        UndockPropertiesPanel();
+
+        // Create floating window if needed
+        if (_propertiesWindow == null)
+        {
+            _propertiesWindow = new PropertiesWindow { Owner = this };
+            // Position to the right of the main window
+            _propertiesWindow.Left = Left + Width - 20;
+            _propertiesWindow.Top = Top + 100;
+        }
+
+        // Set panel into window
+        var grid = (System.Windows.Controls.Grid)_propertiesWindow.Content;
+        if (!grid.Children.Contains(_propertiesPanel))
+        {
+            grid.Children.Add(_propertiesPanel);
+        }
+
+        _propertiesPanel.IsDocked = false;
+        _propertiesPanel.UpdateDockFloatButton();
+        _propertiesWindow.Show();
+
+        ApplicationSettings.Instance.PropertiesDocked = false;
+        ApplicationSettings.Save();
+    }
+
+    private void OnPropertiesPanelPropertyChanged(object? sender, ShapePropertyChangedEventArgs e)
+    {
+        // Refresh canvas
+        RenderCanvas.Refresh();
+
+        // Update code (suppress auto-update to avoid recompiling and losing in-memory changes)
+        var shape = e.Shape;
+        if (shape == null || _currentProject == null) return;
+
+        var entryFile = _currentProject.EntryPointFile;
+        if (entryFile == null) return;
+
+        var content = entryFile.Content;
+        var language = _currentProject.ProjectFile.Language;
+        bool codeChanged = false;
+
+        if (e.PropertyName == "Name" && !string.IsNullOrEmpty(e.OldValue))
+        {
+            // Rename variable throughout code
+            var (renamed, found) = Canvas.CodeSyncManager.RenameShapeVariable(content, e.OldValue, shape.Name);
+            if (found) { content = renamed; codeChanged = true; }
+        }
+        else if (e.PropertyName == "Color")
+        {
+            var (updated, found) = Canvas.CodeSyncManager.UpdateShapeStyleProperty(content, shape, "Color", $"\"{shape.Color}\"");
+            if (found) { content = updated; codeChanged = true; }
+        }
+        else if (e.PropertyName == "FillColor")
+        {
+            var (updated, found) = Canvas.CodeSyncManager.UpdateShapeStyleProperty(content, shape, "FillColor", $"\"{shape.FillColor}\"");
+            if (found) { content = updated; codeChanged = true; }
+        }
+        else if (e.PropertyName == "LineWeight")
+        {
+            var (updated, found) = Canvas.CodeSyncManager.UpdateShapeStyleProperty(content, shape, "LineWeight",
+                shape.LineWeight.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
+            if (found) { content = updated; codeChanged = true; }
+        }
+        else if (e.PropertyName == "Opacity")
+        {
+            var (updated, found) = Canvas.CodeSyncManager.UpdateShapeStyleProperty(content, shape, "Opacity",
+                shape.Opacity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            if (found) { content = updated; codeChanged = true; }
+        }
+        else if (e.PropertyName == "IsVisible")
+        {
+            var (updated, found) = Canvas.CodeSyncManager.UpdateShapeStyleProperty(content, shape, "IsVisible",
+                shape.IsVisible ? "true" : "false");
+            if (found) { content = updated; codeChanged = true; }
+        }
+        else
+        {
+            // Geometry change - update constructor parameters
+            var (newContent, found) = Canvas.CodeSyncManager.UpdateShapeCode(content, shape, language);
+            if (found && newContent != content) { content = newContent; codeChanged = true; }
+        }
+
+        if (codeChanged)
+        {
+            entryFile.Content = content;
+
+            if (_activeFile == entryFile)
+            {
+                _suppressAutoUpdate = true;
+                try
+                {
+                    var caretOffset = CodeEditor.CaretOffset;
+                    CodeEditor.Text = content;
+                    CodeEditor.CaretOffset = Math.Min(caretOffset, content.Length);
+                }
+                finally
+                {
+                    _suppressAutoUpdate = false;
+                }
+            }
+
+            RefreshFileTabs();
+        }
+    }
+
+    private void OnPropertiesPanelDockRequested(object? sender, EventArgs e)
+    {
+        DockPropertiesPanel();
+    }
+
+    private void OnPropertiesPanelFloatRequested(object? sender, EventArgs e)
+    {
+        FloatPropertiesPanel();
     }
 
     #endregion
@@ -4737,6 +4985,18 @@ public partial class MainWindow : Window
             TriggerManualCompletion();
             e.Handled = true;
         }
+    }
+
+    private static bool IsTextInputFocused()
+    {
+        var focused = Keyboard.FocusedElement as DependencyObject;
+        while (focused != null)
+        {
+            if (focused is TextBox || focused is System.Windows.Controls.Primitives.TextBoxBase)
+                return true;
+            focused = VisualTreeHelper.GetParent(focused);
+        }
+        return false;
     }
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -4990,8 +5250,14 @@ public partial class MainWindow : Window
             HelpMenuItem_Click(sender, e);
             e.Handled = true;
         }
+        else if (e.Key == Key.F4 && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            ShowPropertiesMenuItem.IsChecked = !ShowPropertiesMenuItem.IsChecked;
+            ShowPropertiesMenuItem_Click(sender, e);
+            e.Handled = true;
+        }
         // Handle numeric input for drawing tool distance/angle
-        else if (!CodeEditor.IsKeyboardFocusWithin && RenderCanvas.DrawingTool.InputMode != Canvas.DrawingInputMode.None)
+        else if (!CodeEditor.IsKeyboardFocusWithin && !IsTextInputFocused() && RenderCanvas.DrawingTool.InputMode != Canvas.DrawingInputMode.None)
         {
             // Number keys
             if (e.Key >= Key.D0 && e.Key <= Key.D9)
@@ -5095,8 +5361,8 @@ public partial class MainWindow : Window
                 e.Handled = true;
             }
         }
-        // Delete key - delete selected shapes (only when editor is not focused)
-        else if (e.Key == Key.Delete && !CodeEditor.IsKeyboardFocusWithin)
+        // Delete key - delete selected shapes (only when no text input is focused)
+        else if (e.Key == Key.Delete && !CodeEditor.IsKeyboardFocusWithin && !IsTextInputFocused())
         {
             if (RenderCanvas.IsSelectionMode && RenderCanvas.SelectionTool.SelectedShapes.Count > 0)
             {
@@ -5104,8 +5370,8 @@ public partial class MainWindow : Window
                 e.Handled = true;
             }
         }
-        // Drawing tool shortcuts (only when editor is not focused)
-        else if (!CodeEditor.IsKeyboardFocusWithin && Keyboard.Modifiers == ModifierKeys.None)
+        // Drawing tool shortcuts (only when no text input is focused)
+        else if (!CodeEditor.IsKeyboardFocusWithin && !IsTextInputFocused() && Keyboard.Modifiers == ModifierKeys.None)
         {
             switch (e.Key)
             {
@@ -5268,6 +5534,9 @@ public partial class MainWindow : Window
         {
             SetStatus($"Selected {count} shapes", isError: false);
         }
+
+        // Update properties panel
+        _propertiesPanel?.UpdateSelection(selectedShapes.ToList());
     }
 
     private void OnControlPointDragEnded(object? sender, Canvas.ControlPointDragEndedEventArgs e)
@@ -5293,13 +5562,21 @@ public partial class MainWindow : Window
             // Update the editor if this file is currently displayed
             if (_activeFile == entryFile)
             {
-                // Save cursor position
-                var caretOffset = CodeEditor.CaretOffset;
+                _suppressAutoUpdate = true;
+                try
+                {
+                    // Save cursor position
+                    var caretOffset = CodeEditor.CaretOffset;
 
-                CodeEditor.Text = newContent;
+                    CodeEditor.Text = newContent;
 
-                // Restore cursor position (clamped to valid range)
-                CodeEditor.CaretOffset = Math.Min(caretOffset, newContent.Length);
+                    // Restore cursor position (clamped to valid range)
+                    CodeEditor.CaretOffset = Math.Min(caretOffset, newContent.Length);
+                }
+                finally
+                {
+                    _suppressAutoUpdate = false;
+                }
             }
 
             // Mark as modified

@@ -91,6 +91,37 @@ public class VArrow : Shape
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        var mid = MidPoint;
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, mid.X, mid.Y, "Center"),
+            new ControlPoint(ControlPointType.Vertex, Start.X, Start.Y, "Start"),
+            new ControlPoint(ControlPointType.Vertex, End.X, End.Y, "End")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0:
+                var mid = MidPoint;
+                var delta = new VXYZ(newPosition.X - mid.X, newPosition.Y - mid.Y, 0);
+                Move(delta);
+                break;
+            case 1:
+                Start.X = newPosition.X;
+                Start.Y = newPosition.Y;
+                break;
+            case 2:
+                End.X = newPosition.X;
+                End.Y = newPosition.Y;
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VArrow((VPoint)Start.Clone(), (VPoint)End.Clone())

@@ -79,6 +79,47 @@ public class VBezier : Shape, ICurve
 
 
 
+    public override List<ControlPoint> GetControlPoints()
+    {
+        var mid = MidPoint;
+        return new List<ControlPoint>
+        {
+            new ControlPoint(ControlPointType.Move, mid.X, mid.Y, "Center"),
+            new ControlPoint(ControlPointType.Vertex, P0.X, P0.Y, "P0"),
+            new ControlPoint(ControlPointType.CurveControl, P1.X, P1.Y, "P1"),
+            new ControlPoint(ControlPointType.CurveControl, P2.X, P2.Y, "P2"),
+            new ControlPoint(ControlPointType.Vertex, P3.X, P3.Y, "P3")
+        };
+    }
+
+    public override void MoveControlPoint(int index, VPoint newPosition)
+    {
+        switch (index)
+        {
+            case 0:
+                var mid = MidPoint;
+                var delta = new VXYZ(newPosition.X - mid.X, newPosition.Y - mid.Y, 0);
+                Move(delta);
+                break;
+            case 1:
+                P0.X = newPosition.X;
+                P0.Y = newPosition.Y;
+                break;
+            case 2:
+                P1.X = newPosition.X;
+                P1.Y = newPosition.Y;
+                break;
+            case 3:
+                P2.X = newPosition.X;
+                P2.Y = newPosition.Y;
+                break;
+            case 4:
+                P3.X = newPosition.X;
+                P3.Y = newPosition.Y;
+                break;
+        }
+    }
+
     public override Shape Clone()
     {
         var clone = new VBezier((VPoint)P0.Clone(), (VPoint)P1.Clone(), (VPoint)P2.Clone(), (VPoint)P3.Clone())
