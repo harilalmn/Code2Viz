@@ -1,4 +1,6 @@
 using System;
+using System.Linq.Expressions;
+using System.Reflection;
 using Code2Viz.Geometry;
 
 namespace Code2Viz.Animation
@@ -209,6 +211,53 @@ namespace Code2Viz.Animation
                 foreach (var child in group.Shapes)
                     SetOpacityRecursive(child, opacity);
             }
+        }
+    }
+
+    /// <summary>
+    /// Animates any numeric (double) property on a shape using an expression to identify the property.
+    /// </summary>
+    /// <typeparam name="T">The shape type.</typeparam>
+    public class ValueAnimation<T> : Animation where T : Shape
+    {
+        private readonly PropertyInfo _property;
+        private readonly double _startValue;
+        private readonly double _endValue;
+
+        /// <summary>
+        /// Creates a value animation that interpolates a property between start and end values.
+        /// </summary>
+        /// <param name="target">The shape whose property to animate.</param>
+        /// <param name="propertySelector">Expression selecting the property, e.g. c => c.Radius.</param>
+        /// <param name="startValue">The value at the beginning of the animation.</param>
+        /// <param name="endValue">The value at the end of the animation.</param>
+        /// <param name="duration">Duration in seconds.</param>
+        public ValueAnimation(T target, Expression<Func<T, double>> propertySelector, double startValue, double endValue, double duration)
+            : base(target, duration)
+        {
+            _startValue = startValue;
+            _endValue = endValue;
+
+            // Extract PropertyInfo from the expression
+            if (propertySelector.Body is MemberExpression memberExpr &&
+                memberExpr.Member is PropertyInfo propInfo)
+            {
+                _property = propInfo;
+            }
+            else
+            {
+                throw new ArgumentException("propertySelector must be a simple property access expression, e.g. c => c.Radius.");
+            }
+
+            // Set the initial value
+            _property.SetValue(target, _startValue);
+        }
+
+        public override void Apply(double t)
+        {
+            double easedT = EasingFunction(t);
+            double value = _startValue + (_endValue - _startValue) * easedT;
+            _property.SetValue(Target, value);
         }
     }
 

@@ -483,7 +483,7 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
     private static readonly HashSet<string> AnimationTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Animation", "DrawAnimation", "MoveAnimation", "RotateAnimation",
-        "FlipAnimation", "FadeInAnimation", "FadeOutAnimation"
+        "FlipAnimation", "FadeInAnimation", "FadeOutAnimation", "ValueAnimation"
     };
 
     private static readonly HashSet<string> ShapeTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -546,15 +546,23 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
     private VariableDeclaratorSyntax TryRewriteNamedVariable(TypeSyntax type, VariableDeclaratorSyntax variable)
     {
         // Check if this is an animation or shape type (explicit or var)
+        // For generic types like ValueAnimation<VCircle>, extract the base name
         var typeName = type.ToString();
-        bool isNamedType = typeName == "var" || AnimationTypes.Contains(typeName) || ShapeTypes.Contains(typeName);
+        var baseTypeName = type is GenericNameSyntax genericType
+            ? genericType.Identifier.Text
+            : typeName;
+        bool isNamedType = typeName == "var" || AnimationTypes.Contains(typeName) || AnimationTypes.Contains(baseTypeName) || ShapeTypes.Contains(typeName);
 
         // Check if initializer is an object creation expression
         if (variable.Initializer?.Value is ObjectCreationExpressionSyntax objectCreation)
         {
             // Check if the created type is an animation or shape type
+            // For generic types like ValueAnimation<VCircle>, extract the base name
             var createdTypeName = objectCreation.Type.ToString();
-            if (!isNamedType && !AnimationTypes.Contains(createdTypeName) && !ShapeTypes.Contains(createdTypeName))
+            var baseCreatedTypeName = objectCreation.Type is GenericNameSyntax genericName
+                ? genericName.Identifier.Text
+                : createdTypeName;
+            if (!isNamedType && !AnimationTypes.Contains(createdTypeName) && !AnimationTypes.Contains(baseCreatedTypeName) && !ShapeTypes.Contains(createdTypeName))
                 return variable;
 
             return TryAddNameInitializer(variable, objectCreation, objectCreation.Initializer);

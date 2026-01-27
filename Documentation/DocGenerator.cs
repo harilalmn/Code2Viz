@@ -87,7 +87,7 @@ namespace Code2Viz.Documentation
 
                 // Animation
                 { "Code2Viz.Animation", "Contains classes for animating shapes over time. Use the Animator class to manage animation sequencing automatically." },
-                { "Animator", "Main class for creating animations. Manages sequencing automatically - animations added with AddToAnimations() play sequentially; pass a List<Animation> for parallel playback. Call Animate() to start." },
+                { "Animator", "Main class for creating animations. Manages sequencing automatically - animations added with AddToAnimations() play sequentially; pass a List<Animation> for parallel playback. Use Pause(seconds) to insert a time gap between animations. Call Animate() to start." },
                 { "Animation", "Abstract base class for all animations. Defines Target shape, Duration, and EasingFunction. Subclasses implement the Apply() method. StartTime is set automatically by Animator." },
                 { "DrawAnimation", "Animates the DrawFactor property to progressively draw a shape from 0% to 100%. Constructor: new DrawAnimation(shape, duration)." },
                 { "MoveAnimation", "Animates moving a shape by a displacement vector. Constructor: new MoveAnimation(shape, displacement, duration)." },
@@ -95,6 +95,7 @@ namespace Code2Viz.Documentation
                 { "FlipAnimation", "Animates flipping (mirroring) a shape across an axis line. Constructor: new FlipAnimation(shape, mirrorAxis, duration)." },
                 { "FadeInAnimation", "Animates fading in a shape from transparent to opaque. Constructor: new FadeInAnimation(shape, duration)." },
                 { "FadeOutAnimation", "Animates fading out a shape from opaque to transparent. Constructor: new FadeOutAnimation(shape, duration, targetOpacity)." },
+                { "ValueAnimation", "Animates any numeric (double) property on a shape between a start and end value. Constructor: new ValueAnimation<T>(shape, c => c.Property, startValue, endValue, duration)." },
                 { "EasingFunctions", "Static class providing common easing functions for smooth animations: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic, EaseOutCubic, EaseInOutCubic." },
 
                 // Boolean Operations
@@ -472,8 +473,9 @@ anim.Repeat <- true  // Loop animation
 
 // Add animations sequentially
 anim.AddToAnimations(DrawAnimation(line, 2.0))      // 0-2s
-anim.AddToAnimations(DrawAnimation(circle, 2.0))   // 2-4s
-anim.AddToAnimations(MoveAnimation(circle, VXYZ(50.0, 0.0, 0.0), 2.0)) // 4-6s
+anim.Pause(3.0)                                      // 2-5s: pause
+anim.AddToAnimations(DrawAnimation(circle, 2.0))   // 5-7s
+anim.AddToAnimations(MoveAnimation(circle, VXYZ(50.0, 0.0, 0.0), 2.0)) // 7-9s
 
 // Start playback
 anim.Animate()
@@ -532,6 +534,15 @@ let anim = Animator()
 
 // Fade out over 2 seconds
 anim.AddToAnimations(FadeOutAnimation(circle, 2.0))
+anim.Animate()" },
+
+                { "ValueAnimation", @"// Animates any numeric property on a shape
+let circle = VCircle(0.0, 0.0, 10.0)
+let anim = Animator()
+
+// Animate radius from 0 to 50 over 3 seconds
+anim.AddToAnimations(ValueAnimation<VCircle>(circle, (fun c -> c.Radius), 0.0, 50.0, 3.0))
+anim.Repeat <- true
 anim.Animate()" },
 
                 { "EasingFunctions", @"// Apply easing to any animation for smooth motion
@@ -1085,8 +1096,9 @@ anim.Repeat = true;  // Loop animation
 
 // Add animations sequentially - they auto-sequence
 anim.AddToAnimations(new DrawAnimation(line, 2.0));      // 0-2s
-anim.AddToAnimations(new DrawAnimation(circle, 2.0));   // 2-4s
-anim.AddToAnimations(new MoveAnimation(circle, new VXYZ(50, 0, 0), 2.0)); // 4-6s
+anim.Pause(3);                                            // 2-5s: pause
+anim.AddToAnimations(new DrawAnimation(circle, 2.0));   // 5-7s
+anim.AddToAnimations(new MoveAnimation(circle, new VXYZ(50, 0, 0), 2.0)); // 7-9s
 
 // Start playback
 anim.Animate();
@@ -1148,6 +1160,15 @@ anim.AddToAnimations(new FadeOutAnimation(circle, 2.0));
 
 // Or fade to partial transparency
 anim.AddToAnimations(new FadeOutAnimation(circle, 2.0, 0.3));  // Fade to 30% opacity
+anim.Animate();" },
+
+                { "ValueAnimation", @"// Animates any numeric property on a shape
+var circle = new VCircle(0, 0, 10);
+var anim = new Animator();
+
+// Animate radius from 0 to 50 over 3 seconds
+anim.AddToAnimations(new ValueAnimation<VCircle>(circle, c => c.Radius, 0, 50, 3.0));
+anim.Repeat = true;
 anim.Animate();" },
 
                 { "EasingFunctions", @"// Apply easing to any animation for smooth motion
@@ -1759,6 +1780,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "Animator.Repeat", "Gets or sets whether the animation loops continuously." },
                 { "Animator.Speed", "Gets or sets the playback speed multiplier (1.0 = normal speed)." },
                 { "Animator.AddToAnimations", "Adds animation(s) to play. Single animation plays sequentially; List<Animation> plays in parallel." },
+                { "Animator.Pause", "Adds a pause (in seconds) before the next animation. Example: anim.Pause(5) inserts a 5-second gap." },
                 { "Animator.Animate", "Starts playback of all animations." },
                 { "Animator.Stop", "Stops playback of all animations." },
 
@@ -1808,6 +1830,12 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "FadeOutAnimation.Duration", "Gets how long the fade-out takes (in seconds)." },
                 { "FadeOutAnimation.EasingFunction", "Gets or sets the easing function for smooth fade-out." },
                 { "FadeOutAnimation.Apply", "Applies the fade-out animation, decreasing opacity from 1 to 0." },
+
+                // ValueAnimation
+                { "ValueAnimation.Target", "Gets the shape whose property is being animated." },
+                { "ValueAnimation.Duration", "Gets how long the value animation takes (in seconds)." },
+                { "ValueAnimation.EasingFunction", "Gets or sets the easing function for smooth value interpolation." },
+                { "ValueAnimation.Apply", "Applies the value animation, interpolating the property between start and end values." },
 
                 // EasingFunctions
                 { "EasingFunctions.Linear", "Returns linear easing (constant speed, no acceleration)." },

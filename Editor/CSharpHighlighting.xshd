@@ -212,6 +212,9 @@
       <Word>MoveAnimation</Word>
       <Word>RotateAnimation</Word>
       <Word>FlipAnimation</Word>
+      <Word>FadeInAnimation</Word>
+      <Word>FadeOutAnimation</Word>
+      <Word>ValueAnimation</Word>
       <Word>EasingFunctions</Word>
     </Keywords>
 

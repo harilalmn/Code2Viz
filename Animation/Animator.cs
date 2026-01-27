@@ -62,6 +62,15 @@ namespace Code2Viz.Animation
         }
 
         /// <summary>
+        /// Adds a pause before the next animation.
+        /// </summary>
+        /// <param name="seconds">The duration of the pause in seconds.</param>
+        public void Pause(double seconds)
+        {
+            _nextStartTime += seconds;
+        }
+
+        /// <summary>
         /// Starts playback of all animations.
         /// </summary>
         public void Animate()

@@ -11,7 +11,7 @@ namespace Code2Viz.Animation
         public List<Shape> Shapes { get; private set; }
         public List<Animation> Animations { get; private set; }
         public double CurrentTime { get; private set; }
-        public double Duration { get; set; } = 10.0; // Default duration
+        public double Duration { get; set; }
         public bool IsPlaying { get; set; }
         public bool Repeat { get; set; }
         public double Speed { get; set; } = 1.0;

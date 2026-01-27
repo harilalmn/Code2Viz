@@ -410,6 +410,21 @@ anim.Animate();
 | **FlipAnimation** | Mirror across an axis line | `new FlipAnimation(shape, mirrorAxis, duration)` |
 | **FadeInAnimation** | Fade from transparent to opaque | `new FadeInAnimation(shape, duration)` |
 | **FadeOutAnimation** | Fade from opaque to transparent | `new FadeOutAnimation(shape, duration, targetOpacity)` |
+| **ValueAnimation\<T\>** | Animate any numeric property | `new ValueAnimation<VCircle>(circle, c => c.Radius, 0, 50, 3.0)` |
+
+### Pausing Between Animations
+
+Insert a time gap between sequential animations:
+
+```csharp
+var anim = new Animator();
+
+anim.AddToAnimations(new DrawAnimation(line, 2.0));    // 0-2s
+anim.Pause(5);                                          // 2-7s: nothing happens
+anim.AddToAnimations(new DrawAnimation(circle, 2.0));  // 7-9s
+
+anim.Animate();
+```
 
 ### Easing Functions
 
