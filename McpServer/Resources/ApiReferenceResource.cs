@@ -191,7 +191,7 @@ public class ApiReferenceResource
         ```csharp
         new VXYZ(x, y, 0);  // Z unused in 2D
         VXYZ.Zero; VXYZ.BasisX; VXYZ.BasisY;
-        // Methods: GetLength(), Normalize(), DotProduct(other), CrossProduct(other), AngleTo(other), AsVPoint()
+        // Methods: GetLength(), Normalize(), DotProduct(other), CrossProduct(other), AngleTo(other), AsVPoint(), Rotate(angleDeg)
         // Operators: +, -, *, /, unary -, ==, !=
         ```
 

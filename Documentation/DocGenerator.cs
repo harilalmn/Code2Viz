@@ -952,7 +952,10 @@ var dot = v1.DotProduct(v2);      // 0
 // Static basis vectors
 var x = VXYZ.BasisX;  // (1, 0, 0)
 var y = VXYZ.BasisY;  // (0, 1, 0)
-var z = VXYZ.BasisZ;  // (0, 0, 1)" },
+var z = VXYZ.BasisZ;  // (0, 0, 1)
+
+// Rotate a vector around the Z-axis
+var rotated = v1.Rotate(90);  // Rotates 90 degrees" },
 
                 { "VPlane", @"// Create a plane from normal and origin
 var origin = VXYZ.Zero;
@@ -1758,6 +1761,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VXYZ.Equals", "Returns true if this vector equals another object." },
                 { "VXYZ.GetHashCode", "Returns a hash code for this vector." },
                 { "VXYZ.ToString", "Returns a string representation: \"(X, Y, Z)\"." },
+                { "VXYZ.Rotate", "Returns a new VXYZ rotated around the Z-axis by the specified angle in degrees." },
 
                 // ICurve interface
                 { "ICurve.StartPoint", "Gets the starting point of the curve." },

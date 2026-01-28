@@ -104,6 +104,17 @@ namespace Code2Viz.Geometry
         public bool IsZeroLength() => IsZero(GetLength());
         public bool IsUnitLength() => IsZero(GetLength() - 1.0);
 
+        /// <summary>
+        /// Returns a new VXYZ rotated around the Z-axis by the given angle in degrees.
+        /// </summary>
+        public VXYZ Rotate(double angleInDegrees)
+        {
+            double rad = angleInDegrees * Math.PI / 180.0;
+            double cos = Math.Cos(rad);
+            double sin = Math.Sin(rad);
+            return new VXYZ(X * cos - Y * sin, X * sin + Y * cos, Z);
+        }
+
         public bool IsAlmostEqualTo(VXYZ source, double tolerance = GeometryTolerance.Epsilon)
         {
             return GeometryTolerance.AreEqual(X, source.X, tolerance) &&

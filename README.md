@@ -1136,6 +1136,9 @@ var normalized = v.Normalize();
 var cross = v1.CrossProduct(v2);
 var dot = v1.DotProduct(v2);
 
+// Rotate a vector around the Z-axis
+var rotated = v.Rotate(90);  // Returns new VXYZ rotated 90 degrees
+
 // Static basis vectors
 var x = VXYZ.BasisX;  // (1, 0, 0)
 var y = VXYZ.BasisY;  // (0, 1, 0)

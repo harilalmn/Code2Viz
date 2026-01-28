@@ -313,6 +313,7 @@ VXYZ.BasisY             // (0, 1, 0)
 | `AngleTo(other)` | double | Angle in radians |
 | `DistanceTo(other)` | double | Distance |
 | `AsVPoint()` | VPoint | Convert to VPoint (drops Z) |
+| `Rotate(angleDeg)` | VXYZ | Rotate around Z-axis by angle in degrees |
 | `IsZeroLength()` | bool | Check if zero |
 | `IsUnitLength()` | bool | Check if unit length |
 
