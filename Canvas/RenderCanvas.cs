@@ -1880,14 +1880,20 @@ public class RenderCanvas : FrameworkElement
             dc.PushTransform(new RotateTransform(-rect.RotationAngle, pivot.X, pivot.Y));
         }
 
-        var corner = WorldToScreen(rect.Corner.X + offsetX, rect.Corner.Y + rect.Height + offsetY);
-        var screenWidth = rect.Width * _viewport.Scale;
-        var screenHeight = rect.Height * _viewport.Scale;
+        var actualWidth = rect.Width;
+        var actualHeight = rect.Height;
+        var cornerX = rect.Corner.X + offsetX + (actualWidth < 0 ? actualWidth : 0);
+        var cornerY = rect.Corner.Y + offsetY + (actualHeight > 0 ? actualHeight : 0);
+        var corner = WorldToScreen(cornerX, cornerY);
+        var screenWidth = Math.Abs(actualWidth) * _viewport.Scale;
+        var screenHeight = Math.Abs(actualHeight) * _viewport.Scale;
 
         // Apply DrawFactor - draw partial rectangle outline
         if (rect.DrawFactor < 1.0)
         {
-            var perimeter = 2 * (rect.Width + rect.Height);
+            var absWidth = Math.Abs(rect.Width);
+            var absHeight = Math.Abs(rect.Height);
+            var perimeter = 2 * (absWidth + absHeight);
             var drawLength = perimeter * rect.DrawFactor;
 
             var geometry = new StreamGeometry();
@@ -1901,21 +1907,21 @@ public class RenderCanvas : FrameworkElement
                 {
                     var len = Math.Min(remaining, screenWidth);
                     ctx.LineTo(new Point(corner.X + len, corner.Y), true, false);
-                    remaining -= rect.Width;
+                    remaining -= absWidth;
                 }
                 // Bottom edge
                 if (remaining > 0)
                 {
                     var len = Math.Min(remaining, screenHeight);
                     ctx.LineTo(new Point(corner.X + screenWidth, corner.Y + len), true, false);
-                    remaining -= rect.Height;
+                    remaining -= absHeight;
                 }
                 // Left edge
                 if (remaining > 0)
                 {
                     var len = Math.Min(remaining, screenWidth);
                     ctx.LineTo(new Point(corner.X + screenWidth - len, corner.Y + screenHeight), true, false);
-                    remaining -= rect.Width;
+                    remaining -= absWidth;
                 }
                 // Top edge
                 if (remaining > 0)
