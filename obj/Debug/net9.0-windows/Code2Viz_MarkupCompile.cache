@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-c:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\
+C:\Zyeta\Projects\Code2Viz\obj\Debug\net9.0-windows\
 Code2Viz
 none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
-c:\Work\Nicety\Projects\Code2Viz\App.xaml
-131964661785
+C:\Zyeta\Projects\Code2Viz\App.xaml
+18876535656
 
-105-746508686
-238-1946825305
-AddReferenceWindow.xaml;ColorPickerDialog.xaml;ExportOptionsWindow.xaml;GifExportOptionsWindow.xaml;HelpWindow.xaml;MainWindow.xaml;NewProjectDialog.xaml;NuGetPackageManagerWindow.xaml;ProgressDialog.xaml;RenameDialog.xaml;TimelinePanel.xaml;WelcomeWindow.xaml;ZoomToShapeDialog.xaml;
+114-681201389
+239789220741
+AddReferenceWindow.xaml;ColorPickerDialog.xaml;ExportOptionsWindow.xaml;GifExportOptionsWindow.xaml;HelpWindow.xaml;MainWindow.xaml;NewProjectDialog.xaml;NuGetPackageManagerWindow.xaml;ProgressDialog.xaml;PropertiesPanel.xaml;PropertiesWindow.xaml;RenameDialog.xaml;Search\FindReplaceDialog.xaml;Search\FindResultsPanel.xaml;TimelinePanel.xaml;VideoExportOptionsWindow.xaml;WelcomeWindow.xaml;ZoomToShapeDialog.xaml;
 
 False
 

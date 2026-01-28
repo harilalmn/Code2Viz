@@ -37,6 +37,7 @@ public class CompletionData : ICompletionData
     private static readonly Brush MethodColor = new SolidColorBrush(Color.FromRgb(220, 220, 170));   // Light yellow
     private static readonly Brush PropertyColor = new SolidColorBrush(Color.FromRgb(156, 220, 254)); // Light blue
     private static readonly Brush DescriptionColor = new SolidColorBrush(Color.FromRgb(128, 128, 128)); // Gray
+    private static readonly Brush SnippetIconColor = new SolidColorBrush(Color.FromRgb(255, 152, 0));  // Orange
 
     public object Content
     {
@@ -52,7 +53,29 @@ public class CompletionData : ICompletionData
                 _ => Brushes.White
             };
 
+            // VS-style icons for each kind
+            var (icon, iconColor) = Kind switch
+            {
+                CompletionKind.Keyword => ("⏺", KeywordColor),      // Blue circle for keywords
+                CompletionKind.Type => ("◆", TypeColor),            // Diamond for types/classes
+                CompletionKind.Method => ("▶", MethodColor),        // Play symbol for methods
+                CompletionKind.Delegate => ("▷", MethodColor),      // Hollow play for delegates
+                CompletionKind.Property => ("◇", PropertyColor),    // Hollow diamond for properties
+                CompletionKind.Snippet => ("⬡", SnippetIconColor),  // Hexagon for snippets
+                _ => ("•", Brushes.White)
+            };
+
             var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            
+            // Icon (fixed width for alignment)
+            var iconBlock = new TextBlock
+            {
+                Text = icon + " ",
+                Foreground = iconColor,
+                Width = 20,
+                FontSize = 12
+            };
+            panel.Children.Add(iconBlock);
             
             // TextBlock for Name
             var nameBlock = new TextBlock
@@ -63,13 +86,17 @@ public class CompletionData : ICompletionData
             nameBlock.Style = CreateSelectionAwareStyle(nameColor);
             panel.Children.Add(nameBlock);
 
-            // TextBlock for Description
-            var descBlock = new TextBlock
+            // TextBlock for Description (show type signature)
+            if (!string.IsNullOrWhiteSpace(_description))
             {
-                Text = "  " + _description
-            };
-            descBlock.Style = CreateSelectionAwareStyle(DescriptionColor);
-            panel.Children.Add(descBlock);
+                var descBlock = new TextBlock
+                {
+                    Text = "  " + _description,
+                    FontSize = 11
+                };
+                descBlock.Style = CreateSelectionAwareStyle(DescriptionColor);
+                panel.Children.Add(descBlock);
+            }
 
             return panel;
         }

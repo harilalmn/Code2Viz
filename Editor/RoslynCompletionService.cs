@@ -19,6 +19,12 @@ public class RoslynCompletionService
 
     public async Task<(List<ICompletionData> Completions, bool IsAfterNew, string Prefix, string? ExpectedType)> GetCompletionsAsync(string code, int position)
     {
+        // Single file overload - delegates to multi-file version
+        return await GetCompletionsAsync(code, position, Array.Empty<string>());
+    }
+
+    public async Task<(List<ICompletionData> Completions, bool IsAfterNew, string Prefix, string? ExpectedType)> GetCompletionsAsync(string code, int position, IEnumerable<string> otherProjectFiles)
+    {
         var completions = new List<ICompletionData>();
         bool isAfterNew = false;
         string prefix = "";
@@ -26,11 +32,22 @@ public class RoslynCompletionService
 
         try
         {
-            // 1. Create Compilation
+            // 1. Create Compilation with all project files
             var syntaxTree = CSharpSyntaxTree.ParseText(code);
+            
+            // Parse other project files as additional syntax trees
+            var allTrees = new List<SyntaxTree> { syntaxTree };
+            foreach (var otherFile in otherProjectFiles)
+            {
+                if (!string.IsNullOrWhiteSpace(otherFile))
+                {
+                    allTrees.Add(CSharpSyntaxTree.ParseText(otherFile));
+                }
+            }
+            
             var compilation = CSharpCompilation.Create(
                 "CompletionAnalysis",
-                new[] { syntaxTree },
+                allTrees,
                 _references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -447,9 +464,47 @@ public class RoslynCompletionService
         // Hide backing fields, generated code, etc.
         if (symbol.Name.Contains("<") || symbol.Name.Contains("$")) return true;
 
+        // Hide explicit interface implementations (contain dots)
+        if (symbol.Name.Contains(".")) return true;
+
         // Hide constructor methods (they appear as .ctor)
         if (symbol.IsImplicitlyDeclared && symbol.Kind == SymbolKind.Method) return true;
         if (symbol.Name == ".ctor") return true;
+
+        // Hide obsolete symbols
+        if (symbol.GetAttributes().Any(a => a.AttributeClass?.Name == "ObsoleteAttribute")) return true;
+
+        // Hide base Object members that clutter completions (users rarely need these)
+        if (symbol is IMethodSymbol method)
+        {
+            var objectMembers = new HashSet<string>
+            {
+                "GetHashCode", "GetType", "Equals", "ToString", "MemberwiseClone",
+                "Finalize", "ReferenceEquals"
+            };
+            if (objectMembers.Contains(method.Name) && 
+                method.ContainingType?.SpecialType == SpecialType.System_Object)
+            {
+                return true;
+            }
+            
+            // Also hide these when inherited (shown on all types)
+            if (objectMembers.Contains(method.Name) && method.IsOverride)
+            {
+                // Check if it's the default object override
+                var baseMethod = method.OverriddenMethod;
+                while (baseMethod != null)
+                {
+                    if (baseMethod.ContainingType?.SpecialType == SpecialType.System_Object)
+                        return true;
+                    baseMethod = baseMethod.OverriddenMethod;
+                }
+            }
+        }
+
+        // Hide generic type parameters (T, TKey, TValue, etc.)
+        if (symbol is ITypeParameterSymbol)
+            return true;
 
         // For types, filter out irrelevant system types
         if (symbol is INamedTypeSymbol typeSymbol)
@@ -468,7 +523,12 @@ public class RoslynCompletionService
                 ns.StartsWith("System.Configuration") ||
                 ns.StartsWith("System.Resources") ||
                 ns.StartsWith("System.Text.RegularExpressions") ||
-                ns.StartsWith("Microsoft."))
+                ns.StartsWith("System.Buffers") ||
+                ns.StartsWith("System.Private") ||
+                ns.StartsWith("Internal") ||
+                ns.StartsWith("Microsoft.") ||
+                ns.StartsWith("FSharp.") ||
+                ns.StartsWith("Interop"))
             {
                 return true;
             }
@@ -492,7 +552,9 @@ public class RoslynCompletionService
                 "ArraySegment", "Nullable", "WeakReference",
                 "Activator", "AppDomain", "AppContext", "Environment",
                 "GC", "BitConverter", "Convert", "FormattableString",
-                "Progress", "Lazy", "Lookup", "Grouping"
+                "Progress", "Lazy", "Lookup", "Grouping",
+                "ValueType", "Enum", "Delegate", "MulticastDelegate",
+                "Attribute", "MarshalByRefObject", "ContextBoundObject"
             };
             if (hiddenTypes.Contains(typeSymbol.Name))
             {

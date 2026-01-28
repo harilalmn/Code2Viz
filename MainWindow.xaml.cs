@@ -1028,8 +1028,8 @@ public partial class MainWindow : Window
         }
         else if (e.Text == ".")
         {
-             // Trigger completion on dot
-             TriggerManualCompletion();
+             // Trigger completion on dot - delay until character is inserted
+             Dispatcher.BeginInvoke(DispatcherPriority.Input, TriggerManualCompletion);
         }
         else if (e.Text.Length > 0 && char.IsLetter(e.Text[0]) && _completionWindow == null)
         {
@@ -1324,9 +1324,12 @@ public partial class MainWindow : Window
 
         try
         {
-             // Use Roslyn Completion Service
+             // Use Roslyn Completion Service with all project files for proper type resolution
              var service = new Editor.RoslynCompletionService(_compiler.GetReferences());
-             var (completions, isAfterNew, prefix, expectedType) = await service.GetCompletionsAsync(code, offset);
+             
+             // Get other project files for multi-file type resolution (important for 'var' inference)
+             var otherFiles = GetOtherProjectFiles();
+             var (completions, isAfterNew, prefix, expectedType) = await service.GetCompletionsAsync(code, offset, otherFiles);
 
              if (completions.Count > 0)
              {
@@ -1345,8 +1348,13 @@ public partial class MainWindow : Window
                      data.Add(item);
                  }
 
-                 // Add snippets (not when after 'new')
-                 if (!isAfterNew)
+                 // Add snippets (not when after 'new' or in member access context)
+                 // Check if we're in member access (dot before the prefix)
+                 var isMemberAccess = offset > prefix.Length && 
+                     code.Length > offset - prefix.Length - 1 && 
+                     code[offset - prefix.Length - 1] == '.';
+                     
+                 if (!isAfterNew && !isMemberAccess)
                  {
                      foreach (var (trigger, description) in Editor.CodeSnippets.GetAll())
                      {
@@ -2051,6 +2059,22 @@ public partial class MainWindow : Window
 
     // Legacy inference methods removed
 
+    /// <summary>
+    /// Gets the content of all project files except the current active file.
+    /// Used for multi-file Roslyn analysis (important for 'var' type inference).
+    /// </summary>
+    private IEnumerable<string> GetOtherProjectFiles()
+    {
+        if (_currentProject == null || _activeFile == null)
+            return Enumerable.Empty<string>();
+
+        SaveCurrentEditorContent();
+        
+        return _currentProject.Files
+            .Where(f => f != _activeFile)
+            .Select(f => f.Content)
+            .Where(c => !string.IsNullOrWhiteSpace(c));
+    }
 
     private static int FindDottedIdentifierStart(TextDocument document, int offset)
     {
@@ -2233,22 +2257,72 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Use application theme resources
+            // VS-like dark background
+            var darkBg = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+            var borderColor = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+            
+            // Use application theme resources with fallback
             if (FindResource("SecondaryBackgroundBrush") is Brush bg)
             {
                 window.Background = bg;
                 window.CompletionList.Background = bg;
+            }
+            else
+            {
+                window.Background = darkBg;
+                window.CompletionList.Background = darkBg;
             }
             
             if (FindResource("BorderBrush") is Brush border)
             {
                 window.BorderBrush = border;
             }
+            else
+            {
+                window.BorderBrush = borderColor;
+            }
             
             if (FindResource("ForegroundBrush") is Brush fg)
             {
                 window.Foreground = fg;
                 window.CompletionList.Foreground = fg;
+            }
+            else
+            {
+                window.CompletionList.Foreground = Brushes.White;
+            }
+
+            // Style the ListBox for VS-like selection highlighting
+            var listBox = window.CompletionList.ListBox;
+            if (listBox != null)
+            {
+                // VS uses a subtle blue highlight for selection
+                var selectionBrush = new SolidColorBrush(Color.FromRgb(51, 51, 52));
+                var hoverBrush = new SolidColorBrush(Color.FromRgb(45, 45, 48));
+                
+                listBox.Background = window.CompletionList.Background;
+                listBox.BorderThickness = new Thickness(0);
+                
+                // Apply item container style for better selection visuals
+                var itemStyle = new Style(typeof(ListBoxItem));
+                itemStyle.Setters.Add(new Setter(ListBoxItem.PaddingProperty, new Thickness(4, 2, 4, 2)));
+                itemStyle.Setters.Add(new Setter(ListBoxItem.MarginProperty, new Thickness(0)));
+                itemStyle.Setters.Add(new Setter(ListBoxItem.BorderThicknessProperty, new Thickness(0)));
+                
+                // Selection trigger
+                var selectedTrigger = new Trigger { Property = ListBoxItem.IsSelectedProperty, Value = true };
+                selectedTrigger.Setters.Add(new Setter(ListBoxItem.BackgroundProperty, new SolidColorBrush(Color.FromRgb(0, 122, 204))));
+                selectedTrigger.Setters.Add(new Setter(ListBoxItem.ForegroundProperty, Brushes.White));
+                itemStyle.Triggers.Add(selectedTrigger);
+                
+                // Hover trigger (not selected)
+                var hoverTrigger = new MultiTrigger();
+                hoverTrigger.Conditions.Add(new Condition(ListBoxItem.IsMouseOverProperty, true));
+                hoverTrigger.Conditions.Add(new Condition(ListBoxItem.IsSelectedProperty, false));
+                hoverTrigger.Setters.Add(new Setter(ListBoxItem.BackgroundProperty, hoverBrush));
+                itemStyle.Triggers.Add(hoverTrigger);
+                
+                listBox.ItemContainerStyle = itemStyle;
             }
         }
         catch (Exception ex)
@@ -2263,11 +2337,13 @@ public partial class MainWindow : Window
 
         window.BorderThickness = new Thickness(1);
 
-        // Auto width with constraints
+        // Better sizing for VS-like appearance - auto-size to content
         window.Width = double.NaN;
-        window.MinWidth = 300;
-        window.MaxWidth = 1000;
-        window.SizeToContent = SizeToContent.Width;
+        window.Height = double.NaN;
+        window.MinWidth = 350;
+        window.MaxWidth = 700;
+        window.MaxHeight = 400;
+        window.SizeToContent = SizeToContent.WidthAndHeight;
     }
 
     /// <summary>
