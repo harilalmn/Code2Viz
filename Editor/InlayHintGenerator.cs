@@ -104,11 +104,11 @@ namespace Code2Viz.Editor
                 if (IsControlKeyword(methodName)) continue;
 
                 // Get parameter names for known types
-                var paramNames = GetParameterNames(methodName);
-                if (paramNames == null || paramNames.Count == 0) continue;
-
                 // Parse arguments
                 var args = ParseArguments(argsText);
+
+                var paramNames = GetParameterNames(methodName, args.Count);
+                if (paramNames == null || paramNames.Count == 0) continue;
 
                 for (int i = 0; i < args.Count && i < paramNames.Count; i++)
                 {
@@ -156,13 +156,18 @@ namespace Code2Viz.Editor
             }
         }
 
-        private List<string>? GetParameterNames(string methodName)
+        private List<string>? GetParameterNames(string methodName, int argCount)
         {
             // Known Code2Viz constructors and methods
             return methodName switch
             {
                 "VPoint" => new List<string> { "x", "y" },
-                "VLine" => new List<string> { "x1", "y1", "x2", "y2" },
+                "VLine" => argCount switch
+                {
+                    3 => new List<string> { "startPoint", "angleInDegrees", "length" },
+                    2 => new List<string> { "start", "end" },
+                    _ => new List<string> { "x1", "y1", "x2", "y2" },
+                },
                 "VCircle" => new List<string> { "centerX", "centerY", "radius" },
                 "VArc" => new List<string> { "centerX", "centerY", "radius", "startAngle", "endAngle" },
                 "VRectangle" => new List<string> { "x", "y", "width", "height" },
