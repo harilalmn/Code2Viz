@@ -710,7 +710,11 @@ line.Draw();
 
 // Or using coordinates directly
 var line2 = new VLine(0, 100, 150, 100);
-line2.Draw();" },
+line2.Draw();
+
+// Or from a start point, angle (degrees), and length
+var line3 = new VLine(new VPoint(0, 0), 45, 100);
+line3.Draw();" },
 
                 { "VXLine", @"// Create an infinite construction line through a point with direction
 var xline = new VXLine(new VPoint(0, 0), new VXYZ(1, 1, 0));

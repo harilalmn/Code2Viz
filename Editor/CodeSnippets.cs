@@ -391,6 +391,11 @@ $1circle.Draw();$0"),
 $1line.Color = ""$6Lime"";
 $1line.Draw();$0"),
 
+        ["vlinea"] = ("Create a line from angle and length",
+@"var $1line = new VLine(new VPoint($20, $30), $445, $5100);
+$1line.Color = ""$6Lime"";
+$1line.Draw();$0"),
+
         ["vrect"] = ("Create a rectangle",
 @"var $1rect = new VRectangle($20, $30, $4100, $550);
 $1rect.Color = ""$6Yellow"";

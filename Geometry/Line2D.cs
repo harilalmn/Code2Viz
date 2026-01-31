@@ -37,6 +37,14 @@ public class VLine : Shape, ICurve
         Color = ShapeDefaults.GlobalColor ?? "Cyan";
     }
 
+    public VLine(VPoint startPoint, double angleInDegrees, double length)
+    {
+        double radians = angleInDegrees * Math.PI / 180.0;
+        Start = startPoint;
+        End = VPoint.Internal(startPoint.X + length * Math.Cos(radians), startPoint.Y + length * Math.Sin(radians));
+        Color = ShapeDefaults.GlobalColor ?? "Cyan";
+    }
+
     /// <summary>
     /// Evaluates a point along the line at the given normalized parameter.
     /// </summary>
