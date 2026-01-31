@@ -3080,6 +3080,7 @@ public partial class MainWindow : Window
         // Canvas Settings
         SettingsZoomToFitCheck.IsChecked = appSettings.ZoomToFitOnRun;
         SettingsAutoUpdateCanvasCheck.IsChecked = appSettings.AutoUpdateCanvas;
+        AutoUpdateCheck.IsChecked = appSettings.AutoDraw;
 
         // Update Button colors for Project Settings
         UpdateColorButton(SettingsColorBtn, SettingsColorBox.Text);
@@ -3190,6 +3191,12 @@ public partial class MainWindow : Window
     private void SettingsAutoUpdateCanvasCheck_Changed(object sender, RoutedEventArgs e)
     {
         ApplicationSettings.Instance.AutoUpdateCanvas = SettingsAutoUpdateCanvasCheck.IsChecked == true;
+        ApplicationSettings.Save();
+    }
+
+    private void AutoUpdateCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        ApplicationSettings.Instance.AutoDraw = AutoUpdateCheck.IsChecked == true;
         ApplicationSettings.Save();
     }
 
@@ -3430,8 +3437,9 @@ public partial class MainWindow : Window
         try
         {
             _textMarkerService?.Clear();
+            Geometry.Shape.AutoRegister = ApplicationSettings.Instance.AutoDraw;
             var result = await _compiler.CompileAndExecuteAsync(_currentProject);
-            
+
             // Apply project settings (including background)
             _currentProject.ApplySettings();
             if (_currentProject.ProjectFile.Settings.DefaultCanvasBackgroundColor is string bgCode)
@@ -3675,6 +3683,7 @@ public partial class MainWindow : Window
         try
         {
             _textMarkerService?.Clear();
+            Geometry.Shape.AutoRegister = ApplicationSettings.Instance.AutoDraw;
             var result = await _compiler.CompileAndExecuteAsync(_currentProject);
 
             _currentProject.ApplySettings();
@@ -3740,6 +3749,7 @@ public partial class MainWindow : Window
         try
         {
             _textMarkerService?.Clear();
+            Geometry.Shape.AutoRegister = ApplicationSettings.Instance.AutoDraw;
             var result = await _compiler.CompileAndExecuteAsync(_currentProject);
 
             // Apply project settings

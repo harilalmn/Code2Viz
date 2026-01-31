@@ -11,6 +11,7 @@ public class AppSettingsData
     public bool ZoomToFitOnRun { get; set; } = false;
     public bool AutoUpdateCanvas { get; set; } = true;
     public int AutoUpdateDelayMs { get; set; } = 500;
+    public bool AutoDraw { get; set; } = true;
 
     // Window Visibility Settings
     public bool ShowProjectBrowser { get; set; } = false;

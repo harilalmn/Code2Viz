@@ -53,7 +53,7 @@
             <!--  Main Content  -->
             <RowDefinition Height="*" />
             <!--  Footer  -->
-            <RowDefinition Height="30" />
+            <RowDefinition Height="40" />
         </Grid.RowDefinitions>
 
         <!--  Title Bar with Logo  -->
@@ -2296,6 +2296,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <TextBlock
@@ -2307,9 +2308,20 @@
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="NoWrap" />
 
+                <CheckBox
+                    x:Name="AutoUpdateCheck"
+                    Grid.Column="1"
+                    Margin="12,0"
+                    VerticalAlignment="Center"
+                    Checked="AutoUpdateCheck_Changed"
+                    Content="Auto Update"
+                    Foreground="{StaticResource ForegroundBrush}"
+                    IsChecked="True"
+                    Unchecked="AutoUpdateCheck_Changed" />
+
                 <TextBlock
                     x:Name="CoordinatesText"
-                    Grid.Column="1"
+                    Grid.Column="2"
                     Margin="20,0"
                     VerticalAlignment="Center"
                     FontFamily="Consolas"
@@ -2317,7 +2329,7 @@
                     Text="X: 0.00  Y: 0.00" />
 
                 <TextBlock
-                    Grid.Column="2"
+                    Grid.Column="3"
                     VerticalAlignment="Center"
                     Foreground="{StaticResource ForegroundBrush}"
                     Opacity="0.6"
