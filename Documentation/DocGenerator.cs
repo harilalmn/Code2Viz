@@ -96,6 +96,7 @@ namespace Code2Viz.Documentation
                 { "FadeInAnimation", "Animates fading in a shape from transparent to opaque. Constructor: new FadeInAnimation(shape, duration)." },
                 { "FadeOutAnimation", "Animates fading out a shape from opaque to transparent. Constructor: new FadeOutAnimation(shape, duration, targetOpacity)." },
                 { "ValueAnimation", "Animates any numeric (double) property on a shape between a start and end value. Constructor: new ValueAnimation<T>(shape, c => c.Property, startValue, endValue, duration)." },
+                { "ObjectPropertyAnimation", "Animates any numeric (double) property on an arbitrary object (not limited to shapes). Constructor: new ObjectPropertyAnimation<T>(obj, o => o.Property, startValue, endValue, duration)." },
                 { "EasingFunctions", "Static class providing common easing functions for smooth animations: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic, EaseOutCubic, EaseInOutCubic." },
 
                 // Boolean Operations
@@ -542,6 +543,16 @@ let anim = Animator()
 
 // Animate radius from 0 to 50 over 3 seconds
 anim.AddToAnimations(ValueAnimation<VCircle>(circle, (fun c -> c.Radius), 0.0, 50.0, 3.0))
+anim.Repeat <- true
+anim.Animate()" },
+
+                { "ObjectPropertyAnimation", @"// Animates any numeric property on an arbitrary object
+// Useful for animating user-defined classes, not just shapes
+let wheel = Wheel()
+let anim = Animator()
+
+// Animate rotation from 0 to 360 over 1 second
+anim.AddToAnimations(ObjectPropertyAnimation<Wheel>(wheel, (fun w -> w.Rotation), 0.0, 360.0, 1.0))
 anim.Repeat <- true
 anim.Animate()" },
 
@@ -1175,6 +1186,16 @@ var anim = new Animator();
 
 // Animate radius from 0 to 50 over 3 seconds
 anim.AddToAnimations(new ValueAnimation<VCircle>(circle, c => c.Radius, 0, 50, 3.0));
+anim.Repeat = true;
+anim.Animate();" },
+
+                { "ObjectPropertyAnimation", @"// Animates any numeric property on an arbitrary object
+// Useful for animating user-defined classes, not just shapes
+var wheel = new Wheel();
+var anim = new Animator();
+
+// Animate rotation from 0 to 360 over 1 second
+anim.AddToAnimations(new ObjectPropertyAnimation<Wheel>(wheel, w => w.Rotation, 0.0, 360.0, 1.0));
 anim.Repeat = true;
 anim.Animate();" },
 
@@ -1844,6 +1865,11 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "ValueAnimation.Duration", "Gets how long the value animation takes (in seconds)." },
                 { "ValueAnimation.EasingFunction", "Gets or sets the easing function for smooth value interpolation." },
                 { "ValueAnimation.Apply", "Applies the value animation, interpolating the property between start and end values." },
+
+                // ObjectPropertyAnimation
+                { "ObjectPropertyAnimation.Duration", "Gets how long the object property animation takes (in seconds)." },
+                { "ObjectPropertyAnimation.EasingFunction", "Gets or sets the easing function for smooth value interpolation." },
+                { "ObjectPropertyAnimation.Apply", "Applies the object property animation, interpolating the property between start and end values." },
 
                 // EasingFunctions
                 { "EasingFunctions.Linear", "Returns linear easing (constant speed, no acceleration)." },

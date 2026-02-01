@@ -453,6 +453,29 @@ animator.Animate();  // Start playback
 | FadeInAnimation | `(Shape target, double duration)` | Fades from transparent to opaque |
 | FadeOutAnimation | `(Shape target, double duration)` | Fades from opaque to transparent |
 | FadeOutAnimation | `(Shape target, double duration, double targetOpacity)` | Fades to target opacity |
+| ValueAnimation\<T\> | `(T target, Expression<Func<T, double>> prop, double start, double end, double duration)` | Animate any numeric property on a Shape (T : Shape) |
+| ObjectPropertyAnimation\<T\> | `(T target, Expression<Func<T, double>> prop, double start, double end, double duration)` | Animate any numeric property on any object (T : class) |
+
+### ObjectPropertyAnimation Example
+```csharp
+// Animate a property on a user-defined class (not a Shape)
+public class Wheel
+{
+    VCircle c = new VCircle(0, 0, 100);
+    VCircle hub = new VCircle(new VPoint(40, 40), 10);
+    private double rotation = 0.0;
+    public double Rotation
+    {
+        get { return rotation; }
+        set { hub.Rotate(new VPoint(0, 0), value - rotation); rotation = value; }
+    }
+}
+
+var wheel = new Wheel();
+var anim = new Animator { Repeat = true };
+anim.AddToAnimations(new ObjectPropertyAnimation<Wheel>(wheel, w => w.Rotation, 0.0, 359.0, 1.0));
+anim.Animate();
+```
 
 ### Easing Functions
 ```csharp

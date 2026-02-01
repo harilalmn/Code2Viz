@@ -10,7 +10,7 @@ namespace Code2Viz.Animation
     /// </summary>
     public abstract class Animation
     {
-        public Shape Target { get; }
+        public Shape? Target { get; }
         public double StartTime { get; internal set; }
         public double Duration { get; }
         public Func<double, double> EasingFunction { get; set; } = EasingFunctions.Linear;
@@ -23,6 +23,15 @@ namespace Code2Viz.Animation
         protected Animation(Shape target, double duration)
         {
             Target = target;
+            Duration = duration;
+        }
+
+        /// <summary>
+        /// Constructor for animations that don't target a specific Shape (e.g., ObjectPropertyAnimation).
+        /// </summary>
+        protected Animation(double duration)
+        {
+            Target = null;
             Duration = duration;
         }
 
@@ -258,6 +267,56 @@ namespace Code2Viz.Animation
             double easedT = EasingFunction(t);
             double value = _startValue + (_endValue - _startValue) * easedT;
             _property.SetValue(Target, value);
+        }
+    }
+
+    /// <summary>
+    /// Animates any numeric (double) property on an arbitrary object using an expression to identify the property.
+    /// Unlike ValueAnimation, this is not limited to Shape targets.
+    /// </summary>
+    /// <typeparam name="T">The object type.</typeparam>
+    public class ObjectPropertyAnimation<T> : Animation where T : class
+    {
+        private readonly T _targetObject;
+        private readonly PropertyInfo _property;
+        private readonly double _startValue;
+        private readonly double _endValue;
+
+        /// <summary>
+        /// Creates an object property animation that interpolates a property between start and end values.
+        /// </summary>
+        /// <param name="targetObject">The object whose property to animate.</param>
+        /// <param name="propertySelector">Expression selecting the property, e.g. w => w.Rotation.</param>
+        /// <param name="startValue">The value at the beginning of the animation.</param>
+        /// <param name="endValue">The value at the end of the animation.</param>
+        /// <param name="duration">Duration in seconds.</param>
+        public ObjectPropertyAnimation(T targetObject, Expression<Func<T, double>> propertySelector, double startValue, double endValue, double duration)
+            : base(duration)
+        {
+            _targetObject = targetObject;
+            _startValue = startValue;
+            _endValue = endValue;
+
+            // Extract PropertyInfo from the expression
+            if (propertySelector.Body is MemberExpression memberExpr &&
+                memberExpr.Member is PropertyInfo propInfo)
+            {
+                _property = propInfo;
+            }
+            else
+            {
+                throw new ArgumentException("propertySelector must be a simple property access expression, e.g. w => w.Rotation.");
+            }
+
+            // Set the initial value
+            _property.SetValue(_targetObject, _startValue);
+        }
+
+        public override void Apply(double t)
+        {
+            double easedT = EasingFunction(t);
+            double value = _startValue + (_endValue - _startValue) * easedT;
+            _property.SetValue(_targetObject, value);
         }
     }
 

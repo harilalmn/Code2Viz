@@ -495,7 +495,8 @@ internal class AnimationNameRewriter : CSharpSyntaxRewriter
     private static readonly HashSet<string> AnimationTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Animation", "DrawAnimation", "MoveAnimation", "RotateAnimation",
-        "FlipAnimation", "FadeInAnimation", "FadeOutAnimation", "ValueAnimation"
+        "FlipAnimation", "FadeInAnimation", "FadeOutAnimation", "ValueAnimation",
+        "ObjectPropertyAnimation"
     };
 
     private static readonly HashSet<string> ShapeTypes = new(StringComparer.OrdinalIgnoreCase)

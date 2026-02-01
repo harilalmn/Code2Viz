@@ -71,8 +71,8 @@ namespace Code2Viz.Animation
             animation.StartTime = startTime;
             Animations.Add(animation);
 
-            // Auto-draw shape if not already placed
-            if (!animation.Target.IsPlaced)
+            // Auto-draw shape if not already placed (skip for non-Shape animations like ObjectPropertyAnimation)
+            if (animation.Target != null && !animation.Target.IsPlaced)
             {
                 animation.Target.Draw();
             }

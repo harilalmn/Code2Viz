@@ -332,10 +332,14 @@ dotnet test
 7. Working directory is set to project folder during execution - relative paths resolve from there
 
 ## Documentation Policy (MANDATORY)
-**After ANY code change that affects the public API (new classes, methods, properties, or signature changes), you MUST update:**
+**After ANY code change that affects the public API (new classes, methods, properties, or signature changes), you MUST update ALL of the following:**
 
 1. **README.md** - Update examples, API tables, and feature descriptions
-2. **Help Documentation (DocGenerator.cs)** - Update `_memberDescriptions` dictionary with descriptions for new/changed members
-3. **CLAUDE.md** - Update if the change affects project structure or key implementation details
+2. **Help Documentation (DocGenerator.cs)** - Update `_summaries`, `_csharpSamples`, `_fsharpSamples`, and `_memberDescriptions` dictionaries with descriptions and sample code for new/changed members
+3. **MCP Server Documentation** - Update both:
+   - `McpServer/SKILL.md` - Update the skill reference with new types, constructors, and examples
+   - `McpServer/Resources/ApiReferenceResource.cs` - Update the API reference resource content
+4. **CLAUDE.md** - Update if the change affects project structure or key implementation details
+5. **Commit and Push** - After all documentation is updated, commit all changes and push to remote
 
 This is non-negotiable. No compromise on documentation, ever.

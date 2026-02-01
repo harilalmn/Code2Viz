@@ -412,7 +412,39 @@ anim.Animate();
 | **FlipAnimation** | Mirror across an axis line | `new FlipAnimation(shape, mirrorAxis, duration)` |
 | **FadeInAnimation** | Fade from transparent to opaque | `new FadeInAnimation(shape, duration)` |
 | **FadeOutAnimation** | Fade from opaque to transparent | `new FadeOutAnimation(shape, duration, targetOpacity)` |
-| **ValueAnimation\<T\>** | Animate any numeric property | `new ValueAnimation<VCircle>(circle, c => c.Radius, 0, 50, 3.0)` |
+| **ValueAnimation\<T\>** | Animate any numeric property on a shape | `new ValueAnimation<VCircle>(circle, c => c.Radius, 0, 50, 3.0)` |
+| **ObjectPropertyAnimation\<T\>** | Animate any numeric property on any object | `new ObjectPropertyAnimation<Wheel>(wheel, w => w.Rotation, 0, 360, 1.0)` |
+
+### ObjectPropertyAnimation Example
+
+`ObjectPropertyAnimation` works like `ValueAnimation` but targets any object, not just shapes. This is useful for animating properties on user-defined classes:
+
+```csharp
+public class Wheel
+{
+    VCircle c = new VCircle(0, 0, 100);
+    VCircle hub = new VCircle(new VPoint(40, 40), 10);
+
+    private double rotation = 0.0;
+    public double Rotation
+    {
+        get { return rotation; }
+        set { set_rotation(value); rotation = value; }
+    }
+
+    private void set_rotation(double value)
+    {
+        hub.Rotate(new VPoint(0, 0), value - rotation);
+    }
+}
+
+// In Main():
+var wheel = new Wheel();
+var anim = new Animator();
+anim.AddToAnimations(new ObjectPropertyAnimation<Wheel>(wheel, w => w.Rotation, 0.0, 359.0, 1));
+anim.Repeat = true;
+anim.Animate();
+```
 
 ### Pausing Between Animations
 
