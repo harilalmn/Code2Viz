@@ -85,6 +85,11 @@ public abstract class Shape : IDrawable
     private static long _idCounter = 0;
 
     public long Id { get; } = System.Threading.Interlocked.Increment(ref _idCounter);
+
+    /// <summary>
+    /// Resets the shape ID counter back to 0. Called before each code execution.
+    /// </summary>
+    public static void ResetIdCounter() => System.Threading.Interlocked.Exchange(ref _idCounter, 0);
     public string Name { get; set; } = "";
 
     /// <summary>

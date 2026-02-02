@@ -86,6 +86,7 @@ public class CanvasRenderer : ICanvasRenderer
             }
         }
         _shapes.Clear();
+        Shape.ResetIdCounter();
         ActiveTimeline?.Stop();
         ActiveTimeline = null;
     }
