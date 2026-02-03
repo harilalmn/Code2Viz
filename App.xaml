@@ -181,9 +181,7 @@
                             x:Name="border"
                             Background="{TemplateBinding Background}"
                             CornerRadius="2">
-                            <ContentPresenter
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -225,9 +223,9 @@
                             CornerRadius="4,4,0,0">
                             <ContentPresenter
                                 x:Name="ContentSite"
-                                ContentSource="Header"
                                 HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
+                                VerticalAlignment="Center"
+                                ContentSource="Header" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">

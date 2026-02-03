@@ -229,7 +229,20 @@ public class RoslynCompletionService
                 }
             }
 
-            // 5. Add Code2Viz.Geometry types even when not imported (for convenience)
+            // 5. Add expected type as a special completion item when after 'new' with generic type
+            // This ensures "List<double>" appears for "List<double> vals = new |"
+            if (isAfterNew && expectedType != null && expectedType.Contains("<"))
+            {
+                // Check if this exact generic type isn't already in completions
+                var existingNames = new HashSet<string>(completions.Select(c => c.Text));
+                if (!existingNames.Contains(expectedType))
+                {
+                    // Add the full generic type as a high-priority completion
+                    completions.Insert(0, new CompletionData(expectedType, $"new {expectedType}()", CompletionKind.Type));
+                }
+            }
+
+            // 6. Add Code2Viz.Geometry types even when not imported (for convenience)
             if (memberAccessType == null && !isAfterNew)
             {
                 AddCode2VizTypes(completions, compilation, prefix);
@@ -376,12 +389,25 @@ public class RoslynCompletionService
         if (typeStart < typeEnd)
         {
             var fullType = code.Substring(typeStart, typeEnd - typeStart);
-            // Extract just the type name (last part after any dots, before any <)
+            // Remove namespace prefix but preserve generic type arguments
+            // e.g., "System.Collections.Generic.List<double>" -> "List<double>"
             var ltIndex = fullType.IndexOf('<');
-            if (ltIndex > 0) fullType = fullType.Substring(0, ltIndex);
-            var dotIndex = fullType.LastIndexOf('.');
-            if (dotIndex >= 0) fullType = fullType.Substring(dotIndex + 1);
-            return fullType;
+            if (ltIndex > 0)
+            {
+                // Has generic arguments - extract base type name and preserve arguments
+                var basePart = fullType.Substring(0, ltIndex);
+                var genericPart = fullType.Substring(ltIndex); // includes <...>
+                var dotIndex = basePart.LastIndexOf('.');
+                if (dotIndex >= 0) basePart = basePart.Substring(dotIndex + 1);
+                return basePart + genericPart;
+            }
+            else
+            {
+                // No generic arguments - just remove namespace prefix
+                var dotIndex = fullType.LastIndexOf('.');
+                if (dotIndex >= 0) fullType = fullType.Substring(dotIndex + 1);
+                return fullType;
+            }
         }
 
         return null;
@@ -560,9 +586,32 @@ public class RoslynCompletionService
             {
                 return true;
             }
+
+            // Hide very short type names (1-2 chars) that are typically internal/abbreviated
+            // Exception: common short types like C#'s T type parameter is already handled above
+            if (typeSymbol.Name.Length <= 2 && !IsCommonShortType(typeSymbol.Name))
+            {
+                return true;
+            }
+
+            // Hide types with all-uppercase names (likely internal interop types like ABI, MS, etc.)
+            if (typeSymbol.Name.Length >= 2 && typeSymbol.Name.All(c => char.IsUpper(c) || char.IsDigit(c)))
+            {
+                return true;
+            }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Returns true for commonly used short type names that shouldn't be filtered.
+    /// </summary>
+    private bool IsCommonShortType(string name)
+    {
+        // Common short types that users might actually need
+        var commonShortTypes = new HashSet<string> { "IO", "ID" };
+        return commonShortTypes.Contains(name);
     }
 
     private CompletionKind ConvertToCompletionKind(SymbolKind kind)

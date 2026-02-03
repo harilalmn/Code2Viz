@@ -26,7 +26,10 @@
       "Bash(Select-String -Pattern \"error|Build succeeded|Build FAILED\")",
       "Bash(more:*)",
       "Bash(Get-Content \"C:\\\\Users\\\\haril\\\\.claude\\\\projects\\\\C--Work-Nicety-Projects-Code2Viz\\\\d2a53175-a60c-425e-a80c-88a945154df6\\\\tool-results\\\\toolu_01LoD9TWveXxxRE13HsegQBa.txt\" -Tail 50)",
-      "Bash(powershell -command:*)"
+      "Bash(powershell -command:*)",
+      "Bash(git status:*)",
+      "Bash(Select-String -Pattern \"error|succeeded\")",
+      "Bash(Select-String -Pattern \"error|succeeded|failed\")"
     ]
   }
 }

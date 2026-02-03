@@ -29,9 +29,6 @@ namespace CSharpSample
             SelectedRooms = SelectedRooms.OrderBy(r => r.Area).ToList();
             
             LayoutMaker layoutMaker = new LayoutMaker(SelectedRooms);
-            
-            
-            
         }
     }
 }
