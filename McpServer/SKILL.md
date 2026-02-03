@@ -73,6 +73,7 @@ new VLine(startPoint, endPoint);
 ### VCircle
 ```csharp
 new VCircle(centerX, centerY, radius);
+// Properties: Center, Radius, Area, Circumference
 ```
 
 ### VArc
@@ -90,6 +91,7 @@ new VRectangle(x1, y1, x2, y2, fromCorners: true); // from two corners
 ### VEllipse
 ```csharp
 new VEllipse(centerX, centerY, radiusX, radiusY);
+// Properties: Center, RadiusX, RadiusY, Area, Circumference
 ```
 
 ### VPolygon

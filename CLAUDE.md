@@ -1,328 +1,18 @@
-# Viz2d - Project Context for Claude
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Viz2d is a WPF 2D geometry visualization application that allows users to write C# code to create and visualize shapes on an interactive canvas.
+
+Code2Viz is a WPF 2D geometry visualization application that allows users to write C# or F# code to create and visualize shapes on an interactive canvas. Users write code in `.vizcode` files, which are compiled at runtime using Roslyn and executed to render shapes.
 
 ## Tech Stack
-- **Framework**: WPF on .NET 8.0
+- **Framework**: WPF on .NET 9.0
 - **Code Editor**: AvalonEdit (6.3.0.90)
 - **Code Compilation**: Roslyn CSharpCompilation (Microsoft.CodeAnalysis.CSharp 4.8.0)
+- **Boolean Operations**: Clipper2
+- **PDF Export**: PDFsharp
 - **Coordinate System**: Mathematical (Y-up, origin at center)
-
-## Project Structure
-```
-Code2Viz/
-├── Geometry/           # Shape classes (Point, Line, Arc, Circle, Rectangle, Ellipse, Polygon, Polyline, Grid, Group)
-├── Canvas/             # RenderCanvas (zoom/pan), CanvasRenderer (shape collection)
-├── Console/            # VizConsole (output), ConsoleOutput (singleton collector)
-├── Editor/             # Code editor features: IntelliSenseProvider, SemanticHighlighter, CodeLensProvider, HierarchyProvider
-├── Execution/          # ModuleCompiler (Roslyn CSharpCompilation)
-├── Project/            # VizCodeFile, VizCodeProject, Templates
-├── Mcp/                # McpBridgeHost (named pipe listener, command handlers for MCP)
-├── McpBridge/          # Shared IPC library (IpcClient, IpcServer, IpcMessages)
-├── McpServer/          # MCP Server console app (stdio transport, tools, resources, SKILL.md)
-├── img/                # Logo assets (logo.png, logo.ico)
-├── docs/               # PRD.md, TASKS.md, TODO.md
-├── MainWindow.xaml     # UI layout (tabbed editor, console panel)
-└── App.xaml            # Dark theme resources
-```
-
-## Module System
-
-### File Format
-- **Extension**: `.vizcode`
-- **Entry Point**: `StartViz.vizcode` containing:
-  ```csharp
-  namespace StartViz
-  {
-      public class Viz
-      {
-          public static void Main()
-          {
-              // Your code here
-          }
-      }
-  }
-  ```
-
-### Project Structure
-- All `.vizcode` files in same folder (and subfolders) are compiled together
-- Opening any `.vizcode` file auto-loads all files from that directory
-- Tabbed editor allows switching between multiple open files
-- New Project creates a temp directory with `StartViz.vizcode` template
-
-### Available Imports
-```csharp
-using System;
-using System.Collections.Generic;
-using Viz2d.Geometry;    // Point, Line, Circle, Arc, Rectangle, Ellipse, Polygon, Polyline, Grid, Group
-using Viz2d.Console;     // VizConsole.Log()
-```
-
-## Console Output
-
-### VizConsole Class
-```csharp
-VizConsole.Log("message");        // Logs with auto file/line tracking
-VizConsole.Log(42);               // Accepts any object
-VizConsole.Log(myList);           // Prints each item on its own line (itemize=true by default)
-VizConsole.Log(myList, false);    // Prints the collection's ToString() instead
-```
-
-### Output Format
-```
-[ModuleName:LineNumber] message
-```
-Example: `[StartViz:15] Hello World`
-
-### Features
-- `Log(value, itemize=true)` is the only public method (no `Write()` or `WriteLine()`)
-- When `itemize` is true (default), collections are printed item-by-item; when false, prints the collection type
-- Auto-captures calling file name and line number
-- Console panel below canvas (resizable)
-- Clear button to clear output
-- Export button to save as .txt file
-- Auto-clears on each Run
-
-## Key Implementation Details
-
-### Coordinate System
-- Origin (0,0) at canvas center
-- Y-axis points UP (mathematical, not screen coordinates)
-- WorldToScreen/ScreenToWorld methods handle conversion
-
-### Shape System
-- All shapes extend `Shape` abstract class
-- `Shape` implements `IDrawable` interface
-- Curve shapes (VLine, VCircle, VArc, etc.) also implement `ICurve` interface
-- `ICurve` extends `IDrawable`, so all curves can be drawn via the interface
-- Shapes have: `Color`, `FillColor`, `LineWeight`, `LineType`, `LineTypeScale`, `IsVisible`, `Opacity`, `Name`, `Id`
-- **Shapes auto-register on construction** - no need to call `Draw()`
-- `Draw()` is kept for backwards compatibility but is a no-op
-- Use `Show()` and `Hide()` methods to control visibility
-- **Shape-specific control points**: Each shape overrides `GetControlPoints()` and `MoveControlPoint()` for vertex/radius/curve editing
-
-### Canvas Features
-- Mouse wheel zoom (centered on cursor position)
-- Middle-click pan
-- Grid lines (50 unit spacing, toggleable)
-- Auto ZoomExtents after code execution
-- Real-time coordinate display
-- **Animation loop**: Uses `CompositionTarget.Rendering` for vsync-aligned frame updates (not DispatcherTimer)
-- **Animation FPS throttling**: Spatial index (QuadTree) is bypassed during animation playback to avoid stale-bounds artifacts
-- **Crossing/Window selection**: Drag right = Window Selection (blue solid, selects shapes fully inside box); Drag left = Crossing Selection (green dashed, selects shapes intersecting box)
-
-### Code Execution (ModuleCompiler)
-- Compiles all `.vizcode` files using Roslyn CSharpCompilation
-- Creates in-memory assembly with unique name
-- Finds and invokes `StartViz.Viz.Main()` via reflection
-- Uses collectible AssemblyLoadContext for proper unloading
-- Clears canvas and console before each run
-
-### Type Aliases (in RenderCanvas.cs)
-Due to naming conflicts with WPF types:
-- `Point2D` = `Viz2d.Geometry.Point`
-- `Line2D` = `Viz2d.Geometry.Line`
-- `Rectangle2D` = `Viz2d.Geometry.Rectangle`
-- `Ellipse2D` = `Viz2d.Geometry.Ellipse`
-- `Polygon2D` = `Viz2d.Geometry.Polygon`
-- `Polyline2D` = `Viz2d.Geometry.Polyline`
-- `WpfLine`, `WpfRectangle`, etc. = WPF shape types
-
-## Drawing Tools
-
-### Overview
-Interactive drawing toolbar allows creating shapes directly on the canvas with automatic code generation.
-
-### Toolbar Location
-Below the menu bar, contains buttons for all 12 shape types:
-- **Basic Shapes**: Point, Line, Circle, Rectangle, Ellipse, Arc
-- **Multi-Point Shapes**: Polygon, Polyline, Bezier, Spline
-- **Special Shapes**: Arrow, Text
-
-### Drawing Methods
-| Shape | Method | Clicks |
-|-------|--------|--------|
-| Point | Single click | 1 |
-| Line | Click start, click end | 2 |
-| Circle | Click center, click radius point | 2 |
-| Rectangle | Click corner, click opposite corner | 2 |
-| Ellipse | Click center, drag for radii | 2 |
-| Arc | Click center, click start, click end | 3 |
-| Polygon | Click vertices, double-click to close | N+double |
-| Polyline | Click points, double-click to finish | N+double |
-| Bezier | Click start, ctrl1, ctrl2, end | 4 |
-| Spline | Click control points, double-click | N+double |
-| Arrow | Click start, click end | 2 |
-| Text | Click position | 1 |
-
-### Snap Support
-The drawing tool supports 8 snap types (configurable in Settings):
-
-| Snap Type | Marker | Description |
-|-----------|--------|-------------|
-| Endpoint | Yellow square | Start/end points of lines, arcs, polylines |
-| Midpoint | Cyan triangle | Middle point of segments |
-| Center | Magenta circle | Center of circles, arcs, ellipses |
-| Intersection | Red X | Where two shapes cross |
-| Nearest | Green diamond | Closest point on any curve |
-| Perpendicular | Orange line | 90° from first click to existing geometry |
-| Extension | Cyan dotted line | Extended line along existing edges |
-| Tangent | Violet line | Tangent point from first click to circles/arcs |
-
-### Advanced Snaps (Second Point)
-When picking the second point:
-- **Extension**: Shows dotted line extending from endpoints with label "Extension: [dist] < [angle]°"
-- **Perpendicular**: Shows perpendicular relationship from first point to existing shapes
-- **Tangent**: Shows tangent point when near circles/arcs
-
-### Precise Distance/Angle Input
-While drawing after the first point, type numbers to enter precise values:
-- **Type any digit**: Starts Distance input mode (value pre-selected, typing replaces it)
-- **Tab**: Cycle through None → Distance → Angle → None
-- **Backspace**: Delete character (or clear all if selected)
-- **Enter**: Confirm and place point at specified distance/angle
-- **Escape**: Cancel input mode
-
-Key files: `Canvas/SnapEngine.cs`, `Canvas/DrawingTool.cs` (InputMode, InputBuffer, StartDistanceInput)
-
-### Orthogonal Constraint
-- Hold **Shift** after first point to constrain to horizontal/vertical
-- Works with Line, Polyline, Polygon, Spline, Bezier, Arrow tools
-- Status bar shows "(Shift: ortho)" hint when available
-
-### Code Generation
-When a shape is completed, corresponding C# code is automatically inserted into the `Main()` method of the entry point file.
-
-Example generated code:
-```csharp
-new VLine(100.00, 50.00, 200.00, 150.00).Draw();
-new VCircle(150.00, 100.00, 75.50).Draw();
-```
-
-### Key Files
-- `Canvas/DrawingTool.cs` - Tool state machine and shape creation logic
-- `Canvas/CodeGenerator.cs` - Generates C# code strings for shapes
-
-## Properties Panel
-- Floating or dockable panel showing selected shape properties
-- **Files:** `PropertiesPanel.xaml/cs` (UserControl), `PropertiesWindow.xaml/cs` (floating container)
-- **Sections:** Shape info (type, ID, name), Geometry (per-shape numeric properties), Style (color, fill, weight, opacity, visibility)
-- **Dock/Float toggle:** Button in header switches between floating window and docked column 6 in MainWindow
-- **Events:** `ShapePropertyChanged` triggers code sync and canvas refresh (includes `PropertyName` and `OldValue` for targeted sync)
-- **Code sync:** Style property changes (Color, FillColor, LineWeight, Opacity, IsVisible) insert or update assignment lines in code (e.g., `c1.LineWeight = 18.0;`)
-- **Variable rename:** Changing Name in properties renames the variable throughout the code via whole-word replacement
-- **Settings:** `ShowProperties` and `PropertiesDocked` in `ApplicationSettings`
-- **Menu:** Windows > Properties (checkable toggle)
-
-## Current State (v2.0)
-- Module system with multi-file support
-- Tabbed code editor
-- Console output with line tracking
-- All basic and extended shapes implemented
-- Shape styling works (colors, thickness)
-- Canvas zoom/pan/grid working
-- Code editor with syntax highlighting
-- PNG export functional
-- Drawing toolbar with auto code generation
-- All keyboard shortcuts working
-- **Auto-update canvas**: Canvas updates automatically when code changes (debounced 500ms)
-- **Shapes auto-register**: No need to call `Draw()` - shapes appear when created
-- **Find and Replace**: Full find/replace with RegEx support, project-wide search, tabbed results panel
-- **Shape-specific control points**: All 13 shape types have custom control points for vertex, radius, and curve editing
-- **Properties panel**: Floating/dockable panel for editing shape geometry and style properties with full code sync
-- **Style code sync**: Property changes in Properties panel persist to code (Color, FillColor, LineWeight, Opacity, IsVisible, Name)
-- **Auto-deselect**: Selection cleared on Run and when clicking into the code editor
-- **Snap to Grid**: Locks cursor to grid intersections during drawing/measuring/selection (F9 toggle, adaptive spacing)
-- **Working directory**: Set to project folder before code execution so relative file paths resolve correctly
-- **Animator FPS control**: `Animator.Fps` property (1-120, default 60) throttles animation rendering to target frame rate
-- **ObjectPropertyAnimation**: Animate numeric properties on any object with `ObjectPropertyAnimation<T>`
-- **Crossing/Window selection**: Drag right = Window (blue, fully inside); Drag left = Crossing (green dashed, intersecting)
-- **VizConsole.Log itemize**: `VizConsole.Log(collection, itemize)` parameter controls per-item vs ToString() output
-- **VizConsole.Log empty collections**: Logs "(empty)" for empty collections instead of silent no output
-- **Shape ID reset**: Shape ID counter resets on each code execution so IDs start from 1
-- **VPoint.Internal()**: Use `VPoint.Internal(x, y)` to create points without auto-registration (for intermediate calculations)
-- **ICurve.ParameterAtPoint()**: All curve types now support `ParameterAtPoint(VPoint)` to get the normalized parameter (0-1) for a point on the curve
-
-## Known Issues
-- None currently
-
-## Future Plans (see docs/TODO.md)
-- Undo/redo for drawing operations
-
-## Keyboard Shortcuts
-### File Operations
-- `F5` - Run code
-- `Ctrl+Enter` - Run code
-- `Ctrl+Shift+N` - New project
-- `Ctrl+N` - New file
-- `Ctrl+O` - Open project
-- `Ctrl+S` - Save all files
-- `Ctrl+Shift+F` - Format code
-
-### Editor Operations
-- `Ctrl+/` - Toggle comment (single/multi-line)
-
-### Find and Replace
-- `Ctrl+F` - Open Find dialog
-- `Ctrl+H` - Open Find and Replace dialog
-- `F3` - Find Next (in dialog)
-- `Shift+F3` - Find Previous (in dialog)
-
-### Line Operations
-- `Alt+Up` - Move line up
-- `Alt+Down` - Move line down
-- `Shift+Alt+Up` - Copy line up
-- `Shift+Alt+Down` - Copy line down
-- `Ctrl+Shift+D` - Delete line
-
-### Selection Operations
-- `Shift+Alt+Right` - Expand selection (word → brackets → line → block)
-- `Shift+Alt+Left` - Shrink selection (undo expand)
-- `Ctrl+D` - Add next occurrence (multi-cursor support)
-- `Ctrl+Shift+L` - Select all occurrences
-- `Ctrl+Alt+Up` - Add cursor above
-- `Ctrl+Alt+Down` - Add cursor below
-- `Esc` - Exit multi-cursor mode
-
-### Multi-Cursor Editing
-- `Ctrl+D` selects word at cursor, then adds next occurrences
-- `Ctrl+Alt+Up/Down` adds cursors vertically above/below
-- Type to insert at all cursors simultaneously
-- Backspace/Delete work at all cursor positions
-- Click elsewhere or `Esc` to exit multi-cursor mode
-
-### Canvas & Tools
-- `Double-click` (empty space) - Zoom to fit all shapes
-- `Ctrl+M` - Toggle Measuring Tape tool
-- `Ctrl+G` - Zoom to shape by ID
-- `F4` - Toggle Properties panel
-- `F9` - Toggle Snap to Grid
-- `Esc` - Cancel current tool/operation
-
-### Drawing Tools (when editor not focused)
-- `P` - Point tool
-- `L` - Line tool
-- `C` - Circle tool
-- `R` - Rectangle tool
-- `Shift` (hold) - Orthogonal constraint (H/V lock)
-- `Esc` - Cancel drawing / Return to select mode
-
-### Code Navigation & Intellisense
-- `F12` - Go to Definition
-- `Shift+F12` - Find All References
-- `Alt+F12` - Peek Definition (inline popup)
-- `Ctrl+.` - Quick Fix (add missing using)
-- `Ctrl+Shift+O` - Document Symbols (outline)
-- `Ctrl+T` - Workspace Symbols (search all files)
-- `Ctrl+Shift+H` - Call Hierarchy
-- `Ctrl+Shift+T` - Type Hierarchy
-- `F2` - Rename Symbol
-
-### Built-in AvalonEdit
-- `Ctrl+C/V/X` - Copy/Paste/Cut
-- `Ctrl+Z/Y` - Undo/Redo
-- `Tab/Shift+Tab` - Indent/Unindent
 
 ## Commands
 ```bash
@@ -332,57 +22,133 @@ dotnet build
 # Run
 dotnet run
 
-# Test (none yet)
-dotnet test
+# Run tests
+dotnet test Tests/Code2Viz.Tests.csproj
 ```
 
-## Important Notes
-1. Always use type aliases in RenderCanvas.cs to avoid WPF conflicts
-2. Y-coordinate is inverted in WorldToScreen (mathematical coords)
-3. Syntax highlighting file is embedded resource (EmbeddedResource in csproj)
-4. Colors parsed via WPF ColorConverter - any named color works
-5. Entry point must be `StartViz.Viz.Main()` in `StartViz.vizcode`
-6. Use `VizConsole` instead of `Console` for output with line tracking
-7. Working directory is set to project folder during execution - relative paths resolve from there
+## Architecture
 
-## Commands
-
-### /update-docs - Update All Documentation
-When the user says "update all documentation", "update docs", or "/update-docs", perform the following steps:
-
-1. **Review recent changes** by running `git log --oneline -20` and `git diff HEAD~5 --stat`
-2. **Read all documentation files** to understand current state
-3. **Update each documentation file** as needed:
-   - **docs/TASKS.md**: Mark completed tasks as Done, add new tasks discovered
-   - **docs/TODO.md**: Move completed items to "Completed Features", update current items
-   - **docs/PRD.md**: Update feature status, add new requirements if any
-   - **CLAUDE.md**: Update Current State, Known Issues, and key implementation details
-   - **README.md**: Update feature descriptions, examples, API tables, and keyboard shortcuts
-   - **Documentation/DocGenerator.cs**: Update `_summaries`, `_csharpSamples`, `_fsharpSamples`, and `_memberDescriptions` dictionaries with descriptions and sample code for new/changed members
-4. **Report summary** of all documentation updates made
-
-**Example output format:**
+### Project Structure
 ```
-Documentation Updated:
-- TASKS.md: Marked 3 tasks complete, added 2 new tasks
-- TODO.md: Added 2 items to completed features
-- README.md: Updated selection section, added new shortcut
-- DocGenerator.cs: Added samples for new VLine constructor
-- CLAUDE.md: Updated Current State section
-- PRD.md: No changes needed
+Code2Viz/
+├── Geometry/           # Shape classes (VPoint, VLine, VArc, VCircle, VRectangle, etc.)
+├── Canvas/             # RenderCanvas (zoom/pan), CanvasRenderer, DrawingTool, SnapEngine
+├── Console/            # VizConsole (output), ConsoleOutput (singleton collector)
+├── Editor/             # Code editor: IntelliSenseProvider, SemanticHighlighter, CodeLensProvider
+├── Execution/          # ModuleCompiler (Roslyn CSharpCompilation)
+├── Project/            # VizCodeFile, VizCodeProject, Templates
+├── Animation/          # Animator, animation types (Draw, Move, Rotate, Fade, etc.)
+├── Mcp/                # McpBridgeHost (named pipe listener for MCP integration)
+├── McpBridge/          # Shared IPC library (separate project)
+├── McpServer/          # MCP Server console app (separate project)
+├── Tests/              # Unit tests (separate project)
+├── MainWindow.xaml     # UI layout (tabbed editor, console panel)
+└── App.xaml            # Dark theme resources
 ```
 
----
+### Module System
+- **Entry Point**: `StartViz.Viz.Main()` in `StartViz.vizcode`
+- All `.vizcode` files in the same directory are compiled together
+- Available imports: `Code2Viz.Geometry`, `Code2Viz.Animation`, `Code2Viz.Console`
+
+### Shape System
+- All shapes extend `Shape` abstract class which implements `IDrawable`
+- Curve shapes (VLine, VCircle, VArc, etc.) also implement `ICurve` interface
+- **Shapes auto-register on construction** - no need to call `Draw()`
+- `Draw()` is kept for backwards compatibility but is a no-op
+- Each shape overrides `GetControlPoints()` and `MoveControlPoint()` for interactive editing
+
+### Code Execution (ModuleCompiler)
+- Compiles all `.vizcode` files using Roslyn CSharpCompilation
+- Creates in-memory assembly with unique name
+- Invokes `StartViz.Viz.Main()` via reflection
+- Uses collectible AssemblyLoadContext for proper unloading
+- Shape ID counter resets on each code execution (IDs start from 1)
+
+### Coordinate System
+- Origin (0,0) at canvas center
+- Y-axis points UP (mathematical, not screen coordinates)
+- WorldToScreen/ScreenToWorld methods handle conversion
+- Animation loop uses `CompositionTarget.Rendering` for vsync-aligned frame updates
+
+### Type Aliases (in RenderCanvas.cs)
+Due to naming conflicts with WPF types, use these aliases:
+- `Point2D` = `Code2Viz.Geometry.VPoint`
+- `Line2D` = `Code2Viz.Geometry.VLine`
+- `Rectangle2D` = `Code2Viz.Geometry.VRectangle`
+- `Ellipse2D` = `Code2Viz.Geometry.VEllipse`
+- `Polygon2D` = `Code2Viz.Geometry.VPolygon`
+- `Polyline2D` = `Code2Viz.Geometry.VPolyline`
+
+## Key Implementation Notes
+
+1. **Always use type aliases in RenderCanvas.cs** to avoid WPF conflicts
+2. **Y-coordinate is inverted** in WorldToScreen (mathematical coords)
+3. **Syntax highlighting files** are embedded resources (EmbeddedResource in csproj)
+4. **Colors** parsed via WPF ColorConverter - any named color works
+5. **Working directory** is set to project folder during execution - relative paths resolve from there
+6. **VPoint.Internal(x, y)** creates points without auto-registration (for intermediate calculations)
+
+## Keyboard Shortcuts (Key Bindings)
+
+### File/Run
+- `F5` / `Ctrl+Enter` - Run code
+- `Ctrl+S` - Save all files
+- `Ctrl+Shift+N` - New project
+- `Ctrl+N` - New file
+- `Ctrl+O` - Open project
+
+### Editor
+- `Ctrl+/` - Toggle comment
+- `Ctrl+F` - Find, `Ctrl+H` - Find and Replace
+- `Ctrl+Shift+F` - Format code
+- `Alt+Up/Down` - Move line up/down
+- `Ctrl+D` - Add next occurrence (multi-cursor)
+- `Ctrl+Shift+L` - Select all occurrences
+
+### Code Navigation
+- `F12` - Go to Definition
+- `Shift+F12` - Find All References
+- `Alt+F12` - Peek Definition
+- `F2` - Rename Symbol
+- `Ctrl+.` - Quick Fix
+
+### Canvas & Tools
+- `Ctrl+M` - Measuring Tape tool
+- `Ctrl+G` - Zoom to shape by ID
+- `F4` - Toggle Properties panel
+- `F9` - Toggle Snap to Grid
+- `Esc` - Cancel current tool
+
+### Drawing Tools (when editor not focused)
+- `P` - Point, `L` - Line, `C` - Circle, `R` - Rectangle
+- `Shift` (hold) - Orthogonal constraint
 
 ## Documentation Policy (MANDATORY)
+
 **After ANY code change that affects the public API (new classes, methods, properties, or signature changes), you MUST update ALL of the following:**
 
 1. **README.md** - Update examples, API tables, and feature descriptions
-2. **Help Documentation (DocGenerator.cs)** - Update `_summaries`, `_csharpSamples`, `_fsharpSamples`, and `_memberDescriptions` dictionaries with descriptions and sample code for new/changed members
-3. **MCP Server Documentation** - Update both:
+2. **Help Documentation (DocGenerator.cs)** - Update `_summaries`, `_csharpSamples`, `_fsharpSamples`, and `_memberDescriptions` dictionaries
+3. **MCP Server Documentation**:
    - `McpServer/SKILL.md` - Update the skill reference with new types, constructors, and examples
    - `McpServer/Resources/ApiReferenceResource.cs` - Update the API reference resource content
 4. **CLAUDE.md** - Update if the change affects project structure or key implementation details
 5. **Commit and Push** - After all documentation is updated, commit all changes and push to remote
 
 This is non-negotiable. No compromise on documentation, ever.
+
+## /update-docs Command
+
+When the user says "update all documentation", "update docs", or "/update-docs":
+
+1. **Review recent changes**: `git log --oneline -20` and `git diff HEAD~5 --stat`
+2. **Read all documentation files** to understand current state
+3. **Update each file as needed**:
+   - `docs/TASKS.md` - Mark completed tasks, add new tasks
+   - `docs/TODO.md` - Move completed items, update current items
+   - `docs/PRD.md` - Update feature status
+   - `CLAUDE.md` - Update Current State, Known Issues, implementation details
+   - `README.md` - Update feature descriptions, examples, API tables, keyboard shortcuts
+   - `DocGenerator.cs` - Update summaries and samples for new/changed members
+4. **Report summary** of all updates made

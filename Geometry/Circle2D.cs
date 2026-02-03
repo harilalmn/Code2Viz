@@ -7,6 +7,12 @@ public class VCircle : Shape, ICurve
     public VPoint Center { get; set; }
     public double Radius { get; set; }
 
+    /// <summary>Gets the area of the circle (π * r²).</summary>
+    public double Area => Math.PI * Radius * Radius;
+
+    /// <summary>Gets the circumference of the circle (2 * π * r).</summary>
+    public double Circumference => 2 * Math.PI * Radius;
+
     /// <summary>Gets the start point of the circle (at angle 0).</summary>
     public VPoint StartPoint => VPoint.Internal(Center.X + Radius, Center.Y);
 

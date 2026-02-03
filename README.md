@@ -342,6 +342,22 @@ circle.Draw();  // Uses Cyan stroke
 ShapeDefaults.Reset();
 ```
 
+### Geometric Properties
+
+Circles and ellipses provide computed geometric properties:
+
+```csharp
+// Circle properties
+var circle = new VCircle(0, 0, 50);
+double area = circle.Area;               // π × r² = ~7853.98
+double circumference = circle.Circumference;  // 2π × r = ~314.16
+
+// Ellipse properties
+var ellipse = new VEllipse(0, 0, 60, 40);
+double ellipseArea = ellipse.Area;             // π × rx × ry = ~7539.82
+double ellipseCircum = ellipse.Circumference;  // Ramanujan approximation = ~318.49
+```
+
 ---
 
 ## Animation System

@@ -1574,6 +1574,8 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VEllipse.Center", "Gets or sets the center point of the ellipse." },
                 { "VEllipse.RadiusX", "Gets or sets the horizontal radius (semi-major or semi-minor axis)." },
                 { "VEllipse.RadiusY", "Gets or sets the vertical radius (semi-major or semi-minor axis)." },
+                { "VEllipse.Area", "Gets the area of the ellipse (π × RadiusX × RadiusY)." },
+                { "VEllipse.Circumference", "Gets the approximate circumference of the ellipse using Ramanujan's formula." },
                 { "VEllipse.SelfIntersecting", "Always returns false (ellipses cannot self-intersect)." },
 
                 // VEllipse Methods

@@ -11,6 +11,24 @@ public class VEllipse : Shape, ICurve
     public double StartAngle { get; set; } = 0;
     public double EndAngle { get; set; } = 360;
 
+    /// <summary>Gets the area of the ellipse (π * RadiusX * RadiusY).</summary>
+    public double Area => Math.PI * RadiusX * RadiusY;
+
+    /// <summary>
+    /// Gets the approximate circumference of the ellipse using Ramanujan's formula.
+    /// This is an approximation since ellipse perimeter has no closed-form solution.
+    /// </summary>
+    public double Circumference
+    {
+        get
+        {
+            double a = RadiusX;
+            double b = RadiusY;
+            double h = Math.Pow(a - b, 2) / Math.Pow(a + b, 2);
+            return Math.PI * (a + b) * (1 + 3 * h / (10 + Math.Sqrt(4 - 3 * h)));
+        }
+    }
+
     public VEllipse(VPoint center, double radiusX, double radiusY)
     {
         Center = center;

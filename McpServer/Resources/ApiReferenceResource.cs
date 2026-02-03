@@ -84,6 +84,7 @@ public class ApiReferenceResource
         ### VCircle
         ```csharp
         new VCircle(centerX, centerY, radius);
+        // Properties: Center, Radius, Area, Circumference
         ```
 
         ### VArc
@@ -101,6 +102,7 @@ public class ApiReferenceResource
         ### VEllipse
         ```csharp
         new VEllipse(centerX, centerY, radiusX, radiusY);
+        // Properties: Center, RadiusX, RadiusY, Area, Circumference
         ```
 
         ### VPolygon
