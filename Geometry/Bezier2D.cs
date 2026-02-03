@@ -38,10 +38,10 @@ public class VBezier : Shape, ICurve
 
     public VBezier(double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
     {
-        P0 = new VPoint(x0, y0);
-        P1 = new VPoint(x1, y1);
-        P2 = new VPoint(x2, y2);
-        P3 = new VPoint(x3, y3);
+        P0 = VPoint.Internal(x0, y0);
+        P1 = VPoint.Internal(x1, y1);
+        P2 = VPoint.Internal(x2, y2);
+        P3 = VPoint.Internal(x3, y3);
         Color = ShapeDefaults.GlobalColor ?? "Purple";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
@@ -60,7 +60,7 @@ public class VBezier : Shape, ICurve
         double x = uuu * P0.X + 3 * uu * t * P1.X + 3 * u * tt * P2.X + ttt * P3.X;
         double y = uuu * P0.Y + 3 * uu * t * P1.Y + 3 * u * tt * P2.Y + ttt * P3.Y;
 
-        return new VPoint(x, y);
+        return VPoint.Internal(x, y);
     }
 
     /// <summary>
@@ -166,8 +166,8 @@ public class VBezier : Shape, ICurve
     {
         var pts = new[] { P0, P1, P2, P3 };
         return (
-            new VPoint(pts.Min(p => p.X), pts.Min(p => p.Y)),
-            new VPoint(pts.Max(p => p.X), pts.Max(p => p.Y))
+            VPoint.Internal(pts.Min(p => p.X), pts.Min(p => p.Y)),
+            VPoint.Internal(pts.Max(p => p.X), pts.Max(p => p.Y))
         );
     }
 
@@ -223,7 +223,7 @@ public class VBezier : Shape, ICurve
                 double subT = distOnSeg / segLen;
                 double x = p1.X + (p2.X - p1.X) * subT;
                 double y = p1.Y + (p2.Y - p1.Y) * subT;
-                result.Add(new VPoint(x, y));
+                result.Add(VPoint.Internal(x, y));
                 
                 remainingStep = segmentLength;
             }
@@ -329,7 +329,7 @@ public class VBezier : Shape, ICurve
              
              if ((d1 < r2 && d2 > r2) || (d1 > r2 && d2 < r2))
              {
-                 results.Add(new VPoint((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
+                 results.Add(VPoint.Internal((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
              }
              prev = curr;
         }
@@ -365,7 +365,7 @@ public class VBezier : Shape, ICurve
     
     private VPoint Lerp(VPoint a, VPoint b, double t)
     {
-        return new VPoint(
+        return VPoint.Internal(
             a.X + (b.X - a.X) * t,
             a.Y + (b.Y - a.Y) * t
         );
@@ -417,7 +417,7 @@ public class VBezier : Shape, ICurve
         double x = term1 * (P1.X - P0.X) + term2 * (P2.X - P1.X) + term3 * (P3.X - P2.X);
         double y = term1 * (P1.Y - P0.Y) + term2 * (P2.Y - P1.Y) + term3 * (P3.Y - P2.Y);
 
-        return new VPoint(x, y);
+        return VPoint.Internal(x, y);
     }
 
     /// <summary>
@@ -432,4 +432,9 @@ public class VBezier : Shape, ICurve
     /// Returns a point on the bezier curve at the given normalized parameter.
     /// </summary>
     public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the bezier curve to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point) => GetClosestParameter(point);
 }

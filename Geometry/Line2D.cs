@@ -277,5 +277,19 @@ public class VLine : Shape, ICurve
     /// Returns a point on the line at the given normalized parameter.
     /// </summary>
     public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the line to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        double dx = End.X - Start.X;
+        double dy = End.Y - Start.Y;
+        double lengthSq = dx * dx + dy * dy;
+        if (lengthSq < 1e-10) return 0;
+
+        double t = ((point.X - Start.X) * dx + (point.Y - Start.Y) * dy) / lengthSq;
+        return Math.Clamp(t, 0, 1);
+    }
 }
 

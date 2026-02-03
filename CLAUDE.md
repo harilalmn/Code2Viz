@@ -236,6 +236,13 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 - **Snap to Grid**: Locks cursor to grid intersections during drawing/measuring/selection (F9 toggle, adaptive spacing)
 - **Working directory**: Set to project folder before code execution so relative file paths resolve correctly
 - **Animator FPS control**: `Animator.Fps` property (1-120, default 60) throttles animation rendering to target frame rate
+- **ObjectPropertyAnimation**: Animate numeric properties on any object with `ObjectPropertyAnimation<T>`
+- **Crossing/Window selection**: Drag right = Window (blue, fully inside); Drag left = Crossing (green dashed, intersecting)
+- **VizConsole.Log itemize**: `VizConsole.Log(collection, itemize)` parameter controls per-item vs ToString() output
+- **VizConsole.Log empty collections**: Logs "(empty)" for empty collections instead of silent no output
+- **Shape ID reset**: Shape ID counter resets on each code execution so IDs start from 1
+- **VPoint.Internal()**: Use `VPoint.Internal(x, y)` to create points without auto-registration (for intermediate calculations)
+- **ICurve.ParameterAtPoint()**: All curve types now support `ParameterAtPoint(VPoint)` to get the normalized parameter (0-1) for a point on the curve
 
 ## Known Issues
 - None currently
@@ -337,6 +344,35 @@ dotnet test
 5. Entry point must be `StartViz.Viz.Main()` in `StartViz.vizcode`
 6. Use `VizConsole` instead of `Console` for output with line tracking
 7. Working directory is set to project folder during execution - relative paths resolve from there
+
+## Commands
+
+### /update-docs - Update All Documentation
+When the user says "update all documentation", "update docs", or "/update-docs", perform the following steps:
+
+1. **Review recent changes** by running `git log --oneline -20` and `git diff HEAD~5 --stat`
+2. **Read all documentation files** to understand current state
+3. **Update each documentation file** as needed:
+   - **docs/TASKS.md**: Mark completed tasks as Done, add new tasks discovered
+   - **docs/TODO.md**: Move completed items to "Completed Features", update current items
+   - **docs/PRD.md**: Update feature status, add new requirements if any
+   - **CLAUDE.md**: Update Current State, Known Issues, and key implementation details
+   - **README.md**: Update feature descriptions, examples, API tables, and keyboard shortcuts
+   - **Documentation/DocGenerator.cs**: Update `_summaries`, `_csharpSamples`, `_fsharpSamples`, and `_memberDescriptions` dictionaries with descriptions and sample code for new/changed members
+4. **Report summary** of all documentation updates made
+
+**Example output format:**
+```
+Documentation Updated:
+- TASKS.md: Marked 3 tasks complete, added 2 new tasks
+- TODO.md: Added 2 items to completed features
+- README.md: Updated selection section, added new shortcut
+- DocGenerator.cs: Added samples for new VLine constructor
+- CLAUDE.md: Updated Current State section
+- PRD.md: No changes needed
+```
+
+---
 
 ## Documentation Policy (MANDATORY)
 **After ANY code change that affects the public API (new classes, methods, properties, or signature changes), you MUST update ALL of the following:**

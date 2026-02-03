@@ -21,7 +21,7 @@ public class VArrow : Shape
 
     public VPoint StartPoint => Start;
     public VPoint EndPoint => End;
-    public VPoint MidPoint => new VPoint((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
+    public VPoint MidPoint => VPoint.Internal((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
 
     public VArrow(VPoint start, VPoint end)
     {
@@ -32,8 +32,8 @@ public class VArrow : Shape
 
     public VArrow(double x1, double y1, double x2, double y2)
     {
-        Start = new VPoint(x1, y1);
-        End = new VPoint(x2, y2);
+        Start = VPoint.Internal(x1, y1);
+        End = VPoint.Internal(x2, y2);
         Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
@@ -41,7 +41,7 @@ public class VArrow : Shape
     {
         Start = startPoint;
         var normalizedDir = direction.Normalize();
-        End = new VPoint(startPoint.X + normalizedDir.X * length, startPoint.Y + normalizedDir.Y * length);
+        End = VPoint.Internal(startPoint.X + normalizedDir.X * length, startPoint.Y + normalizedDir.Y * length);
         Color = ShapeDefaults.GlobalColor ?? "Orange";
     }
 
@@ -83,8 +83,8 @@ public class VArrow : Shape
         double perpY = dx;
 
         // Wing points at the base
-        var wing1 = new VPoint(baseX + perpX * halfWidth, baseY + perpY * halfWidth);
-        var wing2 = new VPoint(baseX - perpX * halfWidth, baseY - perpY * halfWidth);
+        var wing1 = VPoint.Internal(baseX + perpX * halfWidth, baseY + perpY * halfWidth);
+        var wing2 = VPoint.Internal(baseX - perpX * halfWidth, baseY - perpY * halfWidth);
 
         return (wing1, wing2);
     }
@@ -162,8 +162,8 @@ public class VArrow : Shape
     public override (VPoint min, VPoint max) GetBounds()
     {
         return (
-            new VPoint(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
-            new VPoint(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
+            VPoint.Internal(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
+            VPoint.Internal(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
         );
     }
 

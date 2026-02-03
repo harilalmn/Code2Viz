@@ -61,7 +61,7 @@ public class ControlPoint
         Label = label;
     }
 
-    public VPoint ToVPoint() => new VPoint(X, Y);
+    public VPoint ToVPoint() => VPoint.Internal(X, Y);
 }
 
 public interface IDrawable
@@ -282,7 +282,7 @@ public abstract class Shape : IDrawable
         if (index == 0)
         {
             var bounds = GetBounds();
-            var center = new VPoint((bounds.min.X + bounds.max.X) / 2, (bounds.min.Y + bounds.max.Y) / 2);
+            var center = VPoint.Internal((bounds.min.X + bounds.max.X) / 2, (bounds.min.Y + bounds.max.Y) / 2);
             var delta = new VXYZ(newPosition.X - center.X, newPosition.Y - center.Y, 0);
             Move(delta);
         }

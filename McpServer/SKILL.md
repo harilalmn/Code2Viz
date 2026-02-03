@@ -277,6 +277,7 @@ Implemented by: VLine, VCircle, VArc, VEllipse, VPolyline, VPolygon, VBezier, VS
 | `Measure(segmentLength)` | List\<VPoint\> | Points at fixed distance intervals |
 | `PointAtSegmentLength(len)` | VPoint | Point at distance along curve |
 | `PointAtParameter(t)` | VPoint | Point at parameter (0.0 to 1.0) |
+| `ParameterAtPoint(point)` | double | Get parameter (0-1) for closest point on curve |
 | `Project(point)` | VPoint | Closest point on curve |
 | `Offset(distance)` | ICurve | Parallel offset curve |
 | `Offset(List<double> distances)` | List\<ICurve\> | Multiple offsets |
@@ -416,6 +417,7 @@ VizConsole.Log(42);             // accepts any object
 VizConsole.Log(myVariable);     // auto-tracks calling file and line number
 VizConsole.Log(myList);         // itemizes collections (prints each item)
 VizConsole.Log(myList, false);  // prints collection's ToString() instead
+VizConsole.Log(emptyList);      // prints "(empty)" for empty collections
 // Output format: [ModuleName:LineNumber] message
 ```
 

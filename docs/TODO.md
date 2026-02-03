@@ -7,6 +7,7 @@
 - [x] **Multi-select with Shift** - Add to selection with Shift+Click
 - [x] **Multi-select with Ctrl** - Toggle selection with Ctrl+Click
 - [x] **Selection box** - Drag rectangle to select multiple shapes
+- [x] **Crossing/Window selection** - Drag right = Window (fully inside), Drag left = Crossing (intersecting)
 - [x] **Select All** - Ctrl+A to select all shapes
 - [x] **Deselect** - Escape or click on empty canvas
 - [x] **Visual feedback** - Highlight selected shapes with handles
@@ -196,6 +197,9 @@
 ### Animation System
 - [x] Draw, Move, Rotate, Flip, FadeIn, FadeOut animations
 - [x] Timeline class with easing functions
+- [x] ObjectPropertyAnimation<T> for animating numeric properties on any object
+- [x] Animator.Fps property (1-120, default 60) for frame rate control
+- [x] CompositionTarget.Rendering-based animation loop (vsync-aligned)
 
 ### Export
 - [x] PNG export
@@ -214,6 +218,8 @@
 - [x] Coordinate display
 - [x] Measuring tool
 - [x] Snap to grid (F9 toggle)
+- [x] Crossing/Window selection (drag direction determines mode)
+- [x] Shape ID counter reset on each execution
 
 ### Shape Editing
 - [x] Shape-specific control points (13 shape types)

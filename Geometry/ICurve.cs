@@ -97,4 +97,11 @@ public interface ICurve : IDrawable
     /// <param name="parameter">A value from 0 to 1, where 0 is the start and 1 is the end of the curve.</param>
     /// <returns>The point on the curve at the specified parameter.</returns>
     VPoint PointAtParameter(double parameter);
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the curve to the given point.
+    /// </summary>
+    /// <param name="point">The point to find the parameter for.</param>
+    /// <returns>A value from 0 to 1 representing the position along the curve.</returns>
+    double ParameterAtPoint(VPoint point);
 }

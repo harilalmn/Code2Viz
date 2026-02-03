@@ -24,9 +24,15 @@ public static class VizConsole
 
         if (itemize && value is IEnumerable enumerable and not string)
         {
+            bool any = false;
             foreach (var item in enumerable)
             {
+                any = true;
                 ConsoleOutput.Instance.WriteLine(moduleName, lineNumber, item?.ToString() ?? "");
+            }
+            if (!any)
+            {
+                ConsoleOutput.Instance.WriteLine(moduleName, lineNumber, "(empty)");
             }
         }
         else

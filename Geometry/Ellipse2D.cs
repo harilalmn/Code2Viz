@@ -21,7 +21,7 @@ public class VEllipse : Shape, ICurve
 
     public VEllipse(double centerX, double centerY, double radiusX, double radiusY)
     {
-        Center = new VPoint(centerX, centerY);
+        Center = VPoint.Internal(centerX, centerY);
         RadiusX = radiusX;
         RadiusY = radiusY;
         Color = ShapeDefaults.GlobalColor ?? "Pink";
@@ -98,8 +98,8 @@ public class VEllipse : Shape, ICurve
     {
         // Simple bounding box for non-rotated aligned ellipse
         return (
-            new VPoint(Center.X - RadiusX, Center.Y - RadiusY),
-            new VPoint(Center.X + RadiusX, Center.Y + RadiusY)
+            VPoint.Internal(Center.X - RadiusX, Center.Y - RadiusY),
+            VPoint.Internal(Center.X + RadiusX, Center.Y + RadiusY)
         );
     }
 
@@ -113,7 +113,7 @@ public class VEllipse : Shape, ICurve
         
         double x = Center.X + RadiusX * Math.Cos(angleRad);
         double y = Center.Y + RadiusY * Math.Sin(angleRad);
-        return new VPoint(x, y);
+        return VPoint.Internal(x, y);
     }
 
     public VXYZ NormalAtPoint(VPoint p)
@@ -238,7 +238,7 @@ public class VEllipse : Shape, ICurve
                  // Assume linear segment
                  // Find t in [0,1] where |Lerp(prev, curr, t) - c2| = r2
                  // Simplified: Average? 
-                 results.Add(new VPoint((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
+                 results.Add(VPoint.Internal((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
              }
              prev = curr;
         }
@@ -319,4 +319,27 @@ public class VEllipse : Shape, ICurve
     /// Returns a point on the ellipse at the given normalized parameter.
     /// </summary>
     public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the ellipse to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        // Convert to angle space (accounting for different radii)
+        double angle = Math.Atan2((point.Y - Center.Y) / RadiusY, (point.X - Center.X) / RadiusX);
+        double angleDeg = angle * 180.0 / Math.PI;
+
+        // Normalize to [0, 360)
+        if (angleDeg < 0) angleDeg += 360;
+
+        // Map from angle to parameter based on StartAngle/EndAngle
+        double sweep = EndAngle - StartAngle;
+        if (Math.Abs(sweep) < 1e-10) return 0;
+
+        double relativeAngle = angleDeg - StartAngle;
+        while (relativeAngle < 0) relativeAngle += 360;
+        while (relativeAngle > 360) relativeAngle -= 360;
+
+        return Math.Clamp(relativeAngle / sweep, 0, 1);
+    }
 }

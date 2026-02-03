@@ -8,10 +8,10 @@ public class VPolyline : Shape, ICurve
     private readonly bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polyline.</summary>
-    public VPoint StartPoint => Points.Count > 0 ? Points[0] : new VPoint(0, 0);
+    public VPoint StartPoint => Points.Count > 0 ? Points[0] : VPoint.Internal(0, 0);
 
     /// <summary>Gets the end point of the polyline.</summary>
-    public VPoint EndPoint => Points.Count > 0 ? Points[^1] : new VPoint(0, 0);
+    public VPoint EndPoint => Points.Count > 0 ? Points[^1] : VPoint.Internal(0, 0);
 
     /// <summary>Indicates whether the polyline intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
@@ -40,7 +40,7 @@ public class VPolyline : Shape, ICurve
 
     public void AddPoint(double x, double y)
     {
-        Points.Add(new VPoint(x, y));
+        Points.Add(VPoint.Internal(x, y));
     }
 
 
@@ -111,10 +111,10 @@ public class VPolyline : Shape, ICurve
 
     public override (VPoint min, VPoint max) GetBounds()
     {
-        if (Points.Count == 0) return (new VPoint(0, 0), new VPoint(0, 0));
+        if (Points.Count == 0) return (VPoint.Internal(0, 0), VPoint.Internal(0, 0));
         double minX = Points.Min(p => p.X), minY = Points.Min(p => p.Y);
         double maxX = Points.Max(p => p.X), maxY = Points.Max(p => p.Y);
-        return (new VPoint(minX, minY), new VPoint(maxX, maxY));
+        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     public override string ToString() => $"VPolyline({Points.Count} points)";
@@ -166,7 +166,7 @@ public class VPolyline : Shape, ICurve
                 double t = distOnSeg / segLen;
                 double x = p1.X + (p2.X - p1.X) * t;
                 double y = p1.Y + (p2.Y - p1.Y) * t;
-                result.Add(new VPoint(x, y));
+                result.Add(VPoint.Internal(x, y));
                 
                 // Reset step for next point
                 remainingStep = segmentLength;
@@ -214,7 +214,7 @@ public class VPolyline : Shape, ICurve
 
     public VPoint PointAtSegmentLength(double segmentLength)
     {
-        if (segmentLength <= 0) return Points.FirstOrDefault() ?? new VPoint(0,0);
+        if (segmentLength <= 0) return Points.FirstOrDefault() ?? VPoint.Internal(0, 0);
         
         double currentLen = 0;
         for (int i = 0; i < Points.Count - 1; i++)
@@ -224,14 +224,14 @@ public class VPolyline : Shape, ICurve
             {
                 double rem = segmentLength - currentLen;
                 double r = rem / d;
-                return new VPoint(
+                return VPoint.Internal(
                     Points[i].X + (Points[i+1].X - Points[i].X) * r,
                     Points[i].Y + (Points[i+1].Y - Points[i].Y) * r
                 );
             }
             currentLen += d;
         }
-        return Points.LastOrDefault() ?? new VPoint(0,0);
+        return Points.LastOrDefault() ?? VPoint.Internal(0, 0);
     }
 
     public ICurve Offset(double distance)
@@ -431,7 +431,7 @@ public class VPolyline : Shape, ICurve
     /// </summary>
     public VPoint PointAtParameter(double parameter)
     {
-        if (Points.Count == 0) return new VPoint(0, 0);
+        if (Points.Count == 0) return VPoint.Internal(0, 0);
         if (Points.Count == 1) return Points[0];
         if (parameter <= 0) return Points[0];
         if (parameter >= 1) return Points[^1];
@@ -444,9 +444,54 @@ public class VPolyline : Shape, ICurve
         VPoint p1 = Points[segmentIndex];
         VPoint p2 = Points[segmentIndex + 1];
 
-        return new VPoint(
+        return VPoint.Internal(
             p1.X + (p2.X - p1.X) * localT,
             p1.Y + (p2.Y - p1.Y) * localT
         );
+    }
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the polyline to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        if (Points.Count == 0) return 0;
+        if (Points.Count == 1) return 0;
+
+        int numSegments = Points.Count - 1;
+        double bestParam = 0;
+        double bestDistSq = double.MaxValue;
+
+        for (int i = 0; i < numSegments; i++)
+        {
+            var p1 = Points[i];
+            var p2 = Points[i + 1];
+
+            double dx = p2.X - p1.X;
+            double dy = p2.Y - p1.Y;
+            double lengthSq = dx * dx + dy * dy;
+
+            double t;
+            if (lengthSq < 1e-10)
+            {
+                t = 0;
+            }
+            else
+            {
+                t = Math.Clamp(((point.X - p1.X) * dx + (point.Y - p1.Y) * dy) / lengthSq, 0, 1);
+            }
+
+            double projX = p1.X + t * dx;
+            double projY = p1.Y + t * dy;
+            double distSq = (point.X - projX) * (point.X - projX) + (point.Y - projY) * (point.Y - projY);
+
+            if (distSq < bestDistSq)
+            {
+                bestDistSq = distSq;
+                bestParam = (i + t) / numSegments;
+            }
+        }
+
+        return bestParam;
     }
 }

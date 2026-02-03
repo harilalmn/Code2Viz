@@ -473,4 +473,9 @@ public class VSpline : Shape, ICurve
     /// Returns a point on the spline at the given normalized parameter.
     /// </summary>
     public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the spline to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point) => GetClosestParameter(point);
 }

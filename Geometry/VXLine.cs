@@ -285,4 +285,23 @@ public class VXLine : Shape, ICurve
     }
 
     public override string ToString() => $"VXLine(Base:{BasePoint}, Dir:{Direction})";
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the construction line to the given point.
+    /// Note: For infinite lines, this projects onto the rendered extent and normalizes to [0, 1].
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        // Project point onto the infinite line
+        double dx = Direction.X;
+        double dy = Direction.Y;
+        double lengthSq = dx * dx + dy * dy;
+        if (lengthSq < 1e-10) return 0.5;
+
+        double t = ((point.X - BasePoint.X) * dx + (point.Y - BasePoint.Y) * dy) / lengthSq;
+
+        // Map from parameter space [-RenderExtent, RenderExtent] to [0, 1]
+        double normalizedT = (t / RenderExtent + 1) / 2;
+        return Math.Clamp(normalizedT, 0, 1);
+    }
 }

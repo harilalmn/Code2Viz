@@ -135,7 +135,7 @@ public class VGrid : Shape
             {
                 double x = offsetX + col * XSpacing;
                 double y = offsetY + row * YSpacing;
-                var point = new VPoint(x, y);
+                var point = VPoint.Internal(x, y);
                 point.Color = Color;
                 point.FillColor = FillColor;
                 point.LineWeight = LineWeight;
@@ -155,7 +155,7 @@ public class VGrid : Shape
     public override Shape Clone()
     {
         var clone = new VGrid(
-            new VPoint(Location.X, Location.Y),
+            VPoint.Internal(Location.X, Location.Y),
             XCount, YCount, XSpacing, YSpacing, Centered);
         CopyStyleTo(clone);
         clone.ApplyStyle();
@@ -167,7 +167,7 @@ public class VGrid : Shape
     /// </summary>
     public override void Move(VXYZ vector)
     {
-        Location = new VPoint(Location.X + vector.X, Location.Y + vector.Y);
+        Location = VPoint.Internal(Location.X + vector.X, Location.Y + vector.Y);
         foreach (var point in Points)
         {
             point.Move(vector);
@@ -203,7 +203,7 @@ public class VGrid : Shape
     /// </summary>
     public override void Scale(VPoint center, double factor)
     {
-        Location = new VPoint(
+        Location = VPoint.Internal(
             center.X + (Location.X - center.X) * factor,
             center.Y + (Location.Y - center.Y) * factor);
         foreach (var point in Points)
@@ -218,7 +218,7 @@ public class VGrid : Shape
     public override (VPoint min, VPoint max) GetBounds()
     {
         if (Points.Count == 0)
-            return (new VPoint(Location.X, Location.Y), new VPoint(Location.X, Location.Y));
+            return (VPoint.Internal(Location.X, Location.Y), VPoint.Internal(Location.X, Location.Y));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -231,7 +231,7 @@ public class VGrid : Shape
             maxY = Math.Max(maxY, point.Y);
         }
 
-        return (new VPoint(minX, minY), new VPoint(maxX, maxY));
+        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     /// <summary>
@@ -302,7 +302,7 @@ public class VGrid : Shape
     public VPoint GetCenter()
     {
         var (min, max) = GetBounds();
-        return new VPoint((min.X + max.X) / 2, (min.Y + max.Y) / 2);
+        return VPoint.Internal((min.X + max.X) / 2, (min.Y + max.Y) / 2);
     }
 
     public override string ToString() => $"VGrid({XCount}x{YCount}, Location={Location}, Centered={Centered})";

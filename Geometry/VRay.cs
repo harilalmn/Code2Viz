@@ -330,4 +330,21 @@ public class VRay : Shape, ICurve
     }
 
     public override string ToString() => $"VRay(Origin:{Origin}, Dir:{Direction})";
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the ray to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        double dx = Direction.X;
+        double dy = Direction.Y;
+        double lengthSq = dx * dx + dy * dy;
+        if (lengthSq < 1e-10) return 0;
+
+        double t = ((point.X - Origin.X) * dx + (point.Y - Origin.Y) * dy) / lengthSq;
+
+        // Clamp to [0, RenderExtent] and normalize to [0, 1]
+        t = Math.Clamp(t, 0, RenderExtent);
+        return t / RenderExtent;
+    }
 }

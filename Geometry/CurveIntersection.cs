@@ -69,7 +69,7 @@ public static class CurveIntersection
         // Check if intersection is within both line segments
         if (t >= -Tolerance && t <= 1 + Tolerance && u >= -Tolerance && u <= 1 + Tolerance)
         {
-            var point = new VPoint(p1.X + t * d1x, p1.Y + t * d1y);
+            var point = VPoint.Internal(p1.X + t * d1x, p1.Y + t * d1y);
             return IntersectionResult.FromPoint(point);
         }
 
@@ -115,13 +115,13 @@ public static class CurveIntersection
         if (Math.Abs(overlapStart - overlapEnd) < Tolerance)
         {
             // Single point overlap (lines touch at endpoint)
-            var point = new VPoint(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
+            var point = VPoint.Internal(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
             return IntersectionResult.FromPoint(point);
         }
 
         // Overlapping segment
-        var startPt = new VPoint(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
-        var endPt = new VPoint(p1.X + overlapEnd * d1x, p1.Y + overlapEnd * d1y);
+        var startPt = VPoint.Internal(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
+        var endPt = VPoint.Internal(p1.X + overlapEnd * d1x, p1.Y + overlapEnd * d1y);
         return IntersectionResult.FromCurve(new VLine(startPt, endPt));
     }
 
@@ -160,7 +160,7 @@ public static class CurveIntersection
             double t = -b / (2 * a);
             if (t >= -Tolerance && t <= 1 + Tolerance)
             {
-                result.Points.Add(new VPoint(p1.X + t * dx, p1.Y + t * dy));
+                result.Points.Add(VPoint.Internal(p1.X + t * dx, p1.Y + t * dy));
             }
         }
         else
@@ -172,11 +172,11 @@ public static class CurveIntersection
 
             if (t1 >= -Tolerance && t1 <= 1 + Tolerance)
             {
-                result.Points.Add(new VPoint(p1.X + t1 * dx, p1.Y + t1 * dy));
+                result.Points.Add(VPoint.Internal(p1.X + t1 * dx, p1.Y + t1 * dy));
             }
             if (t2 >= -Tolerance && t2 <= 1 + Tolerance)
             {
-                result.Points.Add(new VPoint(p1.X + t2 * dx, p1.Y + t2 * dy));
+                result.Points.Add(VPoint.Internal(p1.X + t2 * dx, p1.Y + t2 * dy));
             }
         }
 
@@ -277,7 +277,7 @@ public static class CurveIntersection
             double t = -B / (2 * A);
             if (t >= -Tolerance && t <= 1 + Tolerance)
             {
-                result.Points.Add(new VPoint(p1.X + t * dx, p1.Y + t * dy));
+                result.Points.Add(VPoint.Internal(p1.X + t * dx, p1.Y + t * dy));
             }
         }
         else
@@ -288,11 +288,11 @@ public static class CurveIntersection
 
             if (t1 >= -Tolerance && t1 <= 1 + Tolerance)
             {
-                result.Points.Add(new VPoint(p1.X + t1 * dx, p1.Y + t1 * dy));
+                result.Points.Add(VPoint.Internal(p1.X + t1 * dx, p1.Y + t1 * dy));
             }
             if (t2 >= -Tolerance && t2 <= 1 + Tolerance)
             {
-                result.Points.Add(new VPoint(p1.X + t2 * dx, p1.Y + t2 * dy));
+                result.Points.Add(VPoint.Internal(p1.X + t2 * dx, p1.Y + t2 * dy));
             }
         }
 
@@ -342,7 +342,7 @@ public static class CurveIntersection
         if (h < Tolerance)
         {
             // Circles are tangent
-            result.Points.Add(new VPoint(px, py));
+            result.Points.Add(VPoint.Internal(px, py));
         }
         else
         {
@@ -350,8 +350,8 @@ public static class CurveIntersection
             double offsetX = h * (c2.Center.Y - c1.Center.Y) / d;
             double offsetY = h * (c2.Center.X - c1.Center.X) / d;
 
-            result.Points.Add(new VPoint(px + offsetX, py - offsetY));
-            result.Points.Add(new VPoint(px - offsetX, py + offsetY));
+            result.Points.Add(VPoint.Internal(px + offsetX, py - offsetY));
+            result.Points.Add(VPoint.Internal(px - offsetX, py + offsetY));
         }
 
         return result;

@@ -496,6 +496,10 @@ VizConsole.Log($"Circle radius: {circle.Radius}");
 var nums = new List<int> { 1, 2, 3 };
 VizConsole.Log(nums);           // Prints each item on its own line
 VizConsole.Log(nums, false);    // Prints "System.Collections.Generic.List`1[System.Int32]"
+
+// Empty collections show "(empty)" instead of no output
+var empty = new List<int>();
+VizConsole.Log(empty);          // Prints "(empty)"
 ```
 
 Output appears in the console panel below the canvas with file and line number tracking:
@@ -532,7 +536,8 @@ Code2Viz uses a **mathematical coordinate system**:
 - **Click** a shape on the canvas to select it
 - **Shift+Click** to add to selection
 - **Ctrl+Click** to toggle selection
-- **Drag** an empty area to box-select multiple shapes
+- **Drag right** on empty area for **Window Selection** (blue solid box, selects shapes fully inside)
+- **Drag left** on empty area for **Crossing Selection** (green dashed box, selects shapes that intersect)
 - **Ctrl+A** to select all shapes
 - **Escape** to deselect
 
@@ -688,13 +693,13 @@ When the editor is not focused:
 ## Shape IDs and Outliner
 
 ### Unique Shape IDs
-Every shape has a unique `Id` property (long integer) automatically assigned when created:
+Every shape has a unique `Id` property (long integer) automatically assigned when created. The ID counter resets on each code execution, so IDs always start from 1:
 
 ```csharp
 var circle = new VCircle(0, 0, 50);
 var line = new VLine(0, 0, 100, 100);
-VizConsole.Log($"Circle ID: {circle.Id}");  // e.g., 1
-VizConsole.Log($"Line ID: {line.Id}");      // e.g., 2
+VizConsole.Log($"Circle ID: {circle.Id}");  // 1
+VizConsole.Log($"Line ID: {line.Id}");      // 2
 ```
 
 ### Outliner Panel
@@ -1007,6 +1012,7 @@ All cursors are visually indicated with white caret lines, and selections are hi
 | `Ctrl+G` | Zoom to shape by ID |
 | `Ctrl+M` | Toggle Measuring Tape tool |
 | `F4` | Toggle Properties panel |
+| `F9` | Toggle Snap to Grid |
 | `Esc` | Cancel current tool/operation |
 
 ### Code Navigation & Intellisense
@@ -1229,6 +1235,9 @@ VPoint midPoint = curve.PointAtSegmentLength(length / 2);
 
 // Get point at normalized parameter (0 to 1)
 VPoint quarterPoint = curve.PointAtParameter(0.25);  // 25% along the curve
+
+// Get parameter for a point on the curve (inverse of PointAtParameter)
+double param = curve.ParameterAtPoint(quarterPoint);  // Returns ~0.25
 
 // Create offset curve
 ICurve offset = curve.Offset(10);

@@ -106,7 +106,7 @@ public class VGroup : Shape
     public override (VPoint min, VPoint max) GetBounds()
     {
         if (Shapes.Count == 0)
-            return (new VPoint(0, 0), new VPoint(0, 0));
+            return (VPoint.Internal(0, 0), VPoint.Internal(0, 0));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -120,7 +120,7 @@ public class VGroup : Shape
             maxY = Math.Max(maxY, max.Y);
         }
 
-        return (new VPoint(minX, minY), new VPoint(maxX, maxY));
+        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     /// <summary>
@@ -129,7 +129,7 @@ public class VGroup : Shape
     public VPoint GetCenter()
     {
         var (min, max) = GetBounds();
-        return new VPoint((min.X + max.X) / 2, (min.Y + max.Y) / 2);
+        return VPoint.Internal((min.X + max.X) / 2, (min.Y + max.Y) / 2);
     }
 
     /// <summary>

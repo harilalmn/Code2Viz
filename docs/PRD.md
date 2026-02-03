@@ -3,7 +3,7 @@
 
 ### Document Information
 - **Version**: 1.0
-- **Last Updated**: January 2025
+- **Last Updated**: February 2026
 - **Status**: Implemented
 
 ---
@@ -50,9 +50,9 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 #### 2.1.3 Future Shapes (P2 - Nice to Have)
 | ID | Shape | Status | Description |
 |----|-------|--------|-------------|
-| FR-009 | Bezier Curve | Planned | Cubic Bezier curve |
-| FR-010 | Spline | Planned | B-spline or Catmull-Rom |
-| FR-011 | Text | Planned | Text labels on canvas |
+| FR-009 | Bezier Curve | Done | Cubic Bezier curve |
+| FR-010 | Spline | Done | B-spline or Catmull-Rom |
+| FR-011 | Text | Done | Text labels on canvas |
 
 ### 2.2 Shape Styling
 
@@ -62,7 +62,7 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 | FR-021 | Fill Color | Done | Customizable fill color |
 | FR-022 | Stroke Thickness | Done | Customizable line width |
 | FR-023 | Dash Pattern | Planned | Dashed/dotted lines |
-| FR-024 | Opacity | Planned | Transparency support |
+| FR-024 | Opacity | Done | Transparency support |
 
 ### 2.3 Canvas Features
 
@@ -84,8 +84,8 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 | FR-041 | Line Numbers | Done | Visible line numbers |
 | FR-042 | Code Formatting | Done | Auto-format with Ctrl+Shift+F |
 | FR-043 | Error Display | Done | Errors shown in footer |
-| FR-044 | Autocomplete | Planned | IntelliSense for geometry |
-| FR-045 | Error Highlighting | Planned | Inline error markers |
+| FR-044 | Autocomplete | Done | IntelliSense for geometry |
+| FR-045 | Error Highlighting | Done | Inline error markers |
 
 ### 2.5 File Operations
 
@@ -95,7 +95,7 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 | FR-051 | Open File | Done | Open existing .cs/.viz files |
 | FR-052 | Save File | Done | Save current code |
 | FR-053 | Export PNG | Done | Export canvas to PNG |
-| FR-054 | Export SVG | Planned | Export as vector graphics |
+| FR-054 | Export SVG | Done | Export as vector graphics |
 
 ---
 

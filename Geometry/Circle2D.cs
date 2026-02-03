@@ -8,10 +8,10 @@ public class VCircle : Shape, ICurve
     public double Radius { get; set; }
 
     /// <summary>Gets the start point of the circle (at angle 0).</summary>
-    public VPoint StartPoint => new VPoint(Center.X + Radius, Center.Y);
+    public VPoint StartPoint => VPoint.Internal(Center.X + Radius, Center.Y);
 
     /// <summary>Gets the end point of the circle (same as StartPoint, since it's closed).</summary>
-    public VPoint EndPoint => StartPoint;
+    public VPoint EndPoint => VPoint.Internal(Center.X + Radius, Center.Y);
 
     /// <summary>A circle is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
@@ -28,7 +28,7 @@ public class VCircle : Shape, ICurve
 
     public VCircle(double centerX, double centerY, double radius)
     {
-        Center = new VPoint(centerX, centerY);
+        Center = VPoint.Internal(centerX, centerY);
         Radius = radius;
         Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
@@ -55,7 +55,7 @@ public class VCircle : Shape, ICurve
         double cx = (sq1 * (y2 - y3) + sq2 * (y3 - y1) + sq3 * (y1 - y2)) / d;
         double cy = (sq1 * (x3 - x2) + sq2 * (x1 - x3) + sq3 * (x2 - x1)) / d;
 
-        Center = new VPoint(cx, cy);
+        Center = VPoint.Internal(cx, cy);
         Radius = Math.Sqrt((x1 - cx) * (x1 - cx) + (y1 - cy) * (y1 - cy));
         Color = ShapeDefaults.GlobalColor ?? "Yellow";
     }
@@ -142,8 +142,8 @@ public class VCircle : Shape, ICurve
     public override (VPoint min, VPoint max) GetBounds()
     {
         return (
-            new VPoint(Center.X - Radius, Center.Y - Radius),
-            new VPoint(Center.X + Radius, Center.Y + Radius)
+            VPoint.Internal(Center.X - Radius, Center.Y - Radius),
+            VPoint.Internal(Center.X + Radius, Center.Y + Radius)
         );
     }
 
@@ -194,16 +194,16 @@ public class VCircle : Shape, ICurve
     {
         double x = Center.X + Radius * Math.Cos(angleRadians);
         double y = Center.Y + Radius * Math.Sin(angleRadians);
-        return new VPoint(x, y);
+        return VPoint.Internal(x, y);
     }
 
     public VPoint Project(VPoint point)
     {
         VXYZ cp = (point.AsVXYZ() - Center.AsVXYZ());
         if (cp.IsZeroLength()) cp = new VXYZ(1, 0, 0);
-        
+
         double angle = Math.Atan2(cp.Y, cp.X);
-        return new VPoint(Center.X + Radius * Math.Cos(angle), Center.Y + Radius * Math.Sin(angle));
+        return VPoint.Internal(Center.X + Radius * Math.Cos(angle), Center.Y + Radius * Math.Sin(angle));
     }
 
     public VPoint PointAtSegmentLength(double segmentLength)
@@ -275,6 +275,16 @@ public class VCircle : Shape, ICurve
     {
         double angle = parameter * 2 * Math.PI;
         return GetPointAtAngle(angle);
+    }
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the circle to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
+        if (angle < 0) angle += 2 * Math.PI;
+        return angle / (2 * Math.PI);
     }
 }
 

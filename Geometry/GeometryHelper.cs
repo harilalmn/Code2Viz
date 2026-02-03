@@ -161,7 +161,7 @@ public static class GeometryHelper
         
         // Should verify this segment allows for actual overlap 
         // (already checked via overlapMin/Max but good to be safe)
-        if (GeometryTolerance.AreEqual(GetVal(pStart), GetVal(pEnd))) return new VPoint(pStart.X, pStart.Y);
+        if (GeometryTolerance.AreEqual(GetVal(pStart), GetVal(pEnd))) return VPoint.Internal(pStart.X, pStart.Y);
         
         return new VLine(pStart.X, pStart.Y, pEnd.X, pEnd.Y);
     }
@@ -229,7 +229,7 @@ public static class GeometryHelper
             double newY2 = y1 + t1 * dy;
             
             // If it's a point
-            if (GeometryTolerance.AreEqual(t1, t0)) return new VPoint(newX1, newY1);
+            if (GeometryTolerance.AreEqual(t1, t0)) return VPoint.Internal(newX1, newY1);
             
             return new VLine(newX1, newY1, newX2, newY2);
         }

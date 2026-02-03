@@ -95,16 +95,28 @@
 
 ---
 
+### Phase 13: Animation & Selection Enhancements
+- [x] Add ObjectPropertyAnimation<T> for animating numeric properties on any object
+- [x] Add Animator.Fps property (1-120, default 60) for frame rate control
+- [x] Switch animation loop to CompositionTarget.Rendering (vsync-aligned)
+- [x] Add crossing/window selection (drag direction determines mode)
+- [x] Add VizConsole.Log itemize parameter for collection output control
+- [x] Add VLine constructor from start point, angle, and length
+- [x] Add Auto Update checkbox to status bar
+- [x] Reset Shape ID counter on each code execution
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |
 |----------|-------|
-| Shape classes | 8 |
-| C# files created | 14 |
-| XAML files modified | 2 |
-| NuGet packages | 2 |
-| Keyboard shortcuts | 5 |
-| Canvas features | 6 |
+| Shape classes | 14 |
+| C# files created | 50+ |
+| XAML files modified | 10+ |
+| NuGet packages | 3 |
+| Keyboard shortcuts | 30+ |
+| Canvas features | 12+ |
 
 ---
 

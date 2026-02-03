@@ -35,7 +35,7 @@ public class VArc : Shape, ICurve
 
     public VArc(double centerX, double centerY, double radius, double startAngle, double endAngle)
     {
-        Center = new VPoint(centerX, centerY);
+        Center = VPoint.Internal(centerX, centerY);
         Radius = radius;
         StartAngle = startAngle;
         EndAngle = endAngle;
@@ -66,7 +66,7 @@ public class VArc : Shape, ICurve
         double cx = (s1 * (mid.Y - end.Y) + s2 * (end.Y - start.Y) + s3 * (start.Y - mid.Y)) / D;
         double cy = (s1 * (end.X - mid.X) + s2 * (start.X - end.X) + s3 * (mid.X - start.X)) / D;
         
-        Center = new VPoint(cx, cy);
+        Center = VPoint.Internal(cx, cy);
         Radius = Center.DistanceTo(start);
         Color = ShapeDefaults.GlobalColor ?? "Orange";
 
@@ -252,7 +252,7 @@ public class VArc : Shape, ICurve
         
         double x = Center.X + Radius * Math.Cos(angleRad);
         double y = Center.Y + Radius * Math.Sin(angleRad);
-        return new VPoint(x, y);
+        return VPoint.Internal(x, y);
     }
 
     public VXYZ NormalAtPoint(VPoint p)
@@ -325,9 +325,9 @@ public class VArc : Shape, ICurve
         }
 
         double rad = angle * Math.PI / 180.0;
-        return new VPoint(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
+        return VPoint.Internal(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
     }
-    
+
     private bool IsAngleInArc(double angle)
     {
         // Normalize all angles to [0, 360)
@@ -360,7 +360,7 @@ public class VArc : Shape, ICurve
             targetAngle = EndAngle;
 
         double rad = targetAngle * Math.PI / 180.0;
-        return new VPoint(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
+        return VPoint.Internal(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
     }
 
     public ICurve Offset(double distance)
@@ -487,8 +487,8 @@ public class VArc : Shape, ICurve
     public override (VPoint min, VPoint max) GetBounds()
     {
         return (
-            new VPoint(Center.X - Radius, Center.Y - Radius),
-            new VPoint(Center.X + Radius, Center.Y + Radius)
+            VPoint.Internal(Center.X - Radius, Center.Y - Radius),
+            VPoint.Internal(Center.X + Radius, Center.Y + Radius)
         );
     }
 
@@ -506,5 +506,36 @@ public class VArc : Shape, ICurve
     /// Returns a point on the arc at the given normalized parameter.
     /// </summary>
     public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+
+    /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the arc to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X) * 180.0 / Math.PI;
+        double startRad = StartAngle;
+        double endRad = EndAngle;
+
+        // Normalize angle to arc range
+        double sweep = endRad - startRad;
+        double relativeAngle = angle - startRad;
+
+        // Handle angle wrapping
+        while (relativeAngle < 0) relativeAngle += 360;
+        while (relativeAngle > 360) relativeAngle -= 360;
+
+        if (sweep < 0)
+        {
+            // Arc goes clockwise
+            if (relativeAngle > -sweep) relativeAngle = -sweep;
+            return Math.Clamp(relativeAngle / -sweep, 0, 1);
+        }
+        else
+        {
+            // Arc goes counter-clockwise
+            if (relativeAngle > sweep) relativeAngle = sweep;
+            return Math.Clamp(relativeAngle / sweep, 0, 1);
+        }
+    }
 }
 

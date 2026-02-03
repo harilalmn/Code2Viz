@@ -995,6 +995,51 @@ public class VPolygon : Shape, ICurve
     }
 
     /// <summary>
+    /// Returns the normalized parameter (0 to 1) for the closest point on the polygon boundary to the given point.
+    /// </summary>
+    public double ParameterAtPoint(VPoint point)
+    {
+        if (Points.Count == 0) return 0;
+        if (Points.Count == 1) return 0;
+
+        int numSegments = Points.Count; // Closed polygon has same number of segments as points
+        double bestParam = 0;
+        double bestDistSq = double.MaxValue;
+
+        for (int i = 0; i < numSegments; i++)
+        {
+            var p1 = Points[i];
+            var p2 = Points[(i + 1) % Points.Count];
+
+            double dx = p2.X - p1.X;
+            double dy = p2.Y - p1.Y;
+            double lengthSq = dx * dx + dy * dy;
+
+            double t;
+            if (lengthSq < 1e-10)
+            {
+                t = 0;
+            }
+            else
+            {
+                t = Math.Clamp(((point.X - p1.X) * dx + (point.Y - p1.Y) * dy) / lengthSq, 0, 1);
+            }
+
+            double projX = p1.X + t * dx;
+            double projY = p1.Y + t * dy;
+            double distSq = (point.X - projX) * (point.X - projX) + (point.Y - projY) * (point.Y - projY);
+
+            if (distSq < bestDistSq)
+            {
+                bestDistSq = distSq;
+                bestParam = (i + t) / numSegments;
+            }
+        }
+
+        return bestParam;
+    }
+
+    /// <summary>
     /// Slices the polygon along an infinite line defined by two points.
     /// Returns a list of resulting polygons. If the line doesn't intersect the polygon
     /// or only touches it at one point, returns a list containing a clone of the original.
