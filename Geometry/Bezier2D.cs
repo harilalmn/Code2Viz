@@ -120,9 +120,9 @@ public class VBezier : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VBezier Clone()
     {
-        var clone = new VBezier((VPoint)P0.Clone(), (VPoint)P1.Clone(), (VPoint)P2.Clone(), (VPoint)P3.Clone())
+        var clone = new VBezier(P0.Clone(), P1.Clone(), P2.Clone(), P3.Clone())
         {
             Segments = Segments
         };

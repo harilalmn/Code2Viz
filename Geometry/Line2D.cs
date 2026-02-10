@@ -129,9 +129,9 @@ public class VLine : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VLine Clone()
     {
-        var clone = new VLine((VPoint)Start.Clone(), (VPoint)End.Clone());
+        var clone = new VLine(Start.Clone(), End.Clone());
         CopyStyleTo(clone);
         return clone;
     }

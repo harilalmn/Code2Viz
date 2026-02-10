@@ -67,7 +67,7 @@ public class VPoint : Shape
 
 
 
-    public override Shape Clone()
+    public override VPoint Clone()
     {
         var clone = new VPoint(X, Y);
         CopyStyleTo(clone);

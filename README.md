@@ -24,6 +24,7 @@ Code2Viz is a visual programming environment that lets you write C# or F# code t
 - **Project Management**: Organize multiple code files into projects with tabbed editing
 - **NuGet Integration**: Add external packages to extend functionality
 - **Built-in Help**: Comprehensive API documentation with examples
+- **Code Minimap**: VSCode-style minimap with syntax coloring, viewport indicator, and error marker navigation
 
 ---
 
@@ -1031,6 +1032,7 @@ All cursors are visually indicated with white caret lines, and selections are hi
 | `Ctrl+M` | Toggle Measuring Tape tool |
 | `F4` | Toggle Properties panel |
 | `F9` | Toggle Snap to Grid |
+| `Ctrl+Shift+M` | Toggle Minimap |
 | `Esc` | Cancel current tool/operation |
 
 ### Code Navigation & Intellisense

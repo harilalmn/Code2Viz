@@ -152,7 +152,7 @@ public class VGrid : Shape
     /// <summary>
     /// Creates a deep copy of this grid.
     /// </summary>
-    public override Shape Clone()
+    public override VGrid Clone()
     {
         var clone = new VGrid(
             VPoint.Internal(Location.X, Location.Y),

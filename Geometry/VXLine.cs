@@ -96,9 +96,9 @@ public class VXLine : Shape, ICurve
 
 
 
-    public override Shape Clone()
+    public override VXLine Clone()
     {
-        var clone = new VXLine((VPoint)BasePoint.Clone(), Direction);
+        var clone = new VXLine(BasePoint.Clone(), Direction);
         clone.RenderExtent = RenderExtent;
         CopyStyleTo(clone);
         return clone;

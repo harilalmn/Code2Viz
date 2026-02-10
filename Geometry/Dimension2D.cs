@@ -129,9 +129,9 @@ public class VDimension : Shape
         }
     }
 
-    public override Shape Clone()
+    public override VDimension Clone()
     {
-        var clone = new VDimension((VPoint)Point1.Clone(), (VPoint)Point2.Clone())
+        var clone = new VDimension(Point1.Clone(), Point2.Clone())
         {
             Offset = Offset,
             ExtensionLength = ExtensionLength,

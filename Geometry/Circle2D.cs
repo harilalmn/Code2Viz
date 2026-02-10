@@ -117,9 +117,9 @@ public class VCircle : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VCircle Clone()
     {
-        var clone = new VCircle((VPoint)Center.Clone(), Radius);
+        var clone = new VCircle(Center.Clone(), Radius);
         CopyStyleTo(clone);
         return clone;
     }

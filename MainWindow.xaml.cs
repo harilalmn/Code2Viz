@@ -22,6 +22,7 @@ using Code2Viz.Canvas;
 using Code2Viz.Commands;
 using Code2Viz.Console;
 using Code2Viz.Editor;
+using Code2Viz.Editor.Minimap;
 using Code2Viz.Execution;
 using Code2Viz.Export;
 using Code2Viz.Project;
@@ -975,6 +976,9 @@ public partial class MainWindow : Window
         // Ctrl+MouseWheel to change font size
         CodeEditor.PreviewMouseWheel += CodeEditor_PreviewMouseWheel;
 
+        // Initialize Minimap
+        InitializeMinimap();
+
         // Clear canvas selection when user clicks into the code editor
         CodeEditor.PreviewMouseDown += (s, e) =>
         {
@@ -1131,7 +1135,11 @@ public partial class MainWindow : Window
                 _isAddingNextOccurrence = true;
                 try
                 {
-                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+                        _multiSelectionRenderer.ExtendAllSelectionsWordLeft();
+                    else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        _multiSelectionRenderer.MoveAllCursorsWordLeft();
+                    else if (Keyboard.Modifiers == ModifierKeys.Shift)
                         _multiSelectionRenderer.ExtendAllSelectionsLeft();
                     else
                         _multiSelectionRenderer.MoveAllCursorsLeft();
@@ -1150,10 +1158,30 @@ public partial class MainWindow : Window
                 _isAddingNextOccurrence = true;
                 try
                 {
-                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+                        _multiSelectionRenderer.ExtendAllSelectionsWordRight();
+                    else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        _multiSelectionRenderer.MoveAllCursorsWordRight();
+                    else if (Keyboard.Modifiers == ModifierKeys.Shift)
                         _multiSelectionRenderer.ExtendAllSelectionsRight();
                     else
                         _multiSelectionRenderer.MoveAllCursorsRight();
+                    e.Handled = true;
+                }
+                finally
+                {
+                    _isAddingNextOccurrence = false;
+                    _isMultiCursorEditing = false;
+                }
+                return;
+            }
+            else if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                _isMultiCursorEditing = true;
+                _isAddingNextOccurrence = true;
+                try
+                {
+                    _multiSelectionRenderer.PasteAtAllCursors();
                     e.Handled = true;
                 }
                 finally
@@ -4756,6 +4784,72 @@ public partial class MainWindow : Window
             InitializePropertiesPanel();
             SetPropertiesVisibility(true, settings.PropertiesDocked);
         }
+
+        // Minimap
+        ShowMinimapMenuItem.IsChecked = settings.ShowMinimap;
+        SetMinimapVisibility(settings.ShowMinimap);
+    }
+
+    #endregion
+
+    #region Minimap
+
+    private void InitializeMinimap()
+    {
+        EditorMinimap.AttachToEditor(CodeEditor);
+
+        // Subscribe to marker changes to show errors in minimap
+        if (_textMarkerService != null)
+        {
+            _textMarkerService.MarkersChanged += (s, e) => UpdateMinimapMarkers();
+        }
+    }
+
+    private void UpdateMinimapMarkers()
+    {
+        if (_textMarkerService == null || CodeEditor.Document == null) return;
+
+        try
+        {
+            var markers = _textMarkerService.GetMarkers()
+                .Select(m =>
+                {
+                    var line = CodeEditor.Document.GetLineByOffset(m.StartOffset);
+                    return new MinimapMarker
+                    {
+                        Line = line.LineNumber,
+                        Color = m.MarkerColor ?? Colors.Red,
+                        Message = m.Message
+                    };
+                })
+                .GroupBy(m => m.Line)
+                .Select(g => g.First()) // One marker per line
+                .ToList();
+
+            EditorMinimap.UpdateMarkers(markers);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"UpdateMinimapMarkers error: {ex.Message}");
+        }
+    }
+
+    private void ShowMinimapMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var isVisible = ShowMinimapMenuItem.IsChecked;
+        SetMinimapVisibility(isVisible);
+
+        ApplicationSettings.Instance.ShowMinimap = isVisible;
+        ApplicationSettings.Save();
+    }
+
+    private void SetMinimapVisibility(bool isVisible)
+    {
+        EditorMinimap.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        if (isVisible)
+        {
+            EditorMinimap.ForceRender();
+        }
     }
 
     #endregion
@@ -5305,6 +5399,11 @@ public partial class MainWindow : Window
                     break;
                 case Key.L:
                     SelectAllOccurrences();
+                    e.Handled = true;
+                    break;
+                case Key.M:
+                    ShowMinimapMenuItem.IsChecked = !ShowMinimapMenuItem.IsChecked;
+                    ShowMinimapMenuItem_Click(sender, e);
                     e.Handled = true;
                     break;
             }

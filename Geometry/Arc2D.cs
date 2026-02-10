@@ -451,9 +451,9 @@ public class VArc : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VArc Clone()
     {
-        var clone = new VArc((VPoint)Center.Clone(), Radius, StartAngle, EndAngle);
+        var clone = new VArc(Center.Clone(), Radius, StartAngle, EndAngle);
         CopyStyleTo(clone);
         return clone;
     }

@@ -85,7 +85,7 @@ namespace Code2Viz {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Code2Viz;V1.0.0.0;component/newprojectdialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Code2Viz;component/newprojectdialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\NewProjectDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

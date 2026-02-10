@@ -110,9 +110,9 @@ public class VText : Shape
         }
     }
 
-    public override Shape Clone()
+    public override VText Clone()
     {
-        var clone = new VText((VPoint)Location.Clone(), Content)
+        var clone = new VText(Location.Clone(), Content)
         {
             Height = Height,
             Width = Width,

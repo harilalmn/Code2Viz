@@ -233,7 +233,7 @@ VRay.AtAngle(0, 0, 45);  // ray from origin at 45 degrees
 | `Rotate(pivot, angleDeg)` | Rotate around a VPoint pivot |
 | `Scale(center, factor)` | Scale around a VPoint center |
 | `Flip(mirrorLine)` | Mirror across a VLine |
-| `Clone()` | Deep copy |
+| `Clone()` | Deep copy (returns same type, no cast needed) |
 | `GetBounds()` | Returns `BoundingBox` with `Min`, `Max`, `Width`, `Height`, `Center`, `Area` |
 | `Show()` | Make visible |
 | `Hide()` | Make invisible |

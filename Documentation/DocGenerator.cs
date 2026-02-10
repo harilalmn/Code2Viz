@@ -34,7 +34,7 @@ namespace Code2Viz.Documentation
                 { "Code2Viz.Editor", "Contains classes related to the code editor, including formatting, completion, and snippets." },
 
                 // Base classes
-                { "Shape", "Abstract base class for all drawable shapes. Provides common properties like Color, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds() (returns BoundingBox), Contains(), DistanceTo()." },
+                { "Shape", "Abstract base class for all drawable shapes. Provides common properties like Color, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone() (returns same type via covariant return), Move(), Rotate(), Flip(), Scale(), GetBounds() (returns BoundingBox), Contains(), DistanceTo()." },
                 { "BoundingBox", "Represents an axis-aligned bounding box with Min and Max corner points (VPoint). Properties: Min, Max, Width, Height, Center, Area. Methods: Contains(point), Intersects(other), Union(other), Expand(distance). Supports tuple deconstruction: var (min, max) = bounds." },
                 { "IDrawable", "Interface for any object that can be drawn on the canvas. Defines Draw() method and styling properties." },
                 { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), Color, FillColor, and LineWeight. Provides curve operations: StartPoint, EndPoint, SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(), PointAtParameter(), ParameterAtPoint(). The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve. PointAtParameter() returns a point at a normalized position (0-1), while ParameterAtPoint() returns the normalized parameter for the closest point on the curve." },
@@ -1789,7 +1789,7 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
 
                 // Shape base class methods
                 { "Shape.Draw", "Renders the shape to the canvas. Must be called for the shape to be visible." },
-                { "Shape.Clone", "Creates a deep copy of the shape with all properties duplicated." },
+                { "Shape.Clone", "Creates a deep copy of the shape with all properties duplicated. Returns the same type as the original (covariant return type), so no casting is needed." },
                 { "Shape.Move", "Translates the shape by the specified displacement vector." },
                 { "Shape.Rotate", "Rotates the shape around the specified pivot point by the given angle in degrees." },
                 { "Shape.Flip", "Mirrors the shape across the specified line (axis of reflection)." },

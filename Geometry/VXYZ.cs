@@ -51,6 +51,12 @@ namespace Code2Viz.Geometry
         public VXYZ Negate() => new VXYZ(-X, -Y, -Z);
 
         /// <summary>
+        /// Creates a deep copy of this VXYZ.
+        /// Subclasses can override with covariant return type.
+        /// </summary>
+        public virtual VXYZ Clone() => new VXYZ(X, Y, Z);
+
+        /// <summary>
         /// Converts this VXYZ to a VPoint (drops Z component).
         /// Uses Internal() to avoid auto-registering intermediate points.
         /// </summary>

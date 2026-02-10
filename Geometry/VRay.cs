@@ -116,9 +116,9 @@ public class VRay : Shape, ICurve
 
 
 
-    public override Shape Clone()
+    public override VRay Clone()
     {
-        var clone = new VRay((VPoint)Origin.Clone(), Direction);
+        var clone = new VRay(Origin.Clone(), Direction);
         clone.RenderExtent = RenderExtent;
         CopyStyleTo(clone);
         return clone;

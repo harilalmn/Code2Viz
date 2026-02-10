@@ -34,7 +34,7 @@ Code2Viz/
 ├── Geometry/           # Shape classes (VPoint, VLine, VArc, VCircle, VRectangle, etc.)
 ├── Canvas/             # RenderCanvas (zoom/pan), CanvasRenderer, DrawingTool, SnapEngine
 ├── Console/            # VizConsole (output), ConsoleOutput (singleton collector)
-├── Editor/             # Code editor: IntelliSenseProvider, SemanticHighlighter, CodeLensProvider
+├── Editor/             # Code editor: IntelliSenseProvider, SemanticHighlighter, CodeLensProvider, Minimap
 ├── Execution/          # ModuleCompiler (Roslyn CSharpCompilation)
 ├── Project/            # VizCodeFile, VizCodeProject, Templates
 ├── Animation/          # Animator, animation types (Draw, Move, Rotate, Fade, etc.)
@@ -118,6 +118,7 @@ Due to naming conflicts with WPF types, use these aliases:
 - `Ctrl+G` - Zoom to shape by ID
 - `F4` - Toggle Properties panel
 - `F9` - Toggle Snap to Grid
+- `Ctrl+Shift+M` - Toggle Minimap
 - `Esc` - Cancel current tool
 
 ### Drawing Tools (when editor not focused)

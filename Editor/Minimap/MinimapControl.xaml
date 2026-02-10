@@ -1,0 +1,28 @@
+<UserControl x:Class="Code2Viz.Editor.Minimap.MinimapControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="100"
+             MinWidth="60"
+             Background="#1E1E1E">
+    <Grid>
+        <!-- Minimap canvas for rendering code -->
+        <Canvas x:Name="MinimapCanvas"
+                ClipToBounds="True"
+                MouseLeftButtonDown="MinimapCanvas_MouseLeftButtonDown"
+                MouseLeftButtonUp="MinimapCanvas_MouseLeftButtonUp"
+                MouseMove="MinimapCanvas_MouseMove"
+                MouseWheel="MinimapCanvas_MouseWheel" />
+
+        <!-- Viewport indicator (semi-transparent rectangle showing visible area) -->
+        <Canvas x:Name="ViewportCanvas"
+                ClipToBounds="True"
+                IsHitTestVisible="False">
+            <Border x:Name="ViewportIndicator"
+                    Background="#30FFFFFF"
+                    BorderBrush="#50FFFFFF"
+                    BorderThickness="1"
+                    CornerRadius="2"
+                    IsHitTestVisible="False" />
+        </Canvas>
+    </Grid>
+</UserControl>

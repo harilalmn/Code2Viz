@@ -82,9 +82,9 @@ public class VEllipse : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VEllipse Clone()
     {
-        var clone = new VEllipse((VPoint)Center.Clone(), RadiusX, RadiusY, StartAngle, EndAngle);
+        var clone = new VEllipse(Center.Clone(), RadiusX, RadiusY, StartAngle, EndAngle);
         CopyStyleTo(clone);
         return clone;
     }

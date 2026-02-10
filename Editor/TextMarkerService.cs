@@ -21,11 +21,21 @@ namespace Code2Viz.Editor
         private readonly TextDocument _document;
         private readonly TextSegmentCollection<VizTextMarker> _markers;
 
+        /// <summary>
+        /// Raised when markers are added, removed, or cleared.
+        /// </summary>
+        public event EventHandler? MarkersChanged;
+
         public VizTextMarkerService(TextDocument document)
         {
             _document = document;
             _markers = new TextSegmentCollection<VizTextMarker>(document);
         }
+
+        /// <summary>
+        /// Gets all current markers.
+        /// </summary>
+        public IEnumerable<VizTextMarker> GetMarkers() => _markers.ToList();
 
         public VizTextMarker Create(int offset, int length, string message, Color color)
         {
@@ -35,6 +45,7 @@ namespace Code2Viz.Editor
             m.MarkerColor = color;
             m.MarkerType = VizTextMarkerType.SquigglyUnderline;
             Redraw(m);
+            MarkersChanged?.Invoke(this, EventArgs.Empty);
             return m;
         }
 
@@ -65,6 +76,7 @@ namespace Code2Viz.Editor
                 Redraw(m);
             }
             _markers.Clear();
+            MarkersChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public VizTextMarker? GetMarkerAtOffset(int offset)

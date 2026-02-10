@@ -149,9 +149,9 @@ public class VRectangle : VPolygon
         }
     }
 
-    public override Shape Clone()
+    public override VRectangle Clone()
     {
-        var clone = new VRectangle((VPoint)_corner.Clone(), _width, _height);
+        var clone = new VRectangle(_corner.Clone(), _width, _height);
         clone._rotationAngle = _rotationAngle;
         clone.UpdatePoints();
         CopyStyleTo(clone);

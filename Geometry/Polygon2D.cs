@@ -673,9 +673,9 @@ public class VPolygon : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VPolygon Clone()
     {
-        var clone = new VPolygon(Points.Select(p => (VPoint)p.Clone()));
+        var clone = new VPolygon(Points.Select(p => p.Clone()));
         CopyStyleTo(clone);
         return clone;
     }

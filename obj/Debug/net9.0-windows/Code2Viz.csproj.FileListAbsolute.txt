@@ -509,3 +509,5 @@ C:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\refint\Code2Viz.dll
 C:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\Code2Viz.pdb
 C:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\Code2Viz.genruntimeconfig.cache
 C:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\ref\Code2Viz.dll
+C:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\Editor\Minimap\MinimapControl.baml
+C:\Work\Nicety\Projects\Code2Viz\obj\Debug\net9.0-windows\Editor\Minimap\MinimapControl.g.cs

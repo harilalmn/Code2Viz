@@ -122,9 +122,9 @@ public class VArrow : Shape
         }
     }
 
-    public override Shape Clone()
+    public override VArrow Clone()
     {
-        var clone = new VArrow((VPoint)Start.Clone(), (VPoint)End.Clone())
+        var clone = new VArrow(Start.Clone(), End.Clone())
         {
             HeadLength = HeadLength,
             HeadAngle = HeadAngle,

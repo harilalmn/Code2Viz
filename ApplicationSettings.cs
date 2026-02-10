@@ -22,6 +22,7 @@ public class AppSettingsData
     public bool ShowCanvas { get; set; } = true;
     public bool ShowProperties { get; set; } = false;
     public bool PropertiesDocked { get; set; } = false;
+    public bool ShowMinimap { get; set; } = false;
 
     // Snap Settings
     public bool SnapEndpointEnabled { get; set; } = true;

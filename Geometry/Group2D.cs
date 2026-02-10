@@ -141,7 +141,7 @@ public class VGroup : Shape
     /// <summary>
     /// Creates a deep copy of this group and all its shapes.
     /// </summary>
-    public override Shape Clone()
+    public override VGroup Clone()
     {
         var clone = new VGroup(Shapes.Select(s => s.Clone())) { Name = Name };
         CopyStyleTo(clone);

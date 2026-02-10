@@ -29,7 +29,8 @@
       "Bash(powershell -command:*)",
       "Bash(git status:*)",
       "Bash(Select-String -Pattern \"error|succeeded\")",
-      "Bash(Select-String -Pattern \"error|succeeded|failed\")"
+      "Bash(Select-String -Pattern \"error|succeeded|failed\")",
+      "Bash(dotnet test:*)"
     ]
   }
 }

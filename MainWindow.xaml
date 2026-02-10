@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Code2Viz"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:minimap="clr-namespace:Code2Viz.Editor.Minimap"
     xmlns:project="clr-namespace:Code2Viz.Project"
     xmlns:search="clr-namespace:Code2Viz.Search"
     Title="Code2Viz - 2D Geometry Visualizer"
@@ -462,6 +463,14 @@
                             Click="ShowPropertiesMenuItem_Click"
                             Header="_Properties"
                             InputGestureText="F4"
+                            IsCheckable="True"
+                            IsChecked="False"
+                            Style="{StaticResource MenuItemStyle}" />
+                        <MenuItem
+                            x:Name="ShowMinimapMenuItem"
+                            Click="ShowMinimapMenuItem_Click"
+                            Header="_Minimap"
+                            InputGestureText="Ctrl+Shift+M"
                             IsCheckable="True"
                             IsChecked="False"
                             Style="{StaticResource MenuItemStyle}" />
@@ -1449,22 +1458,33 @@
                                 </StackPanel>
                             </Border>
 
-                            <!--  Active Editor  -->
+                            <!--  Active Editor with Minimap  -->
                             <Border Grid.Row="2" Background="#1E1E1E">
-                                <avalonedit:TextEditor
-                                    x:Name="CodeEditor"
-                                    Padding="5"
-                                    Background="#1E1E1E"
-                                    BorderThickness="0"
-                                    FontFamily="Consolas"
-                                    FontSize="14"
-                                    Foreground="#D4D4D4"
-                                    HorizontalScrollBarVisibility="Auto"
-                                    LineNumbersForeground="#858585"
-                                    ShowLineNumbers="True"
-                                    SyntaxHighlighting="C#"
-                                    VerticalScrollBarVisibility="Visible"
-                                    WordWrap="False" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <avalonedit:TextEditor
+                                        x:Name="CodeEditor"
+                                        Grid.Column="0"
+                                        Padding="5"
+                                        Background="#1E1E1E"
+                                        BorderThickness="0"
+                                        FontFamily="Consolas"
+                                        FontSize="14"
+                                        Foreground="#D4D4D4"
+                                        HorizontalScrollBarVisibility="Auto"
+                                        LineNumbersForeground="#858585"
+                                        ShowLineNumbers="True"
+                                        SyntaxHighlighting="C#"
+                                        VerticalScrollBarVisibility="Visible"
+                                        WordWrap="False" />
+                                    <minimap:MinimapControl
+                                        x:Name="EditorMinimap"
+                                        Grid.Column="1"
+                                        Visibility="Collapsed" />
+                                </Grid>
                             </Border>
                         </Grid>
                     </TabItem>

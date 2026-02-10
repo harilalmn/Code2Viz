@@ -78,9 +78,9 @@ public class VPolyline : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VPolyline Clone()
     {
-        var clone = new VPolyline(Points.Select(p => (VPoint)p.Clone()));
+        var clone = new VPolyline(Points.Select(p => p.Clone()));
         CopyStyleTo(clone);
         return clone;
     }

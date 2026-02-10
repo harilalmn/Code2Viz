@@ -1033,6 +1033,271 @@ public class MultiSelectionRenderer : IBackgroundRenderer
         _textView.InvalidateLayer(Layer);
     }
 
+    /// <summary>
+    /// Pastes clipboard text at all cursor positions.
+    /// </summary>
+    public void PasteAtAllCursors()
+    {
+        if (_selections.Count == 0) return;
+
+        string clipboardText;
+        try
+        {
+            if (!System.Windows.Clipboard.ContainsText())
+                return;
+            clipboardText = System.Windows.Clipboard.GetText();
+            if (string.IsNullOrEmpty(clipboardText))
+                return;
+        }
+        catch
+        {
+            return;
+        }
+
+        // Use InsertTextAtAllCursors which handles all the offset adjustments
+        InsertTextAtAllCursors(clipboardText);
+    }
+
+    /// <summary>
+    /// Gets the word boundary to the left of the given offset.
+    /// </summary>
+    private int GetWordStartLeft(int offset)
+    {
+        var document = _textView.Document;
+        if (offset <= 0) return 0;
+
+        var text = document.Text;
+        int pos = offset - 1;
+
+        // Skip whitespace
+        while (pos > 0 && char.IsWhiteSpace(text[pos]))
+            pos--;
+
+        if (pos <= 0) return 0;
+
+        // Determine the character class at current position
+        char c = text[pos];
+        bool isWordChar = char.IsLetterOrDigit(c) || c == '_';
+
+        // Move back through same character class
+        while (pos > 0)
+        {
+            char prev = text[pos - 1];
+            bool prevIsWordChar = char.IsLetterOrDigit(prev) || prev == '_';
+
+            if (isWordChar != prevIsWordChar)
+                break;
+
+            pos--;
+        }
+
+        return pos;
+    }
+
+    /// <summary>
+    /// Gets the word boundary to the right of the given offset.
+    /// </summary>
+    private int GetWordEndRight(int offset)
+    {
+        var document = _textView.Document;
+        var text = document.Text;
+        int length = text.Length;
+
+        if (offset >= length) return length;
+
+        int pos = offset;
+
+        // Skip whitespace
+        while (pos < length && char.IsWhiteSpace(text[pos]))
+            pos++;
+
+        if (pos >= length) return length;
+
+        // Determine the character class at current position
+        char c = text[pos];
+        bool isWordChar = char.IsLetterOrDigit(c) || c == '_';
+
+        // Move forward through same character class
+        while (pos < length)
+        {
+            char curr = text[pos];
+            bool currIsWordChar = char.IsLetterOrDigit(curr) || curr == '_';
+
+            if (isWordChar != currIsWordChar)
+                break;
+
+            pos++;
+        }
+
+        return pos;
+    }
+
+    /// <summary>
+    /// Moves all cursors left by one word (Ctrl+Left behavior).
+    /// </summary>
+    public void MoveAllCursorsWordLeft()
+    {
+        var document = _textView.Document;
+
+        // Move additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            var sel = _selections[i];
+            int offset = sel.Length > 0 ? sel.StartOffset : sel.StartOffset;
+            int newOffset = GetWordStartLeft(offset);
+            _selections[i] = new TextSegment { StartOffset = newOffset, Length = 0 };
+            _anchors[i] = newOffset;
+            _carets[i] = newOffset;
+        }
+
+        // Move main caret
+        var mainSel = _textArea.Selection;
+        var mainSegment = mainSel.SurroundingSegment;
+        int mainOffset = mainSegment != null && mainSegment.Length > 0 ? mainSegment.Offset : _textArea.Caret.Offset;
+        int mainNewOffset = GetWordStartLeft(mainOffset);
+        _textArea.Caret.Offset = mainNewOffset;
+        _textArea.Selection = Selection.Create(_textArea, mainNewOffset, mainNewOffset);
+
+        _textView.InvalidateLayer(Layer);
+    }
+
+    /// <summary>
+    /// Moves all cursors right by one word (Ctrl+Right behavior).
+    /// </summary>
+    public void MoveAllCursorsWordRight()
+    {
+        var document = _textView.Document;
+
+        // Move additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            var sel = _selections[i];
+            int offset = sel.Length > 0 ? sel.EndOffset : sel.EndOffset;
+            int newOffset = GetWordEndRight(offset);
+            _selections[i] = new TextSegment { StartOffset = newOffset, Length = 0 };
+            _anchors[i] = newOffset;
+            _carets[i] = newOffset;
+        }
+
+        // Move main caret
+        var mainSel = _textArea.Selection;
+        var mainSegment = mainSel.SurroundingSegment;
+        int mainOffset = mainSegment != null && mainSegment.Length > 0 ? mainSegment.EndOffset : _textArea.Caret.Offset;
+        int mainNewOffset = GetWordEndRight(mainOffset);
+        _textArea.Caret.Offset = mainNewOffset;
+        _textArea.Selection = Selection.Create(_textArea, mainNewOffset, mainNewOffset);
+
+        _textView.InvalidateLayer(Layer);
+    }
+
+    /// <summary>
+    /// Extends all selections left by one word (Ctrl+Shift+Left behavior).
+    /// </summary>
+    public void ExtendAllSelectionsWordLeft()
+    {
+        var document = _textView.Document;
+
+        // Extend additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            int anchor = _anchors[i];
+            int caret = _carets[i];
+
+            // Move caret to word start
+            int newCaret = GetWordStartLeft(caret);
+            _carets[i] = newCaret;
+
+            // Create selection from anchor to new caret
+            int start = Math.Min(anchor, newCaret);
+            int end = Math.Max(anchor, newCaret);
+            _selections[i] = new TextSegment { StartOffset = start, Length = end - start };
+        }
+
+        // Extend main selection
+        var mainSel = _textArea.Selection;
+        int mainAnchor, mainCaret;
+        if (mainSel.IsEmpty)
+        {
+            mainAnchor = mainCaret = _textArea.Caret.Offset;
+        }
+        else
+        {
+            var seg = mainSel.SurroundingSegment;
+            if (_textArea.Caret.Offset == seg.EndOffset)
+            {
+                mainAnchor = seg.Offset;
+                mainCaret = seg.EndOffset;
+            }
+            else
+            {
+                mainAnchor = seg.EndOffset;
+                mainCaret = seg.Offset;
+            }
+        }
+
+        int mainNewCaret = GetWordStartLeft(mainCaret);
+        int mainStart = Math.Min(mainAnchor, mainNewCaret);
+        int mainEnd = Math.Max(mainAnchor, mainNewCaret);
+        _textArea.Selection = Selection.Create(_textArea, mainStart, mainEnd);
+        _textArea.Caret.Offset = mainNewCaret;
+
+        _textView.InvalidateLayer(Layer);
+    }
+
+    /// <summary>
+    /// Extends all selections right by one word (Ctrl+Shift+Right behavior).
+    /// </summary>
+    public void ExtendAllSelectionsWordRight()
+    {
+        var document = _textView.Document;
+
+        // Extend additional selections
+        for (int i = 0; i < _selections.Count; i++)
+        {
+            int anchor = _anchors[i];
+            int caret = _carets[i];
+
+            // Move caret to word end
+            int newCaret = GetWordEndRight(caret);
+            _carets[i] = newCaret;
+
+            // Create selection from anchor to new caret
+            int start = Math.Min(anchor, newCaret);
+            int end = Math.Max(anchor, newCaret);
+            _selections[i] = new TextSegment { StartOffset = start, Length = end - start };
+        }
+
+        // Extend main selection
+        var mainSel = _textArea.Selection;
+        int mainAnchor, mainCaret;
+        if (mainSel.IsEmpty)
+        {
+            mainAnchor = mainCaret = _textArea.Caret.Offset;
+        }
+        else
+        {
+            var seg = mainSel.SurroundingSegment;
+            if (_textArea.Caret.Offset == seg.EndOffset)
+            {
+                mainAnchor = seg.Offset;
+                mainCaret = seg.EndOffset;
+            }
+            else
+            {
+                mainAnchor = seg.EndOffset;
+                mainCaret = seg.Offset;
+            }
+        }
+
+        int mainNewCaret = GetWordEndRight(mainCaret);
+        int mainStart = Math.Min(mainAnchor, mainNewCaret);
+        int mainEnd = Math.Max(mainAnchor, mainNewCaret);
+        _textArea.Selection = Selection.Create(_textArea, mainStart, mainEnd);
+        _textArea.Caret.Offset = mainNewCaret;
+
+        _textView.InvalidateLayer(Layer);
+    }
+
     public void Draw(TextView textView, DrawingContext drawingContext)
     {
         if (_selections.Count == 0) return;

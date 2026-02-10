@@ -147,9 +147,9 @@ public class VSpline : Shape, ICurve
         }
     }
 
-    public override Shape Clone()
+    public override VSpline Clone()
     {
-        var clone = new VSpline(ControlPoints.Select(p => (VPoint)p.Clone()))
+        var clone = new VSpline(ControlPoints.Select(p => p.Clone()))
         {
             SegmentsPerSpan = SegmentsPerSpan,
             Tension = Tension
