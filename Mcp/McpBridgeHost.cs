@@ -114,7 +114,7 @@ public class McpBridgeHost : IDisposable
             {
                 if (drawable is Shape shape)
                 {
-                    var (min, max) = shape.GetBounds();
+                    var bounds = shape.GetBounds();
                     shapeList.Add(new
                     {
                         id = shape.Id,
@@ -126,10 +126,10 @@ public class McpBridgeHost : IDisposable
                         isVisible = shape.IsVisible,
                         bounds = new
                         {
-                            minX = min.X,
-                            minY = min.Y,
-                            maxX = max.X,
-                            maxY = max.Y
+                            minX = bounds.Min.X,
+                            minY = bounds.Min.Y,
+                            maxX = bounds.Max.X,
+                            maxY = bounds.Max.Y
                         }
                     });
                 }

@@ -103,24 +103,24 @@ public class VGroup : Shape
     /// <summary>
     /// Gets the bounding box of all shapes in the group.
     /// </summary>
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         if (Shapes.Count == 0)
-            return (VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+            return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
 
         foreach (var shape in Shapes)
         {
-            var (min, max) = shape.GetBounds();
-            minX = Math.Min(minX, min.X);
-            minY = Math.Min(minY, min.Y);
-            maxX = Math.Max(maxX, max.X);
-            maxY = Math.Max(maxY, max.Y);
+            var bounds = shape.GetBounds();
+            minX = Math.Min(minX, bounds.Min.X);
+            minY = Math.Min(minY, bounds.Min.Y);
+            maxX = Math.Max(maxX, bounds.Max.X);
+            maxY = Math.Max(maxY, bounds.Max.Y);
         }
 
-        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     /// <summary>
@@ -128,8 +128,8 @@ public class VGroup : Shape
     /// </summary>
     public VPoint GetCenter()
     {
-        var (min, max) = GetBounds();
-        return VPoint.Internal((min.X + max.X) / 2, (min.Y + max.Y) / 2);
+        var bounds = GetBounds();
+        return VPoint.Internal((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
     }
 
     /// <summary>
@@ -195,10 +195,10 @@ public class VGroup : Shape
         return new List<ControlPoint>
         {
             new ControlPoint(ControlPointType.Move, center.X, center.Y, "Center"),
-            new ControlPoint(ControlPointType.Vertex, bounds.min.X, bounds.min.Y, "Min"),
-            new ControlPoint(ControlPointType.Vertex, bounds.max.X, bounds.max.Y, "Max"),
-            new ControlPoint(ControlPointType.Vertex, bounds.min.X, bounds.max.Y, "TL"),
-            new ControlPoint(ControlPointType.Vertex, bounds.max.X, bounds.min.Y, "BR")
+            new ControlPoint(ControlPointType.Vertex, bounds.Min.X, bounds.Min.Y, "Min"),
+            new ControlPoint(ControlPointType.Vertex, bounds.Max.X, bounds.Max.Y, "Max"),
+            new ControlPoint(ControlPointType.Vertex, bounds.Min.X, bounds.Max.Y, "TL"),
+            new ControlPoint(ControlPointType.Vertex, bounds.Max.X, bounds.Min.Y, "BR")
         };
     }
 

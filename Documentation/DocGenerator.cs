@@ -34,7 +34,8 @@ namespace Code2Viz.Documentation
                 { "Code2Viz.Editor", "Contains classes related to the code editor, including formatting, completion, and snippets." },
 
                 // Base classes
-                { "Shape", "Abstract base class for all drawable shapes. Provides common properties like Color, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains(), DistanceTo()." },
+                { "Shape", "Abstract base class for all drawable shapes. Provides common properties like Color, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds() (returns BoundingBox), Contains(), DistanceTo()." },
+                { "BoundingBox", "Represents an axis-aligned bounding box with Min and Max corner points (VPoint). Properties: Min, Max, Width, Height, Center, Area. Methods: Contains(point), Intersects(other), Union(other), Expand(distance). Supports tuple deconstruction: var (min, max) = bounds." },
                 { "IDrawable", "Interface for any object that can be drawn on the canvas. Defines Draw() method and styling properties." },
                 { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), Color, FillColor, and LineWeight. Provides curve operations: StartPoint, EndPoint, SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(), PointAtParameter(), ParameterAtPoint(). The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve. PointAtParameter() returns a point at a normalized position (0-1), while ParameterAtPoint() returns the normalized parameter for the closest point on the curve." },
                 { "IntersectionResult", "Represents the result of an intersection operation between curves. Contains Points (list of intersection points) and Curves (list of overlapping segments). Properties: HasIntersection (true if any intersection), IsSinglePoint (exactly one point), HasOverlap (curves share a segment), Count (total elements). Use Intersect() method on any ICurve to compute intersections." },
@@ -1049,8 +1050,33 @@ shape.Move(new VXYZ(10, 20, 0));
 shape.Rotate(pivot, 45);
 shape.Scale(center, 2.0);
 var bounds = shape.GetBounds();
+// bounds.Min, bounds.Max - corner points
+// bounds.Width, bounds.Height, bounds.Center, bounds.Area
 bool inside = shape.Contains(point);
 double dist = shape.DistanceTo(point);" },
+
+                { "BoundingBox", @"// BoundingBox represents an axis-aligned bounding box
+var circle = new VCircle(0, 0, 50);
+BoundingBox bounds = circle.GetBounds();
+
+// Access min/max corners
+VPoint min = bounds.Min;  // (-50, -50)
+VPoint max = bounds.Max;  // (50, 50)
+
+// Computed properties
+double w = bounds.Width;   // 100
+double h = bounds.Height;  // 100
+VPoint c = bounds.Center;  // (0, 0)
+double a = bounds.Area;    // 10000
+
+// Methods
+bool hit = bounds.Contains(new VPoint(10, 10));
+bool overlaps = bounds.Intersects(otherBounds);
+BoundingBox combined = bounds.Union(otherBounds);
+BoundingBox expanded = bounds.Expand(10); // expand by 10 units
+
+// Tuple deconstruction (backwards compatible)
+var (minPt, maxPt) = shape.GetBounds();" },
 
                 { "GeometryHelper", @"// Static methods for geometric calculations
 double dist = GeometryHelper.DistancePointToLine(point, line);

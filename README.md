@@ -173,8 +173,9 @@ group.ForEach(s => s.Color = "Yellow");
 var filtered = group.Where(s => s is VCircle);
 
 // Get bounds and center
-var (min, max) = group.GetBounds();
+BoundingBox bounds = group.GetBounds();
 VPoint center = group.GetCenter();
+// bounds.Min, bounds.Max, bounds.Width, bounds.Height, bounds.Center
 ```
 
 ---
@@ -242,7 +243,8 @@ List<VPoint> col2 = grid.GetColumn(2);   // Third column
 
 // Geometry
 VPoint center = grid.GetCenter();
-var (min, max) = grid.GetBounds();
+BoundingBox bounds = grid.GetBounds();
+// bounds.Min, bounds.Max, bounds.Width, bounds.Height
 
 // Transform entire grid
 grid.Move(new VXYZ(50, 25, 0));
@@ -1216,11 +1218,33 @@ var copy = shape.Clone();        // Create a copy
 shape.Move(new VXYZ(10, 20, 0)); // Translate
 shape.Rotate(pivot, 45);         // Rotate 45 degrees around pivot
 shape.Scale(center, 2.0);        // Scale by factor
-var bounds = shape.GetBounds();  // Get bounding box
+BoundingBox bounds = shape.GetBounds();  // Get bounding box
+// bounds.Min, bounds.Max, bounds.Width, bounds.Height, bounds.Center, bounds.Area
 bool hit = shape.Contains(point);// Point containment test
 double d = shape.DistanceTo(pt); // Distance to point
 shape.Hide();                    // Hide shape from canvas
 shape.Show();                    // Show hidden shape
+```
+
+### BoundingBox
+The `GetBounds()` method returns a `BoundingBox` object with Min and Max corner points:
+```csharp
+BoundingBox bounds = shape.GetBounds();
+VPoint min = bounds.Min;      // Lower-left corner
+VPoint max = bounds.Max;      // Upper-right corner
+double w = bounds.Width;      // Width (Max.X - Min.X)
+double h = bounds.Height;     // Height (Max.Y - Min.Y)
+VPoint c = bounds.Center;     // Center point
+double a = bounds.Area;       // Width * Height
+
+// Methods
+bool inside = bounds.Contains(point);        // Point containment
+bool overlaps = bounds.Intersects(other);    // Intersection test
+BoundingBox combined = bounds.Union(other);  // Combine bounds
+BoundingBox bigger = bounds.Expand(10);      // Expand by distance
+
+// Tuple deconstruction (backwards compatible)
+var (minPt, maxPt) = shape.GetBounds();
 ```
 
 ### ICurve Interface

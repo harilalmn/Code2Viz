@@ -215,10 +215,10 @@ public class VGrid : Shape
     /// <summary>
     /// Gets the bounding box of all points in the grid.
     /// </summary>
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         if (Points.Count == 0)
-            return (VPoint.Internal(Location.X, Location.Y), VPoint.Internal(Location.X, Location.Y));
+            return new BoundingBox(VPoint.Internal(Location.X, Location.Y), VPoint.Internal(Location.X, Location.Y));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -231,7 +231,7 @@ public class VGrid : Shape
             maxY = Math.Max(maxY, point.Y);
         }
 
-        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     /// <summary>
@@ -301,8 +301,8 @@ public class VGrid : Shape
     /// </summary>
     public VPoint GetCenter()
     {
-        var (min, max) = GetBounds();
-        return VPoint.Internal((min.X + max.X) / 2, (min.Y + max.Y) / 2);
+        var bounds = GetBounds();
+        return VPoint.Internal((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
     }
 
     public override string ToString() => $"VGrid({XCount}x{YCount}, Location={Location}, Centered={Centered})";

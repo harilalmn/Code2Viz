@@ -25,11 +25,11 @@ public static class SvgExporter
             
             foreach (var shape in shapeList.OfType<Shape>())
             {
-                var (min, max) = shape.GetBounds();
-                minX = Math.Min(minX, min.X);
-                minY = Math.Min(minY, min.Y);
-                maxX = Math.Max(maxX, max.X);
-                maxY = Math.Max(maxY, max.Y);
+                var bounds = shape.GetBounds();
+                minX = Math.Min(minX, bounds.Min.X);
+                minY = Math.Min(minY, bounds.Min.Y);
+                maxX = Math.Max(maxX, bounds.Max.X);
+                maxY = Math.Max(maxY, bounds.Max.Y);
             }
         }
         

@@ -148,8 +148,8 @@ let rotate (pivot: VPoint) angleDegrees (shape: #Shape) =
 
 /// Rotate a shape around its center by the given angle (degrees)
 let rotateAroundCenter angleDegrees (shape: #Shape) =
-    let struct (minPt, maxPt) = shape.GetBounds()
-    let center = VPoint((minPt.X + maxPt.X) / 2.0, (minPt.Y + maxPt.Y) / 2.0)
+    let bounds = shape.GetBounds()
+    let center = VPoint((bounds.Min.X + bounds.Max.X) / 2.0, (bounds.Min.Y + bounds.Max.Y) / 2.0)
     shape.Rotate(center, angleDegrees)
     shape
 

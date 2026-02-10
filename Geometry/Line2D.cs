@@ -160,10 +160,10 @@ public class VLine : Shape, ICurve
         End.Scale(center, factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         // Use Internal() to avoid auto-registering intermediate points
-        return (
+        return new BoundingBox(
             VPoint.Internal(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
             VPoint.Internal(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
         );

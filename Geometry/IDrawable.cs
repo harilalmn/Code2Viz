@@ -254,8 +254,8 @@ public abstract class Shape : IDrawable
     /// <summary>
     /// Gets the bounding box of this shape.
     /// </summary>
-    /// <returns>Tuple of (min point, max point) defining the axis-aligned bounding box.</returns>
-    public abstract (VPoint min, VPoint max) GetBounds();
+    /// <returns>A BoundingBox with Min and Max points defining the axis-aligned bounding box.</returns>
+    public abstract BoundingBox GetBounds();
 
     /// <summary>
     /// Gets the control points for interactive editing.
@@ -267,7 +267,7 @@ public abstract class Shape : IDrawable
         var bounds = GetBounds();
         return new List<ControlPoint>
         {
-            new ControlPoint(ControlPointType.Move, (bounds.min.X + bounds.max.X) / 2, (bounds.min.Y + bounds.max.Y) / 2, "Center")
+            new ControlPoint(ControlPointType.Move, (bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2, "Center")
         };
     }
 
@@ -282,7 +282,7 @@ public abstract class Shape : IDrawable
         if (index == 0)
         {
             var bounds = GetBounds();
-            var center = VPoint.Internal((bounds.min.X + bounds.max.X) / 2, (bounds.min.Y + bounds.max.Y) / 2);
+            var center = VPoint.Internal((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
             var delta = new VXYZ(newPosition.X - center.X, newPosition.Y - center.Y, 0);
             Move(delta);
         }
@@ -312,9 +312,9 @@ public abstract class Shape : IDrawable
     public virtual double DistanceTo(VPoint point)
     {
         // Default implementation uses bounding box center
-        var (min, max) = GetBounds();
-        var centerX = (min.X + max.X) / 2;
-        var centerY = (min.Y + max.Y) / 2;
+        var bounds = GetBounds();
+        var centerX = (bounds.Min.X + bounds.Max.X) / 2;
+        var centerY = (bounds.Min.Y + bounds.Max.Y) / 2;
         var dx = point.X - centerX;
         var dy = point.Y - centerY;
         return Math.Sqrt(dx * dx + dy * dy);
@@ -326,9 +326,9 @@ public abstract class Shape : IDrawable
     public virtual bool Contains(VPoint point)
     {
         // Default implementation checks bounding box
-        var (min, max) = GetBounds();
-        return point.X >= min.X && point.X <= max.X &&
-               point.Y >= min.Y && point.Y <= max.Y;
+        var bounds = GetBounds();
+        return point.X >= bounds.Min.X && point.X <= bounds.Max.X &&
+               point.Y >= bounds.Min.Y && point.Y <= bounds.Max.Y;
     }
 
     /// <summary>

@@ -368,9 +368,9 @@ public class SelectionTool
 
     private bool IsWithinBoundingBox(Shape shape, VPoint point, double tolerance)
     {
-        var (min, max) = shape.GetBounds();
-        return point.X >= min.X - tolerance && point.X <= max.X + tolerance &&
-               point.Y >= min.Y - tolerance && point.Y <= max.Y + tolerance;
+        var bounds = shape.GetBounds();
+        return point.X >= bounds.Min.X - tolerance && point.X <= bounds.Max.X + tolerance &&
+               point.Y >= bounds.Min.Y - tolerance && point.Y <= bounds.Max.Y + tolerance;
     }
 
     /// <summary>
@@ -580,20 +580,20 @@ public class SelectionTool
                 {
                     if (drawable is Shape shape)
                     {
-                        var (boundsMin, boundsMax) = shape.GetBounds();
+                        var shapeBounds = shape.GetBounds();
 
                         bool selected;
                         if (isCrossing)
                         {
                             // Crossing: shape bounds intersect selection box
-                            selected = boundsMax.X >= minX && boundsMin.X <= maxX &&
-                                       boundsMax.Y >= minY && boundsMin.Y <= maxY;
+                            selected = shapeBounds.Max.X >= minX && shapeBounds.Min.X <= maxX &&
+                                       shapeBounds.Max.Y >= minY && shapeBounds.Min.Y <= maxY;
                         }
                         else
                         {
                             // Window: shape must be completely inside selection box
-                            selected = boundsMin.X >= minX && boundsMax.X <= maxX &&
-                                       boundsMin.Y >= minY && boundsMax.Y <= maxY;
+                            selected = shapeBounds.Min.X >= minX && shapeBounds.Max.X <= maxX &&
+                                       shapeBounds.Min.Y >= minY && shapeBounds.Max.Y <= maxY;
                         }
 
                         if (selected)

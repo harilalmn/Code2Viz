@@ -146,10 +146,10 @@ public class VText : Shape
             Width *= Math.Abs(factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         var textWidth = Width > 0 ? Width : Height * Content.Length * 0.6;
-        return (Location, new VPoint(Location.X + textWidth, Location.Y + Height));
+        return new BoundingBox(Location, VPoint.Internal(Location.X + textWidth, Location.Y + Height));
     }
 
     public override string ToString() => $"VText(\"{Content}\" at {Location})";

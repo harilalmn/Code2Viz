@@ -57,7 +57,7 @@ public class ApiReferenceResource
         - `Scale(center, factor)` — Scale around VPoint center
         - `Flip(mirrorLine)` — Mirror across VLine
         - `Clone()` — Deep copy
-        - `GetBounds()` — Returns (VPoint min, VPoint max) bounding box
+        - `GetBounds()` — Returns BoundingBox with Min, Max, Width, Height, Center, Area
         - `Show()` / `Hide()` — Toggle visibility
         - `Remove()` — Remove from canvas
         - `Contains(point)` — Point containment test
@@ -197,6 +197,15 @@ public class ApiReferenceResource
         VXYZ.Zero; VXYZ.BasisX; VXYZ.BasisY;
         // Methods: GetLength(), Normalize(), DotProduct(other), CrossProduct(other), AngleTo(other), AsVPoint(), Rotate(angleDeg)
         // Operators: +, -, *, /, unary -, ==, !=
+        ```
+
+        ## BoundingBox
+        Returned by `shape.GetBounds()` method on all shapes.
+        ```csharp
+        BoundingBox bounds = shape.GetBounds();
+        // Properties: Min, Max (VPoint corners), Width, Height, Center, Area
+        // Methods: Contains(point), Intersects(other), Union(other), Expand(distance)
+        var (min, max) = bounds;  // tuple deconstruction
         ```
 
         ## Array Operations (extension methods, return List<Shape>)

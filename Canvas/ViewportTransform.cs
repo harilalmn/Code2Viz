@@ -343,11 +343,11 @@ namespace Code2Viz.Canvas
             {
                 if (shape is Shape s)
                 {
-                    var (boundsMin, boundsMax) = s.GetBounds();
-                    minX = Math.Min(minX, boundsMin.X);
-                    minY = Math.Min(minY, boundsMin.Y);
-                    maxX = Math.Max(maxX, boundsMax.X);
-                    maxY = Math.Max(maxY, boundsMax.Y);
+                    var bounds = s.GetBounds();
+                    minX = Math.Min(minX, bounds.Min.X);
+                    minY = Math.Min(minY, bounds.Min.Y);
+                    maxX = Math.Max(maxX, bounds.Max.X);
+                    maxY = Math.Max(maxY, bounds.Max.Y);
                 }
             }
 

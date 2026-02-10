@@ -53,10 +53,10 @@ public struct AABB
     {
         var bounds = shape.GetBounds();
         return new AABB(
-            bounds.min.X + shape.OffsetX,
-            bounds.min.Y + shape.OffsetY,
-            bounds.max.X + shape.OffsetX,
-            bounds.max.Y + shape.OffsetY
+            bounds.Min.X + shape.OffsetX,
+            bounds.Min.Y + shape.OffsetY,
+            bounds.Max.X + shape.OffsetX,
+            bounds.Max.Y + shape.OffsetY
         );
     }
 

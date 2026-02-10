@@ -112,10 +112,10 @@ public class VEllipse : Shape, ICurve
         RadiusY *= Math.Abs(factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         // Simple bounding box for non-rotated aligned ellipse
-        return (
+        return new BoundingBox(
             VPoint.Internal(Center.X - RadiusX, Center.Y - RadiusY),
             VPoint.Internal(Center.X + RadiusX, Center.Y + RadiusY)
         );

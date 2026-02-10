@@ -54,7 +54,7 @@ public class PdfExporter
         document.Save(filePath);
     }
 
-    private (VPoint min, VPoint max) GetBounds(IReadOnlyList<IDrawable> shapes)
+    private BoundingBox GetBounds(IReadOnlyList<IDrawable> shapes)
     {
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -63,20 +63,20 @@ public class PdfExporter
         {
             if (drawable is Shape shape)
             {
-                var (min, max) = shape.GetBounds();
-                minX = Math.Min(minX, min.X);
-                minY = Math.Min(minY, min.Y);
-                maxX = Math.Max(maxX, max.X);
-                maxY = Math.Max(maxY, max.Y);
+                var bounds = shape.GetBounds();
+                minX = Math.Min(minX, bounds.Min.X);
+                minY = Math.Min(minY, bounds.Min.Y);
+                maxX = Math.Max(maxX, bounds.Max.X);
+                maxY = Math.Max(maxY, bounds.Max.Y);
             }
         }
 
         if (minX == double.MaxValue)
         {
-            return (new VPoint(0, 0), new VPoint(100, 100));
+            return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(100, 100));
         }
 
-        return (new VPoint(minX, minY), new VPoint(maxX, maxY));
+        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     private void DrawShape(XGraphics gfx, Shape shape)

@@ -158,13 +158,13 @@ public class VRay : Shape, ICurve
         // Direction remains unchanged for ray scaling
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         var p1 = StartPoint;
         var p2 = EndPoint;
-        return (
-            new VPoint(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y)),
-            new VPoint(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y))
+        return new BoundingBox(
+            VPoint.Internal(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y)),
+            VPoint.Internal(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y))
         );
     }
 

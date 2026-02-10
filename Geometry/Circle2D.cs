@@ -145,9 +145,9 @@ public class VCircle : Shape, ICurve
         Radius *= Math.Abs(factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
-        return (
+        return new BoundingBox(
             VPoint.Internal(Center.X - Radius, Center.Y - Radius),
             VPoint.Internal(Center.X + Radius, Center.Y + Radius)
         );

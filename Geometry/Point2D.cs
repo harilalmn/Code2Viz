@@ -101,7 +101,7 @@ public class VPoint : Shape
     }
 
     // Use Internal() to avoid auto-registering intermediate points
-    public override (VPoint min, VPoint max) GetBounds() => (VPoint.Internal(X, Y), VPoint.Internal(X, Y));
+    public override BoundingBox GetBounds() => new BoundingBox(VPoint.Internal(X, Y), VPoint.Internal(X, Y));
 
     public override double DistanceTo(VPoint point)
     {

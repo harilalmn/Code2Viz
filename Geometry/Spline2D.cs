@@ -178,13 +178,13 @@ public class VSpline : Shape, ICurve
         foreach (var p in ControlPoints) p.Scale(center, factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         // Use Internal() to avoid auto-registering intermediate points
-        if (ControlPoints.Count == 0) return (VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+        if (ControlPoints.Count == 0) return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
         double minX = ControlPoints.Min(p => p.X), minY = ControlPoints.Min(p => p.Y);
         double maxX = ControlPoints.Max(p => p.X), maxY = ControlPoints.Max(p => p.Y);
-        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     public override string ToString() => $"VSpline({ControlPoints.Count} control points)";

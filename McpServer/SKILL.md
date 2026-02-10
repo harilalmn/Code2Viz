@@ -234,7 +234,7 @@ VRay.AtAngle(0, 0, 45);  // ray from origin at 45 degrees
 | `Scale(center, factor)` | Scale around a VPoint center |
 | `Flip(mirrorLine)` | Mirror across a VLine |
 | `Clone()` | Deep copy |
-| `GetBounds()` | Returns `(VPoint min, VPoint max)` bounding box |
+| `GetBounds()` | Returns `BoundingBox` with `Min`, `Max`, `Width`, `Height`, `Center`, `Area` |
 | `Show()` | Make visible |
 | `Hide()` | Make invisible |
 | `Remove()` | Remove from canvas |
@@ -257,6 +257,43 @@ shape.Scale(new VPoint(0, 0), 2.0);  // double size around origin
 // Flip examples
 shape.Flip(new VLine(0, 0, 0, 100)); // flip across Y axis
 shape.Flip(new VLine(0, 0, 100, 0)); // flip across X axis
+
+// GetBounds example
+BoundingBox bounds = shape.GetBounds();
+VPoint min = bounds.Min;      // lower-left corner
+VPoint max = bounds.Max;      // upper-right corner
+double w = bounds.Width;      // width
+double h = bounds.Height;     // height
+VPoint c = bounds.Center;     // center point
+```
+
+## BoundingBox
+
+Returned by `GetBounds()` method on all shapes.
+
+### Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| Min | VPoint | Lower-left corner |
+| Max | VPoint | Upper-right corner |
+| Width | double | Max.X - Min.X |
+| Height | double | Max.Y - Min.Y |
+| Center | VPoint | Center point |
+| Area | double | Width * Height |
+
+### Methods
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Contains(point)` | bool | Point inside bounding box |
+| `Intersects(other)` | bool | Overlaps with another BoundingBox |
+| `Union(other)` | BoundingBox | Combined bounding box |
+| `Expand(distance)` | BoundingBox | Expanded by distance |
+
+```csharp
+BoundingBox bounds = circle.GetBounds();
+bool hit = bounds.Contains(new VPoint(10, 10));
+BoundingBox combined = bounds.Union(otherBounds);
+var (min, max) = bounds;  // tuple deconstruction
 ```
 
 ## ICurve Interface

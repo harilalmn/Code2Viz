@@ -162,10 +162,10 @@ public class VBezier : Shape, ICurve
         P3.Scale(center, factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
         var pts = new[] { P0, P1, P2, P3 };
-        return (
+        return new BoundingBox(
             VPoint.Internal(pts.Min(p => p.X), pts.Min(p => p.Y)),
             VPoint.Internal(pts.Max(p => p.X), pts.Max(p => p.Y))
         );

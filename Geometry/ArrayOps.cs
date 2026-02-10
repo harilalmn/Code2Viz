@@ -102,9 +102,9 @@ public static class ArrayOps
             {
                 // Only move the shape without rotating its orientation
                 var bounds = clone.GetBounds();
-                var shapeCenter = new VPoint(
-                    (bounds.min.X + bounds.max.X) / 2,
-                    (bounds.min.Y + bounds.max.Y) / 2
+                var shapeCenter = VPoint.Internal(
+                    (bounds.Min.X + bounds.Max.X) / 2,
+                    (bounds.Min.Y + bounds.Max.Y) / 2
                 );
 
                 // Calculate new position by rotating the shape center around the array center
@@ -145,9 +145,9 @@ public static class ArrayOps
 
         // Get shape's center for positioning
         var bounds = shape.GetBounds();
-        var shapeCenter = new VPoint(
-            (bounds.min.X + bounds.max.X) / 2,
-            (bounds.min.Y + bounds.max.Y) / 2
+        var shapeCenter = VPoint.Internal(
+            (bounds.Min.X + bounds.Max.X) / 2,
+            (bounds.Min.Y + bounds.Max.Y) / 2
         );
 
         for (int i = 0; i < count; i++)
@@ -210,9 +210,9 @@ public static class ArrayOps
 
         // Get shape's center for positioning
         var bounds = shape.GetBounds();
-        var shapeCenter = new VPoint(
-            (bounds.min.X + bounds.max.X) / 2,
-            (bounds.min.Y + bounds.max.Y) / 2
+        var shapeCenter = VPoint.Internal(
+            (bounds.Min.X + bounds.Max.X) / 2,
+            (bounds.Min.Y + bounds.Max.Y) / 2
         );
 
         double totalAngle = totalRevolutions * 360;

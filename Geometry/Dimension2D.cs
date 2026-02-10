@@ -171,11 +171,11 @@ public class VDimension : Shape
         TextHeight *= Math.Abs(factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
-        return (
-            new VPoint(Math.Min(Point1.X, Point2.X), Math.Min(Point1.Y, Point2.Y)),
-            new VPoint(Math.Max(Point1.X, Point2.X), Math.Max(Point1.Y, Point2.Y))
+        return new BoundingBox(
+            VPoint.Internal(Math.Min(Point1.X, Point2.X), Math.Min(Point1.Y, Point2.Y)),
+            VPoint.Internal(Math.Max(Point1.X, Point2.X), Math.Max(Point1.Y, Point2.Y))
         );
     }
 

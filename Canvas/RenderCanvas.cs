@@ -1154,8 +1154,8 @@ public class RenderCanvas : FrameworkElement
 
         // Get bounding box
         var bounds = shape.GetBounds();
-        var minScreen = WorldToScreen(bounds.min.X, bounds.max.Y);
-        var maxScreen = WorldToScreen(bounds.max.X, bounds.min.Y);
+        var minScreen = WorldToScreen(bounds.Min.X, bounds.Max.Y);
+        var maxScreen = WorldToScreen(bounds.Max.X, bounds.Min.Y);
 
         // Draw bounding box
         var boundsRect = new Rect(minScreen, maxScreen);
@@ -1496,8 +1496,8 @@ public class RenderCanvas : FrameworkElement
 
         // Get bounding box
         var bounds = shape.GetBounds();
-        var minScreen = WorldToScreen(bounds.min.X, bounds.max.Y); // Y is inverted
-        var maxScreen = WorldToScreen(bounds.max.X, bounds.min.Y);
+        var minScreen = WorldToScreen(bounds.Min.X, bounds.Max.Y); // Y is inverted
+        var maxScreen = WorldToScreen(bounds.Max.X, bounds.Min.Y);
 
         // Add padding in screen coordinates
         const double padding = 8;
@@ -2494,9 +2494,9 @@ public class RenderCanvas : FrameworkElement
                     UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, dim.Point2.X, dim.Point2.Y);
                     break;
                 case VGroup group:
-                    var bounds = group.GetBounds();
-                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, bounds.min.X, bounds.min.Y);
-                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, bounds.max.X, bounds.max.Y);
+                    var groupBounds = group.GetBounds();
+                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, groupBounds.Min.X, groupBounds.Min.Y);
+                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, groupBounds.Max.X, groupBounds.Max.Y);
                     break;
             }
         }
@@ -2627,9 +2627,9 @@ public class RenderCanvas : FrameworkElement
                     UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, dim.Point2.X, dim.Point2.Y);
                     break;
                 case VGroup group:
-                    var bounds = group.GetBounds();
-                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, bounds.min.X, bounds.min.Y);
-                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, bounds.max.X, bounds.max.Y);
+                    var groupBounds = group.GetBounds();
+                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, groupBounds.Min.X, groupBounds.Min.Y);
+                    UpdateBounds(ref minX, ref maxX, ref minY, ref maxY, groupBounds.Max.X, groupBounds.Max.Y);
                     break;
             }
         }

@@ -109,12 +109,12 @@ public class VPolyline : Shape, ICurve
             point.Scale(center, factor);
     }
 
-    public override (VPoint min, VPoint max) GetBounds()
+    public override BoundingBox GetBounds()
     {
-        if (Points.Count == 0) return (VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+        if (Points.Count == 0) return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
         double minX = Points.Min(p => p.X), minY = Points.Min(p => p.Y);
         double maxX = Points.Max(p => p.X), maxY = Points.Max(p => p.Y);
-        return (VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
     }
 
     public override string ToString() => $"VPolyline({Points.Count} points)";
