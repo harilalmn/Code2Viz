@@ -101,7 +101,7 @@ namespace Code2Viz.Documentation
                 { "EasingFunctions", "Static class providing common easing functions for smooth animations: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic, EaseOutCubic, EaseInOutCubic." },
 
                 // Boolean Operations
-                { "BooleanOps", "Static class providing polygon boolean operations using Clipper2 library. Supports Union (combine polygons), Intersect (overlapping area), Difference (subtract), Xor (symmetric difference), OffsetPolygon (grow/shrink), Simplify (remove redundant points), Area calculation, and PointInPolygon test." },
+                { "BooleanOps", "Static class providing polygon boolean operations using native Greiner-Hormann algorithm. Supports Union (combine polygons), Intersect (overlapping area), Difference (subtract), Xor (symmetric difference), OffsetPolygon (grow/shrink), Simplify (Douglas-Peucker algorithm), Area calculation, and PointInPolygon (ray casting)." },
 
                 // Array Operations
                 { "ArrayOps", "Static class providing array and pattern generation for shapes. Includes LinearArray (copies along direction), RectangularArray (grid pattern), CircularArray (polar pattern around center), PathArray (copies along curve), SpiralArray (spiral pattern), and Mirror (create mirrored copy)." },
@@ -1256,7 +1256,7 @@ anim.AddToAnimations(moveAnim);
 anim.Animate();" },
 
                 // Boolean Operations
-                { "BooleanOps", @"// Boolean operations on polygons using Clipper2
+                { "BooleanOps", @"// Boolean operations on polygons (native implementation)
 
 var poly1 = new VPolygon(
     new VPoint(0, 0), new VPoint(100, 0),

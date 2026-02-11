@@ -77,6 +77,7 @@ namespace Code2Viz.Animation
     {
         private readonly VXYZ _displacement;
         private VXYZ? _initialPosition;
+        private bool _hasStarted;
 
         public MoveAnimation(Shape target, VXYZ displacement, double duration)
             : base(target, duration)
@@ -86,13 +87,19 @@ namespace Code2Viz.Animation
 
         public override void Apply(double t)
         {
-            if (_initialPosition == null)
+            // Only capture initial position when animation actually starts (t >= 0 for first time)
+            if (!_hasStarted && t >= 0)
             {
                 _initialPosition = new VXYZ(Target.OffsetX, Target.OffsetY, 0);
+                _hasStarted = true;
             }
 
-            double easedT = EasingFunction(t);
-            Target.OffsetX = _initialPosition.X + _displacement.X * easedT;
+            // Don't apply anything if we haven't started yet
+            if (!_hasStarted)
+                return;
+
+            double easedT = EasingFunction(Math.Clamp(t, 0, 1));
+            Target.OffsetX = _initialPosition!.X + _displacement.X * easedT;
             Target.OffsetY = _initialPosition.Y + _displacement.Y * easedT;
         }
     }
@@ -105,6 +112,7 @@ namespace Code2Viz.Animation
         private readonly VPoint _pivot;
         private readonly double _angleDegrees;
         private double? _initialRotation;
+        private bool _hasStarted;
 
         public RotateAnimation(Shape target, VPoint pivot, double angleDegrees, double duration)
             : base(target, duration)
@@ -115,13 +123,20 @@ namespace Code2Viz.Animation
 
         public override void Apply(double t)
         {
-            if (_initialRotation == null)
+            // Only capture initial rotation when animation actually starts (t >= 0 for first time)
+            // Don't capture when being called for future state (t < 0 normalized from timeline)
+            if (!_hasStarted && t >= 0)
             {
                 _initialRotation = Target.RotationAngle;
+                _hasStarted = true;
             }
 
-            double easedT = EasingFunction(t);
-            Target.RotationAngle = _initialRotation.Value + _angleDegrees * easedT;
+            // Don't apply anything if we haven't started yet
+            if (!_hasStarted)
+                return;
+
+            double easedT = EasingFunction(Math.Clamp(t, 0, 1));
+            Target.RotationAngle = _initialRotation!.Value + _angleDegrees * easedT;
             Target.RotationPivot = _pivot;
         }
     }
@@ -133,6 +148,7 @@ namespace Code2Viz.Animation
     {
         private readonly VLine _mirrorAxis;
         private double? _initialFlipProgress;
+        private bool _hasStarted;
 
         public FlipAnimation(Shape target, VLine mirrorAxis, double duration)
             : base(target, duration)
@@ -142,13 +158,19 @@ namespace Code2Viz.Animation
 
         public override void Apply(double t)
         {
-            if (_initialFlipProgress == null)
+            // Only capture initial flip progress when animation actually starts (t >= 0 for first time)
+            if (!_hasStarted && t >= 0)
             {
                 _initialFlipProgress = Target.FlipProgress;
+                _hasStarted = true;
             }
 
-            double easedT = EasingFunction(t);
-            Target.FlipProgress = _initialFlipProgress.Value + (1.0 - _initialFlipProgress.Value) * easedT;
+            // Don't apply anything if we haven't started yet
+            if (!_hasStarted)
+                return;
+
+            double easedT = EasingFunction(Math.Clamp(t, 0, 1));
+            Target.FlipProgress = _initialFlipProgress!.Value + (1.0 - _initialFlipProgress.Value) * easedT;
             Target.FlipAxis = _mirrorAxis;
         }
     }

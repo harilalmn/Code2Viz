@@ -23,6 +23,7 @@
     <Compile Remove="Tests\**" />
     <Compile Remove="McpBridge\**" />
     <Compile Remove="McpServer\**" />
+    <Compile Remove="C2VGeometry\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +32,6 @@
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
-    <PackageReference Include="Clipper2" Version="2.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
     <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300" />
     <PackageReference Include="FSharp.Core" Version="8.0.300" />

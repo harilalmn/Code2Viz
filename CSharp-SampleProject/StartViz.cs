@@ -23,7 +23,7 @@ namespace CSharpSample
             // CHOOSE WHICH EXAMPLE TO RUN (uncomment one at a time)
             // ═══════════════════════════════════════════════════════════════
 
-            // PointExamples();
+             PointExamples();
             // LineExamples();
             // CircleExamples();
             // ArcExamples();

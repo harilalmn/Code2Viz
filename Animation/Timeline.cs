@@ -126,8 +126,9 @@ namespace Code2Viz.Animation
                 }
                 else if (isFuture)
                 {
-                    // Apply initial state to reset shape when scrubbing/stopping
-                    anim.Apply(0.0);
+                    // Pass the negative t value so animations know they haven't started yet
+                    // and can avoid capturing initial state prematurely
+                    anim.Apply(t);
                 }
             }
         }
