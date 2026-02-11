@@ -79,18 +79,30 @@ public class ApiReferenceResource
         ```csharp
         new VLine(x1, y1, x2, y2);
         new VLine(VPoint start, VPoint end);
+        new VLine(startPoint, angleInDegrees, length);
+        // Properties: Start, End, MidPoint, Direction (VXYZ)
         ```
 
         ### VCircle
         ```csharp
         new VCircle(centerX, centerY, radius);
+        new VCircle(center, radius);                       // VPoint center
+        new VCircle(p1, p2, p3);                           // circumcircle through 3 points
+        VCircle.FromCenterDiameter(center, diameter);
+        VCircle.FromCenterDiameter(cx, cy, diameter);
+        VCircle.FromTwoPoints(p1, p2);                     // diameter endpoints
         // Properties: Center, Radius, Area, Circumference
         ```
 
         ### VArc
         ```csharp
         new VArc(centerX, centerY, radius, startAngleDeg, endAngleDeg);
-        // Counter-clockwise from start to end
+        new VArc(center, radius, startAngleDeg, endAngleDeg);
+        new VArc(start, mid, end);                         // arc through 3 points
+        // Factory: FromStartCenterEnd, FromCenterStartEnd, FromStartCenterAngle,
+        //   FromCenterStartAngle, FromStartCenterLength, FromCenterStartLength,
+        //   FromStartEndRadius(start, end, radius, largeArc), FromStartEndAngle,
+        //   Continue(previousCurve, arcLength)
         ```
 
         ### VRectangle
@@ -102,14 +114,19 @@ public class ApiReferenceResource
         ### VEllipse
         ```csharp
         new VEllipse(centerX, centerY, radiusX, radiusY);
-        // Properties: Center, RadiusX, RadiusY, Area, Circumference
+        new VEllipse(center, radiusX, radiusY);
+        new VEllipse(center, radiusX, radiusY, startAngle, endAngle);  // partial ellipse
+        // Properties: Center, RadiusX, RadiusY, StartAngle (0), EndAngle (360), Area, Circumference
         ```
 
         ### VPolygon
         ```csharp
         new VPolygon(params VPoint[] vertices);
         new VPolygon(List<VPoint> vertices);
+        new VPolygon(List<ICurve> curves);  // from ordered curves forming closed loop
         // Auto-closes
+        // Properties: Points, Area, SignedArea
+        // Methods: AddPoint(point), Slice(p1, p2) / Slice(xline) / Slice(ray) — returns List<VPolygon>
         ```
 
         ### VPolyline
@@ -128,6 +145,7 @@ public class ApiReferenceResource
         ```csharp
         new VSpline(params VPoint[] points);
         // Catmull-Rom through all points
+        // Properties: ControlPoints, SegmentsPerSpan (16), Tension (0.5, range 0=sharp to 1=loose)
         ```
 
         ### VText
@@ -168,13 +186,23 @@ public class ApiReferenceResource
 
         ### VXLine (infinite construction line)
         ```csharp
+        new VXLine(basePoint, direction);       // VPoint + VXYZ
+        new VXLine(point1, point2);            // through two VPoints
+        new VXLine(x1, y1, x2, y2);
         VXLine.Horizontal(y);
         VXLine.Vertical(x);
         ```
 
         ### VRay (semi-infinite ray)
         ```csharp
-        VRay.AtAngle(x, y, angleDegrees);
+        new VRay(origin, direction);            // VPoint + VXYZ
+        new VRay(origin, throughPoint);         // two VPoints
+        new VRay(ox, oy, tx, ty);
+        VRay.AtAngle(origin, angleDeg);        // VPoint origin + angle
+        VRay.HorizontalRight(origin); VRay.HorizontalLeft(origin);
+        VRay.VerticalUp(origin); VRay.VerticalDown(origin);
+        // Properties: Origin, Direction, RenderExtent (10000)
+        // Methods: GetPointAtDistance(d), ContainsPoint(pt), ToFiniteLine(), ToXLine()
         ```
 
         ## ICurve Interface (VLine, VCircle, VArc, VEllipse, VPolyline, VPolygon, VBezier, VSpline)
@@ -220,24 +248,48 @@ public class ApiReferenceResource
         shape.SpiralArray(center, count, startRadius, endRadius, revolutions=1, rotateItems=true);
         ```
 
-        ## Boolean Operations (VPolygon only, extension methods)
+        ## Boolean Operations (VPolygon only)
         ```csharp
-        polygon.Union(other);          // VPolygon?
-        polygon.Intersect(other);      // List<VPolygon>
-        polygon.Difference(other);     // List<VPolygon>
-        polygon.Xor(other);            // List<VPolygon>
-        polygon.OffsetPolygon(dist);   // List<VPolygon>
-        polygon.Contains(point);       // bool
-        polygon.GetArea();             // double
+        // Extension methods
+        polygon.Union(other);              // VPolygon?
+        polygon.Intersect(other);          // List<VPolygon>
+        polygon.Difference(other);         // List<VPolygon>
+        polygon.Xor(other);               // List<VPolygon>
+        polygon.OffsetPolygon(dist);       // List<VPolygon>
+        polygon.OffsetPolygonSafe(dist);   // List<VPolygon> — safe inward offset
+        polygon.MaxSafeInwardOffset();     // double — max safe inward distance
+        polygon.HasSelfIntersections();    // bool
+        polygon.MakeSimple();              // List<VPolygon> — resolve self-intersections
+        polygon.Contains(point);           // bool
+        polygon.GetArea();                 // double
+
+        // Static methods
+        BooleanOps.Union(params VPolygon[]);
+        BooleanOps.OffsetPolygon(polygon, dist, JoinType.Round, EndType.Polygon);
+        BooleanOps.Simplify(polygon, tolerance);
+        BooleanOps.DifferenceWithHoles(a, b);  // List<PolygonWithHoles>
+        BooleanOps.IntersectWithHoles(a, b);
+        BooleanOps.UnionWithHoles(a, b);
+
+        // PolygonWithHoles — outer boundary with holes
+        var pwh = new PolygonWithHoles(outer); pwh.AddHole(hole);
+        // Props: Outer, Holes, Area. Methods: Contains(pt), Clone()
+
+        // JoinType: Miter (default), Round, Square
+        // EndType: Polygon (default), OpenRound, OpenSquare, OpenButt
         ```
 
         ## VColor Utility
         ```csharp
         VColor.Red; VColor.Blue; VColor.Green; // 60+ named color properties
         VColor.FromRgb(r, g, b);               // from RGB (0-255)
-        VColor.FromArgb(a, r, g, b);           // from ARGB
-        VColor.GetRandomColor();               // random pastel
+        VColor.FromArgb(a, r, g, b);           // from ARGB (0-255)
+        VColor.WithOpacity(r, g, b, opacity);  // semi-transparent (opacity 0-1)
+        VColor.GetRandomColor();               // random pastel (default)
         VColor.GetRandomVibrantColor();        // random vibrant
+        VColor.GetRandomPastelColor();         // random pastel
+        VColor.GetVibrantColors();             // string[] of all vibrant colors
+        VColor.GetPastelColors();              // string[] of all pastel colors
         ```
 
         ## Style Defaults
@@ -258,12 +310,14 @@ public class ApiReferenceResource
         animator.Fps = 30;  // Target frame rate (1-120, default 60)
         // Sequential: animator.AddToAnimations(new DrawAnimation(shape, duration));
         // Parallel: animator.AddToAnimations(new List<Animation> { anim1, anim2 });
+        animator.Pause(1.5);  // insert time gap before next animation
         // Types: DrawAnimation, MoveAnimation(target, VXYZ, dur), RotateAnimation(target, pivot, deg, dur),
         //        FadeInAnimation, FadeOutAnimation, FlipAnimation(target, mirrorAxis, dur),
         //        ValueAnimation<T>(shape, s => s.Prop, start, end, dur) — animate numeric property on Shape,
         //        ObjectPropertyAnimation<T>(obj, o => o.Prop, start, end, dur) — animate numeric property on any object
         // Easing: anim.EasingFunction = EasingFunctions.EaseInOutCubic;
-        animator.Animate();
+        animator.Animate();  // start playback
+        animator.Stop();     // stop playback
         ```
 
         ## Examples

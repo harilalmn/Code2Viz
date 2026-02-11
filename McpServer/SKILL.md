@@ -68,18 +68,38 @@ Operators: `+`, `-`, `*`, `/` (with VPoint, VXYZ, or double)
 ```csharp
 new VLine(x1, y1, x2, y2);
 new VLine(startPoint, endPoint);
+new VLine(startPoint, angleInDegrees, length);  // from point + angle + length
+// Properties: Start, End, MidPoint, Direction (VXYZ)
 ```
 
 ### VCircle
 ```csharp
 new VCircle(centerX, centerY, radius);
+new VCircle(center, radius);                       // VPoint center
+new VCircle(p1, p2, p3);                           // circumcircle through 3 points
+VCircle.FromCenterDiameter(center, diameter);      // from center + diameter
+VCircle.FromCenterDiameter(cx, cy, diameter);      // from coordinates + diameter
+VCircle.FromTwoPoints(p1, p2);                     // circle with p1,p2 as diameter endpoints
 // Properties: Center, Radius, Area, Circumference
 ```
 
 ### VArc
 ```csharp
 new VArc(centerX, centerY, radius, startAngleDeg, endAngleDeg);
+new VArc(center, radius, startAngleDeg, endAngleDeg);  // VPoint center
+new VArc(start, mid, end);                              // arc through 3 points
 // Counter-clockwise from start to end
+
+// Factory methods
+VArc.FromStartCenterEnd(start, center, end);
+VArc.FromCenterStartEnd(center, start, end);
+VArc.FromStartCenterAngle(start, center, sweepAngleDeg);
+VArc.FromCenterStartAngle(center, start, sweepAngleDeg);
+VArc.FromStartCenterLength(start, center, arcLength);
+VArc.FromCenterStartLength(center, start, arcLength);
+VArc.FromStartEndRadius(start, end, radius, largeArc: false);
+VArc.FromStartEndAngle(start, end, sweepAngleDeg);
+VArc.Continue(previousCurve, arcLength);  // tangent continuation from ICurve
 ```
 
 ### VRectangle
@@ -91,14 +111,20 @@ new VRectangle(x1, y1, x2, y2, fromCorners: true); // from two corners
 ### VEllipse
 ```csharp
 new VEllipse(centerX, centerY, radiusX, radiusY);
-// Properties: Center, RadiusX, RadiusY, Area, Circumference
+new VEllipse(center, radiusX, radiusY);                           // VPoint center
+new VEllipse(center, radiusX, radiusY, startAngle, endAngle);    // partial ellipse (angles in degrees)
+// Properties: Center, RadiusX, RadiusY, StartAngle (default 0), EndAngle (default 360), Area, Circumference
 ```
 
 ### VPolygon
 ```csharp
 new VPolygon(new VPoint(0,100), new VPoint(95,31), new VPoint(59,-81), new VPoint(-59,-81), new VPoint(-95,31));
 new VPolygon(listOfPoints);
+new VPolygon(listOfCurves);  // from ordered curves forming closed loop
 // Auto-closes
+// Properties: Points, Area, SignedArea (positive=CCW, negative=CW)
+// Methods: AddPoint(point), AddPoint(x, y)
+// Slice: polygon.Slice(point1, point2) / polygon.Slice(xline) / polygon.Slice(ray) — returns List<VPolygon>
 ```
 
 ### VPolyline
@@ -116,6 +142,7 @@ new VBezier(x1,y1, cx1,cy1, cx2,cy2, x2,y2);
 ```csharp
 new VSpline(new VPoint(0,0), new VPoint(50,80), new VPoint(100,0), new VPoint(150,80));
 // Catmull-Rom through all points
+// Properties: ControlPoints, SegmentsPerSpan (default 16), Tension (default 0.5, range 0=sharp to 1=loose)
 ```
 
 ### VText
@@ -200,13 +227,25 @@ new VDimension(point1, point2);
 
 ### VXLine (infinite construction line)
 ```csharp
-VXLine.Horizontal(0);   // horizontal through y=0
-VXLine.Vertical(0);     // vertical through x=0
+new VXLine(basePoint, direction);       // VPoint + VXYZ direction
+new VXLine(point1, point2);            // through two VPoints
+new VXLine(x1, y1, x2, y2);           // through two coordinate pairs
+VXLine.Horizontal(y);                  // horizontal through y
+VXLine.Vertical(x);                    // vertical through x
 ```
 
 ### VRay (semi-infinite ray)
 ```csharp
-VRay.AtAngle(0, 0, 45);  // ray from origin at 45 degrees
+new VRay(origin, direction);            // VPoint origin + VXYZ direction
+new VRay(origin, throughPoint);         // VPoint origin + VPoint it passes through
+new VRay(ox, oy, tx, ty);              // coordinates for origin and through-point
+VRay.AtAngle(origin, angleDeg);        // ray from VPoint origin at angle
+VRay.HorizontalRight(origin);          // ray pointing right
+VRay.HorizontalLeft(origin);           // ray pointing left
+VRay.VerticalUp(origin);               // ray pointing up
+VRay.VerticalDown(origin);             // ray pointing down
+// Properties: Origin, Direction, RenderExtent (default 10000)
+// Methods: GetPointAtDistance(distance), ContainsPoint(point), ToFiniteLine(), ToXLine()
 ```
 
 ## Shape Properties (all shapes)
@@ -391,29 +430,62 @@ var spiral = shape.SpiralArray(new VPoint(0, 0), 20, 30, 150, 3); // 20 items, r
 ## Boolean Operations (VPolygon only)
 
 ```csharp
-// Union two polygons
-var united = polygon1.Union(polygon2);
-
-// Intersection
-var intersected = polygon1.Intersect(polygon2); // returns List<VPolygon>
-
-// Difference (subtract)
-var diff = polygon1.Difference(polygon2); // returns List<VPolygon>
-
-// Symmetric difference
-var xored = polygon1.Xor(polygon2); // returns List<VPolygon>
+// Basic operations (extension methods)
+var united = polygon1.Union(polygon2);           // VPolygon?
+var intersected = polygon1.Intersect(polygon2);  // List<VPolygon>
+var diff = polygon1.Difference(polygon2);        // List<VPolygon>
+var xored = polygon1.Xor(polygon2);             // List<VPolygon>
 
 // Offset polygon edges
-var offset = polygon.OffsetPolygon(10.0); // returns List<VPolygon>
+var offset = polygon.OffsetPolygon(10.0);        // List<VPolygon>
 
-// Point in polygon
+// Safe offset (caps at max distance to prevent collapse)
+var safeOffset = polygon.OffsetPolygonSafe(-5.0); // List<VPolygon>
+double maxInward = polygon.MaxSafeInwardOffset(); // max safe inward distance
+
+// Self-intersection handling
+bool selfIntersects = polygon.HasSelfIntersections();
+var simple = polygon.MakeSimple();               // List<VPolygon> - resolves self-intersections
+
+// Point in polygon / Area
 bool inside = polygon.Contains(new VPoint(5, 5));
-
-// Area
 double area = polygon.GetArea();
 ```
 
-Static methods also available: `BooleanOps.Union(params VPolygon[])`, `BooleanOps.Intersect(a, b)`, `BooleanOps.Difference(a, b)`, etc.
+### Static BooleanOps Methods
+```csharp
+BooleanOps.Union(params VPolygon[] polygons);
+BooleanOps.Union(IEnumerable<VPolygon> polygons);
+BooleanOps.Intersect(a, b);
+BooleanOps.Difference(a, b);
+BooleanOps.Xor(a, b);
+
+// Offset with join/end type control
+BooleanOps.OffsetPolygon(polygon, distance, JoinType.Round, EndType.Polygon);
+
+// Simplification (Douglas-Peucker)
+BooleanOps.Simplify(polygon, tolerance: 0.1);
+```
+
+### PolygonWithHoles
+Operations that produce holes return `PolygonWithHoles` objects:
+```csharp
+var results = BooleanOps.DifferenceWithHoles(a, b);  // List<PolygonWithHoles>
+var results = BooleanOps.IntersectWithHoles(a, b);
+var results = BooleanOps.UnionWithHoles(a, b);
+
+// PolygonWithHoles
+var pwh = new PolygonWithHoles(outerPolygon);
+pwh.AddHole(holePolygon);
+// Properties: Outer (VPolygon), Holes (List<VPolygon>), Area (outer minus holes)
+// Methods: Contains(point), Clone()
+```
+
+### JoinType Enum (for offset operations)
+`JoinType.Miter` (default, sharp), `JoinType.Round` (rounded), `JoinType.Square` (squared-off)
+
+### EndType Enum (for offset operations)
+`EndType.Polygon` (default, closed), `EndType.OpenRound`, `EndType.OpenSquare`, `EndType.OpenButt`
 
 ## VColor Utility
 
@@ -478,6 +550,9 @@ animator.Fps = 30;           // Target frame rate (1-120, default 60)
 animator.AddToAnimations(new DrawAnimation(shape, 2.0));
 animator.AddToAnimations(new MoveAnimation(shape, new VXYZ(100, 0, 0), 2.0));
 
+// Insert a time gap before next animation
+animator.Pause(1.5);  // 1.5 second pause
+
 // Parallel: all start at the same time
 animator.AddToAnimations(new List<Animation> {
     new FadeInAnimation(shape1, 1.0),
@@ -485,6 +560,7 @@ animator.AddToAnimations(new List<Animation> {
 });
 
 animator.Animate();  // Start playback
+animator.Stop();     // Stop all playback
 ```
 
 ### Animation Types

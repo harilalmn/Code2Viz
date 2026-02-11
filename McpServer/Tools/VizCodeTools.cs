@@ -13,9 +13,14 @@ public static class VizCodeTools
         "Available imports: System, System.Linq, System.Numerics, System.Collections.Generic, Code2Viz.Geometry, Code2Viz.Console, Code2Viz.Animation. " +
         "IMPORTANT: Always assign shapes to variables so they remain visible. Shapes without variable names are hidden by the animation system. " +
         "CORRECT: var c = new VCircle(0, 0, 50); WRONG: new VCircle(0, 0, 50); " +
-        "Available shapes: VPoint(x,y), VLine(x1,y1,x2,y2), VCircle(cx,cy,r), VArc(cx,cy,r,startDeg,endDeg), VRectangle(x,y,w,h), VEllipse(cx,cy,rx,ry), " +
-        "VPolygon(params VPoint[]), VPolyline(params VPoint[]), VBezier(x1,y1,cx1,cy1,cx2,cy2,x2,y2), VSpline(params VPoint[]), " +
-        "VText(x,y,text) or VText(x,y,text,height), VArrow(x1,y1,x2,y2), VGroup(params Shape[]), VGrid(origin,xCount,yCount,xSpacing,ySpacing,centered), VDimension(x1,y1,x2,y2), VXLine.Horizontal(y)/Vertical(x), VRay.AtAngle(x,y,deg). " +
+        "Available shapes: VPoint(x,y), VLine(x1,y1,x2,y2) or VLine(start,end) or VLine(start,angleDeg,length), " +
+        "VCircle(cx,cy,r) or VCircle(p1,p2,p3) circumcircle, VCircle.FromCenterDiameter(center,d), VCircle.FromTwoPoints(p1,p2), " +
+        "VArc(cx,cy,r,startDeg,endDeg) or VArc(start,mid,end), factory: VArc.FromStartCenterEnd/FromCenterStartEnd/FromStartCenterAngle/FromCenterStartAngle/FromStartCenterLength/FromCenterStartLength/FromStartEndRadius/FromStartEndAngle/Continue, " +
+        "VRectangle(x,y,w,h), VEllipse(cx,cy,rx,ry) or VEllipse(center,rx,ry,startAngle,endAngle) partial, " +
+        "VPolygon(params VPoint[]) with Slice(p1,p2)/Slice(xline)/Slice(ray), VPolyline(params VPoint[]), VBezier(x1,y1,cx1,cy1,cx2,cy2,x2,y2), VSpline(params VPoint[]) with Tension(0.5), " +
+        "VText(x,y,text) or VText(x,y,text,height), VArrow(x1,y1,x2,y2), VGroup(params Shape[]), VGrid(origin,xCount,yCount,xSpacing,ySpacing,centered), VDimension(x1,y1,x2,y2), " +
+        "VXLine(basePoint,direction)/VXLine(pt1,pt2)/VXLine.Horizontal(y)/Vertical(x), " +
+        "VRay(origin,direction)/VRay(origin,throughPoint)/VRay.AtAngle(origin,angleDeg)/VRay.HorizontalRight(origin)/HorizontalLeft/VerticalUp/VerticalDown. " +
         "Shape properties: Color, FillColor, LineWeight, LineType(Continuous/Dashed/Dotted/DashDot/DashDotDot/Center/Phantom/Hidden), LineTypeScale, Name, IsVisible, Opacity. " +
         "Shape methods: Move(new VXYZ(dx,dy,0)), Rotate(pivot,angleDeg), Scale(center,factor), Flip(mirrorLine), Clone(), GetBounds() returns BoundingBox(Min,Max,Width,Height,Center,Area), Show(), Hide(), Remove(), Contains(point), DistanceTo(point). " +
         "ICurve methods (VLine,VCircle,VArc,VEllipse,VPolyline,VPolygon,VBezier,VSpline): GetLength(), Divide(n), Measure(segLen), PointAtSegmentLength(len), Project(point), Offset(dist), Intersect(otherCurve), StartPoint, EndPoint, Vertices, SplitAtPoint(pt), NormalAtPoint(pt). " +
@@ -25,15 +30,19 @@ public static class VizCodeTools
         "VPoint: DistanceTo(point), AsVXYZ(), operators +,-,*,/. VXYZ(x,y,z): GetLength(), Normalize(), DotProduct(), CrossProduct(), AngleTo(), static Zero/BasisX/BasisY. " +
         "BoundingBox: returned by GetBounds(), properties Min/Max(VPoint),Width,Height,Center,Area; methods Contains(pt),Intersects(other),Union(other),Expand(dist); supports tuple deconstruction var(min,max)=bounds. " +
         "ArrayOps: shape.LinearArrayX(count,spacing), shape.LinearArrayY(count,spacing), shape.CircularArray(center,count,totalAngle,rotateItems), shape.RectangularArray(rows,cols,rowSpacing,colSpacing), shape.PathArray(curve,count,alignToPath), shape.Mirror(mirrorLine), shape.SpiralArray(center,count,startR,endR,revolutions,rotateItems). " +
-        "BooleanOps (VPolygon only): polygon.Union(other), polygon.Intersect(other), polygon.Difference(other), polygon.Xor(other), polygon.OffsetPolygon(dist), polygon.Contains(point), polygon.GetArea(). " +
-        "VColor: VColor.Red, .Blue, .Green, etc (static properties). VColor.FromRgb(r,g,b), VColor.GetRandomColor(), VColor.GetRandomVibrantColor(). " +
+        "BooleanOps (VPolygon only): polygon.Union(other), polygon.Intersect(other), polygon.Difference(other), polygon.Xor(other), polygon.OffsetPolygon(dist), polygon.OffsetPolygonSafe(dist), polygon.MaxSafeInwardOffset(), polygon.HasSelfIntersections(), polygon.MakeSimple(), polygon.Contains(point), polygon.GetArea(). " +
+        "BooleanOps static: BooleanOps.OffsetPolygon(poly,dist,JoinType,EndType), BooleanOps.Simplify(poly,tolerance), BooleanOps.DifferenceWithHoles/IntersectWithHoles/UnionWithHoles. " +
+        "PolygonWithHoles: new PolygonWithHoles(outer), AddHole(hole), props Outer/Holes/Area, Contains(pt), Clone(). " +
+        "JoinType enum: Miter(default),Round,Square. EndType enum: Polygon(default),OpenRound,OpenSquare,OpenButt. " +
+        "VColor: VColor.Red, .Blue, .Green, etc (static properties). VColor.FromRgb(r,g,b), VColor.FromArgb(a,r,g,b), VColor.WithOpacity(r,g,b,opacity), VColor.GetRandomColor(), VColor.GetRandomVibrantColor(), VColor.GetRandomPastelColor(), VColor.GetVibrantColors(), VColor.GetPastelColors(). " +
         "ShapeDefaults: GlobalColor, GlobalFillColor, GlobalLineWeight, GlobalLineType, GlobalLineTypeScale, Reset(). " +
         "Animation: var animator = new Animator(); animator.Repeat=true; animator.Speed=1.5; " +
         "animator.AddToAnimations(new DrawAnimation(shape,duration)); Sequential. " +
         "animator.AddToAnimations(new List<Animation>{...}); Parallel. " +
+        "animator.Pause(seconds); inserts time gap. " +
         "Types: DrawAnimation(target,dur), MoveAnimation(target,new VXYZ(dx,dy,0),dur), RotateAnimation(target,pivot,angleDeg,dur), FadeInAnimation(target,dur), FadeOutAnimation(target,dur), FlipAnimation(target,mirrorAxis,dur). " +
         "Easing: anim.EasingFunction = EasingFunctions.EaseInOutCubic; (Linear,EaseInQuad,EaseOutQuad,EaseInOutQuad,EaseInCubic,EaseOutCubic,EaseInOutCubic). " +
-        "animator.Animate(); to start. " +
+        "animator.Animate(); to start. animator.Stop(); to stop. " +
         "Console output: VizConsole.Log(value) — only method available, auto-tracks file and line number.")]
     public static async Task<string> ExecuteVizcode(
         [Description("C# code to execute as the body of Main(). Example: var circle = new VCircle(0, 0, 50);")] string code)

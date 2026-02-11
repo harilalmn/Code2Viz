@@ -101,7 +101,10 @@ namespace Code2Viz.Documentation
                 { "EasingFunctions", "Static class providing common easing functions for smooth animations: Linear, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic, EaseOutCubic, EaseInOutCubic." },
 
                 // Boolean Operations
-                { "BooleanOps", "Static class providing polygon boolean operations using native Greiner-Hormann algorithm. Supports Union (combine polygons), Intersect (overlapping area), Difference (subtract), Xor (symmetric difference), OffsetPolygon (grow/shrink), Simplify (Douglas-Peucker algorithm), Area calculation, and PointInPolygon (ray casting)." },
+                { "BooleanOps", "Static class providing polygon boolean operations using native Greiner-Hormann algorithm. Supports Union (combine polygons), Intersect (overlapping area), Difference (subtract), Xor (symmetric difference), OffsetPolygon (grow/shrink), OffsetPolygonSafe (safe inward offset), MaxSafeInwardOffset, MakeSimple (resolve self-intersections), HasSelfIntersections, Simplify (Douglas-Peucker algorithm), Area calculation, and PointInPolygon (ray casting). Also provides WithHoles variants (DifferenceWithHoles, IntersectWithHoles, UnionWithHoles) that return PolygonWithHoles objects." },
+                { "PolygonWithHoles", "Represents a polygon with an outer boundary and optional inner holes. Created via BooleanOps WithHoles methods or directly. Constructor: new PolygonWithHoles(outer) or new PolygonWithHoles(outer, holes). Properties: Outer (VPolygon), Holes (List<VPolygon>), Area (outer minus holes). Methods: AddHole(hole), Contains(point), Clone()." },
+                { "JoinType", "Enum for polygon offset join style. Values: Miter (sharp corners, default), Round (rounded corners), Square (squared-off corners). Used with BooleanOps.OffsetPolygon." },
+                { "EndType", "Enum for polygon offset end style. Values: Polygon (closed polygon, default), OpenRound (rounded open ends), OpenSquare (squared open ends), OpenButt (flat cut open ends). Used with BooleanOps.OffsetPolygon." },
 
                 // Array Operations
                 { "ArrayOps", "Static class providing array and pattern generation for shapes. Includes LinearArray (copies along direction), RectangularArray (grid pattern), CircularArray (polar pattern around center), PathArray (copies along curve), SpiralArray (spiral pattern), and Mirror (create mirrored copy)." },
@@ -1324,7 +1327,45 @@ dot.SpiralArray(center, count: 30, startRadius: 20, endRadius: 100, totalRevolut
 // Mirror across an axis
 var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,40));
 var mirrorAxis = new VLine(0, -50, 0, 50);
-triangle.Mirror(mirrorAxis).DrawAll();" }
+triangle.Mirror(mirrorAxis).DrawAll();" },
+                { "PolygonWithHoles", @"// Create a polygon with a hole using boolean difference
+var outer = new VRectangle(-100, -100, 200, 200);
+var inner = new VCircle(0, 0, 50);
+var innerPoly = new VPolygon(inner.Divide(32).ToArray());
+
+var results = BooleanOps.DifferenceWithHoles(
+    new VPolygon(outer.Points.ToArray()), innerPoly);
+foreach (var pwh in results)
+{
+    pwh.Outer.Color = ""Cyan"";
+    foreach (var hole in pwh.Holes)
+        hole.Color = ""Red"";
+}
+
+// Or create directly
+var pwh2 = new PolygonWithHoles(
+    new VPolygon(new VPoint(0,0), new VPoint(200,0), new VPoint(200,200), new VPoint(0,200)));
+pwh2.AddHole(new VPolygon(new VPoint(50,50), new VPoint(150,50), new VPoint(150,150), new VPoint(50,150)));
+VizConsole.Log(pwh2.Area);        // outer area minus hole area
+VizConsole.Log(pwh2.Contains(new VPoint(100, 100)));  // false (inside hole)" },
+                { "JoinType", @"// JoinType controls how offset polygon corners are handled
+var poly = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+
+// Miter (default) - sharp corners
+var miter = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter);
+
+// Round - rounded corners
+var round = BooleanOps.OffsetPolygon(poly, 10, JoinType.Round);
+
+// Square - squared-off corners
+var square = BooleanOps.OffsetPolygon(poly, 10, JoinType.Square);" },
+                { "EndType", @"// EndType controls how offset polygon ends are handled (mainly for open paths)
+// Polygon (default) - treats input as closed polygon
+// OpenRound - rounded open ends
+// OpenSquare - squared open ends
+// OpenButt - flat cut open ends
+var poly = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var offset = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter, EndType.Polygon);" }
             };
         }
 
@@ -2102,6 +2143,66 @@ triangle.Mirror(mirrorAxis).DrawAll();" }
                 { "VColor.WithOpacity", "Creates a semi-transparent color from RGB values and opacity (0.0-1.0)." },
                 { "VColor.GetVibrantColors", "Returns an array of all vibrant color names." },
                 { "VColor.GetPastelColors", "Returns an array of all pastel color names." },
+
+                // VArc Factory Methods
+                { "VArc.FromStartCenterEnd", "Creates an arc from start point, center, and end point (determines angles from geometry)." },
+                { "VArc.FromCenterStartEnd", "Creates an arc from center, start point, and end point (determines angles from geometry)." },
+                { "VArc.FromStartCenterAngle", "Creates an arc from start point, center, and sweep angle in degrees." },
+                { "VArc.FromCenterStartAngle", "Creates an arc from center, start point, and sweep angle in degrees." },
+                { "VArc.FromStartCenterLength", "Creates an arc from start point, center, and desired arc length." },
+                { "VArc.FromCenterStartLength", "Creates an arc from center, start point, and desired arc length." },
+                { "VArc.FromStartEndRadius", "Creates an arc from start point, end point, and radius. Optional largeArc parameter (default false) selects the larger or smaller arc." },
+                { "VArc.FromStartEndAngle", "Creates an arc from start point, end point, and sweep angle in degrees." },
+                { "VArc.Continue", "Creates an arc that continues tangentially from the end of a previous ICurve with the specified arc length." },
+
+                // VCircle Factory Methods
+                { "VCircle.FromCenterDiameter", "Creates a circle from center point (or coordinates) and diameter (not radius)." },
+                { "VCircle.FromTwoPoints", "Creates a circle using two points as diameter endpoints. Center is the midpoint." },
+
+                // VSpline Properties
+                { "VSpline.Tension", "Gets or sets the tension parameter (default 0.5). Range: 0 = sharp corners, 0.5 = standard Catmull-Rom, higher = looser curves." },
+                { "VSpline.SegmentsPerSpan", "Gets or sets the number of segments rendered between each pair of control points (default 16). Higher values = smoother curve." },
+
+                // VEllipse Angle Properties
+                { "VEllipse.StartAngle", "Gets or sets the start angle in degrees for partial ellipses (default 0)." },
+                { "VEllipse.EndAngle", "Gets or sets the end angle in degrees for partial ellipses (default 360)." },
+
+                // Extended Boolean Operations
+                { "BooleanOps.OffsetPolygonSafe", "Safely offsets a polygon inward, capping at the maximum safe distance to prevent collapse. Uses JoinType and EndType parameters." },
+                { "BooleanOps.MaxSafeInwardOffset", "Returns the maximum safe inward offset distance for a polygon before it would collapse." },
+                { "BooleanOps.MakeSimple", "Resolves self-intersections in a polygon, returning a list of simple (non-self-intersecting) polygons." },
+                { "BooleanOps.HasSelfIntersections", "Returns true if the polygon has any self-intersections." },
+                { "BooleanOps.Simplify", "Simplifies a polygon using the Douglas-Peucker algorithm. Optional tolerance parameter (default 0.1)." },
+                { "BooleanOps.IntersectWithHoles", "Computes intersection of two polygons, returning PolygonWithHoles objects that preserve hole information." },
+                { "BooleanOps.UnionWithHoles", "Computes union of two polygons, returning PolygonWithHoles objects that preserve hole information." },
+                { "BooleanOps.DifferenceWithHoles", "Computes difference of two polygons, returning PolygonWithHoles objects that preserve hole information." },
+
+                // VPolygonBooleanExtensions (missing extension methods)
+                { "VPolygonBooleanExtensions.OffsetPolygon", "Extension: offsets polygon edges by a distance. Positive = outward, negative = inward." },
+                { "VPolygonBooleanExtensions.OffsetPolygonSafe", "Extension: safely offsets polygon inward, capping at maximum safe distance." },
+                { "VPolygonBooleanExtensions.MaxSafeInwardOffset", "Extension: returns the maximum safe inward offset distance." },
+                { "VPolygonBooleanExtensions.HasSelfIntersections", "Extension: returns true if the polygon has self-intersections." },
+                { "VPolygonBooleanExtensions.MakeSimple", "Extension: resolves self-intersections into simple polygons." },
+
+                // PolygonWithHoles Members
+                { "PolygonWithHoles.Outer", "Gets or sets the outer boundary polygon (counter-clockwise winding)." },
+                { "PolygonWithHoles.Holes", "Gets or sets the list of hole polygons (clockwise winding)." },
+                { "PolygonWithHoles.Area", "Gets the net area (outer area minus the sum of all hole areas)." },
+                { "PolygonWithHoles.AddHole", "Adds a hole polygon to this polygon." },
+                { "PolygonWithHoles.Contains", "Returns true if a point is inside the outer boundary and not inside any hole." },
+                { "PolygonWithHoles.Clone", "Creates a deep copy of this PolygonWithHoles including outer and all holes." },
+                { "PolygonWithHoles.FromPolygonList", "Static method that analyzes a list of polygons and builds PolygonWithHoles structures by detecting containment." },
+
+                // JoinType Enum Values
+                { "JoinType.Miter", "Sharp corner joins (default). May produce spikes on acute angles; controlled by miter limit." },
+                { "JoinType.Round", "Rounded corner joins. Produces smooth rounded corners at offset vertices." },
+                { "JoinType.Square", "Squared-off corner joins. Extends corners at right angles." },
+
+                // EndType Enum Values
+                { "EndType.Polygon", "Treats the path as a closed polygon (default). Both ends are joined." },
+                { "EndType.OpenRound", "Open path with rounded end caps." },
+                { "EndType.OpenSquare", "Open path with squared end caps." },
+                { "EndType.OpenButt", "Open path with flat (butt) end caps." },
             };
         }
 
