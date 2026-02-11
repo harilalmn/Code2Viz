@@ -144,6 +144,8 @@ begin
 end;
 
 function InitializeSetup(): Boolean;
+var
+  ResultCode: Integer;
 begin
   Result := True;
   if not IsDotNet9Installed() then
