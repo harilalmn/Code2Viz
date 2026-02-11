@@ -685,8 +685,16 @@ internal static class PolygonClipper
                 }
             }
 
-            // Move forward
-            current = current.Next!;
+            // Move to next vertex
+            // For Difference: traverse clip polygon in reverse direction
+            if (operation == ClipOperation.Difference && !onSubject)
+            {
+                current = current.Prev!;
+            }
+            else
+            {
+                current = current.Next!;
+            }
 
         } while (current != start && !current.Visited);
 
