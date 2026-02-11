@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Code2Viz")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b034155d065d48d36d7552e766503955483dbb31")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+932af103f70461a69a68a7c52f36f4b51923fe5a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Code2Viz")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Code2Viz")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

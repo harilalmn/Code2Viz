@@ -30,7 +30,9 @@
       "Bash(git status:*)",
       "Bash(Select-String -Pattern \"error|succeeded\")",
       "Bash(Select-String -Pattern \"error|succeeded|failed\")",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(del:*)",
+      "Bash(del \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\CSharp-SampleProject\\\\LayoutMaker.cs\")"
     ]
   }
 }

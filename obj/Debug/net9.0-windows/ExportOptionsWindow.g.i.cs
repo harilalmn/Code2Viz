@@ -101,7 +101,7 @@ namespace Code2Viz {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Code2Viz;component/exportoptionswindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Code2Viz;V1.0.0.0;component/exportoptionswindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\ExportOptionsWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

@@ -69,7 +69,7 @@ namespace Code2Viz {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Code2Viz;component/progressdialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Code2Viz;V1.0.0.0;component/progressdialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\ProgressDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

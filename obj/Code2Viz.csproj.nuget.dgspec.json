@@ -59,10 +59,6 @@
               "target": "Package",
               "version": "[6.3.0.90, )"
             },
-            "Clipper2": {
-              "target": "Package",
-              "version": "[2.0.0, )"
-            },
             "FSharp.Compiler.Service": {
               "target": "Package",
               "version": "[43.8.300, )"

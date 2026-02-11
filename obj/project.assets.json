@@ -18,15 +18,6 @@
           "Microsoft.WindowsDesktop.App"
         ]
       },
-      "Clipper2/2.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/netstandard2.0/Clipper2Lib.dll": {}
-        },
-        "runtime": {
-          "lib/netstandard2.0/Clipper2Lib.dll": {}
-        }
-      },
       "FSharp.Compiler.Service/43.8.300": {
         "type": "package",
         "dependencies": {
@@ -892,21 +883,6 @@
         "lib/net6.0-windows7.0/ICSharpCode.AvalonEdit.xml",
         "lib/net7.0-windows7.0/ICSharpCode.AvalonEdit.dll",
         "lib/net7.0-windows7.0/ICSharpCode.AvalonEdit.xml"
-      ]
-    },
-    "Clipper2/2.0.0": {
-      "sha512": "2X23RZxJrjRjOSZc20aqXY9jpmHLekDRy4PIMfrsi2LPNzxFYlnuqzX/nLdk77fbURHUeX+gMhUn2a1z9/wMTQ==",
-      "type": "package",
-      "path": "clipper2/2.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "License.txt",
-        "README.md",
-        "clipper2.2.0.0.nupkg.sha512",
-        "clipper2.nuspec",
-        "icon.png",
-        "lib/netstandard2.0/Clipper2Lib.dll"
       ]
     },
     "FSharp.Compiler.Service/43.8.300": {
@@ -2596,7 +2572,6 @@
   "projectFileDependencyGroups": {
     "net9.0-windows7.0": [
       "AvalonEdit >= 6.3.0.90",
-      "Clipper2 >= 2.0.0",
       "Code2Viz.McpBridge >= 1.0.0",
       "FSharp.Compiler.Service >= 43.8.300",
       "FSharp.Core >= 8.0.300",
@@ -2664,10 +2639,6 @@
           "AvalonEdit": {
             "target": "Package",
             "version": "[6.3.0.90, )"
-          },
-          "Clipper2": {
-            "target": "Package",
-            "version": "[2.0.0, )"
           },
           "FSharp.Compiler.Service": {
             "target": "Package",
