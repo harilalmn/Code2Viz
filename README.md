@@ -15,7 +15,7 @@ Code2Viz is a visual programming environment that lets you write C# or F# code t
 - **Live Preview**: Canvas updates automatically as you type (debounced auto-run)
 - **No Draw() Required**: Shapes appear automatically when created
 - **Multi-language Support**: Write code in C# or F# with full syntax highlighting
-- **Rich Shape Library**: Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, text, arrows, and dimension annotations
+- **Rich Shape Library**: Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, regions (curve-bounded areas), text, arrows, and dimension annotations
 - **Shape Editing**: Select shapes and drag shape-specific control points (vertices, radius handles, curve controls) with live code sync
 - **Properties Panel**: Floating or dockable panel to edit geometry and style properties (color, fill, weight, opacity, visibility, name) with full code sync — changes persist as code lines
 - **Animation System**: Create timeline-based animations with draw, move, rotate, flip, and fade effects
@@ -84,6 +84,7 @@ With **Auto-update Canvas** enabled (default), the canvas updates automatically 
 | **VDimension** | Dimension annotation | `new VDimension(p1, p2)` |
 | **VGroup** | Group of shapes | `new VGroup(shape1, shape2, ...)` or `new VGroup(shapeList)` |
 | **VGrid** | Grid of points | `new VGrid(location, xcount, ycount, spacing, centered)` |
+| **Region** | Curve-bounded region | `new Region(curves)` or `new Region(outerCurves, holes)` |
 
 ---
 
@@ -254,6 +255,115 @@ grid.Scale(grid.GetCenter(), 2.0);
 
 grid.Draw();
 ```
+
+---
+
+## Regions (Curve-Bounded Areas)
+
+Region represents an enclosed 2D area bounded by curves (lines, arcs, splines, beziers). Unlike VPolygon which only supports straight edges, Region preserves the original curve geometry in its boundary loops.
+
+### Creating Regions
+
+```csharp
+// Region from lines (rectangle)
+var p0 = VPoint.Internal(0, 0);
+var p1 = VPoint.Internal(100, 0);
+var p2 = VPoint.Internal(100, 80);
+var p3 = VPoint.Internal(0, 80);
+
+var region = new Region(new List<ICurve> {
+    new VLine(p0, p1),
+    new VLine(p1, p2),
+    new VLine(p2, p3),
+    new VLine(p3, p0)
+});
+region.Color = "Cyan";
+region.FillColor = "#4000FFFF";
+
+// Region with mixed curves (D-shape: line + arc)
+var bottom = VPoint.Internal(0, 0);
+var top = VPoint.Internal(0, 60);
+var arc = VArc.FromStartEndRadius(top, bottom, 40, false);
+var dShape = new Region(new List<ICurve> { new VLine(bottom, top), arc });
+
+// Curves can be provided in any order - they are auto-ordered into a loop
+```
+
+### Regions with Holes
+
+```csharp
+// Create outer boundary
+var outer = new Region(new List<ICurve> {
+    new VLine(VPoint.Internal(0,0), VPoint.Internal(100,0)),
+    new VLine(VPoint.Internal(100,0), VPoint.Internal(100,100)),
+    new VLine(VPoint.Internal(100,100), VPoint.Internal(0,100)),
+    new VLine(VPoint.Internal(0,100), VPoint.Internal(0,0))
+});
+
+// Add a hole
+outer.AddHole(new List<ICurve> {
+    new VLine(VPoint.Internal(30,30), VPoint.Internal(70,30)),
+    new VLine(VPoint.Internal(70,30), VPoint.Internal(70,70)),
+    new VLine(VPoint.Internal(70,70), VPoint.Internal(30,70)),
+    new VLine(VPoint.Internal(30,70), VPoint.Internal(30,30))
+});
+
+// Or provide holes in constructor
+var regionWithHoles = new Region(outerCurves, new List<List<ICurve>> { holeCurves });
+```
+
+### Region Properties
+
+```csharp
+var region = new Region(curves);
+
+double area = region.Area;           // Outer area minus hole areas
+double signed = region.SignedArea;   // Positive for CCW, negative for CW
+double perimeter = region.Perimeter; // Total length (outer + holes)
+
+List<ICurve> outer = region.OuterLoop;      // Outer boundary curves
+List<List<ICurve>> holes = region.Holes;    // Inner hole loops
+
+bool inside = region.Contains(VPoint.Internal(50, 40));  // Point containment
+BoundingBox bounds = region.GetBounds();
+```
+
+### Converting Between Region and Polygon
+
+```csharp
+// Region to Polygon
+var poly = region.ToPolygon();              // Low-fidelity (curve endpoints only)
+var hires = region.ToPolygonHighRes(32);    // High-fidelity (32 segments per curve)
+var pwh = region.ToPolygonWithHoles(32);    // With holes, high-fidelity
+
+// Polygon to Region
+var fromPoly = Region.FromPolygon(polygon);
+var fromPwh = Region.FromPolygonWithHoles(polygonWithHoles);
+```
+
+### Region Boolean Operations
+
+Region supports boolean operations via `RegionBooleanOps` or extension methods:
+
+```csharp
+// Static methods
+var union = RegionBooleanOps.Union(regionA, regionB);            // Region?
+var intersection = RegionBooleanOps.Intersect(regionA, regionB); // List<Region>
+var difference = RegionBooleanOps.Difference(regionA, regionB);  // List<Region>
+var xor = RegionBooleanOps.Xor(regionA, regionB);               // List<Region>
+
+// Multi-region union
+var combined = RegionBooleanOps.Union(region1, region2, region3);
+
+// Extension method syntax
+var union = regionA.Union(regionB);
+var diff = regionA.Difference(regionB);
+
+// With holes support
+var results = RegionBooleanOps.DifferenceWithHoles(regionA, regionB);
+```
+
+> **Note**: Use `RegionBooleanOps.Intersect(a, b)` instead of `a.Intersect(b)` to avoid collision with `Shape.Intersect`.
 
 ---
 
@@ -844,7 +954,7 @@ File > Export > SVG exports shapes to SVG (Scalable Vector Graphics) format:
 
 ## Boolean Operations
 
-Code2Viz provides polygon boolean operations using the Clipper2 library.
+Code2Viz provides polygon boolean operations using the Clipper2 library. For curve-bounded regions, see also [Region Boolean Operations](#region-boolean-operations).
 
 ### Available Operations
 

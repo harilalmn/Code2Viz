@@ -103,6 +103,9 @@ namespace Code2Viz.Documentation
                 // Boolean Operations
                 { "BooleanOps", "Static class providing polygon boolean operations using native Greiner-Hormann algorithm. Supports Union (combine polygons), Intersect (overlapping area), Difference (subtract), Xor (symmetric difference), OffsetPolygon (grow/shrink), OffsetPolygonSafe (safe inward offset), MaxSafeInwardOffset, MakeSimple (resolve self-intersections), HasSelfIntersections, Simplify (Douglas-Peucker algorithm), Area calculation, and PointInPolygon (ray casting). Also provides WithHoles variants (DifferenceWithHoles, IntersectWithHoles, UnionWithHoles) that return PolygonWithHoles objects." },
                 { "PolygonWithHoles", "Represents a polygon with an outer boundary and optional inner holes. Created via BooleanOps WithHoles methods or directly. Constructor: new PolygonWithHoles(outer) or new PolygonWithHoles(outer, holes). Properties: Outer (VPolygon), Holes (List<VPolygon>), Area (outer minus holes). Methods: AddHole(hole), Contains(point), Clone()." },
+                { "Region", "Represents an enclosed 2D region bounded by curves (lines, arcs, splines, beziers). Unlike VPolygon which only supports straight edges, Region preserves original curve geometry in its boundary loops. A Region has an OuterLoop (ordered list of ICurve forming a closed boundary) and optional Holes. Constructors: new Region(curves), new Region(outerCurves, holes). Static factories: Region.FromPolygon(polygon), Region.FromPolygonWithHoles(pwh). Properties: OuterLoop, Holes, Area (outer minus holes), SignedArea, Perimeter. Methods: AddHole(curves), Contains(point), ToPolygon(), ToPolygonHighRes(segments), ToPolygonWithHoles(segments), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(). Curves are automatically ordered to form a continuous closed loop; self-intersection validation is enforced." },
+                { "RegionBooleanOps", "Static class providing boolean operations on Regions. Operations approximate region boundaries to high-resolution polygons, delegate to PolygonClipper, then wrap results back as Regions. Methods: Union(a, b), Union(params regions), Union(IEnumerable), Intersect(a, b), Difference(a, b), Xor(a, b). WithHoles variants: UnionWithHoles, IntersectWithHoles, DifferenceWithHoles. Analysis: PointInRegion(region, point), Area(region)." },
+                { "RegionBooleanExtensions", "Extension methods for Region boolean operations. Provides instance-method syntax: region.Union(other), region.Intersect(other), region.Difference(other), region.Xor(other), region.ContainsPoint(point), region.GetArea(). Note: Use RegionBooleanOps.Intersect(a, b) static method instead of a.Intersect(b) to avoid collision with Shape.Intersect." },
                 { "JoinType", "Enum for polygon offset join style. Values: Miter (sharp corners, default), Round (rounded corners), Square (squared-off corners). Used with BooleanOps.OffsetPolygon." },
                 { "EndType", "Enum for polygon offset end style. Values: Polygon (closed polygon, default), OpenRound (rounded open ends), OpenSquare (squared open ends), OpenButt (flat cut open ends). Used with BooleanOps.OffsetPolygon." },
 
@@ -139,12 +142,23 @@ namespace Code2Viz.Documentation
 
         public List<Type> GetDocumentableTypes()
         {
-            return _assembly.GetTypes()
+            Type[] types;
+            try
+            {
+                types = _assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                // Some types may fail to load (e.g. missing dependencies); use the ones that loaded
+                types = ex.Types.Where(t => t != null).ToArray()!;
+            }
+
+            return types
                 .Where(t => t.IsPublic && (t.IsClass || t.IsAbstract) && t.Namespace != null &&
                     (t.Namespace.StartsWith("Code2Viz.Geometry") ||
                      t.Namespace.StartsWith("Code2Viz.Animation") ||
                      t.Namespace.StartsWith("Code2Viz.Export") ||
-                     t.Name.Contains("Helper")))
+                     t.Namespace == "Code2Viz.Console"))
                 .OrderBy(t => t.Namespace)
                 .ThenBy(t => t.Name)
                 .ToList();
@@ -427,6 +441,7 @@ namespace Code2Viz.Documentation
                 { "VSpline", "let pts = [| VPoint(0.0,0.0); VPoint(50.0,50.0); VPoint(100.0,0.0) |]\nlet s = VSpline(pts)\ns.Draw()" },
                 { "VText", "let t = VText(VPoint(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Draw()" },
                 { "VArrow", "// From two points\nlet a = VArrow(VPoint(10.0, 10.0), VPoint(100.0, 10.0))\na.Draw()\n\n// From start point, direction, and length\nlet a2 = VArrow(VPoint(0.0, 0.0), VXYZ.BasisX, 50.0)\na2.Draw()" },
+                { "Region", "// Region bounded by lines and an arc\nlet p0 = VPoint.Internal(0.0, 0.0)\nlet p1 = VPoint.Internal(100.0, 0.0)\nlet p2 = VPoint.Internal(100.0, 80.0)\nlet p3 = VPoint.Internal(0.0, 80.0)\nlet curves = System.Collections.Generic.List<ICurve>()\ncurves.Add(VLine(p0, p1))\ncurves.Add(VLine(p1, p2))\ncurves.Add(VLine(p2, p3))\ncurves.Add(VLine(p3, p0))\nlet region = Region(curves)\nregion.Color <- \"Cyan\"\nregion.FillColor <- \"#4000FFFF\"" },
                 { "VGroup", @"// Create a group from shapes
 let circle = VCircle(VPoint(0.0, 0.0), 20.0)
 let line1 = VLine(VPoint(-30.0, 0.0), VPoint(30.0, 0.0))
@@ -1348,6 +1363,93 @@ var pwh2 = new PolygonWithHoles(
 pwh2.AddHole(new VPolygon(new VPoint(50,50), new VPoint(150,50), new VPoint(150,150), new VPoint(50,150)));
 VizConsole.Log(pwh2.Area);        // outer area minus hole area
 VizConsole.Log(pwh2.Contains(new VPoint(100, 100)));  // false (inside hole)" },
+
+                // Region
+                { "Region", @"// Region bounded by lines (rectangle)
+var p0 = VPoint.Internal(0, 0);
+var p1 = VPoint.Internal(100, 0);
+var p2 = VPoint.Internal(100, 80);
+var p3 = VPoint.Internal(0, 80);
+
+var curves = new List<ICurve> {
+    new VLine(p0, p1),
+    new VLine(p1, p2),
+    new VLine(p2, p3),
+    new VLine(p3, p0)
+};
+var region = new Region(curves);
+region.Color = ""Cyan"";
+region.FillColor = ""#4000FFFF"";
+
+// Region with mixed curves (D-shape: line + arc)
+var bottom = VPoint.Internal(0, 0);
+var top = VPoint.Internal(0, 60);
+var arc = VArc.FromStartEndRadius(top, bottom, 40, false);
+var dShape = new Region(new List<ICurve> { new VLine(bottom, top), arc });
+
+// Region with a hole
+var outer = new Region(new List<ICurve> {
+    new VLine(VPoint.Internal(0,0), VPoint.Internal(100,0)),
+    new VLine(VPoint.Internal(100,0), VPoint.Internal(100,100)),
+    new VLine(VPoint.Internal(100,100), VPoint.Internal(0,100)),
+    new VLine(VPoint.Internal(0,100), VPoint.Internal(0,0))
+});
+outer.AddHole(new List<ICurve> {
+    new VLine(VPoint.Internal(30,30), VPoint.Internal(70,30)),
+    new VLine(VPoint.Internal(70,30), VPoint.Internal(70,70)),
+    new VLine(VPoint.Internal(70,70), VPoint.Internal(30,70)),
+    new VLine(VPoint.Internal(30,70), VPoint.Internal(30,30))
+});
+
+// Properties
+VizConsole.Log(region.Area);       // 8000
+VizConsole.Log(region.Perimeter);  // 360
+VizConsole.Log(region.Contains(VPoint.Internal(50, 40)));  // true
+
+// Convert to polygon
+var poly = region.ToPolygon();           // Low-fidelity (endpoints only)
+var hires = region.ToPolygonHighRes(32); // High-fidelity (sampled)
+
+// Create from polygon
+var fromPoly = Region.FromPolygon(new VPolygon(
+    new VPoint(0,0), new VPoint(50,0), new VPoint(50,50), new VPoint(0,50)));" },
+
+                { "RegionBooleanOps", @"// Boolean operations on Regions
+var regionA = new Region(new List<ICurve> {
+    new VLine(VPoint.Internal(0,0), VPoint.Internal(80,0)),
+    new VLine(VPoint.Internal(80,0), VPoint.Internal(80,80)),
+    new VLine(VPoint.Internal(80,80), VPoint.Internal(0,80)),
+    new VLine(VPoint.Internal(0,80), VPoint.Internal(0,0))
+});
+var regionB = new Region(new List<ICurve> {
+    new VLine(VPoint.Internal(40,40), VPoint.Internal(120,40)),
+    new VLine(VPoint.Internal(120,40), VPoint.Internal(120,120)),
+    new VLine(VPoint.Internal(120,120), VPoint.Internal(40,120)),
+    new VLine(VPoint.Internal(40,120), VPoint.Internal(40,40))
+});
+
+// Union - combine regions
+var union = RegionBooleanOps.Union(regionA, regionB);
+
+// Intersection - overlapping area
+var intersection = RegionBooleanOps.Intersect(regionA, regionB);
+
+// Difference - subtract regionB from regionA
+var difference = RegionBooleanOps.Difference(regionA, regionB);
+
+// XOR - symmetric difference
+var xor = RegionBooleanOps.Xor(regionA, regionB);
+
+// Multi-region union
+var multiUnion = RegionBooleanOps.Union(regionA, regionB);
+
+// Extension method syntax
+var extUnion = regionA.Union(regionB);
+var extDiff = regionA.Difference(regionB);
+
+// With holes support
+var diffWithHoles = RegionBooleanOps.DifferenceWithHoles(regionA, regionB);" },
+
                 { "JoinType", @"// JoinType controls how offset polygon corners are handled
 var poly = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
 
@@ -1981,7 +2083,6 @@ var offset = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter, EndType.Polygon)
                 { "BooleanOps.Difference", "Subtracts one polygon from another." },
                 { "BooleanOps.Xor", "Returns the symmetric difference of two polygons (non-overlapping areas)." },
                 { "BooleanOps.OffsetPolygon", "Grows or shrinks a polygon by the specified distance." },
-                { "BooleanOps.Simplify", "Removes redundant points from a polygon within tolerance." },
                 { "BooleanOps.Area", "Calculates the area of a polygon." },
                 { "BooleanOps.PointInPolygon", "Tests if a point is inside a polygon." },
 
@@ -2192,6 +2293,48 @@ var offset = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter, EndType.Polygon)
                 { "PolygonWithHoles.Contains", "Returns true if a point is inside the outer boundary and not inside any hole." },
                 { "PolygonWithHoles.Clone", "Creates a deep copy of this PolygonWithHoles including outer and all holes." },
                 { "PolygonWithHoles.FromPolygonList", "Static method that analyzes a list of polygons and builds PolygonWithHoles structures by detecting containment." },
+
+                // Region Properties
+                { "Region.OuterLoop", "Gets the outer boundary of the region as an ordered list of ICurve forming a closed loop. Curves are stored in traversal order: the end of each curve connects to the start of the next." },
+                { "Region.Holes", "Gets the inner holes of the region. Each hole is an ordered list of ICurve forming a closed loop." },
+                { "Region.Area", "Gets the area of the region (outer area minus hole areas). Computed via polygon approximation of the boundary curves." },
+                { "Region.SignedArea", "Gets the signed area of the outer loop. Positive for counter-clockwise, negative for clockwise winding." },
+                { "Region.Perimeter", "Gets the total perimeter length (outer loop + all holes)." },
+
+                // Region Methods
+                { "Region.AddHole", "Adds a hole to the region. The hole curves must form a closed, non-self-intersecting loop entirely inside the outer boundary." },
+                { "Region.Contains", "Returns true if a point is inside the outer loop and outside all holes. Uses winding number algorithm on a polygon approximation." },
+                { "Region.ToPolygon", "Converts the region to a VPolygon using curve endpoints only (low-fidelity). Curved segments become straight edges." },
+                { "Region.ToPolygonHighRes", "Converts the region to a VPolygon by densely sampling each curve (high-fidelity). Parameter: segmentsPerCurve (default 32)." },
+                { "Region.ToPolygonWithHoles", "Converts the region to a PolygonWithHoles (high-fidelity polygon approximation including holes). Parameter: segmentsPerCurve (default 32)." },
+                { "Region.FromPolygon", "Static method: creates a Region from a VPolygon. Each polygon edge becomes a VLine in the region's OuterLoop." },
+                { "Region.FromPolygonWithHoles", "Static method: creates a Region from a PolygonWithHoles, including outer boundary and all holes." },
+                { "Region.Clone", "Creates a deep copy of this region with all curves and holes cloned." },
+                { "Region.Move", "Translates the region (outer loop and all holes) by the specified displacement vector." },
+                { "Region.Rotate", "Rotates the region around the specified pivot by the given angle in degrees." },
+                { "Region.Flip", "Mirrors the region across the specified axis line." },
+                { "Region.Scale", "Scales the region relative to a center point by the specified factor." },
+                { "Region.GetBounds", "Returns the axis-aligned bounding box of the region's outer loop." },
+                { "Region.ToString", "Returns a string representation: \"Region(Outer: N curves, Holes: M, Total: T curves)\"." },
+
+                // RegionBooleanOps Methods
+                { "RegionBooleanOps.Union", "Computes the union of two or more regions. Returns a single Region if successful, or null if disjoint. Overloads: Union(a, b), Union(params Region[]), Union(IEnumerable<Region>)." },
+                { "RegionBooleanOps.Intersect", "Computes the intersection of two regions. Returns a List<Region> of overlapping areas." },
+                { "RegionBooleanOps.Difference", "Computes the difference of two regions (a - b). Returns a List<Region>." },
+                { "RegionBooleanOps.Xor", "Computes the symmetric difference (XOR) of two regions. Returns a List<Region>." },
+                { "RegionBooleanOps.UnionWithHoles", "Computes the union of two regions, returning List<Region> with hole information preserved." },
+                { "RegionBooleanOps.IntersectWithHoles", "Computes the intersection of two regions, returning List<Region> with hole information preserved." },
+                { "RegionBooleanOps.DifferenceWithHoles", "Computes the difference of two regions, returning List<Region> with hole information preserved." },
+                { "RegionBooleanOps.PointInRegion", "Checks if a point is inside a region. Delegates to region.Contains(point)." },
+                { "RegionBooleanOps.Area", "Calculates the area of a region. Delegates to region.Area." },
+
+                // RegionBooleanExtensions Methods
+                { "RegionBooleanExtensions.Union", "Extension: computes union of this region with another. Returns Region? (null if disjoint)." },
+                { "RegionBooleanExtensions.Intersect", "Extension: computes intersection of this region with another. Returns List<Region>. Note: use RegionBooleanOps.Intersect(a, b) to avoid collision with Shape.Intersect." },
+                { "RegionBooleanExtensions.Difference", "Extension: computes difference (this - other). Returns List<Region>." },
+                { "RegionBooleanExtensions.Xor", "Extension: computes symmetric difference (XOR). Returns List<Region>." },
+                { "RegionBooleanExtensions.ContainsPoint", "Extension: checks if a point is inside this region." },
+                { "RegionBooleanExtensions.GetArea", "Extension: calculates the area of this region." },
 
                 // JoinType Enum Values
                 { "JoinType.Miter", "Sharp corner joins (default). May produce spikes on acute angles; controlled by miter limit." },
