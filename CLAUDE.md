@@ -88,6 +88,7 @@ Due to naming conflicts with WPF types, use these aliases:
 4. **Colors** parsed via WPF ColorConverter - any named color works
 5. **Working directory** is set to project folder during execution - relative paths resolve from there
 6. **VPoint.Internal(x, y)** creates points without auto-registration (for intermediate calculations)
+7. **Every Draw* method in RenderCanvas must handle DrawFactor** - check `DrawFactor <= 0` for early return, implement partial drawing logic, and apply OffsetX/OffsetY for MoveAnimation support. See DrawPolyline as the reference pattern for segment-based shapes.
 
 ## Keyboard Shortcuts (Key Bindings)
 

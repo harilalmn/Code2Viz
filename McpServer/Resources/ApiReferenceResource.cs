@@ -205,6 +205,19 @@ public class ApiReferenceResource
         // Methods: GetPointAtDistance(d), ContainsPoint(pt), ToFiniteLine(), ToXLine()
         ```
 
+        ### Region (curve-bounded area)
+        ```csharp
+        new Region(new List<ICurve> { line1, arc1, line2, arc2 }); // curves auto-ordered into loop
+        new Region(outerCurves, new List<List<ICurve>> { holeCurves }); // with holes
+        Region.FromPolygon(polygon);
+        Region.FromPolygonWithHoles(pwh);
+        // Properties: OuterLoop, Holes, Area, SignedArea, Perimeter
+        // Methods: AddHole(curves), Contains(point), ToPolygon(), ToPolygonHighRes(segments),
+        //          ToPolygonWithHoles(segments), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds()
+        // Boolean ops (static): RegionBooleanOps.Union(a, b), .Intersect(a, b), .Difference(a, b), .Xor(a, b)
+        // Multi-union: RegionBooleanOps.Union(r1, r2, r3, ...)
+        ```
+
         ## ICurve Interface (VLine, VCircle, VArc, VEllipse, VPolyline, VPolygon, VBezier, VSpline)
         Properties: StartPoint, EndPoint, Vertices, SelfIntersecting
         Methods:

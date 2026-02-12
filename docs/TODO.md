@@ -86,12 +86,12 @@
 ## Medium Priority (P1) - Geometry Operations
 
 ### Boolean Operations
-- [ ] **Union** - Combine two or more polygons
-- [ ] **Intersection** - Get overlapping area of polygons
-- [ ] **Difference** - Subtract one polygon from another
-- [ ] **XOR** - Symmetric difference
-- [ ] **Clipper library** - Use Clipper2 for robust operations
-- [ ] **API exposure** - VPolygon.Union(other), etc.
+- [x] **Union** - Combine two or more polygons
+- [x] **Intersection** - Get overlapping area of polygons
+- [x] **Difference** - Subtract one polygon from another
+- [x] **XOR** - Symmetric difference
+- [x] **Clipper library** - Use Clipper2 for robust operations
+- [x] **API exposure** - VPolygon.Union(other), etc.
 
 ### Array/Pattern Operations
 - [ ] **Linear array** - Repeat shape along vector
@@ -130,9 +130,9 @@
 ## Low Priority (P2) - Styling Enhancements
 
 ### Shape Styling
-- [ ] **Dash patterns** - Dashed/dotted lines
+- [x] **Dash patterns** - Dashed/dotted lines via StrokeStyle property
   ```csharp
-  line.DashPattern = "Dash"; // Dash, Dot, DashDot, DashDotDot
+  line.StrokeStyle = StrokeStyle.Dashed; // Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden
   ```
 - [ ] **Line caps** - Round, Square, Flat
 - [ ] **Line joins** - Miter, Bevel, Round
@@ -143,7 +143,7 @@
 - [x] **Snap to grid** - Snap coordinates to grid intersections (F9 toggle, adaptive spacing)
 - [ ] **Ruler display** - Show rulers along canvas edges
 - [ ] **Zoom slider** - Visual zoom control in UI
-- [ ] **Mini-map** - Overview of entire canvas
+- [x] **Mini-map** - Overview of entire canvas (Ctrl+Shift+M toggle, syntax coloring, viewport indicator)
 
 ---
 
@@ -182,10 +182,11 @@
 
 ## Completed Features
 
-### Shapes (14 total)
+### Shapes (15 total)
 - [x] VPoint, VLine, VCircle, VRectangle, VEllipse, VArc
 - [x] VPolygon, VPolyline, VBezier, VSpline
 - [x] VArrow, VText, VDimension, VGroup
+- [x] Region (curve-bounded areas with holes, boolean ops)
 
 ### Drawing Tools (12 total)
 - [x] All shape types with click-based creation
@@ -201,10 +202,18 @@
 - [x] Animator.Fps property (1-120, default 60) for frame rate control
 - [x] CompositionTarget.Rendering-based animation loop (vsync-aligned)
 
+### Boolean Operations
+- [x] Union, Intersection, Difference, XOR (Clipper2)
+- [x] VPolygon.Union/Intersect/Difference/Xor methods
+- [x] Region boolean ops (RegionBooleanOps)
+
 ### Export
 - [x] PNG export
 - [x] SVG export
 - [x] GIF animation export
+- [x] MP4 video export
+- [x] DXF export (AutoCAD R12 ASCII)
+- [x] PDF export (vector graphics)
 
 ### Editor
 - [x] Syntax highlighting (C# and F#)
@@ -220,6 +229,7 @@
 - [x] Snap to grid (F9 toggle)
 - [x] Crossing/Window selection (drag direction determines mode)
 - [x] Shape ID counter reset on each execution
+- [x] Minimap with syntax coloring and viewport indicator
 
 ### Shape Editing
 - [x] Shape-specific control points (13 shape types)

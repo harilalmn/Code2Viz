@@ -151,6 +151,8 @@ namespace Code2Viz
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (_allTypes == null || _searchIndex == null) return;
+
             var query = SearchBox.Text.ToLower();
             if (string.IsNullOrWhiteSpace(query))
             {

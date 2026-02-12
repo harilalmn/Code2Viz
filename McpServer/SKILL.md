@@ -1,6 +1,6 @@
 ---
 name: code2viz
-description: "Create and visualize 2D geometry on an interactive canvas using C# code. Use this skill when the user asks to draw shapes, create geometric visualizations, generate 2D diagrams, or visualize geometry. Supports points, lines, circles, arcs, rectangles, ellipses, polygons, polylines, beziers, splines, arrows, text, groups, grids, dimensions, and construction lines. Shapes auto-register when created. Coordinate system is mathematical (Y-up, origin at center)."
+description: "Create and visualize 2D geometry on an interactive canvas using C# code. Use this skill when the user asks to draw shapes, create geometric visualizations, generate 2D diagrams, or visualize geometry. Supports points, lines, circles, arcs, rectangles, ellipses, polygons, polylines, beziers, splines, arrows, text, groups, grids, dimensions, regions, and construction lines. Shapes auto-register when created. Coordinate system is mathematical (Y-up, origin at center)."
 ---
 
 # Code2Viz - 2D Geometry Visualization
@@ -248,6 +248,44 @@ VRay.VerticalDown(origin);             // ray pointing down
 // Methods: GetPointAtDistance(distance), ContainsPoint(point), ToFiniteLine(), ToXLine()
 ```
 
+### Region
+A Region represents an enclosed 2D area bounded by curves (lines, arcs, beziers, splines). Unlike VPolygon which only supports straight edges, Region preserves the original curve geometry. Supports holes and boolean operations.
+
+```csharp
+// From a list of curves forming a closed loop (auto-orders and validates)
+var region = new Region(new List<ICurve> {
+    new VLine(new VPoint(0, 0), new VPoint(10, 0)),
+    VArc.FromStartEndRadius(new VPoint(10, 0), new VPoint(10, 10), 5),
+    new VLine(new VPoint(10, 10), new VPoint(0, 10)),
+    new VLine(new VPoint(0, 10), new VPoint(0, 0))
+});
+
+// With holes
+var regionWithHole = new Region(outerCurves, new List<List<ICurve>> { holeCurves });
+
+// From existing polygon
+var regionFromPoly = Region.FromPolygon(polygon);
+var regionFromPwh = Region.FromPolygonWithHoles(pwh);
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| OuterLoop | List\<ICurve\> | Outer boundary curves |
+| Holes | List\<List\<ICurve\>\> | Inner hole boundaries |
+| Area | double | Outer area minus hole areas |
+| SignedArea | double | Signed area of outer loop (positive=CCW) |
+| Perimeter | double | Total perimeter (outer + holes) |
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `AddHole(curves)` | void | Add a hole (list of curves forming closed loop) |
+| `Contains(point)` | bool | Point inside region (outside holes) |
+| `ToPolygon()` | VPolygon | Low-fidelity polygon (endpoints only) |
+| `ToPolygonHighRes(n)` | VPolygon | High-fidelity polygon (n segments/curve) |
+| `ToPolygonWithHoles(n)` | PolygonWithHoles | With holes, high-fidelity |
+| `FromPolygon(poly)` | Region | Create from VPolygon (static) |
+| `FromPolygonWithHoles(pwh)` | Region | Create from PolygonWithHoles (static) |
+
 ## Shape Properties (all shapes)
 
 | Property | Type | Default | Description |
@@ -487,6 +525,38 @@ pwh.AddHole(holePolygon);
 ### EndType Enum (for offset operations)
 `EndType.Polygon` (default, closed), `EndType.OpenRound`, `EndType.OpenSquare`, `EndType.OpenButt`
 
+## Boolean Operations (Region)
+
+Region supports boolean operations with any curve types (lines, arcs, beziers, splines). Operations approximate boundaries to high-resolution polygons, perform clipping, and wrap results back as Regions.
+
+```csharp
+// Static methods (preferred for Intersect to avoid collision with Shape.Intersect)
+var union = RegionBooleanOps.Union(regionA, regionB);           // Region?
+var intersection = RegionBooleanOps.Intersect(regionA, regionB); // List<Region>
+var difference = RegionBooleanOps.Difference(regionA, regionB);  // List<Region>
+var xor = RegionBooleanOps.Xor(regionA, regionB);               // List<Region>
+
+// Union of multiple regions
+var multiUnion = RegionBooleanOps.Union(region1, region2, region3); // Region?
+var listUnion = RegionBooleanOps.Union(listOfRegions);              // Region?
+
+// Extension methods (use static for Intersect)
+var union = regionA.Union(regionB);           // Region?
+var diff = regionA.Difference(regionB);       // List<Region>
+var xor = regionA.Xor(regionB);              // List<Region>
+
+// With holes support
+var results = RegionBooleanOps.UnionWithHoles(a, b);       // List<Region>
+var results = RegionBooleanOps.IntersectWithHoles(a, b);   // List<Region>
+var results = RegionBooleanOps.DifferenceWithHoles(a, b);  // List<Region>
+
+// Point containment and area
+bool inside = region.Contains(new VPoint(5, 5));
+double area = region.Area;
+```
+
+> **Note**: Use `RegionBooleanOps.Intersect(a, b)` instead of `a.Intersect(b)` because the extension method collides with `Shape.Intersect(Shape)`.
+
 ## VColor Utility
 
 ```csharp
@@ -702,3 +772,4 @@ for (int i = 1; i <= 5; i++)
 - `VizConsole.Log()` is the only console output method. Do NOT use `Write()` or `WriteLine()`.
 - Shape methods use VXYZ vectors: `shape.Move(new VXYZ(dx, dy, 0))` not `shape.Move(dx, dy)`.
 - ICurve Offset returns ICurve — cast to Shape to set styling: `((Shape)curve.Offset(10)).Color = "Red"`.
+- For Region boolean intersections, use `RegionBooleanOps.Intersect(a, b)` (static) instead of `a.Intersect(b)` (extension) to avoid collision with `Shape.Intersect`.

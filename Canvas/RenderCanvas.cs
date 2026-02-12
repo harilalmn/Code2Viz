@@ -806,6 +806,10 @@ public class RenderCanvas : FrameworkElement
                 case VGroup group:
                     DrawGroup(dc, group);
                     break;
+
+                case Region region:
+                    DrawRegion(dc, region);
+                    break;
             }
         }
 
@@ -2192,10 +2196,13 @@ public class RenderCanvas : FrameworkElement
 
     private void DrawSpline(DrawingContext dc, VSpline spline)
     {
-        if (spline.Opacity <= 0) return;
+        if (spline.DrawFactor <= 0 || spline.Opacity <= 0) return;
 
         var applyOpacity = spline.Opacity < 1.0;
         if (applyOpacity) dc.PushOpacity(spline.Opacity);
+
+        var offsetX = spline.OffsetX;
+        var offsetY = spline.OffsetY;
 
         var pen = GetCachedPen(spline.Color, spline.LineWeight, spline.LineType, spline.LineTypeScale);
         var points = spline.GetRenderPoints();
@@ -2205,15 +2212,31 @@ public class RenderCanvas : FrameworkElement
             return;
         }
 
+        var totalSegments = points.Count - 1;
+        var segmentsToDraw = spline.DrawFactor * totalSegments;
+
         var geometry = new StreamGeometry();
         using (var ctx = geometry.Open())
         {
-            var first = WorldToScreen(points[0].X, points[0].Y);
+            var first = WorldToScreen(points[0].X + offsetX, points[0].Y + offsetY);
             ctx.BeginFigure(first, false, false);
-            for (int i = 1; i < points.Count; i++)
+            for (int i = 1; i < points.Count && i <= segmentsToDraw + 1; i++)
             {
-                var pt = WorldToScreen(points[i].X, points[i].Y);
-                ctx.LineTo(pt, true, false);
+                var pt = WorldToScreen(points[i].X + offsetX, points[i].Y + offsetY);
+
+                if (i > segmentsToDraw && i <= segmentsToDraw + 1)
+                {
+                    var prevPt = WorldToScreen(points[i - 1].X + offsetX, points[i - 1].Y + offsetY);
+                    var fraction = segmentsToDraw - (i - 1);
+                    var partialPt = new Point(
+                        prevPt.X + (pt.X - prevPt.X) * fraction,
+                        prevPt.Y + (pt.Y - prevPt.Y) * fraction);
+                    ctx.LineTo(partialPt, true, false);
+                }
+                else
+                {
+                    ctx.LineTo(pt, true, false);
+                }
             }
         }
         geometry.Freeze();
@@ -2415,7 +2438,62 @@ public class RenderCanvas : FrameworkElement
             case VGroup nestedGroup:
                 DrawGroup(dc, nestedGroup);
                 break;
+            case Region region:
+                DrawRegion(dc, region);
+                break;
         }
+    }
+
+    private void DrawRegion(DrawingContext dc, Region region)
+    {
+        if (region.OuterLoop.Count == 0 || region.DrawFactor <= 0 || region.Opacity <= 0) return;
+
+        var applyOpacity = region.Opacity < 1.0;
+        if (applyOpacity) dc.PushOpacity(region.Opacity);
+
+        var offsetX = region.OffsetX;
+        var offsetY = region.OffsetY;
+
+        var fill = GetCachedBrush(region.FillColor);
+        var pen = GetCachedPen(region.Color, region.LineWeight, region.LineType, region.LineTypeScale);
+
+        var geometry = new StreamGeometry();
+        using (var ctx = geometry.Open())
+        {
+            // Draw outer loop
+            var outerPoints = Region.SampleLoop(region.OuterLoop, 32);
+            if (outerPoints.Count >= 3)
+            {
+                var firstPt = WorldToScreen(outerPoints[0].X + offsetX, outerPoints[0].Y + offsetY);
+                ctx.BeginFigure(firstPt, true, true);
+                for (int i = 1; i < outerPoints.Count; i++)
+                {
+                    var pt = WorldToScreen(outerPoints[i].X + offsetX, outerPoints[i].Y + offsetY);
+                    ctx.LineTo(pt, true, false);
+                }
+            }
+
+            // Draw holes (as separate figures wound in opposite direction)
+            foreach (var hole in region.Holes)
+            {
+                var holePoints = Region.SampleLoop(hole, 32);
+                if (holePoints.Count >= 3)
+                {
+                    var firstHolePt = WorldToScreen(holePoints[0].X + offsetX, holePoints[0].Y + offsetY);
+                    ctx.BeginFigure(firstHolePt, true, true);
+                    for (int i = 1; i < holePoints.Count; i++)
+                    {
+                        var pt = WorldToScreen(holePoints[i].X + offsetX, holePoints[i].Y + offsetY);
+                        ctx.LineTo(pt, true, false);
+                    }
+                }
+            }
+        }
+        geometry.Freeze();
+
+        dc.DrawGeometry(fill, pen, geometry);
+
+        if (applyOpacity) dc.Pop();
     }
 
     public void ZoomExtents(IEnumerable<IDrawable> shapes)

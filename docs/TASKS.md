@@ -107,11 +107,26 @@
 
 ---
 
+### Phase 14: Region Support & Animation Bug Fixes
+- [x] Add Region shape (curve-bounded 2D area with holes support)
+- [x] Add RegionBooleanOps (Union, Intersect, Difference, Xor)
+- [x] Add Region rendering in RenderCanvas (DrawRegion method)
+- [x] Fix DrawSpline missing DrawFactor support (broke DrawAnimation for VSpline)
+- [x] Fix DrawSpline missing OffsetX/OffsetY support (broke MoveAnimation for VSpline)
+- [x] Add Region case in main draw switch and VGroup child draw switch
+- [x] Fix polygon Union issue (Greiner-Hormann winding order normalization)
+- [x] Add C2VGeometry standalone geometry library
+- [x] Add minimap with syntax coloring and viewport indicator
+- [x] Add BoundingBox class and refactor Shape.GetBounds() return type
+- [x] Add Area and Circumference properties to VCircle and VEllipse
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |
 |----------|-------|
-| Shape classes | 14 |
+| Shape classes | 15 |
 | C# files created | 50+ |
 | XAML files modified | 10+ |
 | NuGet packages | 3 |

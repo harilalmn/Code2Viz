@@ -9,6 +9,7 @@
       "Code2Viz.Tests/1.0.0": {
         "dependencies": {
           "AvalonEdit": "6.3.0.90",
+          "C2VGeometry": "1.0.0",
           "Code2Viz": "1.0.0",
           "Microsoft.CodeAnalysis.CSharp": "4.8.0",
           "Microsoft.NET.Test.Sdk": "17.14.1",
@@ -854,6 +855,14 @@
           }
         }
       },
+      "C2VGeometry/1.0.0": {
+        "runtime": {
+          "C2VGeometry.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "Code2Viz/1.0.0": {
         "dependencies": {
           "AvalonEdit": "6.3.0.90",
@@ -1104,6 +1113,11 @@
       "sha512": "sha512-yMb6vMESlSrE3Wfj7V6cjQ3S4TXdXpRqYeNEI3zsX31uTsGMJjEw6oD5F5u1cHnMptjhEECnmZSsPxB6ChZHDQ==",
       "path": "xunit.extensibility.execution/2.9.3",
       "hashPath": "xunit.extensibility.execution.2.9.3.nupkg.sha512"
+    },
+    "C2VGeometry/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "Code2Viz/1.0.0": {
       "type": "project",

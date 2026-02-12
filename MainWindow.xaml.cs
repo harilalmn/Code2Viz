@@ -5142,8 +5142,15 @@ public partial class MainWindow : Window
 
     private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        var helpWindow = new HelpWindow();
-        helpWindow.Show();
+        try
+        {
+            var helpWindow = new HelpWindow();
+            helpWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to open Help window:\n\n{ex}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)

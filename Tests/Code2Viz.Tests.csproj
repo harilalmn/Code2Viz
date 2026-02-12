@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Code2Viz.csproj" />
+    <ProjectReference Include="..\C2VGeometry\C2VGeometry.csproj" />
   </ItemGroup>
 
 </Project>

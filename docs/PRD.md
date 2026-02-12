@@ -61,7 +61,7 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 | FR-020 | Stroke Color | Done | Customizable border color |
 | FR-021 | Fill Color | Done | Customizable fill color |
 | FR-022 | Stroke Thickness | Done | Customizable line width |
-| FR-023 | Dash Pattern | Planned | Dashed/dotted lines |
+| FR-023 | Dash Pattern | Done | StrokeStyle property (Dashed, Dotted, DashDot, etc.) |
 | FR-024 | Opacity | Done | Transparency support |
 
 ### 2.3 Canvas Features
@@ -119,7 +119,7 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 | ID | Requirement | Status |
 |----|-------------|--------|
 | NFR-020 | Windows 10/11 | Supported |
-| NFR-021 | .NET 8.0 | Required |
+| NFR-021 | .NET 9.0 | Required |
 
 ---
 
@@ -151,7 +151,7 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 ## 5. Technical Architecture
 
 ### 5.1 Technology Stack
-- **Framework**: WPF (.NET 8.0)
+- **Framework**: WPF (.NET 9.0)
 - **Code Editor**: AvalonEdit
 - **Script Execution**: Roslyn (Microsoft.CodeAnalysis.CSharp.Scripting)
 - **Coordinate System**: Mathematical (Y-up, origin at center)
@@ -184,8 +184,13 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 - Editor: Syntax highlighting, formatting
 - Export: PNG
 
-### Version 1.1 (Planned)
+### Version 1.1 (Implemented)
 - Bezier curves and splines
-- Autocomplete in editor
-- SVG export
-- Snap to grid
+- Autocomplete and IntelliSense in editor
+- SVG, DXF, PDF, MP4 export
+- Snap to grid with 8 snap types
+- Region shape (curve-bounded areas with boolean ops)
+- Animation system (Draw, Move, Rotate, Flip, Fade, ValueAnimation)
+- Properties panel, shape editing, minimap
+- Code navigation (Go to Definition, Find References, Rename)
+- Boolean operations (Union, Intersect, Difference, Xor)

@@ -24,6 +24,7 @@
     <Compile Remove="McpBridge\**" />
     <Compile Remove="McpServer\**" />
     <Compile Remove="C2VGeometry\**" />
+    <Compile Remove="RegionSample\**" />
   </ItemGroup>
 
   <ItemGroup>
