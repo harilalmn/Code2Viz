@@ -32,7 +32,8 @@
       "Bash(Select-String -Pattern \"error|succeeded|failed\")",
       "Bash(dotnet test:*)",
       "Bash(del:*)",
-      "Bash(del \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\CSharp-SampleProject\\\\LayoutMaker.cs\")"
+      "Bash(del \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\CSharp-SampleProject\\\\LayoutMaker.cs\")",
+      "Bash(dotnet publish:*)"
     ]
   }
 }

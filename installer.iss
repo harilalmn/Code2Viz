@@ -8,7 +8,8 @@
 #define MyAppURL "https://github.com/harilalmn/Code2Viz"
 
 ; Paths - adjust if your layout differs
-#define BuildOutput "bin\Release\net9.0-windows\win-x64"
+; C:\Work\Nicety\Projects\Code2Viz\bin\Release\net9.0-windows
+#define BuildOutput "bin\Release\net9.0-windows"
 #define SampleCSharp "CSharp-SampleProject"
 #define SampleFSharp "FSharp-SampleProject"
 
