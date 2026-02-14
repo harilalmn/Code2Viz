@@ -122,6 +122,15 @@
 
 ---
 
+### Phase 15: Console & UI Bug Fixes
+- [x] Fix console panel resize expanding to maximum height with multiline content
+- [x] Fix console scroll behavior with variable-height (multiline) entries
+- [x] Remove ConsolePanel Grid.RowSpan spanning into Auto row (root cause of layout issue)
+- [x] Add pixel-based virtualized scrolling (VirtualizingPanel.ScrollUnit="Pixel")
+- [x] Add HorizontalContentAlignment="Stretch" for full-width selection highlight
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

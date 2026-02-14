@@ -89,6 +89,7 @@ Due to naming conflicts with WPF types, use these aliases:
 5. **Working directory** is set to project folder during execution - relative paths resolve from there
 6. **VPoint.Internal(x, y)** creates points without auto-registration (for intermediate calculations)
 7. **Every Draw* method in RenderCanvas must handle DrawFactor** - check `DrawFactor <= 0` for early return, implement partial drawing logic, and apply OffsetX/OffsetY for MoveAnimation support. See DrawPolyline as the reference pattern for segment-based shapes.
+8. **ConsolePanel must NOT span into Auto grid rows** - placing it at `Grid.Row="4"` only (no RowSpan into the Auto row 3). Spanning into Auto rows causes WPF to measure the ListBox with infinite height, making the console expand to fit all content instead of scrolling.
 
 ## Keyboard Shortcuts (Key Bindings)
 

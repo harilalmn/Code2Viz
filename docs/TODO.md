@@ -116,6 +116,7 @@
 ## Medium Priority (P1) - Bug Fixes & Performance
 
 ### Bug Fixes
+- [x] Fix console resize and scroll with multiline content (Auto row span layout issue)
 - [ ] Test arc rendering for edge cases (360 arc, negative angles)
 - [ ] Verify polygon rendering with self-intersecting polygons
 - [ ] Test zoom limits at extreme scales
