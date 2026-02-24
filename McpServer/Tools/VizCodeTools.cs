@@ -106,4 +106,21 @@ public static class VizCodeTools
         var response = await client.SendAsync(request);
         return response.Success ? response.Result ?? "{}" : $"Error: {response.Error}";
     }
+
+    [McpServerTool, Description(
+        "Create or update a source file in the current Code2Viz project. " +
+        "If the file exists, its content is replaced. If it doesn't exist, a new file is created. " +
+        "The file is saved to disk and the editor is refreshed automatically. " +
+        "Use this to add helper classes, utility code, or data files that Main() in StartViz.cs can reference. " +
+        "Do NOT use this to update StartViz.cs — use execute_vizcode instead, which sets the Main() body.")]
+    public static async Task<string> UpdateFile(
+        [Description("File name (e.g. 'Room.cs', 'Helpers.cs'). Must end in .cs or .fs.")] string fileName,
+        [Description("The full source code content for the file.")] string content)
+    {
+        using var client = new IpcClient();
+        var payload = System.Text.Json.JsonSerializer.Serialize(new { fileName, content });
+        var request = new IpcRequest { Command = "update_file", Payload = payload };
+        var response = await client.SendAsync(request);
+        return response.Success ? response.Result ?? "Updated" : $"Error: {response.Error}";
+    }
 }

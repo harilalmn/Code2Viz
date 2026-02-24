@@ -22,19 +22,22 @@ public class McpBridgeHost : IDisposable
     private readonly Func<string, Task> _exportPng;
     private readonly Func<IReadOnlyList<IDrawable>> _getShapes;
     private readonly Func<IReadOnlyList<VizCodeFile>> _getProjectFiles;
+    private readonly Func<string, string, Task<string>> _updateFile;
 
     public McpBridgeHost(
         Dispatcher dispatcher,
         Func<string, Task<string>> executeCode,
         Func<string, Task> exportPng,
         Func<IReadOnlyList<IDrawable>> getShapes,
-        Func<IReadOnlyList<VizCodeFile>> getProjectFiles)
+        Func<IReadOnlyList<VizCodeFile>> getProjectFiles,
+        Func<string, string, Task<string>> updateFile)
     {
         _dispatcher = dispatcher;
         _executeCode = executeCode;
         _exportPng = exportPng;
         _getShapes = getShapes;
         _getProjectFiles = getProjectFiles;
+        _updateFile = updateFile;
         _server = new IpcServer(HandleRequest);
     }
 
@@ -53,6 +56,7 @@ public class McpBridgeHost : IDisposable
                 "export_png" => await HandleExportPng(request),
                 "get_console_output" => HandleGetConsoleOutput(request),
                 "get_project_context" => await HandleGetProjectContext(request),
+                "update_file" => await HandleUpdateFile(request),
                 _ => IpcResponse.Fail(request.Id, $"Unknown command: {request.Command}")
             };
         }
@@ -191,6 +195,41 @@ public class McpBridgeHost : IDisposable
         });
 
         return IpcResponse.Ok(request.Id, json);
+    }
+
+    private async Task<IpcResponse> HandleUpdateFile(IpcRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Payload))
+            return IpcResponse.Fail(request.Id, "No payload provided");
+
+        try
+        {
+            var payload = JsonSerializer.Deserialize<UpdateFilePayload>(request.Payload!);
+            if (payload == null || string.IsNullOrWhiteSpace(payload.FileName))
+                return IpcResponse.Fail(request.Id, "Invalid payload: fileName is required");
+            if (payload.Content == null)
+                return IpcResponse.Fail(request.Id, "Invalid payload: content is required");
+
+            var result = await _dispatcher.InvokeAsync(async () =>
+            {
+                return await _updateFile(payload.FileName, payload.Content);
+            }).Task.Unwrap();
+
+            return IpcResponse.Ok(request.Id, result);
+        }
+        catch (JsonException ex)
+        {
+            return IpcResponse.Fail(request.Id, $"Invalid JSON payload: {ex.Message}");
+        }
+    }
+
+    private record UpdateFilePayload
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("fileName")]
+        public string FileName { get; init; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("content")]
+        public string Content { get; init; } = "";
     }
 
     public void Dispose()

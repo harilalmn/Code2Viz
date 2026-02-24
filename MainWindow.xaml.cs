@@ -3883,8 +3883,62 @@ public partial class MainWindow : Window
             exportPng: ExportPngFromMcp,
             getShapes: () => CanvasRenderer.Instance.GetShapes(),
             getProjectFiles: () => _currentProject?.GetAllSourceFiles().ToList().AsReadOnly()
-                ?? (IReadOnlyList<Project.VizCodeFile>)Array.Empty<Project.VizCodeFile>());
+                ?? (IReadOnlyList<Project.VizCodeFile>)Array.Empty<Project.VizCodeFile>(),
+            updateFile: UpdateFileFromMcp);
         _mcpBridgeHost.Start();
+    }
+
+    /// <summary>
+    /// Updates a project file from an MCP command. Creates the file if it doesn't exist.
+    /// Updates in-memory content, saves to disk, and refreshes the editor if active.
+    /// Must be called on the UI thread.
+    /// </summary>
+    internal Task<string> UpdateFileFromMcp(string fileName, string content)
+    {
+        if (_currentProject == null)
+            return Task.FromResult("Error: No project is open");
+
+        // Find existing file by name
+        var file = _currentProject.Files.FirstOrDefault(
+            f => f.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+
+        if (file != null)
+        {
+            // Update existing file
+            file.Content = content;
+            file.HasUnsavedChanges = true;
+            _currentProject.SaveFile(file);
+
+            // Refresh editor if this is the active file
+            if (_activeFile == file)
+            {
+                _suppressUnsavedMarking = true;
+                CodeEditor.Text = content;
+                _suppressUnsavedMarking = false;
+            }
+
+            return Task.FromResult($"Updated {fileName}");
+        }
+        else
+        {
+            // Create new file
+            var filePath = Path.Combine(_currentProject.ProjectDirectory, fileName);
+            var newFile = new Project.VizCodeFile
+            {
+                FilePath = filePath,
+                Content = content,
+                HasUnsavedChanges = true,
+                IsOpen = true
+            };
+
+            _currentProject.AddFile(newFile);
+            _currentProject.SaveFile(newFile);
+
+            LoadProjectTree();
+            RefreshFileTabs();
+
+            return Task.FromResult($"Created {fileName}");
+        }
     }
 
     /// <summary>

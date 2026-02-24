@@ -27,6 +27,9 @@ Retrieve console output from the last code execution.
 ### get_project_context
 Get all source files (.cs/.fs) in the current project as JSON. Returns each file's name, content, and whether it is the entry point. **Call this first** when working with an existing project to discover custom classes, helpers, and data defined across multiple files.
 
+### update_file
+Create or update a source file in the project. Pass a file name (e.g. `Room.cs`) and its full content. If the file exists it is replaced; if not, a new file is created. The editor refreshes automatically. Use this for helper classes and utility code — for the entry point (`StartViz.cs`), use `execute_vizcode` instead.
+
 ## Quick Start
 
 To draw shapes, call `execute_vizcode` with C# code. **Always assign shapes to variables** — unnamed shapes are hidden by the animation system.
