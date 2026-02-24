@@ -1,0 +1,20 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+  C2VGeometry -> C:\Work\Nicety\Projects\Code2Viz\C2VGeometry\bin\Debug\net9.0\C2VGeometry.dll
+  Code2Viz.McpBridge -> C:\Work\Nicety\Projects\Code2Viz\McpBridge\bin\Debug\net9.0\Code2Viz.McpBridge.dll
+  Code2Viz -> C:\Work\Nicety\Projects\Code2Viz\bin\Debug\net9.0-windows\Code2Viz.dll
+  Code2Viz.Tests -> C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll
+Test run for C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll (.NETCoreApp,Version=v9.0)
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed Code2Viz.Tests.RoslynCompletionTests.GetCompletions_ShouldHideIrrelevantNamespacesAndStructs [54 ms]
+  Error Message:
+   Assert.Contains() Failure: Filter not matched in collection
+Collection: [CompletionData { Content = (throws InvalidOperationException), Description = "void Test.Method()", Image = null, Kind = Method, Priority = 3, ┬╖┬╖┬╖ }, CompletionData { Content = (throws InvalidOperationException), Description = "Test", Image = null, Kind = Type, Priority = 2, ┬╖┬╖┬╖ }, CompletionData { Content = (throws InvalidOperationException), Description = "System", Image = null, Kind = Type, Priority = 2, ┬╖┬╖┬╖ }, CompletionData { Content = (throws InvalidOperationException), Description = "SourceGenerated", Image = null, Kind = Type, Priority = 2, ┬╖┬╖┬╖ }, CompletionData { Content = (throws InvalidOperationException), Description = "FxResources", Image = null, Kind = Type, Priority = 2, ┬╖┬╖┬╖ }, ┬╖┬╖┬╖]
+  Stack Trace:
+     at Code2Viz.Tests.RoslynCompletionTests.GetCompletions_ShouldHideIrrelevantNamespacesAndStructs() in C:\Work\Nicety\Projects\Code2Viz\Tests\RoslynCompletionTests.cs:line 145
+--- End of stack trace from previous location ---
+
+Failed!  - Failed:     1, Passed:    46, Skipped:     0, Total:    47, Duration: 694 ms - Code2Viz.Tests.dll (net9.0)

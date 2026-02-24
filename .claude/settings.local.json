@@ -33,7 +33,9 @@
       "Bash(dotnet test:*)",
       "Bash(del:*)",
       "Bash(del \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\CSharp-SampleProject\\\\LayoutMaker.cs\")",
-      "Bash(dotnet publish:*)"
+      "Bash(dotnet publish:*)",
+      "Bash(git log:*)",
+      "Bash(dotnet run:*)"
     ]
   }
 }

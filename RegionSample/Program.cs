@@ -1,5 +1,7 @@
 ﻿using C2VGeometry;
 
+
+
 // ═══════════════════════════════════════════════════════
 // Region A: A "guitar pick" shape using Line + Arc + Bezier
 // ═══════════════════════════════════════════════════════
@@ -158,3 +160,5 @@ Console.WriteLine($"  Point (5,5) in B: {regionB.Contains(testPoint)}");
 Console.WriteLine($"  Point (5,5) in Union: {union?.Contains(testPoint)}");
 Console.WriteLine($"  Point (12,4) in A: {regionA.Contains(VPoint.Internal(12, 4))}");
 Console.WriteLine($"  Point (12,4) in B: {regionB.Contains(VPoint.Internal(12, 4))}");
+
+

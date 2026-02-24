@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="15b8d5a2-4d95-45a8-a24e-226e2a468c06" name="haril@HARILAP 2026-02-12 18:05:02" runUser="HARILAP\haril" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-02-12T18:05:02.1321979+05:30" queuing="2026-02-12T18:05:02.1321987+05:30" start="2026-02-12T18:05:01.6277239+05:30" finish="2026-02-12T18:05:02.1614055+05:30" />
+  <TestSettings name="default" id="d41d2005-973f-4480-8e89-5577dce68489">
+    <Deployment runDeploymentRoot="haril_HARILAP_2026-02-12_18_05_02" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="386e8405-cc7f-4939-af3f-5d7df9292f4e" testId="e608faa7-35ed-bc24-5302-c883a57e06a5" testName="Code2Viz.Tests.RegionTests.Area_Rectangle_ReturnsCorrectArea" computerName="HARILAP" duration="00:00:00.0000479" startTime="2026-02-12T18:05:02.1143916+05:30" endTime="2026-02-12T18:05:02.1144190+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="386e8405-cc7f-4939-af3f-5d7df9292f4e" />
+    <UnitTestResult executionId="94ed1ad5-a3a4-4f41-9d16-dfb67bff7373" testId="daa86f36-2e90-9f5c-3103-98768d58ccac" testName="Code2Viz.Tests.RegionTests.ToPolygon_Rectangle_ReturnsFourPointPolygon" computerName="HARILAP" duration="00:00:00.0001562" startTime="2026-02-12T18:05:02.0954922+05:30" endTime="2026-02-12T18:05:02.0955744+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="94ed1ad5-a3a4-4f41-9d16-dfb67bff7373" />
+    <UnitTestResult executionId="aaade94c-f157-4b0b-9f50-a9ad372cabf3" testId="2f718b2a-363e-0af5-a43d-abba451f448d" testName="Code2Viz.Tests.RegionTests.Intersect_OverlappingRectangles_ReturnsOverlapRegion" computerName="HARILAP" duration="00:00:00.0001326" startTime="2026-02-12T18:05:02.1188300+05:30" endTime="2026-02-12T18:05:02.1188527+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="aaade94c-f157-4b0b-9f50-a9ad372cabf3" />
+    <UnitTestResult executionId="bdb648cf-91bb-4669-9021-a6c6475cbc02" testId="ff69d141-e8d9-b46e-9a99-93b9c7a0ddc0" testName="Code2Viz.Tests.RegionTests.FromPolygon_RoundTrips_SameArea" computerName="HARILAP" duration="00:00:00.0016019" startTime="2026-02-12T18:05:02.0904085+05:30" endTime="2026-02-12T18:05:02.0904560+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bdb648cf-91bb-4669-9021-a6c6475cbc02" />
+    <UnitTestResult executionId="b5600e91-3929-4c2f-b330-7f8ebf787978" testId="284b5470-abd8-670e-76e0-fb67ec7bd72b" testName="Code2Viz.Tests.RegionTests.Intersect_NoOverlap_ReturnsEmpty" computerName="HARILAP" duration="00:00:00.0001718" startTime="2026-02-12T18:05:02.1173852+05:30" endTime="2026-02-12T18:05:02.1174160+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b5600e91-3929-4c2f-b330-7f8ebf787978" />
+    <UnitTestResult executionId="f225db71-f6bf-4027-a3ee-a879912e3883" testId="2dd4ccee-7e0c-b161-27ee-1713b1f2c26e" testName="Code2Viz.Tests.RegionTests.Constructor_TriangleFromLines_CreatesRegionWithThreeCurves" computerName="HARILAP" duration="00:00:00.0001070" startTime="2026-02-12T18:05:02.1174912+05:30" endTime="2026-02-12T18:05:02.1175164+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f225db71-f6bf-4027-a3ee-a879912e3883" />
+    <UnitTestResult executionId="3d137d51-f87f-4d11-a481-ea5c86c3f260" testId="df5cca89-616b-8bc6-5ba0-fbc9c2d60db1" testName="Code2Viz.Tests.RegionTests.Constructor_DisconnectedCurves_ThrowsArgumentException" computerName="HARILAP" duration="00:00:00.0001236" startTime="2026-02-12T18:05:02.1186705+05:30" endTime="2026-02-12T18:05:02.1186956+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3d137d51-f87f-4d11-a481-ea5c86c3f260" />
+    <UnitTestResult executionId="75713714-bd4d-42e9-8a29-89cdac837597" testId="230a0d17-1477-8522-b232-21c8b92b078d" testName="Code2Viz.Tests.RegionTests.Union_OverlappingRectangles_ReturnsMergedRegion" computerName="HARILAP" duration="00:00:00.0000888" startTime="2026-02-12T18:05:02.0956707+05:30" endTime="2026-02-12T18:05:02.0957081+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="75713714-bd4d-42e9-8a29-89cdac837597" />
+    <UnitTestResult executionId="8ba3cba0-27f6-454c-899f-87bcb3c721c7" testId="98a475f5-26d0-13d0-7f85-54f7b64a6570" testName="Code2Viz.Tests.RegionTests.Area_RectangleWithHole_SubtractsHoleArea" computerName="HARILAP" duration="00:00:00.0001055" startTime="2026-02-12T18:05:02.1139084+05:30" endTime="2026-02-12T18:05:02.1139632+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8ba3cba0-27f6-454c-899f-87bcb3c721c7" />
+    <UnitTestResult executionId="480221ce-c9d3-4dfb-a23b-41d91b50bea0" testId="c7cbd7c2-9788-f3ce-f375-5ec91059aa51" testName="Code2Viz.Tests.RegionTests.Contains_PointOutsideRectangle_ReturnsFalse" computerName="HARILAP" duration="00:00:00.0000426" startTime="2026-02-12T18:05:02.1187501+05:30" endTime="2026-02-12T18:05:02.1187773+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="480221ce-c9d3-4dfb-a23b-41d91b50bea0" />
+    <UnitTestResult executionId="4b366635-b233-46cc-8c63-3d287e34aebb" testId="11ba1ec7-d4af-de8e-23e1-0ab3a77c8a39" testName="Code2Viz.Tests.RegionTests.Contains_PointInsideHole_ReturnsFalse" computerName="HARILAP" duration="00:00:00.0004622" startTime="2026-02-12T18:05:02.0957768+05:30" endTime="2026-02-12T18:05:02.0959087+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4b366635-b233-46cc-8c63-3d287e34aebb" />
+    <UnitTestResult executionId="9ac0453c-9a3d-4497-aaec-31efabbcfbdc" testId="e367e3f2-6efd-3abd-78a1-1a430718e61c" testName="Code2Viz.Tests.RegionTests.Constructor_SingleCurve_ThrowsArgumentException" computerName="HARILAP" duration="00:00:00.0001458" startTime="2026-02-12T18:05:02.1175732+05:30" endTime="2026-02-12T18:05:02.1175979+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9ac0453c-9a3d-4497-aaec-31efabbcfbdc" />
+    <UnitTestResult executionId="564b20c1-3ee7-4c19-bd9b-6d4360cee863" testId="ea39e2d1-c0e6-1f9f-b95a-ad0f02198057" testName="Code2Viz.Tests.RegionTests.Constructor_UnorderedCurves_OrdersAutomatically" computerName="HARILAP" duration="00:00:00.0000933" startTime="2026-02-12T18:05:02.1185611+05:30" endTime="2026-02-12T18:05:02.1185914+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="564b20c1-3ee7-4c19-bd9b-6d4360cee863" />
+    <UnitTestResult executionId="7e6fef86-056e-4136-85b4-0a5d0c8f600c" testId="462268cf-3808-c074-47b4-7d4ce62399b5" testName="Code2Viz.Tests.RegionTests.ToString_ContainsCurveCount" computerName="HARILAP" duration="00:00:00.0008308" startTime="2026-02-12T18:05:02.0909465+05:30" endTime="2026-02-12T18:05:02.0910029+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7e6fef86-056e-4136-85b4-0a5d0c8f600c" />
+    <UnitTestResult executionId="857add94-318e-4d85-918a-f6b209b98d0c" testId="bf470b93-6224-b30f-6501-d3e148a7da44" testName="Code2Viz.Tests.RegionTests.Clone_ReturnsIndependentCopy" computerName="HARILAP" duration="00:00:00.0004543" startTime="2026-02-12T18:05:02.1189077+05:30" endTime="2026-02-12T18:05:02.1189293+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="857add94-318e-4d85-918a-f6b209b98d0c" />
+    <UnitTestResult executionId="78fbf4f5-16c0-4ff5-aea2-db60d84502f5" testId="d27eb7da-baef-1ec0-2c8f-5aeffe3eeada" testName="Code2Viz.Tests.RegionTests.Constructor_ClosedCurve_ThrowsArgumentException" computerName="HARILAP" duration="00:00:00.0006509" startTime="2026-02-12T18:05:02.1143070+05:30" endTime="2026-02-12T18:05:02.1143339+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="78fbf4f5-16c0-4ff5-aea2-db60d84502f5" />
+    <UnitTestResult executionId="16e5c339-cd6a-4bee-8c29-c3b963c669c6" testId="436eb5af-873d-11bd-7c24-99005b38cbcd" testName="Code2Viz.Tests.RegionTests.Contains_PointInsideRectangle_ReturnsTrue" computerName="HARILAP" duration="00:00:00.0000435" startTime="2026-02-12T18:05:02.1141920+05:30" endTime="2026-02-12T18:05:02.1142254+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="16e5c339-cd6a-4bee-8c29-c3b963c669c6" />
+    <UnitTestResult executionId="1a0aa44c-b164-49b0-945a-0f515e526d8a" testId="44099021-0050-f72c-6e4c-c5aa457a21ca" testName="Code2Viz.Tests.RegionTests.Difference_OverlappingRectangles_RemovesOverlap" computerName="HARILAP" duration="00:00:00.0003859" startTime="2026-02-12T18:05:02.0948405+05:30" endTime="2026-02-12T18:05:02.0952715+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1a0aa44c-b164-49b0-945a-0f515e526d8a" />
+    <UnitTestResult executionId="5558e104-3e37-4da1-9619-7ca4314e057b" testId="bceae514-89ee-5b12-97a9-783c37d5f84d" testName="Code2Viz.Tests.RegionTests.Constructor_RectangleFromLines_CreatesRegionWithFourCurves" computerName="HARILAP" duration="00:00:00.0105614" startTime="2026-02-12T18:05:02.0700193+05:30" endTime="2026-02-12T18:05:02.0848526+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5558e104-3e37-4da1-9619-7ca4314e057b" />
+    <UnitTestResult executionId="b5b90bef-422d-4c0c-87fd-bf9294f6bb1b" testId="e2fe40e0-6a97-2050-acd1-2a74c71d1782" testName="Code2Viz.Tests.RegionTests.BooleanOps_AreaInvariant_UnionPlusIntersectEqualsSumOfAreas" computerName="HARILAP" duration="00:00:00.0065673" startTime="2026-02-12T18:05:02.0911015+05:30" endTime="2026-02-12T18:05:02.0940220+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b5b90bef-422d-4c0c-87fd-bf9294f6bb1b" />
+    <UnitTestResult executionId="23522a40-ea2f-426a-af78-20f0f3850026" testId="09998c5a-49c1-332f-2d9e-fbe395b0442e" testName="Code2Viz.Tests.RegionTests.ExtensionMethod_Union_Works" computerName="HARILAP" duration="00:00:00.0001110" startTime="2026-02-12T18:05:02.1144789+05:30" endTime="2026-02-12T18:05:02.1145055+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="23522a40-ea2f-426a-af78-20f0f3850026" />
+    <UnitTestResult executionId="681df9ac-b05d-4c94-a55c-f465cca9b8eb" testId="52157392-cc27-338f-5a5f-e57d45e6c88e" testName="Code2Viz.Tests.RegionTests.Constructor_MixedLinesAndArc_CreatesRegion" computerName="HARILAP" duration="00:00:00.0006792" startTime="2026-02-12T18:05:02.0941580+05:30" endTime="2026-02-12T18:05:02.0947302+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="681df9ac-b05d-4c94-a55c-f465cca9b8eb" />
+    <UnitTestResult executionId="c7b5e1ca-fa6e-4eab-a37e-b286f451dc06" testId="7e3f5ab0-edda-2e9c-26f5-28e4a4393bd5" testName="Code2Viz.Tests.RegionTests.Move_ShiftsRegion" computerName="HARILAP" duration="00:00:00.0007128" startTime="2026-02-12T18:05:02.1145618+05:30" endTime="2026-02-12T18:05:02.1148505+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c7b5e1ca-fa6e-4eab-a37e-b286f451dc06">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.True() Failure&#xD;
+Expected: True&#xD;
+Actual:   False</Message>
+          <StackTrace>   at Code2Viz.Tests.RegionTests.Move_ShiftsRegion() in C:\Work\Nicety\Projects\Code2Viz\Tests\RegionTests.cs:line 280&#xD;
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Move_ShiftsRegion" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="7e3f5ab0-edda-2e9c-26f5-28e4a4393bd5">
+      <Execution id="c7b5e1ca-fa6e-4eab-a37e-b286f451dc06" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Move_ShiftsRegion" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.BooleanOps_AreaInvariant_UnionPlusIntersectEqualsSumOfAreas" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="e2fe40e0-6a97-2050-acd1-2a74c71d1782">
+      <Execution id="b5b90bef-422d-4c0c-87fd-bf9294f6bb1b" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="BooleanOps_AreaInvariant_UnionPlusIntersectEqualsSumOfAreas" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Intersect_NoOverlap_ReturnsEmpty" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="284b5470-abd8-670e-76e0-fb67ec7bd72b">
+      <Execution id="b5600e91-3929-4c2f-b330-7f8ebf787978" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Intersect_NoOverlap_ReturnsEmpty" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Clone_ReturnsIndependentCopy" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="bf470b93-6224-b30f-6501-d3e148a7da44">
+      <Execution id="857add94-318e-4d85-918a-f6b209b98d0c" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Clone_ReturnsIndependentCopy" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.ToString_ContainsCurveCount" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="462268cf-3808-c074-47b4-7d4ce62399b5">
+      <Execution id="7e6fef86-056e-4136-85b4-0a5d0c8f600c" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="ToString_ContainsCurveCount" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_UnorderedCurves_OrdersAutomatically" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="ea39e2d1-c0e6-1f9f-b95a-ad0f02198057">
+      <Execution id="564b20c1-3ee7-4c19-bd9b-6d4360cee863" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_UnorderedCurves_OrdersAutomatically" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Difference_OverlappingRectangles_RemovesOverlap" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="44099021-0050-f72c-6e4c-c5aa457a21ca">
+      <Execution id="1a0aa44c-b164-49b0-945a-0f515e526d8a" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Difference_OverlappingRectangles_RemovesOverlap" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Intersect_OverlappingRectangles_ReturnsOverlapRegion" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="2f718b2a-363e-0af5-a43d-abba451f448d">
+      <Execution id="aaade94c-f157-4b0b-9f50-a9ad372cabf3" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Intersect_OverlappingRectangles_ReturnsOverlapRegion" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_TriangleFromLines_CreatesRegionWithThreeCurves" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="2dd4ccee-7e0c-b161-27ee-1713b1f2c26e">
+      <Execution id="f225db71-f6bf-4027-a3ee-a879912e3883" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_TriangleFromLines_CreatesRegionWithThreeCurves" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Union_OverlappingRectangles_ReturnsMergedRegion" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="230a0d17-1477-8522-b232-21c8b92b078d">
+      <Execution id="75713714-bd4d-42e9-8a29-89cdac837597" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Union_OverlappingRectangles_ReturnsMergedRegion" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_SingleCurve_ThrowsArgumentException" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="e367e3f2-6efd-3abd-78a1-1a430718e61c">
+      <Execution id="9ac0453c-9a3d-4497-aaec-31efabbcfbdc" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_SingleCurve_ThrowsArgumentException" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_MixedLinesAndArc_CreatesRegion" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="52157392-cc27-338f-5a5f-e57d45e6c88e">
+      <Execution id="681df9ac-b05d-4c94-a55c-f465cca9b8eb" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_MixedLinesAndArc_CreatesRegion" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_ClosedCurve_ThrowsArgumentException" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="d27eb7da-baef-1ec0-2c8f-5aeffe3eeada">
+      <Execution id="78fbf4f5-16c0-4ff5-aea2-db60d84502f5" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_ClosedCurve_ThrowsArgumentException" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.ExtensionMethod_Union_Works" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="09998c5a-49c1-332f-2d9e-fbe395b0442e">
+      <Execution id="23522a40-ea2f-426a-af78-20f0f3850026" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="ExtensionMethod_Union_Works" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.FromPolygon_RoundTrips_SameArea" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="ff69d141-e8d9-b46e-9a99-93b9c7a0ddc0">
+      <Execution id="bdb648cf-91bb-4669-9021-a6c6475cbc02" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="FromPolygon_RoundTrips_SameArea" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Contains_PointInsideHole_ReturnsFalse" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="11ba1ec7-d4af-de8e-23e1-0ab3a77c8a39">
+      <Execution id="4b366635-b233-46cc-8c63-3d287e34aebb" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Contains_PointInsideHole_ReturnsFalse" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Area_RectangleWithHole_SubtractsHoleArea" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="98a475f5-26d0-13d0-7f85-54f7b64a6570">
+      <Execution id="8ba3cba0-27f6-454c-899f-87bcb3c721c7" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Area_RectangleWithHole_SubtractsHoleArea" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.ToPolygon_Rectangle_ReturnsFourPointPolygon" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="daa86f36-2e90-9f5c-3103-98768d58ccac">
+      <Execution id="94ed1ad5-a3a4-4f41-9d16-dfb67bff7373" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="ToPolygon_Rectangle_ReturnsFourPointPolygon" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Area_Rectangle_ReturnsCorrectArea" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="e608faa7-35ed-bc24-5302-c883a57e06a5">
+      <Execution id="386e8405-cc7f-4939-af3f-5d7df9292f4e" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Area_Rectangle_ReturnsCorrectArea" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_DisconnectedCurves_ThrowsArgumentException" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="df5cca89-616b-8bc6-5ba0-fbc9c2d60db1">
+      <Execution id="3d137d51-f87f-4d11-a481-ea5c86c3f260" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_DisconnectedCurves_ThrowsArgumentException" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Contains_PointInsideRectangle_ReturnsTrue" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="436eb5af-873d-11bd-7c24-99005b38cbcd">
+      <Execution id="16e5c339-cd6a-4bee-8c29-c3b963c669c6" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Contains_PointInsideRectangle_ReturnsTrue" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Constructor_RectangleFromLines_CreatesRegionWithFourCurves" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="bceae514-89ee-5b12-97a9-783c37d5f84d">
+      <Execution id="5558e104-3e37-4da1-9619-7ca4314e057b" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Constructor_RectangleFromLines_CreatesRegionWithFourCurves" />
+    </UnitTest>
+    <UnitTest name="Code2Viz.Tests.RegionTests.Contains_PointOutsideRectangle_ReturnsFalse" storage="c:\work\nicety\projects\code2viz\tests\bin\debug\net9.0-windows\code2viz.tests.dll" id="c7cbd7c2-9788-f3ce-f375-5ec91059aa51">
+      <Execution id="480221ce-c9d3-4dfb-a23b-41d91b50bea0" />
+      <TestMethod codeBase="C:\Work\Nicety\Projects\Code2Viz\Tests\bin\Debug\net9.0-windows\Code2Viz.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Code2Viz.Tests.RegionTests" name="Contains_PointOutsideRectangle_ReturnsFalse" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="e608faa7-35ed-bc24-5302-c883a57e06a5" executionId="386e8405-cc7f-4939-af3f-5d7df9292f4e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="daa86f36-2e90-9f5c-3103-98768d58ccac" executionId="94ed1ad5-a3a4-4f41-9d16-dfb67bff7373" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2f718b2a-363e-0af5-a43d-abba451f448d" executionId="aaade94c-f157-4b0b-9f50-a9ad372cabf3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ff69d141-e8d9-b46e-9a99-93b9c7a0ddc0" executionId="bdb648cf-91bb-4669-9021-a6c6475cbc02" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="284b5470-abd8-670e-76e0-fb67ec7bd72b" executionId="b5600e91-3929-4c2f-b330-7f8ebf787978" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2dd4ccee-7e0c-b161-27ee-1713b1f2c26e" executionId="f225db71-f6bf-4027-a3ee-a879912e3883" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="df5cca89-616b-8bc6-5ba0-fbc9c2d60db1" executionId="3d137d51-f87f-4d11-a481-ea5c86c3f260" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="230a0d17-1477-8522-b232-21c8b92b078d" executionId="75713714-bd4d-42e9-8a29-89cdac837597" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="98a475f5-26d0-13d0-7f85-54f7b64a6570" executionId="8ba3cba0-27f6-454c-899f-87bcb3c721c7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c7cbd7c2-9788-f3ce-f375-5ec91059aa51" executionId="480221ce-c9d3-4dfb-a23b-41d91b50bea0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="11ba1ec7-d4af-de8e-23e1-0ab3a77c8a39" executionId="4b366635-b233-46cc-8c63-3d287e34aebb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e367e3f2-6efd-3abd-78a1-1a430718e61c" executionId="9ac0453c-9a3d-4497-aaec-31efabbcfbdc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ea39e2d1-c0e6-1f9f-b95a-ad0f02198057" executionId="564b20c1-3ee7-4c19-bd9b-6d4360cee863" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="462268cf-3808-c074-47b4-7d4ce62399b5" executionId="7e6fef86-056e-4136-85b4-0a5d0c8f600c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bf470b93-6224-b30f-6501-d3e148a7da44" executionId="857add94-318e-4d85-918a-f6b209b98d0c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d27eb7da-baef-1ec0-2c8f-5aeffe3eeada" executionId="78fbf4f5-16c0-4ff5-aea2-db60d84502f5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="436eb5af-873d-11bd-7c24-99005b38cbcd" executionId="16e5c339-cd6a-4bee-8c29-c3b963c669c6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="44099021-0050-f72c-6e4c-c5aa457a21ca" executionId="1a0aa44c-b164-49b0-945a-0f515e526d8a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bceae514-89ee-5b12-97a9-783c37d5f84d" executionId="5558e104-3e37-4da1-9619-7ca4314e057b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e2fe40e0-6a97-2050-acd1-2a74c71d1782" executionId="b5b90bef-422d-4c0c-87fd-bf9294f6bb1b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="09998c5a-49c1-332f-2d9e-fbe395b0442e" executionId="23522a40-ea2f-426a-af78-20f0f3850026" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="52157392-cc27-338f-5a5f-e57d45e6c88e" executionId="681df9ac-b05d-4c94-a55c-f465cca9b8eb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7e3f5ab0-edda-2e9c-26f5-28e4a4393bd5" executionId="c7b5e1ca-fa6e-4eab-a37e-b286f451dc06" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="23" executed="23" passed="22" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 9.0.13)&#xD;
+[xUnit.net 00:00:00.05]   Discovering: Code2Viz.Tests&#xD;
+[xUnit.net 00:00:00.08]   Discovered:  Code2Viz.Tests&#xD;
+[xUnit.net 00:00:00.09]   Starting:    Code2Viz.Tests&#xD;
+[xUnit.net 00:00:00.15]       Assert.True() Failure&#xD;
+[xUnit.net 00:00:00.15]       Expected: True&#xD;
+[xUnit.net 00:00:00.15]       Actual:   False&#xD;
+[xUnit.net 00:00:00.15]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.15]         C:\Work\Nicety\Projects\Code2Viz\Tests\RegionTests.cs(280,0): at Code2Viz.Tests.RegionTests.Move_ShiftsRegion()&#xD;
+[xUnit.net 00:00:00.15]            at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+[xUnit.net 00:00:00.15]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:00:00.16]   Finished:    Code2Viz.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="HARILAP" outcome="Error" timestamp="2026-02-12T18:05:02.1466095+05:30">
+        <Text>[xUnit.net 00:00:00.15]     Code2Viz.Tests.RegionTests.Move_ShiftsRegion [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

@@ -69,7 +69,7 @@ namespace Code2Viz {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Code2Viz;component/renamedialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Code2Viz;V1.0.0.0;component/renamedialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\RenameDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

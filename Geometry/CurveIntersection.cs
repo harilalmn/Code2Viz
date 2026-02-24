@@ -122,6 +122,24 @@ public static class CurveIntersection
         // Overlapping segment
         var startPt = VPoint.Internal(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
         var endPt = VPoint.Internal(p1.X + overlapEnd * d1x, p1.Y + overlapEnd * d1y);
+
+        // Check for antiparallel lines (dot product < 0)
+        // If antiparallel, they are touching (boundaries meet) but not overlapping in the polygon sense
+        double d2x = line2.EndPoint.X - line2.StartPoint.X;
+        double d2y = line2.EndPoint.Y - line2.StartPoint.Y;
+
+        if (d1x * d2x + d1y * d2y < -Tolerance)
+        {
+            // Touching (antiparallel)
+            var result = new IntersectionResult();
+            result.Points.Add(startPt);
+            if (startPt.DistanceTo(endPt) > Tolerance)
+            {
+                result.Points.Add(endPt);
+            }
+            return result;
+        }
+
         return IntersectionResult.FromCurve(new VLine(startPt, endPt));
     }
 
@@ -448,6 +466,24 @@ public static class CurveIntersection
         if (curve is VLine line)
         {
             segments.Add(line);
+            return segments;
+        }
+
+        if (curve is VPolygon poly)
+        {
+            for (int i = 0; i < poly.Points.Count; i++)
+            {
+                segments.Add(new VLine(poly.Points[i], poly.Points[(i + 1) % poly.Points.Count]));
+            }
+            return segments;
+        }
+
+        if (curve is VPolyline polyline)
+        {
+            for (int i = 0; i < polyline.Points.Count - 1; i++)
+            {
+                segments.Add(new VLine(polyline.Points[i], polyline.Points[i + 1]));
+            }
             return segments;
         }
 

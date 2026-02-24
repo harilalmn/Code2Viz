@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.2.11415.280 d18.0
+VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Code2Viz", "Code2Viz.csproj", "{1426BC82-C102-4512-97BD-945450820ADF}"
 EndProject
@@ -18,6 +18,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Code2Viz.McpServer", "McpServer\Code2Viz.McpServer.csproj", "{B73E0B80-FC3D-445C-96C6-909AC1D4692F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C2VGeometry", "C2VGeometry", "{E4F8A234-1234-4567-8901-ABCDEF123456}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6F81455B-D4B5-4B9E-824A-C8E0E7DF68EB}"
+	ProjectSection(SolutionItems) = preProject
+		IntellisenseRequirements.md = IntellisenseRequirements.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
