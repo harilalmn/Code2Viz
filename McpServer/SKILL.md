@@ -24,6 +24,9 @@ Export the current canvas to a PNG image file.
 ### get_console_output
 Retrieve console output from the last code execution.
 
+### get_project_context
+Get all source files (.cs/.fs) in the current project as JSON. Returns each file's name, content, and whether it is the entry point. **Call this first** when working with an existing project to discover custom classes, helpers, and data defined across multiple files.
+
 ## Quick Start
 
 To draw shapes, call `execute_vizcode` with C# code. **Always assign shapes to variables** — unnamed shapes are hidden by the animation system.
@@ -773,3 +776,4 @@ for (int i = 1; i <= 5; i++)
 - Shape methods use VXYZ vectors: `shape.Move(new VXYZ(dx, dy, 0))` not `shape.Move(dx, dy)`.
 - ICurve Offset returns ICurve — cast to Shape to set styling: `((Shape)curve.Offset(10)).Color = "Red"`.
 - For Region boolean intersections, use `RegionBooleanOps.Intersect(a, b)` (static) instead of `a.Intersect(b)` (extension) to avoid collision with `Shape.Intersect`.
+- **Multi-file projects**: Call `get_project_context` first to read all files. Other files may define classes, helpers, or data that `Main()` in StartViz.cs can use. Your code in `execute_vizcode` replaces the `Main()` body but is compiled alongside all other project files, so you can reference any types defined in them.

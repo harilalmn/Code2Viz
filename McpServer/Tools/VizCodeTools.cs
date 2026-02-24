@@ -91,4 +91,19 @@ public static class VizCodeTools
         var response = await client.SendAsync(request);
         return response.Success ? response.Result ?? "" : $"Error: {response.Error}";
     }
+
+    [McpServerTool, Description(
+        "Get the full project context — all source files (.cs/.fs) in the current Code2Viz project. " +
+        "Returns JSON with fileCount and a files array, each containing fileName, isEntryPoint, and content. " +
+        "Use this to understand custom classes, helper methods, and other code defined across the project " +
+        "before writing code that references them. The entry point file (StartViz.cs) contains Main(). " +
+        "Other files may define custom classes, utility functions, or data that Main() can reference. " +
+        "Call this FIRST when working with an existing project to understand available types and resources.")]
+    public static async Task<string> GetProjectContext()
+    {
+        using var client = new IpcClient();
+        var request = new IpcRequest { Command = "get_project_context" };
+        var response = await client.SendAsync(request);
+        return response.Success ? response.Result ?? "{}" : $"Error: {response.Error}";
+    }
 }

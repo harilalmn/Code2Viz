@@ -3881,7 +3881,9 @@ public partial class MainWindow : Window
             Dispatcher,
             executeCode: ExecuteCodeFromMcp,
             exportPng: ExportPngFromMcp,
-            getShapes: () => CanvasRenderer.Instance.GetShapes());
+            getShapes: () => CanvasRenderer.Instance.GetShapes(),
+            getProjectFiles: () => _currentProject?.GetAllSourceFiles().ToList().AsReadOnly()
+                ?? (IReadOnlyList<Project.VizCodeFile>)Array.Empty<Project.VizCodeFile>());
         _mcpBridgeHost.Start();
     }
 

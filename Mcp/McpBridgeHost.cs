@@ -21,17 +21,20 @@ public class McpBridgeHost : IDisposable
     private readonly Func<string, Task<string>> _executeCode;
     private readonly Func<string, Task> _exportPng;
     private readonly Func<IReadOnlyList<IDrawable>> _getShapes;
+    private readonly Func<IReadOnlyList<VizCodeFile>> _getProjectFiles;
 
     public McpBridgeHost(
         Dispatcher dispatcher,
         Func<string, Task<string>> executeCode,
         Func<string, Task> exportPng,
-        Func<IReadOnlyList<IDrawable>> getShapes)
+        Func<IReadOnlyList<IDrawable>> getShapes,
+        Func<IReadOnlyList<VizCodeFile>> getProjectFiles)
     {
         _dispatcher = dispatcher;
         _executeCode = executeCode;
         _exportPng = exportPng;
         _getShapes = getShapes;
+        _getProjectFiles = getProjectFiles;
         _server = new IpcServer(HandleRequest);
     }
 
@@ -49,6 +52,7 @@ public class McpBridgeHost : IDisposable
                 "get_canvas_state" => await HandleGetCanvasState(request),
                 "export_png" => await HandleExportPng(request),
                 "get_console_output" => HandleGetConsoleOutput(request),
+                "get_project_context" => await HandleGetProjectContext(request),
                 _ => IpcResponse.Fail(request.Id, $"Unknown command: {request.Command}")
             };
         }
@@ -165,6 +169,28 @@ public class McpBridgeHost : IDisposable
     {
         var output = Console.ConsoleOutput.Instance.GetFormattedOutput();
         return IpcResponse.Ok(request.Id, output);
+    }
+
+    private async Task<IpcResponse> HandleGetProjectContext(IpcRequest request)
+    {
+        var json = await _dispatcher.InvokeAsync(() =>
+        {
+            var files = _getProjectFiles();
+            var fileList = files.Select(f => new
+            {
+                fileName = f.FileName,
+                isEntryPoint = f.IsEntryPoint,
+                content = f.Content
+            }).ToList();
+
+            return JsonSerializer.Serialize(new
+            {
+                fileCount = fileList.Count,
+                files = fileList
+            });
+        });
+
+        return IpcResponse.Ok(request.Id, json);
     }
 
     public void Dispose()
