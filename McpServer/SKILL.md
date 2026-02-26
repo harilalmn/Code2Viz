@@ -600,6 +600,18 @@ ShapeDefaults.GlobalFillColor = "Yellow";
 ShapeDefaults.GlobalLineWeight = 3;
 ShapeDefaults.GlobalLineType = LineType.Dashed;
 ShapeDefaults.GlobalLineTypeScale = 2.0;
+
+// Dimension style defaults (apply to new VDimension shapes)
+ShapeDefaults.DimOffset = 15.0;
+ShapeDefaults.DimArrowSize = 6.0;
+ShapeDefaults.DimTextHeight = 10.0;
+ShapeDefaults.DimDecimalPlaces = 1;
+ShapeDefaults.DimExtendBeyondDimLines = 2.0;
+ShapeDefaults.DimOffsetFromOrigin = 1.0;
+ShapeDefaults.DimPrefix = "L=";
+ShapeDefaults.DimSuffix = "mm";
+ShapeDefaults.DimTextBgOpaque = true;
+
 ShapeDefaults.Reset();                       // reset all to defaults
 ```
 
