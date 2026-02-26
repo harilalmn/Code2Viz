@@ -58,7 +58,7 @@ namespace Code2Viz.Documentation
                 { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
                 { "VGrid", "Represents a rectangular grid of VPoints. Constructor: VGrid(location, xcount, ycount, xSpacing, ySpacing, centered). If centered=true, grid is centered at location; if false, location is bottom-left corner. Access points via Points property, indexers [index] or [col, row], or GetRow()/GetColumn() methods. Supports all Shape transformations (Move, Rotate, Scale, Flip) and ApplyStyle() to set colors on all points." },
                 { "VArrow", "Represents an arrow (line with arrowhead). Supports single or double-ended arrows with configurable head size and angle." },
-                { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. AutoCAD-style properties: Offset, ArrowSize, TextHeight, DecimalPlaces, ExtendBeyondDimLines, OffsetFromOrigin, SuppressExtLine1/2, Prefix, Suffix. Renders arrowheads at both ends of the dimension line." },
+                { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. AutoCAD-style properties: Offset, ArrowSize, TextHeight, DecimalPlaces, ExtendBeyondDimLines, OffsetFromOrigin, SuppressExtLine1/2, Prefix, Suffix, TextBackgroundOpaque. The dimension line is always split around the text for readability. Renders arrowheads at both ends of the dimension line." },
 
                 // Legacy aliases (for backward compatibility)
                 { "Arc2D", "Represents a 2D arc defined by a center, radius, start angle, and end angle." },
@@ -941,6 +941,7 @@ dim2.OffsetFromOrigin = 1.0;     // Gap from origin point
 dim2.Prefix = ""L="";
 dim2.Suffix = ""mm"";
 dim2.SuppressExtLine2 = true;    // Hide second extension line
+dim2.TextBackgroundOpaque = true; // Opaque background behind text
 dim2.Draw();" },
 
                 { "VGroup", @"// Create a group from shapes
@@ -1950,6 +1951,7 @@ var offset = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter, EndType.Polygon)
                 { "VDimension.Suffix", "Gets or sets the text suffix appended to the dimension value (e.g. \"mm\")." },
                 { "VDimension.CustomText", "Gets or sets custom text. If null, shows the calculated distance with Prefix/Suffix." },
                 { "VDimension.Distance", "Gets the calculated distance between Point1 and Point2 (read-only)." },
+                { "VDimension.TextBackgroundOpaque", "If true, an opaque background is drawn behind the dimension text using the canvas background color." },
                 { "VDimension.DisplayText", "Gets the display text including Prefix and Suffix (read-only)." },
 
                 // VDimension Methods

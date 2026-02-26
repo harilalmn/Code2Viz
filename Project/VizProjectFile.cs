@@ -76,4 +76,5 @@ public class ProjectSettings
     public double? DimOffsetFromOrigin { get; set; }
     public string? DimPrefix { get; set; }
     public string? DimSuffix { get; set; }
+    public bool? DimTextBgOpaque { get; set; }
 }

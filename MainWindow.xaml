@@ -1763,6 +1763,7 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="200" />
@@ -1798,8 +1799,12 @@
                                                 <TextBox x:Name="DimStylePrefixBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,12" Padding="6" Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderBrush}" Foreground="{StaticResource ForegroundBrush}" />
 
                                                 <!--  Suffix  -->
-                                                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,0,16" VerticalAlignment="Center" Foreground="{StaticResource ForegroundBrush}" Text="Suffix:" />
-                                                <TextBox x:Name="DimStyleSuffixBox" Grid.Row="7" Grid.Column="1" Margin="0,0,0,16" Padding="6" Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderBrush}" Foreground="{StaticResource ForegroundBrush}" />
+                                                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,0,12" VerticalAlignment="Center" Foreground="{StaticResource ForegroundBrush}" Text="Suffix:" />
+                                                <TextBox x:Name="DimStyleSuffixBox" Grid.Row="7" Grid.Column="1" Margin="0,0,0,12" Padding="6" Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderBrush}" Foreground="{StaticResource ForegroundBrush}" />
+
+                                                <!--  Text Background Opaque  -->
+                                                <TextBlock Grid.Row="8" Grid.Column="0" Margin="0,0,0,16" VerticalAlignment="Center" Foreground="{StaticResource ForegroundBrush}" Text="Text Background Opaque:" />
+                                                <CheckBox x:Name="DimStyleTextBgOpaqueCheck" Grid.Row="8" Grid.Column="1" Margin="0,0,0,16" VerticalAlignment="Center" Foreground="{StaticResource ForegroundBrush}" />
                                             </Grid>
                                         </StackPanel>
                                     </Border>

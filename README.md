@@ -153,6 +153,7 @@ dim2.Draw();
 | `SuppressExtLine2` | bool | false | Hide the second extension line (at Point2) |
 | `Prefix` | string | "" | Text prepended to the dimension value |
 | `Suffix` | string | "" | Text appended to the dimension value |
+| `TextBackgroundOpaque` | bool | false | Draw an opaque background behind dimension text |
 | `CustomText` | string? | null | Custom text (overrides calculated distance) |
 | `Distance` | double | — | Calculated distance between points (read-only) |
 | `DisplayText` | string | — | Final display text with prefix/suffix (read-only) |

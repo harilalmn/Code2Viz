@@ -182,6 +182,7 @@ public class ApiReferenceResource
         new VDimension(x1, y1, x2, y2);
         // Properties: Offset (20), ExtensionLength (10), ArrowSize (8), CustomText, DecimalPlaces (2), TextHeight (12)
         // AutoCAD-style: ExtendBeyondDimLines (1.25), OffsetFromOrigin (0.625), SuppressExtLine1/2 (false), Prefix (""), Suffix ("")
+        // TextBackgroundOpaque (false) - opaque background behind text; dimension line always splits around text
         // Read-only: Distance, DisplayText (includes Prefix/Suffix)
         ```
 

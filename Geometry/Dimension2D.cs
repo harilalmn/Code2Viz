@@ -46,6 +46,9 @@ public class VDimension : Shape
     /// <summary>Text suffix appended to the dimension value</summary>
     public string Suffix { get; set; } = "";
 
+    /// <summary>If true, an opaque background is drawn behind the dimension text</summary>
+    public bool TextBackgroundOpaque { get; set; } = false;
+
     public VDimension(VPoint point1, VPoint point2)
     {
         Point1 = point1;
@@ -72,6 +75,7 @@ public class VDimension : Shape
         if (ShapeDefaults.DimOffsetFromOrigin.HasValue) OffsetFromOrigin = ShapeDefaults.DimOffsetFromOrigin.Value;
         if (ShapeDefaults.DimPrefix != null) Prefix = ShapeDefaults.DimPrefix;
         if (ShapeDefaults.DimSuffix != null) Suffix = ShapeDefaults.DimSuffix;
+        if (ShapeDefaults.DimTextBgOpaque.HasValue) TextBackgroundOpaque = ShapeDefaults.DimTextBgOpaque.Value;
     }
 
     /// <summary>
@@ -176,7 +180,8 @@ public class VDimension : Shape
             SuppressExtLine1 = SuppressExtLine1,
             SuppressExtLine2 = SuppressExtLine2,
             Prefix = Prefix,
-            Suffix = Suffix
+            Suffix = Suffix,
+            TextBackgroundOpaque = TextBackgroundOpaque
         };
         CopyStyleTo(clone);
         return clone;

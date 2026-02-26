@@ -43,6 +43,7 @@ public static class ShapeDefaults
     public static double? DimOffsetFromOrigin { get; set; } = null;
     public static string? DimPrefix { get; set; } = null;
     public static string? DimSuffix { get; set; } = null;
+    public static bool? DimTextBgOpaque { get; set; } = null;
 
     /// <summary>
     /// Resets defaults to initial state (nulls).
@@ -62,5 +63,6 @@ public static class ShapeDefaults
         DimOffsetFromOrigin = null;
         DimPrefix = null;
         DimSuffix = null;
+        DimTextBgOpaque = null;
     }
 }

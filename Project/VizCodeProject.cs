@@ -73,6 +73,7 @@ public class VizCodeProject
         Geometry.ShapeDefaults.DimOffsetFromOrigin = ProjectFile.Settings.DimOffsetFromOrigin;
         Geometry.ShapeDefaults.DimPrefix = ProjectFile.Settings.DimPrefix;
         Geometry.ShapeDefaults.DimSuffix = ProjectFile.Settings.DimSuffix;
+        Geometry.ShapeDefaults.DimTextBgOpaque = ProjectFile.Settings.DimTextBgOpaque;
     }
 
     public static VizCodeProject CreateNew(string directory, string projectName, ProjectLanguage language)

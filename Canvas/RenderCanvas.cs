@@ -2344,22 +2344,7 @@ public class RenderCanvas : FrameworkElement
         var brush = GetCachedBrush(dim.Color);
         var (dimStart, dimEnd, textPos, ext1Start, ext1End, ext2Start, ext2End) = dim.GetDimensionGeometry();
 
-        // Draw dimension line
-        var ds = WorldToScreen(dimStart.X, dimStart.Y);
-        var de = WorldToScreen(dimEnd.X, dimEnd.Y);
-        dc.DrawLine(pen, ds, de);
-
-        // Draw extension lines (respecting suppress flags)
-        if (!dim.SuppressExtLine1)
-            dc.DrawLine(pen, WorldToScreen(ext1Start.X, ext1Start.Y), WorldToScreen(ext1End.X, ext1End.Y));
-        if (!dim.SuppressExtLine2)
-            dc.DrawLine(pen, WorldToScreen(ext2Start.X, ext2Start.Y), WorldToScreen(ext2End.X, ext2End.Y));
-
-        // Draw arrowheads at both ends of dimension line
-        DrawDimensionArrowhead(dc, brush, pen, dimStart, dimEnd, dim.ArrowSize);
-        DrawDimensionArrowhead(dc, brush, pen, dimEnd, dimStart, dim.ArrowSize);
-
-        // Draw text
+        // Create formatted text first to know its width for the line gap
         var fontSize = dim.TextHeight * _viewport.Scale;
         fontSize = Math.Max(fontSize, 8);
         var typeface = new Typeface("Segoe UI");
@@ -2372,8 +2357,67 @@ public class RenderCanvas : FrameworkElement
             brush,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
+        // Compute dimension line direction
+        var dimDx = dimEnd.X - dimStart.X;
+        var dimDy = dimEnd.Y - dimStart.Y;
+        var dimLength = Math.Sqrt(dimDx * dimDx + dimDy * dimDy);
+
+        // Draw dimension line split around text gap
+        var ds = WorldToScreen(dimStart.X, dimStart.Y);
+        var de = WorldToScreen(dimEnd.X, dimEnd.Y);
+
+        if (dimLength > 1e-10)
+        {
+            var dirX = dimDx / dimLength;
+            var dirY = dimDy / dimLength;
+
+            // Text width in world units, plus padding on each side
+            var textWorldWidth = formattedText.Width / _viewport.Scale;
+            var padding = textWorldWidth * 0.15;
+            var halfGap = textWorldWidth / 2 + padding;
+
+            // Gap center is at the midpoint of the dimension line
+            var midX = (dimStart.X + dimEnd.X) / 2;
+            var midY = (dimStart.Y + dimEnd.Y) / 2;
+
+            var gapStartX = midX - dirX * halfGap;
+            var gapStartY = midY - dirY * halfGap;
+            var gapEndX = midX + dirX * halfGap;
+            var gapEndY = midY + dirY * halfGap;
+
+            var gs = WorldToScreen(gapStartX, gapStartY);
+            var ge = WorldToScreen(gapEndX, gapEndY);
+
+            dc.DrawLine(pen, ds, gs);
+            dc.DrawLine(pen, ge, de);
+        }
+        else
+        {
+            dc.DrawLine(pen, ds, de);
+        }
+
+        // Draw extension lines (respecting suppress flags)
+        if (!dim.SuppressExtLine1)
+            dc.DrawLine(pen, WorldToScreen(ext1Start.X, ext1Start.Y), WorldToScreen(ext1End.X, ext1End.Y));
+        if (!dim.SuppressExtLine2)
+            dc.DrawLine(pen, WorldToScreen(ext2Start.X, ext2Start.Y), WorldToScreen(ext2End.X, ext2End.Y));
+
+        // Draw arrowheads at both ends of dimension line
+        DrawDimensionArrowhead(dc, brush, pen, dimStart, dimEnd, dim.ArrowSize);
+        DrawDimensionArrowhead(dc, brush, pen, dimEnd, dimStart, dim.ArrowSize);
+
+        // Draw text (with optional opaque background)
         var tp = WorldToScreen(textPos.X, textPos.Y);
-        dc.DrawText(formattedText, new Point(tp.X - formattedText.Width / 2, tp.Y - formattedText.Height / 2));
+        var textOrigin = new Point(tp.X - formattedText.Width / 2, tp.Y - formattedText.Height / 2);
+
+        if (dim.TextBackgroundOpaque)
+        {
+            var bgRect = new Rect(textOrigin.X - 2, textOrigin.Y - 1,
+                formattedText.Width + 4, formattedText.Height + 2);
+            dc.DrawRectangle(CanvasBackground, null, bgRect);
+        }
+
+        dc.DrawText(formattedText, textOrigin);
 
         if (applyOpacity) dc.Pop();
     }

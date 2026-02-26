@@ -3287,6 +3287,7 @@ public partial class MainWindow : Window
         DimStyleOffsetFromOriginBox.Text = settings.DimOffsetFromOrigin.HasValue ? settings.DimOffsetFromOrigin.Value.ToString() : "";
         DimStylePrefixBox.Text = settings.DimPrefix ?? "";
         DimStyleSuffixBox.Text = settings.DimSuffix ?? "";
+        DimStyleTextBgOpaqueCheck.IsChecked = settings.DimTextBgOpaque == true;
 
         // Apply Canvas Background immediately on load (Fix for Issue 1)
         if (!string.IsNullOrEmpty(settings.DefaultCanvasBackgroundColor))
@@ -3515,6 +3516,7 @@ public partial class MainWindow : Window
             if (string.IsNullOrEmpty(dimPrefix)) dimPrefix = null;
             string? dimSuffix = DimStyleSuffixBox.Text;
             if (string.IsNullOrEmpty(dimSuffix)) dimSuffix = null;
+            bool? dimTextBgOpaque = DimStyleTextBgOpaqueCheck.IsChecked == true ? true : null;
 
             var settings = _currentProject.ProjectFile.Settings;
             settings.DefaultColor = Color;
@@ -3530,6 +3532,7 @@ public partial class MainWindow : Window
             settings.DimOffsetFromOrigin = dimOffsetFromOrigin;
             settings.DimPrefix = dimPrefix;
             settings.DimSuffix = dimSuffix;
+            settings.DimTextBgOpaque = dimTextBgOpaque;
 
             _currentProject.ApplySettings();
             

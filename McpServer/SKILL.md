@@ -234,6 +234,7 @@ new VDimension(point1, point2);
 | SuppressExtLine2 | bool | false | Hide second extension line |
 | Prefix | string | "" | Text prefix (e.g. "L=") |
 | Suffix | string | "" | Text suffix (e.g. "mm") |
+| TextBackgroundOpaque | bool | false | Opaque background behind dimension text |
 | Distance | double | | Calculated distance (read-only) |
 | DisplayText | string | | Display text with prefix/suffix (read-only) |
 
