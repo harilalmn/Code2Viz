@@ -160,6 +160,8 @@
 - [ ] **Z-order** - Bring to front, send to back
 
 ### UI Enhancements
+- [x] **Drag-and-drop in Project Explorer** - Move files and folders between directories via drag-and-drop
+- [x] **Go to Location** - Context menu option to open file/folder location in Windows File Explorer
 - [ ] **Customizable theme** - Light/Dark mode toggle
 - [ ] **Full screen mode** - Maximize canvas
 - [ ] **Undo/Redo for drawing** - Undo interactive drawing operations

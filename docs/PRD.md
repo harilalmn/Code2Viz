@@ -194,3 +194,9 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 - Properties panel, shape editing, minimap
 - Code navigation (Go to Definition, Find References, Rename)
 - Boolean operations (Union, Intersect, Difference, Xor)
+
+### Version 1.2 (Implemented)
+- VDimension with AutoCAD-style arrowheads, extension lines, and text formatting
+- Drag-and-drop file/folder moving in Project Explorer
+- "Go to Location" context menu to open file/folder in Windows File Explorer
+- MCP tools: get_project_context, update_file

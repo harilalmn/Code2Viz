@@ -131,6 +131,15 @@
 
 ---
 
+### Phase 16: Project Explorer Enhancements
+- [x] Add drag-and-drop file/folder moving in Project Explorer TreeView
+- [x] Prevent dragging root node, entry point files, and reference items
+- [x] Validate drop targets (no self-drop, no subtree drop, no same-parent drop)
+- [x] Update open file references and tabs after move
+- [x] Add "Go to Location" context menu item to open file/folder in Windows File Explorer
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

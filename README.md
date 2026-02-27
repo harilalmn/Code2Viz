@@ -21,7 +21,7 @@ Code2Viz is a visual programming environment that lets you write C# or F# code t
 - **Animation System**: Create timeline-based animations with draw, move, rotate, flip, and fade effects
 - **Interactive Canvas**: Zoom with mouse wheel, pan with middle-click, toggle grid display
 - **Export Options**: Save visualizations as PNG images, animated GIFs, or MP4 videos
-- **Project Management**: Organize multiple code files into projects with tabbed editing
+- **Project Management**: Organize multiple code files into projects with tabbed editing, drag-and-drop file organization, and "Go to Location" to open files in Windows Explorer
 - **NuGet Integration**: Add external packages to extend functionality
 - **Built-in Help**: Comprehensive API documentation with examples
 - **Code Minimap**: VSCode-style minimap with syntax coloring, viewport indicator, and error marker navigation
@@ -1360,6 +1360,17 @@ namespace StartViz
     }
 }
 ```
+
+### Project Explorer
+The Project Explorer panel (right side) shows all files and folders in your project.
+
+**Drag and Drop**: Move files and folders between directories by dragging them in the tree view. Entry point files (`StartViz.cs`/`StartViz.fs`) and the root project node cannot be moved. Open file tabs and references update automatically after a move.
+
+**Context Menu** (right-click any file or folder):
+- **New File** / **New Folder** - Create new items
+- **Rename** - Rename files or folders
+- **Delete** - Delete files or folders (with confirmation)
+- **Go to Location** - Open the file or folder location in Windows File Explorer
 
 ### Available Namespaces
 ```csharp
