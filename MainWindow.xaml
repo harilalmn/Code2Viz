@@ -2399,6 +2399,26 @@
                                                     Content="Enabled (updates after 500ms pause)"
                                                     Foreground="{StaticResource ForegroundBrush}"
                                                     Unchecked="SettingsAutoUpdateCanvasCheck_Changed" />
+
+                                                <!--  Auto-Draw Shapes  -->
+                                                <TextBlock
+                                                    Grid.Row="25"
+                                                    Grid.Column="0"
+                                                    Margin="0,8,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    Text="Auto-Draw Shapes:" />
+                                                <CheckBox
+                                                    x:Name="AutoUpdateCheck"
+                                                    Grid.Row="25"
+                                                    Grid.Column="1"
+                                                    Margin="0,8,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Checked="AutoUpdateCheck_Changed"
+                                                    Content="Enabled"
+                                                    Foreground="{StaticResource ForegroundBrush}"
+                                                    IsChecked="True"
+                                                    Unchecked="AutoUpdateCheck_Changed" />
                                             </Grid>
 
                                             <!--  Note about auto-save  -->
@@ -2451,7 +2471,6 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <TextBlock
@@ -2463,20 +2482,9 @@
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="NoWrap" />
 
-                <CheckBox
-                    x:Name="AutoUpdateCheck"
-                    Grid.Column="1"
-                    Margin="12,0"
-                    VerticalAlignment="Center"
-                    Checked="AutoUpdateCheck_Changed"
-                    Content="Auto Update"
-                    Foreground="{StaticResource ForegroundBrush}"
-                    IsChecked="True"
-                    Unchecked="AutoUpdateCheck_Changed" />
-
                 <TextBlock
                     x:Name="CoordinatesText"
-                    Grid.Column="2"
+                    Grid.Column="1"
                     Margin="20,0"
                     VerticalAlignment="Center"
                     FontFamily="Consolas"
@@ -2484,7 +2492,7 @@
                     Text="X: 0.00  Y: 0.00" />
 
                 <TextBlock
-                    Grid.Column="3"
+                    Grid.Column="2"
                     VerticalAlignment="Center"
                     Foreground="{StaticResource ForegroundBrush}"
                     Opacity="0.6"

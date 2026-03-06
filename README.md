@@ -59,6 +59,7 @@ With **Auto-update Canvas** enabled (default), the canvas updates automatically 
 
 - **Auto-update**: Canvas refreshes 500ms after you stop typing
 - **Manual mode**: Disable auto-update in Settings to use F5/Run button instead
+- **Auto-Draw Shapes**: Toggle in Settings > Canvas Settings to control whether shapes auto-register on construction
 - **Draw() is optional**: Shapes appear when created; `Draw()` is kept for backwards compatibility
 
 ---
@@ -1453,12 +1454,13 @@ Code2Viz supports VS Code-style multi-cursor editing:
 1. **Ctrl+D**: Selects word at cursor, then adds next occurrences
 2. **Ctrl+Alt+Up/Down**: Adds cursors vertically above/below
 3. **Type**: Text is inserted at ALL cursor positions simultaneously
-4. **Backspace/Delete**: Works at all cursor positions
-5. **Arrow Keys**: Move all cursors (Left/Right/Up/Down)
-6. **Home/End**: Move all cursors to line start/end
-7. **Shift+Arrow/Home/End**: Extend selections at all cursors
-8. **Escape**: Exits multi-cursor mode
-9. **Click elsewhere**: Clears all multi-cursors
+4. **Ctrl+V**: Paste at all cursor positions
+5. **Backspace/Delete**: Works at all cursor positions
+6. **Arrow Keys**: Move all cursors (Left/Right/Up/Down)
+7. **Home/End**: Move all cursors to line start/end
+8. **Shift+Arrow/Home/End**: Extend selections at all cursors
+9. **Escape**: Exits multi-cursor mode
+10. **Click elsewhere**: Clears all multi-cursors
 
 All cursors are visually indicated with white caret lines, and selections are highlighted.
 

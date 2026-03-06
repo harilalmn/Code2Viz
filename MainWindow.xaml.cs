@@ -890,6 +890,30 @@ public partial class MainWindow : Window
         // Setup auto-indentation on Enter key
         CodeEditor.TextArea.PreviewKeyDown += TextArea_PreviewKeyDown;
 
+        // Intercept Paste command to support multi-cursor paste
+        CodeEditor.TextArea.CommandBindings.Insert(0, new System.Windows.Input.CommandBinding(
+            ApplicationCommands.Paste,
+            (s, e) =>
+            {
+                if (_multiSelectionRenderer != null && _multiSelectionRenderer.HasSelections)
+                {
+                    _isMultiCursorEditing = true;
+                    _isAddingNextOccurrence = true;
+                    try
+                    {
+                        _multiSelectionRenderer.PasteAtAllCursors();
+                        e.Handled = true;
+                    }
+                    finally
+                    {
+                        _isAddingNextOccurrence = false;
+                        _isMultiCursorEditing = false;
+                    }
+                }
+                // else: let AvalonEdit's default paste handle it
+            },
+            (s, e) => { e.CanExecute = true; }));
+
         // Initialize Bracket Highlighting
         _bracketRenderer = new BracketHighlightRenderer(CodeEditor.TextArea.TextView);
         CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_bracketRenderer);
@@ -1186,22 +1210,6 @@ public partial class MainWindow : Window
                         _multiSelectionRenderer.ExtendAllSelectionsRight();
                     else
                         _multiSelectionRenderer.MoveAllCursorsRight();
-                    e.Handled = true;
-                }
-                finally
-                {
-                    _isAddingNextOccurrence = false;
-                    _isMultiCursorEditing = false;
-                }
-                return;
-            }
-            else if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                _isMultiCursorEditing = true;
-                _isAddingNextOccurrence = true;
-                try
-                {
-                    _multiSelectionRenderer.PasteAtAllCursors();
                     e.Handled = true;
                 }
                 finally

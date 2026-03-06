@@ -102,7 +102,7 @@
 - [x] Add crossing/window selection (drag direction determines mode)
 - [x] Add VizConsole.Log itemize parameter for collection output control
 - [x] Add VLine constructor from start point, angle, and length
-- [x] Add Auto Update checkbox to status bar
+- [x] Add Auto-Draw Shapes checkbox (moved from status bar to Settings > Canvas Settings)
 - [x] Reset Shape ID counter on each code execution
 
 ---
@@ -137,6 +137,10 @@
 - [x] Validate drop targets (no self-drop, no subtree drop, no same-parent drop)
 - [x] Update open file references and tabs after move
 - [x] Add "Go to Location" context menu item to open file/folder in Windows File Explorer
+
+### Phase 17: UI & Multi-Cursor Fixes
+- [x] Move Auto-Draw Shapes checkbox from status bar to Settings > Canvas Settings
+- [x] Fix multi-cursor paste (Ctrl+V) only pasting at first cursor
 
 ---
 
