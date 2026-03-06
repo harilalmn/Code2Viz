@@ -9460,6 +9460,13 @@ public class {typeName}
 
         if (file != null)
         {
+            // Ensure the file's tab is open before switching
+            if (!file.IsOpen)
+            {
+                file.IsOpen = true;
+                RefreshFileTabs();
+            }
+
             // Switch to the file's tab
             SelectFile(file);
 
