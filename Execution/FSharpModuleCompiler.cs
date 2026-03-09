@@ -146,7 +146,7 @@ public class FSharpModuleCompiler
                 // Execute
                 try
                 {
-                    return await ModuleCompiler.ExecuteAssemblyAsync(ms, refs, project.ProjectFile.Name ?? "MyProject");
+                    return await ModuleCompiler.ExecuteAssemblyAsync(ms, null, refs, project.ProjectFile.Name ?? "MyProject");
                 }
                 finally
                 {

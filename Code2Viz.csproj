@@ -27,6 +27,7 @@
     <Compile Remove="RegionSample\**" />
   </ItemGroup>
 
+
   <ItemGroup>
     <ProjectReference Include="McpBridge\Code2Viz.McpBridge.csproj" />
   </ItemGroup>

@@ -133,9 +133,10 @@ public class ModuleCompiler
             // Create compilation
             var (compilation, allDlls) = await CreateCompilationAsync(project);
 
-            // Emit to memory stream
+            // Emit to memory stream with PDB for line numbers in stack traces
             using var ms = new MemoryStream();
-            var emitResult = compilation.Emit(ms);
+            using var pdbStream = new MemoryStream();
+            var emitResult = compilation.Emit(ms, pdbStream);
 
             if (!emitResult.Success)
             {
@@ -158,9 +159,10 @@ public class ModuleCompiler
 
             // Execute
             ms.Seek(0, SeekOrigin.Begin);
+            pdbStream.Seek(0, SeekOrigin.Begin);
             try
             {
-                return await ExecuteAssemblyAsync(ms, allDlls, project.ProjectFile.Name ?? "MyProject");
+                return await ExecuteAssemblyAsync(ms, pdbStream, allDlls, project.ProjectFile.Name ?? "MyProject");
             }
             finally
             {
@@ -214,7 +216,7 @@ public class ModuleCompiler
         }
     }
 
-    public static async Task<CompilationResult> ExecuteAssemblyAsync(Stream assemblyStream, HashSet<string> dependencies, string projectName)
+    public static async Task<CompilationResult> ExecuteAssemblyAsync(Stream assemblyStream, Stream? pdbStream, HashSet<string> dependencies, string projectName)
     {
         try
         {
@@ -222,7 +224,9 @@ public class ModuleCompiler
             var loadContext = new VizAssemblyLoadContext(dependencies);
             try
             {
-                var assembly = loadContext.LoadFromStream(assemblyStream);
+                var assembly = pdbStream != null
+                    ? loadContext.LoadFromStream(assemblyStream, pdbStream)
+                    : loadContext.LoadFromStream(assemblyStream);
 
                 // Get the entry point namespace from project name
                 var projectNamespace = Templates.SanitizeIdentifier(projectName);
@@ -264,7 +268,7 @@ public class ModuleCompiler
 
                 // Execute Main() - catch TargetInvocationException inside Task.Run
                 // to prevent VS debugger from breaking on "user-unhandled" exception
-                var invokeError = await Task.Run<string?>(() =>
+                var invokeException = await Task.Run<Exception?>(() =>
                 {
                     try
                     {
@@ -276,16 +280,16 @@ public class ModuleCompiler
                     }
                     catch (TargetInvocationException ex)
                     {
-                        return ex.InnerException?.Message ?? ex.Message;
+                        return ex.InnerException ?? ex;
                     }
                 });
 
-                if (invokeError != null)
+                if (invokeException != null)
                 {
                     return new CompilationResult
                     {
                         Success = false,
-                        Error = $"Runtime Error: {invokeError}"
+                        Error = $"Runtime Error: {FormatRuntimeError(invokeException)}"
                     };
                 }
 
@@ -305,7 +309,7 @@ public class ModuleCompiler
              return new CompilationResult
             {
                 Success = false,
-                Error = $"Runtime Error: {ex.InnerException?.Message ?? ex.Message}"
+                Error = $"Runtime Error: {FormatRuntimeError(ex.InnerException ?? ex)}"
             };
         }
         catch (Exception ex)
@@ -313,9 +317,53 @@ public class ModuleCompiler
             return new CompilationResult
             {
                 Success = false,
-                Error = $"Runtime Error: {ex.Message}"
+                Error = $"Runtime Error: {FormatRuntimeError(ex)}"
             };
         }
+    }
+
+    /// <summary>
+    /// Formats a runtime exception with file/line info extracted from the stack trace.
+    /// </summary>
+    private static string FormatRuntimeError(Exception ex)
+    {
+        var message = ex.Message;
+
+        // Parse the stack trace to find frames in user .vizcode files
+        if (ex.StackTrace != null)
+        {
+            var lines = ex.StackTrace.Split('\n');
+            foreach (var line in lines)
+            {
+                // Look for stack frames with .vizcode file references
+                // Format: "at Namespace.Class.Method() in C:\path\file.vizcode:line 42"
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    line, @"in\s+(.+\.vizcode):line\s+(\d+)");
+                if (match.Success)
+                {
+                    var filePath = match.Groups[1].Value;
+                    var lineNumber = match.Groups[2].Value;
+                    var fileName = Path.GetFileName(filePath);
+
+                    // Also extract the method name for context
+                    var methodMatch = System.Text.RegularExpressions.Regex.Match(
+                        line, @"at\s+(.+?)\(");
+                    var methodInfo = methodMatch.Success ? methodMatch.Groups[1].Value : null;
+
+                    // Simplify method name - just show "Class.Method"
+                    if (methodInfo != null)
+                    {
+                        var parts = methodInfo.Split('.');
+                        if (parts.Length >= 2)
+                            methodInfo = string.Join(".", parts.Skip(parts.Length - 2));
+                    }
+
+                    message += $"\n  at {(methodInfo != null ? methodInfo + " " : "")}({fileName}, line {lineNumber})";
+                }
+            }
+        }
+
+        return message;
     }
 
     /// <summary>
@@ -343,8 +391,10 @@ public class ModuleCompiler
         var rewriter = new AnimationNameRewriter();
         var syntaxTrees = allSourceFiles.Select(file =>
         {
+            var sourceText = Microsoft.CodeAnalysis.Text.SourceText.From(
+                file.Content, System.Text.Encoding.UTF8);
             var tree = CSharpSyntaxTree.ParseText(
-                file.Content,
+                sourceText,
                 path: file.FilePath,
                 options: new CSharpParseOptions(LanguageVersion.Latest));
 
