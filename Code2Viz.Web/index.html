@@ -21,6 +21,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/javascript-hint.min.js"></script>
+    <!-- Find & Replace -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/jump-to-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/match-highlighter.min.js"></script>
 </head>
 <body>
     <!-- Toolbar -->
@@ -44,6 +51,28 @@
                 <span class="btn-icon">&#10005;</span> Clear
             </button>
             <div class="toolbar-sep"></div>
+            <!-- Drawing Tools -->
+            <div class="tool-group" id="tool-group">
+                <button class="btn tool-btn tool-active" data-tool="pointer" title="Pointer (V)">
+                    <span class="btn-icon">&#9698;</span>
+                </button>
+                <button class="btn tool-btn" data-tool="point" title="Point (P)">
+                    <span class="btn-icon">&#8226;</span>
+                </button>
+                <button class="btn tool-btn" data-tool="line" title="Line (L)">
+                    <span class="btn-icon">&#9585;</span>
+                </button>
+                <button class="btn tool-btn" data-tool="circle" title="Circle (C)">
+                    <span class="btn-icon">&#9675;</span>
+                </button>
+                <button class="btn tool-btn" data-tool="rectangle" title="Rectangle (R)">
+                    <span class="btn-icon">&#9633;</span>
+                </button>
+                <button class="btn tool-btn" data-tool="measure" title="Measuring Tape (M)">
+                    <span class="btn-icon">&#8636;</span>
+                </button>
+            </div>
+            <div class="toolbar-sep"></div>
             <div class="dropdown">
                 <button id="btn-export" class="btn" title="Export">
                     <span class="btn-icon">&#8615;</span> Export
@@ -55,8 +84,15 @@
                     <button class="dropdown-item" data-format="dxf">DXF - AutoCAD</button>
                 </div>
             </div>
+            <div class="toolbar-sep"></div>
+            <!-- Toggle buttons -->
+            <button id="btn-snap" class="btn btn-toggle btn-toggle-on" title="Snap to Grid (F9)">Snap</button>
+            <button id="btn-minimap" class="btn btn-toggle" title="Toggle Minimap (Ctrl+Shift+M)">Map</button>
+            <button id="btn-props" class="btn btn-toggle" title="Properties Panel (F4)">Props</button>
+            <button id="btn-layers" class="btn btn-toggle" title="Layers Panel">Layers</button>
         </div>
         <div class="toolbar-right">
+            <span id="active-tool" class="active-tool">Pointer</span>
             <span id="project-name" class="project-name"></span>
             <span id="coords" class="coords">X: 0.00  Y: 0.00</span>
         </div>
@@ -100,6 +136,17 @@
             <div id="canvas-area">
                 <div id="canvas-container">
                     <canvas id="viz-canvas"></canvas>
+                    <!-- Minimap overlay -->
+                    <div id="minimap-container" style="display:none"></div>
+                </div>
+                <!-- Animation controls -->
+                <div id="animation-bar" style="display:none">
+                    <button id="btn-anim-play" class="btn btn-sm" title="Play">&#9654;</button>
+                    <button id="btn-anim-pause" class="btn btn-sm" title="Pause">&#10074;&#10074;</button>
+                    <button id="btn-anim-stop" class="btn btn-sm" title="Stop">&#9632;</button>
+                    <input type="range" id="anim-progress" class="anim-slider" min="0" max="100" value="0">
+                    <span id="anim-time" class="anim-time">0.0s / 0.0s</span>
+                    <label class="anim-loop-label"><input type="checkbox" id="anim-loop"> Loop</label>
                 </div>
                 <div id="console-splitter"></div>
                 <div id="console-panel">
@@ -109,6 +156,25 @@
                     <div id="console-output"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- Properties Panel (right side) -->
+        <div id="properties-splitter" style="display:none"></div>
+        <div id="properties-panel" style="display:none">
+            <div class="panel-header">
+                <span>Properties</span>
+                <button id="btn-close-props" class="panel-btn" title="Close">&#10005;</button>
+            </div>
+            <div class="properties-content"></div>
+        </div>
+
+        <!-- Layers Panel -->
+        <div id="layers-panel" style="display:none">
+            <div class="panel-header">
+                <span>Layers</span>
+                <button id="btn-close-layers" class="panel-btn" title="Close">&#10005;</button>
+            </div>
+            <div class="layers-content"></div>
         </div>
     </div>
 

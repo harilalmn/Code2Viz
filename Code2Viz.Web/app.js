@@ -11,6 +11,14 @@ import {
 } from './geometry/index.js';
 import { vizHint, setupParameterHints } from './intellisense.js';
 import { exportSVG, exportPNG, exportDXF, exportPDF, downloadText, downloadDataURL, downloadBlob } from './exporter.js';
+import { SelectionManager } from './selection.js';
+import { ToolManager, SnapEngine } from './tools.js';
+import { PropertiesPanel } from './properties.js';
+import { Minimap } from './minimap.js';
+import { Animator, Timeline, Easing, DrawAnimation, MoveAnimation, FadeAnimation, ScaleAnimation, RotateAnimation, ColorAnimation } from './animation.js';
+import { LayerManager } from './layers.js';
+import { polygonIntersection, polygonDifference, polygonUnion, pointInPolygon } from './geometry/boolean.js';
+import { linearArray, rectangularArray, polarArray, pathArray, mirror } from './geometry/arrays.js';
 
 // ============================================================================
 // App State
@@ -18,17 +26,26 @@ import { exportSVG, exportPNG, exportDXF, exportPDF, downloadText, downloadDataU
 let renderer = null;
 let editor = null;
 let vizConsole = new VizConsole();
+let selectionMgr = null;
+let toolMgr = null;
+let snapEngine = null;
+let propertiesPanel = null;
+let minimap = null;
+let animator = null;
+let layerMgr = null;
 
 const ENTRY_FILE = 'main.js';
 const STORAGE_KEY = 'code2viz_project';
 
+// Error markers
+let _errorMarkers = [];
+
 // ============================================================================
 // Project Model
 // ============================================================================
-// files: Map<string, { content, dirty, handle (FileSystemFileHandle|null), history }>
 const files = new Map();
 let activeFile = ENTRY_FILE;
-let dirHandle = null; // FileSystemDirectoryHandle for the open folder
+let dirHandle = null;
 let projectName = '';
 
 const DEFAULT_MAIN = `// main.js — Entry point
@@ -83,19 +100,16 @@ async function openFolder() {
     try {
         dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
     } catch (e) {
-        if (e.name === 'AbortError') return; // user cancelled
+        if (e.name === 'AbortError') return;
         throw e;
     }
 
     projectName = dirHandle.name;
     document.getElementById('project-name').textContent = projectName;
-
-    // Read all .js files from the directory
     await loadFilesFromFolder();
 }
 
 async function loadFilesFromFolder() {
-    // Flush current editor
     flushEditorToFile();
     files.clear();
 
@@ -106,21 +120,18 @@ async function loadFilesFromFolder() {
         }
     }
 
-    // Sort: main.js first, then alphabetical
     entries.sort((a, b) => {
         if (a.name === ENTRY_FILE) return -1;
         if (b.name === ENTRY_FILE) return 1;
         return a.name.localeCompare(b.name);
     });
 
-    // Read file contents
     for (const { name, handle } of entries) {
         const file = await handle.getFile();
         const content = await file.text();
         files.set(name, { content, dirty: false, handle, history: null });
     }
 
-    // Ensure main.js exists
     if (!files.has(ENTRY_FILE)) {
         const handle = await dirHandle.getFileHandle(ENTRY_FILE, { create: true });
         const writable = await handle.createWritable();
@@ -153,7 +164,6 @@ async function saveFileToDisk(name) {
             appendConsole(`Save error (${name}): ${e.message}`, 'error');
         }
     } else if (dirHandle) {
-        // Create new file in the directory
         try {
             const handle = await dirHandle.getFileHandle(name, { create: true });
             const writable = await handle.createWritable();
@@ -165,7 +175,6 @@ async function saveFileToDisk(name) {
             appendConsole(`Save error (${name}): ${e.message}`, 'error');
         }
     } else {
-        // No folder open — download instead
         downloadText(f.content, name, 'application/javascript');
         f.dirty = false;
     }
@@ -173,8 +182,6 @@ async function saveFileToDisk(name) {
 
 async function saveAll() {
     flushEditorToFile();
-
-    // Also persist to localStorage as backup
     saveProjectToStorage();
 
     let savedCount = 0;
@@ -257,7 +264,6 @@ async function renameFileInFolder(oldName) {
 
     if (dirHandle) {
         try {
-            // Create new, delete old
             const handle = await dirHandle.getFileHandle(fname, { create: true });
             const writable = await handle.createWritable();
             await writable.write(f.content);
@@ -278,7 +284,7 @@ async function renameFileInFolder(oldName) {
 }
 
 // ============================================================================
-// localStorage fallback (no folder open)
+// localStorage fallback
 // ============================================================================
 function saveProjectToStorage() {
     const proj = { files: {}, activeFile, projectName };
@@ -301,7 +307,7 @@ function loadProjectFromStorage() {
 }
 
 // ============================================================================
-// File Tree (Project Browser)
+// File Tree
 // ============================================================================
 function renderTree() {
     const emptyEl = document.getElementById('file-tree-empty');
@@ -317,7 +323,6 @@ function renderTree() {
     listEl.style.display = '';
     listEl.innerHTML = '';
 
-    // Sort: main.js first, then alphabetical
     const names = [...files.keys()].sort((a, b) => {
         if (a === ENTRY_FILE) return -1;
         if (b === ENTRY_FILE) return 1;
@@ -330,19 +335,16 @@ function renderTree() {
         item.className = 'tree-item' + (name === activeFile ? ' active' : '');
         item.dataset.file = name;
 
-        // Icon
         const icon = document.createElement('span');
         icon.className = 'tree-item-icon ' + (name === ENTRY_FILE ? 'file-entry' : 'file-js');
         icon.textContent = name === ENTRY_FILE ? '\u25B6' : 'JS';
         item.appendChild(icon);
 
-        // Name
         const label = document.createElement('span');
         label.className = 'tree-item-name';
         label.textContent = name;
         item.appendChild(label);
 
-        // Entry badge
         if (name === ENTRY_FILE) {
             const badge = document.createElement('span');
             badge.className = 'tree-item-badge';
@@ -350,7 +352,6 @@ function renderTree() {
             item.appendChild(badge);
         }
 
-        // Dirty dot
         if (f.dirty) {
             const dot = document.createElement('span');
             dot.className = 'tree-item-dirty';
@@ -358,10 +359,7 @@ function renderTree() {
             item.appendChild(dot);
         }
 
-        // Click to open
         item.addEventListener('click', () => switchToFile(name));
-
-        // Context menu
         item.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             showTreeContextMenu(e, name);
@@ -402,8 +400,6 @@ function showTreeContextMenu(e, fileName) {
 
     document.body.appendChild(menu);
     _ctxMenu = menu;
-
-    // Close on click outside
     setTimeout(() => {
         document.addEventListener('click', hideTreeContextMenu, { once: true });
     }, 0);
@@ -416,7 +412,6 @@ function hideTreeContextMenu() {
 // ============================================================================
 // Tab Bar
 // ============================================================================
-// Tabs show only currently-open files (files the user has clicked on)
 const openTabs = new Set();
 
 function ensureTab(name) {
@@ -426,15 +421,12 @@ function ensureTab(name) {
 function renderTabs() {
     const tabList = document.getElementById('tab-list');
     tabList.innerHTML = '';
-
-    // Always ensure active file is in tabs
     ensureTab(activeFile);
 
-    // Tab order: main.js first, then order of opening
     const tabNames = [...openTabs].sort((a, b) => {
         if (a === ENTRY_FILE) return -1;
         if (b === ENTRY_FILE) return 1;
-        return 0; // preserve insertion order otherwise
+        return 0;
     });
 
     for (const name of tabNames) {
@@ -463,7 +455,6 @@ function renderTabs() {
             tab.appendChild(dot);
         }
 
-        // Close tab (doesn't delete the file, just closes the tab)
         const close = document.createElement('span');
         close.className = 'tab-close';
         close.textContent = '\u00D7';
@@ -482,11 +473,9 @@ function renderTabs() {
 }
 
 function closeTab(name) {
-    if (openTabs.size <= 1) return; // keep at least one tab
+    if (openTabs.size <= 1) return;
     openTabs.delete(name);
-
     if (activeFile === name) {
-        // Switch to another open tab
         const next = [...openTabs][0] || ENTRY_FILE;
         ensureTab(next);
         switchToFile(next);
@@ -525,6 +514,65 @@ function switchToFile(name) {
 }
 
 // ============================================================================
+// Error Line Highlighting
+// ============================================================================
+function clearErrorMarkers() {
+    for (const marker of _errorMarkers) {
+        editor.removeLineClass(marker.line, 'background');
+        if (marker.widget) marker.widget.clear();
+    }
+    _errorMarkers = [];
+}
+
+function addErrorMarker(lineNum, message) {
+    if (lineNum < 0 || lineNum >= editor.lineCount()) return;
+    editor.addLineClass(lineNum, 'background', 'cm-error-line');
+
+    // Error message widget below the line
+    const msgEl = document.createElement('div');
+    msgEl.className = 'cm-error-msg';
+    msgEl.textContent = message;
+    const widget = editor.addLineWidget(lineNum, msgEl, { coverGutter: false, noHScroll: true });
+
+    _errorMarkers.push({ line: lineNum, widget });
+}
+
+// ============================================================================
+// Code Formatting
+// ============================================================================
+function formatCode() {
+    const code = editor.getValue();
+    let formatted = '';
+    let indent = 0;
+    const lines = code.split('\n');
+
+    for (let line of lines) {
+        line = line.trim();
+        if (line === '') { formatted += '\n'; continue; }
+
+        // Decrease indent for closing braces
+        if (line.startsWith('}') || line.startsWith(']') || line.startsWith(')')) {
+            indent = Math.max(0, indent - 1);
+        }
+
+        formatted += '    '.repeat(indent) + line + '\n';
+
+        // Increase indent for opening braces
+        const opens = (line.match(/[{[(]/g) || []).length;
+        const closes = (line.match(/[}\])]/g) || []).length;
+        indent += opens - closes;
+        if (indent < 0) indent = 0;
+    }
+
+    editor.setValue(formatted.trimEnd() + '\n');
+    if (files.has(activeFile)) {
+        files.get(activeFile).dirty = true;
+        renderTabs();
+        renderTree();
+    }
+}
+
+// ============================================================================
 // CodeMirror Editor
 // ============================================================================
 function initEditor() {
@@ -542,12 +590,17 @@ function initEditor() {
         tabSize: 4,
         indentWithTabs: false,
         lineWrapping: false,
+        highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: false },
         hintOptions: { hint: vizHint, completeSingle: false, alignWithWord: true },
         extraKeys: {
             'F5': () => runCode(),
             'Ctrl-Enter': () => runCode(),
             'Ctrl-/': 'toggleComment',
             'Ctrl-Space': (cm) => cm.showHint(),
+            'Ctrl-F': 'findPersistent',
+            'Ctrl-H': 'replace',
+            'Ctrl-Shift-F': () => formatCode(),
+            'Ctrl-G': 'jumpToLine',
         },
     });
 
@@ -569,6 +622,7 @@ function initEditor() {
     setupParameterHints(editor);
 
     editor.on('change', () => {
+        clearErrorMarkers();
         if (files.has(activeFile)) {
             const f = files.get(activeFile);
             if (!f.dirty) { f.dirty = true; renderTabs(); renderTree(); }
@@ -588,6 +642,7 @@ function initEditor() {
 // ============================================================================
 function runCode() {
     flushEditorToFile();
+    clearErrorMarkers();
 
     const consolePanel = document.getElementById('console-output');
     resetIdCounter();
@@ -596,26 +651,28 @@ function runCode() {
     vizConsole.clear();
     consolePanel.innerHTML = '';
 
+    // Stop any running animation
+    if (animator) animator.stop();
+
     const startTime = performance.now();
 
     try {
-        // Combine: support files first (alphabetical), then main.js
         let combinedCode = '';
         const fileOrder = [];
-        const lineOffsets = []; // { file, startLine }
+        const lineOffsets = [];
 
         let currentLine = 0;
         for (const [name, f] of [...files.entries()].sort((a, b) => {
-            if (a[0] === ENTRY_FILE) return 1; // main.js last
+            if (a[0] === ENTRY_FILE) return 1;
             if (b[0] === ENTRY_FILE) return -1;
             return a[0].localeCompare(b[0]);
         })) {
             const header = `// === ${name} ===\n`;
             combinedCode += header;
-            currentLine += 1; // header line
+            currentLine += 1;
             lineOffsets.push({ file: name, startLine: currentLine });
             combinedCode += f.content + '\n\n';
-            currentLine += f.content.split('\n').length + 1; // content + blank
+            currentLine += f.content.split('\n').length + 1;
             fileOrder.push(name);
         }
 
@@ -626,6 +683,13 @@ function runCode() {
             'VText', 'VFont', 'VFontWeight', 'VTextAnchor',
             'VDimension', 'VRadialDimension', 'VGroup', 'VGrid', 'VColor',
             'LineTypes', 'getRegistry', 'console',
+            // Animation
+            'Animator', 'Timeline', 'Easing', 'DrawAnimation', 'MoveAnimation',
+            'FadeAnimation', 'ScaleAnimation', 'RotateAnimation', 'ColorAnimation',
+            // Boolean ops
+            'polygonIntersection', 'polygonDifference', 'polygonUnion', 'pointInPolygon',
+            // Array ops
+            'linearArray', 'rectangularArray', 'polarArray', 'pathArray', 'mirror',
             combinedCode
         );
 
@@ -637,13 +701,34 @@ function runCode() {
             clear: () => vizConsole.clear(),
         };
 
+        // Create animation proxy for user code
+        const userAnimator = {
+            play: () => { if (animator.timeline) animator.play(); },
+            pause: () => animator.pause(),
+            stop: () => animator.stop(),
+            setTimeline: (tl) => {
+                animator.setTimeline(tl);
+                showAnimationBar(true);
+            },
+            get isPlaying() { return animator.isPlaying; },
+            set speed(v) { animator.speed = v; },
+            set loop(v) { animator.loop = v; },
+        };
+
         fn(
             EPSILON, VXYZ, BoundingBox, GeometryHelper, Shape, ShapeDefaults,
             VPoint, VLine, VCircle, VArc, VRectangle, VEllipse,
             VPolygon, VPolyline, VSpline, VBezier, VArrow,
             VText, VFont, VFontWeight, VTextAnchor,
             VDimension, VRadialDimension, VGroup, VGrid, VColor,
-            LineTypes, getRegistry, proxyConsole
+            LineTypes, getRegistry, proxyConsole,
+            // Animation
+            userAnimator, Timeline, Easing, DrawAnimation, MoveAnimation,
+            FadeAnimation, ScaleAnimation, RotateAnimation, ColorAnimation,
+            // Boolean ops
+            polygonIntersection, polygonDifference, polygonUnion, pointInPolygon,
+            // Array ops
+            linearArray, rectangularArray, polarArray, pathArray, mirror
         );
 
         const elapsed = (performance.now() - startTime).toFixed(1);
@@ -654,19 +739,46 @@ function runCode() {
         const fileInfo = fileOrder.length > 1 ? ` (${fileOrder.length} files)` : '';
         appendConsole(`Executed in ${elapsed}ms${fileInfo} \u2014 ${shapeCount} shape${shapeCount !== 1 ? 's' : ''} created`, 'info');
 
+        // Reset selection
+        if (selectionMgr) selectionMgr.deselectAll();
+
         renderer.render();
         if (shapeCount > 0) renderer.zoomToFit();
+        if (minimap) minimap.render();
+        if (layerMgr) layerMgr.render();
 
     } catch (err) {
         let lineInfo = '';
+        let errorFile = null;
+        let errorLine = -1;
+
         if (err.stack) {
             const match = err.stack.match(/<anonymous>:(\d+):(\d+)/);
             if (match) {
                 const mapped = mapLineToFile(parseInt(match[1]));
-                lineInfo = mapped ? ` (${mapped.file}:${mapped.line}, col ${match[2]})` : ` (line ${match[1]})`;
+                if (mapped) {
+                    lineInfo = ` (${mapped.file}:${mapped.line}, col ${match[2]})`;
+                    errorFile = mapped.file;
+                    errorLine = mapped.line - 1; // 0-indexed
+                } else {
+                    lineInfo = ` (line ${match[1]})`;
+                }
             }
         }
+
+        for (const msg of vizConsole.messages) appendConsole(msg.text, msg.type);
         appendConsole(`Error${lineInfo}: ${err.message}`, 'error');
+
+        // Highlight error line in editor
+        if (errorFile && errorFile === activeFile && errorLine >= 0) {
+            addErrorMarker(errorLine, err.message);
+        } else if (errorFile && errorFile !== activeFile) {
+            // Switch to the file with the error
+            switchToFile(errorFile);
+            if (errorLine >= 0) {
+                setTimeout(() => addErrorMarker(errorLine, err.message), 100);
+            }
+        }
     }
 }
 
@@ -699,7 +811,37 @@ function appendConsole(text, type = 'log') {
 }
 
 // ============================================================================
-// Canvas
+// Animation Bar
+// ============================================================================
+function showAnimationBar(show) {
+    document.getElementById('animation-bar').style.display = show ? 'flex' : 'none';
+}
+
+function initAnimationControls() {
+    document.getElementById('btn-anim-play').addEventListener('click', () => animator.play());
+    document.getElementById('btn-anim-pause').addEventListener('click', () => animator.pause());
+    document.getElementById('btn-anim-stop').addEventListener('click', () => {
+        animator.stop();
+        showAnimationBar(false);
+    });
+    document.getElementById('anim-loop').addEventListener('change', (e) => {
+        animator.loop = e.target.checked;
+    });
+
+    animator.onUpdate((t, duration) => {
+        const slider = document.getElementById('anim-progress');
+        slider.value = (t / duration) * 100;
+        document.getElementById('anim-time').textContent = `${t.toFixed(1)}s / ${duration.toFixed(1)}s`;
+        if (minimap) minimap.render();
+    });
+
+    animator.onComplete(() => {
+        appendConsole('Animation complete', 'info');
+    });
+}
+
+// ============================================================================
+// Canvas & Modules
 // ============================================================================
 function initCanvas() {
     const canvas = document.getElementById('viz-canvas');
@@ -709,9 +851,84 @@ function initCanvas() {
         document.getElementById('coords').textContent = `X: ${x.toFixed(2)}  Y: ${y.toFixed(2)}`;
     });
 
+    // Initialize snap engine
+    snapEngine = new SnapEngine(renderer);
+
+    // Initialize selection manager
+    selectionMgr = new SelectionManager(renderer);
+    selectionMgr.onChange((shapes) => {
+        if (propertiesPanel) propertiesPanel.update(shapes);
+    });
+
+    // Initialize tool manager
+    toolMgr = new ToolManager(renderer, snapEngine, selectionMgr, (shape) => {
+        appendConsole(`Created ${shape.constructor.name} #${shape.id}`, 'info');
+        renderer.render();
+        if (minimap) minimap.render();
+        if (layerMgr && layerMgr.activeLayer) {
+            shape._layer = layerMgr.activeLayer;
+        }
+    });
+
+    // Initialize animator
+    animator = new Animator(renderer);
+
+    // Initialize minimap
+    minimap = new Minimap(renderer, document.getElementById('minimap-container'));
+
+    // Initialize properties panel
+    propertiesPanel = new PropertiesPanel(document.getElementById('properties-panel'), renderer);
+
+    // Initialize layer manager
+    layerMgr = new LayerManager(document.getElementById('layers-panel'), renderer);
+    renderer.setLayerManager(layerMgr);
+
+    // Register overlays
+    renderer.addOverlay((ctx) => selectionMgr.renderOverlay(ctx));
+    renderer.addOverlay((ctx) => toolMgr.renderOverlay(ctx));
+
+    // Canvas mouse events for selection and tools
+    const canvasEl = canvas;
+    canvasEl.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // left click only
+        if (e.shiftKey) return; // shift = pan
+
+        const rect = canvasEl.getBoundingClientRect();
+        const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
+        // Try tools first
+        if (toolMgr.activeTool !== 'pointer') {
+            toolMgr.handleMouseDown(e.clientX, e.clientY, e.ctrlKey, e.shiftKey);
+            return;
+        }
+
+        // Then selection
+        selectionMgr.handleMouseDown(sx, sy, e.ctrlKey, e.shiftKey);
+    });
+
+    canvasEl.addEventListener('mousemove', (e) => {
+        const rect = canvasEl.getBoundingClientRect();
+        const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
+        if (toolMgr.activeTool !== 'pointer') {
+            toolMgr.handleMouseMove(e.clientX, e.clientY);
+        } else {
+            selectionMgr.handleMouseMove(sx, sy);
+        }
+    });
+
+    canvasEl.addEventListener('mouseup', (e) => {
+        const rect = canvasEl.getBoundingClientRect();
+        const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+        selectionMgr.handleMouseUp(sx, sy, e.ctrlKey);
+        toolMgr.handleMouseUp();
+    });
+
+    // Resize
     function resize() {
         const c = document.getElementById('canvas-container');
         renderer.resize(c.clientWidth, c.clientHeight);
+        if (minimap) minimap.render();
     }
 
     new ResizeObserver(resize).observe(document.getElementById('canvas-container'));
@@ -752,11 +969,14 @@ function handleExport(format) {
 function initUI() {
     // Toolbar
     document.getElementById('btn-run').addEventListener('click', runCode);
-    document.getElementById('btn-fit').addEventListener('click', () => renderer.zoomToFit());
+    document.getElementById('btn-fit').addEventListener('click', () => { renderer.zoomToFit(); if (minimap) minimap.render(); });
     document.getElementById('btn-clear').addEventListener('click', () => {
         resetIdCounter(); clearRegistry(); renderer.render();
         document.getElementById('console-output').innerHTML = '';
         appendConsole('Canvas cleared', 'info');
+        if (selectionMgr) selectionMgr.deselectAll();
+        if (minimap) minimap.render();
+        if (layerMgr) layerMgr.render();
     });
 
     // File management
@@ -789,6 +1009,53 @@ function initUI() {
         });
     });
 
+    // Drawing tools
+    const toolBtns = document.querySelectorAll('.tool-btn');
+    toolBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tool = btn.dataset.tool;
+            toolMgr.setTool(tool);
+            toolBtns.forEach(b => b.classList.remove('tool-active'));
+            btn.classList.add('tool-active');
+            const toolNames = { pointer: 'Pointer', point: 'Point', line: 'Line', circle: 'Circle', rectangle: 'Rectangle', measure: 'Measure' };
+            document.getElementById('active-tool').textContent = toolNames[tool] || tool;
+        });
+    });
+
+    // Toggle buttons
+    const snapBtn = document.getElementById('btn-snap');
+    snapBtn.addEventListener('click', () => {
+        snapEngine.enabled = !snapEngine.enabled;
+        snapBtn.classList.toggle('btn-toggle-on', snapEngine.enabled);
+    });
+
+    document.getElementById('btn-minimap').addEventListener('click', () => {
+        minimap.toggle();
+        document.getElementById('btn-minimap').classList.toggle('btn-toggle-on', minimap.visible);
+    });
+
+    document.getElementById('btn-props').addEventListener('click', () => {
+        propertiesPanel.toggle();
+        document.getElementById('btn-props').classList.toggle('btn-toggle-on', propertiesPanel.visible);
+        document.getElementById('properties-splitter').style.display = propertiesPanel.visible ? '' : 'none';
+    });
+
+    document.getElementById('btn-close-props').addEventListener('click', () => {
+        propertiesPanel.visible = false;
+        document.getElementById('btn-props').classList.remove('btn-toggle-on');
+        document.getElementById('properties-splitter').style.display = 'none';
+    });
+
+    document.getElementById('btn-layers').addEventListener('click', () => {
+        layerMgr.toggle();
+        document.getElementById('btn-layers').classList.toggle('btn-toggle-on', layerMgr.visible);
+    });
+
+    document.getElementById('btn-close-layers').addEventListener('click', () => {
+        layerMgr.visible = false;
+        document.getElementById('btn-layers').classList.remove('btn-toggle-on');
+    });
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveAll(); }
@@ -805,16 +1072,78 @@ function initUI() {
             e.preventDefault();
             if (openTabs.size > 1) closeTab(activeFile);
         }
+
+        // F4 - Properties
+        if (e.key === 'F4') {
+            e.preventDefault();
+            propertiesPanel.toggle();
+            document.getElementById('btn-props').classList.toggle('btn-toggle-on', propertiesPanel.visible);
+            document.getElementById('properties-splitter').style.display = propertiesPanel.visible ? '' : 'none';
+        }
+
+        // F9 - Snap toggle
+        if (e.key === 'F9') {
+            e.preventDefault();
+            snapEngine.enabled = !snapEngine.enabled;
+            snapBtn.classList.toggle('btn-toggle-on', snapEngine.enabled);
+        }
+
+        // Ctrl+Shift+M - Minimap
+        if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+            e.preventDefault();
+            minimap.toggle();
+            document.getElementById('btn-minimap').classList.toggle('btn-toggle-on', minimap.visible);
+        }
+
+        // Ctrl+M - Measuring tape
+        if (e.ctrlKey && !e.shiftKey && e.key === 'm') {
+            e.preventDefault();
+            toolMgr.setTool('measure');
+            toolBtns.forEach(b => b.classList.toggle('tool-active', b.dataset.tool === 'measure'));
+            document.getElementById('active-tool').textContent = 'Measure';
+        }
+
+        // Escape - back to pointer
+        if (e.key === 'Escape') {
+            toolMgr.setTool('pointer');
+            toolBtns.forEach(b => b.classList.toggle('tool-active', b.dataset.tool === 'pointer'));
+            document.getElementById('active-tool').textContent = 'Pointer';
+        }
+
+        // Delete - delete selected shapes
+        if (e.key === 'Delete' && selectionMgr.hasSelection) {
+            if (!editor.hasFocus()) {
+                selectionMgr.deleteSelected();
+                if (minimap) minimap.render();
+            }
+        }
+
+        // Drawing tool shortcuts (only when editor not focused)
+        if (!editor.hasFocus() && !e.ctrlKey && !e.altKey) {
+            const toolKeys = { 'v': 'pointer', 'p': 'point', 'l': 'line', 'c': 'circle', 'r': 'rectangle', 'm': 'measure' };
+            const tool = toolKeys[e.key.toLowerCase()];
+            if (tool) {
+                toolMgr.setTool(tool);
+                toolBtns.forEach(b => b.classList.toggle('tool-active', b.dataset.tool === tool));
+                const toolNames = { pointer: 'Pointer', point: 'Point', line: 'Line', circle: 'Circle', rectangle: 'Rectangle', measure: 'Measure' };
+                document.getElementById('active-tool').textContent = toolNames[tool];
+            }
+        }
+
+        // Shift key for ortho constraint
+        if (e.key === 'Shift') toolMgr.setOrthoConstrain(true);
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift') toolMgr.setOrthoConstrain(false);
     });
 
     initSplitters();
+    initAnimationControls();
 }
 
 function initSplitters() {
-    // Main splitter (editor | canvas)
-    setupSplitter('splitter', 'editor-panel', 'canvas-panel', 'col', () => { renderer.render(); editor.refresh(); });
-
-    // Tree splitter (project browser | editor)
+    setupSplitter('splitter', 'editor-panel', 'canvas-panel', 'col', () => { renderer.render(); editor.refresh(); if (minimap) minimap.render(); });
     setupTreeSplitter();
 
     // Console splitter
@@ -837,11 +1166,10 @@ function setupSplitter(splitterId, leftId, rightId, dir, onEnd) {
         if (!isDragging) return;
         const container = document.getElementById('main-content');
         const rect = container.getBoundingClientRect();
-        // Compute the left panel width accounting for the project panel
         const projPanel = document.getElementById('project-panel');
         const projWidth = projPanel.classList.contains('collapsed') ? 0 : projPanel.offsetWidth;
         const treeSplitWidth = projPanel.classList.contains('collapsed') ? 0 : 4;
-        const available = rect.width - projWidth - treeSplitWidth - 5; // 5 = splitter width
+        const available = rect.width - projWidth - treeSplitWidth - 5;
         const editorLeft = projWidth + treeSplitWidth;
         const editorWidth = e.clientX - rect.left - editorLeft;
         const pct = (editorWidth / available) * 100;
@@ -870,7 +1198,6 @@ function setupTreeSplitter() {
 // Init
 // ============================================================================
 function init() {
-    // Try restoring from localStorage
     const restored = loadProjectFromStorage();
     if (!restored) {
         files.set(ENTRY_FILE, { content: DEFAULT_MAIN, dirty: false, handle: null, history: null });

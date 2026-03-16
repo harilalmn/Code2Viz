@@ -44,6 +44,30 @@ const GLOBAL_COMPLETIONS = [
     { text: 'LineTypes', kind: 'object', detail: 'Continuous, Dashed, Dotted, ...', doc: 'Line dash patterns.' },
     { text: 'Math', kind: 'object', detail: 'Math.PI, Math.sin, Math.cos, ...', doc: 'JavaScript Math object.' },
     { text: 'console', kind: 'object', detail: 'console.log, console.warn, console.error', doc: 'Console output (shown in panel below).' },
+
+    // Animation
+    { text: 'Animator', kind: 'object', detail: 'Animator.play(), .pause(), .stop()', doc: 'Global animation controller. Call setTimeline() then play().' },
+    { text: 'Timeline', kind: 'class', detail: 'new Timeline()', doc: 'Animation timeline. Add animations with .add(), .sequence(), .parallel().' },
+    { text: 'Easing', kind: 'object', detail: 'Easing.linear, .easeInQuad, .easeOutBounce, ...', doc: 'Easing functions for animations.' },
+    { text: 'DrawAnimation', kind: 'class', detail: 'new DrawAnimation(shape, duration, easing?, delay?)', doc: 'Animates shape drawing from 0 to 1 (drawFactor).' },
+    { text: 'MoveAnimation', kind: 'class', detail: 'new MoveAnimation(shape, dx, dy, duration, easing?, delay?)', doc: 'Moves shape by (dx, dy) over duration.' },
+    { text: 'FadeAnimation', kind: 'class', detail: 'new FadeAnimation(shape, fromOpacity, toOpacity, duration, easing?, delay?)', doc: 'Fades shape between opacities.' },
+    { text: 'ScaleAnimation', kind: 'class', detail: 'new ScaleAnimation(shape, fromScale, toScale, duration, easing?, delay?)', doc: 'Scales shape line weight.' },
+    { text: 'RotateAnimation', kind: 'class', detail: 'new RotateAnimation(shape, angleDeg, duration, easing?, delay?)', doc: 'Rotates shape by angle over duration.' },
+    { text: 'ColorAnimation', kind: 'class', detail: 'new ColorAnimation(shape, fromColor, toColor, duration, easing?, delay?)', doc: 'Transitions shape color.' },
+
+    // Boolean operations
+    { text: 'polygonIntersection', kind: 'function', detail: 'polygonIntersection(shapeA, shapeB) → VPolygon', doc: 'Compute intersection of two polygons.' },
+    { text: 'polygonDifference', kind: 'function', detail: 'polygonDifference(shapeA, shapeB) → VPolygon', doc: 'Compute difference A - B.' },
+    { text: 'polygonUnion', kind: 'function', detail: 'polygonUnion(shapeA, shapeB) → VPolygon', doc: 'Compute union of two polygons (convex hull approximation).' },
+    { text: 'pointInPolygon', kind: 'function', detail: 'pointInPolygon(point, polygon) → boolean', doc: 'Test if point is inside polygon.' },
+
+    // Array operations
+    { text: 'linearArray', kind: 'function', detail: 'linearArray(shape, count, dx, dy) → Shape[]', doc: 'Create linear array of shape copies.' },
+    { text: 'rectangularArray', kind: 'function', detail: 'rectangularArray(shape, rows, cols, dx, dy) → Shape[]', doc: 'Create rectangular grid of shape copies.' },
+    { text: 'polarArray', kind: 'function', detail: 'polarArray(shape, count, center, totalAngle?) → Shape[]', doc: 'Create polar array around center point.' },
+    { text: 'pathArray', kind: 'function', detail: 'pathArray(shape, path, count) → Shape[]', doc: 'Distribute shape copies along a path.' },
+    { text: 'mirror', kind: 'function', detail: 'mirror(shape, mirrorLine) → Shape', doc: 'Create mirrored copy of shape.' },
 ];
 
 // Instance members by type

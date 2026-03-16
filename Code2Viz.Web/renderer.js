@@ -19,12 +19,22 @@ export class CanvasRenderer {
         this._showGrid = true;
         this._gridSpacing = 50;
 
+        // Overlay renderers (selection, tools, minimap)
+        this._overlays = [];
+        this._layerManager = null;
+
         this._setupInteraction();
     }
 
     get zoom() { return this._zoom; }
     get panX() { return this._panX; }
     get panY() { return this._panY; }
+
+    setLayerManager(lm) { this._layerManager = lm; }
+
+    addOverlay(overlayFn) {
+        this._overlays.push(overlayFn);
+    }
 
     // World (math) to screen coordinates
     worldToScreen(wx, wy) {
@@ -165,9 +175,18 @@ export class CanvasRenderer {
         const shapes = getRegistry();
         for (const shape of shapes) {
             if (!shape.isVisible || shape.drawFactor <= 0) continue;
+            // Layer visibility check
+            if (this._layerManager && !this._layerManager.isShapeVisible(shape)) continue;
             ctx.save();
             ctx.globalAlpha = shape.opacity;
             this._drawShape(ctx, shape);
+            ctx.restore();
+        }
+
+        // Draw overlays (selection, tools, snap, minimap)
+        for (const overlay of this._overlays) {
+            ctx.save();
+            overlay(ctx);
             ctx.restore();
         }
     }
@@ -212,7 +231,6 @@ export class CanvasRenderer {
 
     _resolveColor(colorStr) {
         if (!colorStr || colorStr === 'Transparent') return null;
-        // Handle named CSS colors and hex
         return colorStr;
     }
 
@@ -331,7 +349,6 @@ export class CanvasRenderer {
     _drawArc(ctx, shape) {
         const s = this.worldToScreen(shape.center.X + shape.offsetX, shape.center.Y + shape.offsetY);
         const r = shape.radius * this._zoom;
-        // Canvas arc uses clockwise, but our Y is flipped so start/end swap
         const startRad = -shape.endAngle * Math.PI / 180;
         const endRad = -shape.startAngle * Math.PI / 180;
 
@@ -521,7 +538,6 @@ export class CanvasRenderer {
         ctx.fillStyle = color;
         ctx.font = `${shape.fontWeight} ${fontSize}px ${shape.font}`;
 
-        // Text alignment based on anchor
         const anchor = shape.anchor;
         if (anchor.includes('Center')) ctx.textAlign = 'center';
         else if (anchor.includes('Right')) ctx.textAlign = 'right';
@@ -545,7 +561,6 @@ export class CanvasRenderer {
 
         ctx.lineWidth = 1;
 
-        // Extension lines
         if (!shape.suppressExtLine1) {
             const e1s = this.worldToScreen(geom.ext1Start.X + shape.offsetX, geom.ext1Start.Y + shape.offsetY);
             const e1e = this.worldToScreen(geom.ext1End.X + shape.offsetX, geom.ext1End.Y + shape.offsetY);
@@ -559,18 +574,15 @@ export class CanvasRenderer {
             ctx.beginPath(); ctx.moveTo(e2s.x, e2s.y); ctx.lineTo(e2e.x, e2e.y); ctx.stroke();
         }
 
-        // Dimension line
         const ds = this.worldToScreen(geom.dimStart.X + shape.offsetX, geom.dimStart.Y + shape.offsetY);
         const de = this.worldToScreen(geom.dimEnd.X + shape.offsetX, geom.dimEnd.Y + shape.offsetY);
         ctx.strokeStyle = dimLineColor;
         ctx.beginPath(); ctx.moveTo(ds.x, ds.y); ctx.lineTo(de.x, de.y); ctx.stroke();
 
-        // Arrowheads
         const arrowSize = shape.arrowSize * this._zoom;
         this._drawArrowhead(ctx, ds, de, arrowSize, dimLineColor);
         this._drawArrowhead(ctx, de, ds, arrowSize, dimLineColor);
 
-        // Text
         const tp = this.worldToScreen(geom.textPos.X + shape.offsetX, geom.textPos.Y + shape.offsetY);
         const fontSize = shape.textHeight * this._zoom;
         ctx.font = `${fontSize}px Arial`;
@@ -596,16 +608,13 @@ export class CanvasRenderer {
         const cp = this.worldToScreen(geom.circumPoint.X + shape.offsetX, geom.circumPoint.Y + shape.offsetY);
         const le = this.worldToScreen(geom.leaderEnd.X + shape.offsetX, geom.leaderEnd.Y + shape.offsetY);
 
-        // Leader line
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(cs.x, cs.y); ctx.lineTo(le.x, le.y); ctx.stroke();
 
-        // Arrowhead at circumference
         const arrowSize = shape.arrowSize * this._zoom;
         this._drawArrowhead(ctx, cp, cs, arrowSize, color);
 
-        // Text
         const fontSize = shape.textHeight * this._zoom;
         ctx.font = `${fontSize}px Arial`;
         ctx.textAlign = 'left';
