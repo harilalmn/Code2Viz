@@ -382,31 +382,8 @@ public class ModuleCompiler
         }
     }
 
-    public async Task<(CSharpCompilation Compilation, HashSet<string> AllDlls)> CreateCompilationAsync(VizCodeProject project)
+    public async Task<(List<MetadataReference> References, HashSet<string> AllDlls)> GetProjectReferencesAndDllsAsync(VizCodeProject project)
     {
-        // Get ALL source files from project directory (not just open ones)
-        var allSourceFiles = project.GetAllSourceFiles().ToList();
-
-        // Parse all source files into syntax trees
-        var rewriter = new AnimationNameRewriter();
-        var syntaxTrees = allSourceFiles.Select(file =>
-        {
-            var sourceText = Microsoft.CodeAnalysis.Text.SourceText.From(
-                file.Content, System.Text.Encoding.UTF8);
-            var tree = CSharpSyntaxTree.ParseText(
-                sourceText,
-                path: file.FilePath,
-                options: new CSharpParseOptions(LanguageVersion.Latest));
-
-            // Transform animation variable declarations to include Name property
-            var newRoot = rewriter.Visit(tree.GetRoot());
-            
-            // IMPORTANT: Preserve the original file path when creating the new tree
-            // Using newRoot.SyntaxTree loses the file path!
-            return tree.WithRootAndOptions(newRoot, tree.Options);
-        }).ToList();
-
-        // Resolve NuGet packages
         var references = new List<MetadataReference>(DefaultReferences);
         var allDlls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -486,6 +463,36 @@ public class ModuleCompiler
                 }
             }
         }
+
+        return (references, allDlls);
+    }
+
+    public async Task<(CSharpCompilation Compilation, HashSet<string> AllDlls)> CreateCompilationAsync(VizCodeProject project)
+    {
+        // Get ALL source files from project directory (not just open ones)
+        var allSourceFiles = project.GetAllSourceFiles().ToList();
+
+        // Parse all source files into syntax trees
+        var rewriter = new AnimationNameRewriter();
+        var syntaxTrees = allSourceFiles.Select(file =>
+        {
+            var sourceText = Microsoft.CodeAnalysis.Text.SourceText.From(
+                file.Content, System.Text.Encoding.UTF8);
+            var tree = CSharpSyntaxTree.ParseText(
+                sourceText,
+                path: file.FilePath,
+                options: new CSharpParseOptions(LanguageVersion.Latest));
+
+            // Transform animation variable declarations to include Name property
+            var newRoot = rewriter.Visit(tree.GetRoot());
+            
+            // IMPORTANT: Preserve the original file path when creating the new tree
+            // Using newRoot.SyntaxTree loses the file path!
+            return tree.WithRootAndOptions(newRoot, tree.Options);
+        }).ToList();
+
+        // Resolve NuGet packages and references
+        var (references, allDlls) = await GetProjectReferencesAndDllsAsync(project);
 
         // Create compilation
         var compilation = CSharpCompilation.Create(

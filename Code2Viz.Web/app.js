@@ -19,6 +19,7 @@ import { Animator, Timeline, Easing, DrawAnimation, MoveAnimation, FadeAnimation
 import { LayerManager } from './layers.js';
 import { polygonIntersection, polygonDifference, polygonUnion, pointInPolygon } from './geometry/boolean.js';
 import { linearArray, rectangularArray, polarArray, pathArray, mirror } from './geometry/arrays.js';
+import { HelpPanel } from './help.js';
 
 // ============================================================================
 // App State
@@ -33,6 +34,7 @@ let propertiesPanel = null;
 let minimap = null;
 let animator = null;
 let layerMgr = null;
+let helpPanel = null;
 
 const ENTRY_FILE = 'main.js';
 const STORAGE_KEY = 'code2viz_project';
@@ -883,6 +885,11 @@ function initCanvas() {
     layerMgr = new LayerManager(document.getElementById('layers-panel'), renderer);
     renderer.setLayerManager(layerMgr);
 
+    helpPanel = new HelpPanel();
+
+    // Help button
+    document.getElementById('btn-help').addEventListener('click', () => helpPanel.toggle());
+
     // Register overlays
     renderer.addOverlay((ctx) => selectionMgr.renderOverlay(ctx));
     renderer.addOverlay((ctx) => toolMgr.renderOverlay(ctx));
@@ -1073,6 +1080,12 @@ function initUI() {
             if (openTabs.size > 1) closeTab(activeFile);
         }
 
+        // F1 - Help
+        if (e.key === 'F1') {
+            e.preventDefault();
+            helpPanel.toggle();
+        }
+
         // F4 - Properties
         if (e.key === 'F4') {
             e.preventDefault();
@@ -1103,11 +1116,15 @@ function initUI() {
             document.getElementById('active-tool').textContent = 'Measure';
         }
 
-        // Escape - back to pointer
+        // Escape - close help or back to pointer
         if (e.key === 'Escape') {
-            toolMgr.setTool('pointer');
-            toolBtns.forEach(b => b.classList.toggle('tool-active', b.dataset.tool === 'pointer'));
-            document.getElementById('active-tool').textContent = 'Pointer';
+            if (helpPanel && helpPanel.visible) {
+                helpPanel.hide();
+            } else {
+                toolMgr.setTool('pointer');
+                toolBtns.forEach(b => b.classList.toggle('tool-active', b.dataset.tool === 'pointer'));
+                document.getElementById('active-tool').textContent = 'Pointer';
+            }
         }
 
         // Delete - delete selected shapes

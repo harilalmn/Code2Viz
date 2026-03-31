@@ -117,7 +117,7 @@ public class RoslynCompletionService
             ImmutableArray<ISymbol> symbols;
             bool isEnumMemberAccess = false;
             bool isStaticTypeAccess = false;
-            ITypeSymbol? memberAccessType = null;
+            INamespaceOrTypeSymbol? memberAccessContainer = null;
 
             // Handle Member Access (dot)
             // Check if strict member access syntax
@@ -194,16 +194,20 @@ public class RoslynCompletionService
                         if (nodeBeforeDot != null)
                         {
                             var typeInfo = semanticModel.GetTypeInfo(nodeBeforeDot);
-                            memberAccessType = typeInfo.Type;
+                            memberAccessContainer = typeInfo.Type;
                             
-                            if (memberAccessType == null)
+                            if (memberAccessContainer == null)
                             {
                                 // Maybe it's a namespace or type name (statics)
                                 var symbolInfo = semanticModel.GetSymbolInfo(nodeBeforeDot);
                                 if (symbolInfo.Symbol is INamedTypeSymbol typeSym)
                                 {
-                                    memberAccessType = typeSym;
+                                    memberAccessContainer = typeSym;
                                     isStaticTypeAccess = true;
+                                }
+                                else if (symbolInfo.Symbol is INamespaceSymbol nsSym)
+                                {
+                                    memberAccessContainer = nsSym;
                                 }
                             }
                         }
@@ -212,16 +216,16 @@ public class RoslynCompletionService
             }
 
             // If we found a member access type, lookup its members
-            if (memberAccessType != null)
+            if (memberAccessContainer != null)
             {
                 // Check if we're accessing an enum type (for static enum value completion)
-                if (memberAccessType.TypeKind == TypeKind.Enum)
+                if (memberAccessContainer is ITypeSymbol typeSym && typeSym.TypeKind == TypeKind.Enum)
                 {
                     isEnumMemberAccess = true;
                 }
 
                 symbols = await Task.Run(() =>
-                    semanticModel.LookupSymbols(position, container: memberAccessType, includeReducedExtensionMethods: true));
+                    semanticModel.LookupSymbols(position, container: memberAccessContainer, includeReducedExtensionMethods: true));
             }
             else
             {
@@ -335,7 +339,7 @@ public class RoslynCompletionService
             }
 
             // 6. Add Code2Viz.Geometry types even when not imported (for convenience)
-            if (memberAccessType == null && !isAfterNew)
+            if (memberAccessContainer == null && !isAfterNew)
             {
                 AddCode2VizTypes(completions, compilation, prefix);
             }
@@ -770,7 +774,6 @@ public class RoslynCompletionService
                 ns.StartsWith("System.Buffers") ||
                 ns.StartsWith("System.Private") ||
                 ns.StartsWith("Internal") ||
-                ns.StartsWith("Microsoft.") ||
                 ns.StartsWith("FSharp.") ||
                 ns.StartsWith("Interop") ||
                 // New additions to further declutter

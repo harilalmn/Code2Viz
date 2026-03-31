@@ -39,7 +39,21 @@
       "Bash(dotnet package:*)",
       "Bash(dotnet:*)",
       "Bash(python3:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cd \"C:/Work/Nicety/Projects/Code2Viz/Code2Viz.Web\" && npm install)",
+      "Bash(cd \"C:/Work/Nicety/Projects/Code2Viz/Code2Viz.Web\" && npx serve . -p 3000 -s)",
+      "Bash(sleep 2 && curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s http://localhost:3000 | head -5)",
+      "Bash(start http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://esm.sh/codemirror@6.0.1\")",
+      "Bash(cd \"C:/Work/Nicety/Projects/Code2Viz/Code2Viz.Web\" && npm install codemirror @codemirror/lang-javascript @codemirror/theme-one-dark @codemirror/state @codemirror/view)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/exporter.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/app.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/ 2>/dev/null || echo \"not running\")",
+      "Bash(curl -s http://localhost:3000/ | head -5)",
+      "Bash(cd:*)",
+      "Bash(git clone:*)",
+      "Bash(cp:*)"
     ]
   }
 }

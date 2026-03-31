@@ -1561,12 +1561,34 @@ public partial class MainWindow : Window
                 {
                     _completionWorkspace.UpdateFile(file.FileName, file.Content);
                 }
+                
+                // Fetch dynamic project references asynchronously (NuGet, Assembly refs)
+                _ = UpdateWorkspaceReferencesAsync();
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Workspace init error: {ex.Message}");
             _completionWorkspace = null;
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously fetches project-specific references (NuGet packages and assembly references)
+    /// and replaces the default references in the completion workspace.
+    /// </summary>
+    private async Task UpdateWorkspaceReferencesAsync()
+    {
+        if (_currentProject == null || _completionWorkspace == null) return;
+        
+        try
+        {
+            var (references, _) = await _compiler.GetProjectReferencesAndDllsAsync(_currentProject);
+            _completionWorkspace.ReplaceReferences(references);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to update workspace references: {ex.Message}");
         }
     }
 
@@ -2864,7 +2886,7 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private void ManagePackagesMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void ManagePackagesMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (_currentProject == null)
         {
@@ -2878,6 +2900,9 @@ public partial class MainWindow : Window
         // Refresh project tree to show .packages folder if created
         LoadProjectTree();
         RefreshFileTabs(); // In case any files were modified/added externally (unlikely but good practice)
+        
+        // Refresh completion references after adding/removing packages
+        await UpdateWorkspaceReferencesAsync();
     }
 
     #region File System Watcher

@@ -1,0 +1,105 @@
+﻿using System;
+using System.Linq;
+using System.Numerics;
+using System.Collections.Generic;
+using Code2Viz.Geometry;
+using Code2Viz.Console;
+
+namespace LinkedList
+{
+    public class Viz
+    {
+        public static void Main()
+        {
+            LL l = new LL();
+            Random r = new Random();
+            HashSet<int> numbers = new HashSet<int>();
+            while (numbers.Count < 10)
+            {
+                numbers.Add(r.Next(0, 100));
+            }
+
+            foreach (int n in numbers)
+            {
+                l.Insert(new Node(n));
+            }
+
+            l.Draw();
+        }
+    }
+
+    public class Node
+    {
+        public int Value { get; set; }
+        public Node Next { get; set; }
+
+        public Node(int value)
+        {
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
+    }
+
+    public class LL
+    {
+        private Node[] Nodes = new Node[1]; // starts with one null slot
+        public LL()
+        {
+        }
+
+        public void Insert(Node node)
+        {
+            // First insert: fill the pre-allocated slot
+            if (Nodes[0] == null)
+            {
+                Nodes[0] = node;
+                return;
+            }
+
+            // Grow array first, then place node at the end (no trailing null)
+            Array.Resize(ref Nodes, Nodes.Length + 1);
+            Nodes[Nodes.Length - 1] = node;
+
+            // Bubble sort
+            Node temp;
+            for (int i = 0; i < Nodes.Length - 1; i++)
+            {
+                for (int j = 0; j < Nodes.Length - 1; j++)
+                {
+                    if (Nodes[j].Value > Nodes[j + 1].Value)
+                    {
+                        temp = Nodes[j];
+                        Nodes[j] = Nodes[j + 1];
+                        Nodes[j + 1] = temp;
+                    }
+                }
+            }
+
+            // Link nodes
+            for (int i = 0; i < Nodes.Length - 1; i++)
+            {
+                Nodes[i].Next = Nodes[i + 1];
+            }
+            Nodes.Last().Next = null;
+        }
+
+        public void Draw()
+        {
+            VPoint center = new VPoint(0, 0);
+            foreach (Node node in Nodes)
+            {
+                VText txt = new VText(center, node.Value.ToString(), 1);
+                txt.Anchor = VTextAnchor.MiddleCenter;
+                VCircle circle = new VCircle(center, 1.5);
+                txt.Draw();
+                circle.Draw();
+                center = new VPoint(center.X + 6, center.Y);
+                VizConsole.Log(center);
+            }
+        }
+    }
+}
