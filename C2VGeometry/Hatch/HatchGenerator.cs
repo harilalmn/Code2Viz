@@ -11,10 +11,10 @@ public static class HatchGenerator
     /// <summary>
     /// Generates clipped hatch line segments for the given boundary and pattern.
     /// </summary>
-    public static List<(VPoint Start, VPoint End)> Generate(
-        List<VPoint> boundary, HatchType pattern, double scale, double patternAngle)
+    public static List<(VXYZ Start, VXYZ End)> Generate(
+        List<VXYZ> boundary, HatchType pattern, double scale, double patternAngle)
     {
-        var result = new List<(VPoint Start, VPoint End)>();
+        var result = new List<(VXYZ Start, VXYZ End)>();
         if (boundary.Count < 3 || pattern.Lines.Count == 0) return result;
 
         // Calculate boundary bounding box
@@ -126,7 +126,7 @@ public static class HatchGenerator
                         var dashedSegs = ApplyDashPattern(seg.sx, seg.sy, seg.ex, seg.ey, lx, ly, dirX, dirY, scaledDashes, dashPatternLen);
                         foreach (var ds in dashedSegs)
                         {
-                            result.Add((VPoint.Internal(ds.sx, ds.sy), VPoint.Internal(ds.ex, ds.ey)));
+                            result.Add((new VXYZ(ds.sx, ds.sy), new VXYZ(ds.ex, ds.ey)));
                         }
                     }
                 }
@@ -135,7 +135,7 @@ public static class HatchGenerator
                     // Continuous line
                     foreach (var seg in segments)
                     {
-                        result.Add((VPoint.Internal(seg.sx, seg.sy), VPoint.Internal(seg.ex, seg.ey)));
+                        result.Add((new VXYZ(seg.sx, seg.sy), new VXYZ(seg.ex, seg.ey)));
                     }
                 }
             }
@@ -149,7 +149,7 @@ public static class HatchGenerator
     /// Returns sorted visible segments inside the polygon.
     /// </summary>
     private static List<(double sx, double sy, double ex, double ey)> ClipLineToPolygon(
-        double x0, double y0, double x1, double y1, List<VPoint> polygon)
+        double x0, double y0, double x1, double y1, List<VXYZ> polygon)
     {
         var result = new List<(double sx, double sy, double ex, double ey)>();
 
@@ -224,7 +224,7 @@ public static class HatchGenerator
         return result;
     }
 
-    private static bool IsPointInPolygon(double px, double py, List<VPoint> polygon)
+    private static bool IsPointInPolygon(double px, double py, List<VXYZ> polygon)
     {
         bool inside = false;
         int j = polygon.Count - 1;

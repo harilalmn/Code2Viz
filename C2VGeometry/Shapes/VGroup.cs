@@ -104,7 +104,7 @@ public class VGroup : Shape
     public override BoundingBox GetBounds()
     {
         if (Shapes.Count == 0)
-            return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+            return new BoundingBox(new VXYZ(0, 0), new VXYZ(0, 0));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -118,16 +118,16 @@ public class VGroup : Shape
             maxY = Math.Max(maxY, bounds.Max.Y);
         }
 
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     /// <summary>
     /// Gets the center of the group's bounding box.
     /// </summary>
-    public VPoint GetCenter()
+    public VXYZ GetCenter()
     {
         var bounds = GetBounds();
-        return VPoint.Internal((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
+        return new VXYZ((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ public class VGroup : Shape
     /// <summary>
     /// Rotates all shapes in the group around a pivot point.
     /// </summary>
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
         foreach (var shape in Shapes)
             shape.Rotate(pivot, angleDegrees);
@@ -176,7 +176,7 @@ public class VGroup : Shape
     /// <summary>
     /// Scales all shapes in the group around a center point.
     /// </summary>
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
         foreach (var shape in Shapes)
             shape.Scale(center, factor);
@@ -203,7 +203,7 @@ public class VGroup : Shape
     /// <summary>
     /// Moves a control point. Index 0 moves the entire group.
     /// </summary>
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         if (index == 0)
         {
@@ -218,7 +218,7 @@ public class VGroup : Shape
     /// <summary>
     /// Calculates the minimum distance from any shape in the group to a point.
     /// </summary>
-    public override double DistanceTo(VPoint point)
+    public override double DistanceTo(VXYZ point)
     {
         if (Shapes.Count == 0)
             return double.MaxValue;
@@ -229,7 +229,7 @@ public class VGroup : Shape
     /// <summary>
     /// Checks if any shape in the group contains the point.
     /// </summary>
-    public override bool Contains(VPoint point)
+    public override bool Contains(VXYZ point)
     {
         return Shapes.Any(s => s.Contains(point));
     }

@@ -12,7 +12,7 @@ public static class GeometryHelper
     /// <summary>
     /// Rotates a point around a pivot by the given angle.
     /// </summary>
-    public static VPoint RotatePoint(VPoint point, VPoint pivot, double angleDegrees)
+    public static VXYZ RotatePoint(VXYZ point, VXYZ pivot, double angleDegrees)
     {
         double angleRad = angleDegrees * Math.PI / 180.0;
         double cos = Math.Cos(angleRad);
@@ -24,14 +24,13 @@ public static class GeometryHelper
         double newX = pivot.X + dx * cos - dy * sin;
         double newY = pivot.Y + dx * sin + dy * cos;
 
-        // Use Internal() to avoid auto-registering intermediate points
-        return VPoint.Internal(newX, newY);
+        return new VXYZ(newX, newY);
     }
 
     /// <summary>
     /// Reflects a point across a mirror line.
     /// </summary>
-    public static VPoint FlipPoint(VPoint point, VLine mirrorLine)
+    public static VXYZ FlipPoint(VXYZ point, VLine mirrorLine)
     {
         // Get line direction vector
         double dx = mirrorLine.End.X - mirrorLine.Start.X;
@@ -56,17 +55,25 @@ public static class GeometryHelper
         double newX = 2 * projX - point.X;
         double newY = 2 * projY - point.Y;
 
-        // Use Internal() to avoid auto-registering intermediate points
-        return VPoint.Internal(newX, newY);
+        return new VXYZ(newX, newY);
     }
 
     /// <summary>
     /// Moves a point by a vector.
     /// </summary>
-    public static VPoint MovePoint(VPoint point, VXYZ vector)
+    public static VXYZ MovePoint(VXYZ point, VXYZ vector)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        return VPoint.Internal(point.X + vector.X, point.Y + vector.Y);
+        return new VXYZ(point.X + vector.X, point.Y + vector.Y);
+    }
+
+    /// <summary>
+    /// Scales a point around a center by the given factor.
+    /// </summary>
+    public static VXYZ ScalePoint(VXYZ point, VXYZ center, double factor)
+    {
+        return new VXYZ(
+            center.X + (point.X - center.X) * factor,
+            center.Y + (point.Y - center.Y) * factor);
     }
 
     /// <summary>
@@ -110,8 +117,7 @@ public static class GeometryHelper
         {
             double ix = x1 + ua * (x2 - x1);
             double iy = y1 + ua * (y2 - y1);
-            // Use Internal() to avoid auto-registering intermediate points
-            return VPoint.Internal(ix, iy);
+            return new VPoint(ix, iy);
         }
 
         return null;
@@ -132,7 +138,7 @@ public static class GeometryHelper
         // Project all points onto X axis (or Y if vertical) to find 1D overlap
         bool useX = Math.Abs(l1.Start.X - l1.End.X) > Math.Abs(l1.Start.Y - l1.End.Y);
 
-        double GetVal(VPoint p) => useX ? p.X : p.Y;
+        double GetVal(VXYZ p) => useX ? p.X : p.Y;
 
         double min1 = Math.Min(GetVal(l1.Start), GetVal(l1.End));
         double max1 = Math.Max(GetVal(l1.Start), GetVal(l1.End));
@@ -150,11 +156,11 @@ public static class GeometryHelper
             .ToList();
 
         // Check if the middle segment belongs to both
-        VPoint pStart = points[1];
-        VPoint pEnd = points[2];
+        VXYZ pStart = points[1];
+        VXYZ pEnd = points[2];
 
         // Should verify this segment allows for actual overlap
-        if (GeometryTolerance.AreEqual(GetVal(pStart), GetVal(pEnd))) return VPoint.Internal(pStart.X, pStart.Y);
+        if (GeometryTolerance.AreEqual(GetVal(pStart), GetVal(pEnd))) return new VPoint(pStart.X, pStart.Y);
 
         return new VLine(pStart.X, pStart.Y, pEnd.X, pEnd.Y);
     }
@@ -222,7 +228,7 @@ public static class GeometryHelper
             double newY2 = y1 + t1 * dy;
 
             // If it's a point
-            if (GeometryTolerance.AreEqual(t1, t0)) return VPoint.Internal(newX1, newY1);
+            if (GeometryTolerance.AreEqual(t1, t0)) return new VPoint(newX1, newY1);
 
             return new VLine(newX1, newY1, newX2, newY2);
         }
@@ -233,7 +239,7 @@ public static class GeometryHelper
     /// <summary>
     /// Gets the normal vector of the polyline segment closest to the given point.
     /// </summary>
-    public static VXYZ GetPolylineNormalAtPoint(List<VPoint> points, VPoint p, bool isClosed)
+    public static VXYZ GetPolylineNormalAtPoint(List<VXYZ> points, VXYZ p, bool isClosed)
     {
         if (points == null || points.Count < 2) return new VXYZ(0, 1, 0); // Default Up
 
@@ -244,8 +250,8 @@ public static class GeometryHelper
 
         for (int i = 0; i < count; i++)
         {
-            VPoint p1 = points[i];
-            VPoint p2 = points[(i + 1) % points.Count];
+            VXYZ p1 = points[i];
+            VXYZ p2 = points[(i + 1) % points.Count];
 
             double dx = p2.X - p1.X;
             double dy = p2.Y - p1.Y;
@@ -283,9 +289,9 @@ public static class GeometryHelper
     /// <summary>
     /// Calculates interaction points of two circles.
     /// </summary>
-    public static List<VPoint> IntersectCircleCircle(VPoint c1, double r1, VPoint c2, double r2)
+    public static List<VXYZ> IntersectCircleCircle(VXYZ c1, double r1, VXYZ c2, double r2)
     {
-        var results = new List<VPoint>();
+        var results = new List<VXYZ>();
 
         double dx = c2.X - c1.X;
         double dy = c2.Y - c1.Y;
@@ -305,7 +311,7 @@ public static class GeometryHelper
         double x2 = c1.X + a * (c2.X - c1.X) / d;
         double y2 = c1.Y + a * (c2.Y - c1.Y) / d;
 
-        results.Add(new VPoint(
+        results.Add(new VXYZ(
             x2 + h * (c2.Y - c1.Y) / d,
             y2 - h * (c2.X - c1.X) / d
         ));
@@ -313,7 +319,7 @@ public static class GeometryHelper
         // If not tangent (touching at one point)
         if (!GeometryTolerance.AreEqual(d, r1 + r2))
         {
-            results.Add(new VPoint(
+            results.Add(new VXYZ(
                 x2 - h * (c2.Y - c1.Y) / d,
                 y2 + h * (c2.X - c1.X) / d
             ));

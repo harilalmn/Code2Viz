@@ -189,7 +189,7 @@ public static class BooleanOps
     /// Checks if a point is inside a polygon.
     /// Returns true if the point is inside or on the boundary.
     /// </summary>
-    public static bool PointInPolygon(VPolygon polygon, VPoint point)
+    public static bool PointInPolygon(VPolygon polygon, VXYZ point)
     {
         return PolygonClipper.PointInPolygonTest(point, polygon.Points);
     }
@@ -278,7 +278,7 @@ public static class VPolygonBooleanExtensions
     /// <summary>
     /// Checks if a point is inside this polygon.
     /// </summary>
-    public static bool Contains(this VPolygon polygon, VPoint point)
+    public static bool Contains(this VPolygon polygon, VXYZ point)
     {
         return BooleanOps.PointInPolygon(polygon, point);
     }

@@ -6,43 +6,43 @@ namespace C2VGeometry;
 
 public class VPolyline : Shape, ICurve
 {
-    public List<VPoint> Points { get; set; }
+    public List<VXYZ> Points { get; set; }
     private readonly bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polyline.</summary>
-    public VPoint StartPoint => Points.Count > 0 ? Points[0] : VPoint.Internal(0, 0);
+    public VXYZ StartPoint => Points.Count > 0 ? Points[0] : new VXYZ(0, 0);
 
     /// <summary>Gets the end point of the polyline.</summary>
-    public VPoint EndPoint => Points.Count > 0 ? Points[^1] : VPoint.Internal(0, 0);
+    public VXYZ EndPoint => Points.Count > 0 ? Points[^1] : new VXYZ(0, 0);
 
     /// <summary>Indicates whether the polyline intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
     /// <summary>Gets the vertices of the polyline.</summary>
-    public List<VPoint> Vertices => Points;
+    public List<VXYZ> Vertices => Points;
 
-    public VPolyline(params VPoint[] points)
+    public VPolyline(params VXYZ[] points)
     {
         Points = points.ToList();
         Color = "LightGreen";
         _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 
-    public VPolyline(IEnumerable<VPoint> points)
+    public VPolyline(IEnumerable<VXYZ> points)
     {
         Points = points.ToList();
         Color = "LightGreen";
         _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 
-    public void AddPoint(VPoint point)
+    public void AddPoint(VXYZ point)
     {
         Points.Add(point);
     }
 
     public void AddPoint(double x, double y)
     {
-        Points.Add(VPoint.Internal(x, y));
+        Points.Add(new VXYZ(x, y));
     }
 
 
@@ -63,7 +63,7 @@ public class VPolyline : Shape, ICurve
         return result;
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         if (index == 0)
         {
@@ -75,8 +75,7 @@ public class VPolyline : Shape, ICurve
         else if (index > 0 && index <= Points.Count)
         {
             int ptIdx = index - 1;
-            Points[ptIdx].X = newPosition.X;
-            Points[ptIdx].Y = newPosition.Y;
+            Points[ptIdx] = new VXYZ(newPosition.X, newPosition.Y);
         }
     }
 
@@ -89,34 +88,34 @@ public class VPolyline : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        foreach (var point in Points)
-            point.Move(vector);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = Points[i] + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        foreach (var point in Points)
-            point.Rotate(pivot, angleDegrees);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = GeometryHelper.RotatePoint(Points[i], pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        foreach (var point in Points)
-            point.Flip(mirrorLine);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = GeometryHelper.FlipPoint(Points[i], mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        foreach (var point in Points)
-            point.Scale(center, factor);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = GeometryHelper.ScalePoint(Points[i], center, factor);
     }
 
     public override BoundingBox GetBounds()
     {
-        if (Points.Count == 0) return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+        if (Points.Count == 0) return new BoundingBox(new VXYZ(0, 0), new VXYZ(0, 0));
         double minX = Points.Min(p => p.X), minY = Points.Min(p => p.Y);
         double maxX = Points.Max(p => p.X), maxY = Points.Max(p => p.Y);
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     public override string ToString() => $"VPolyline({Points.Count} points)";
@@ -131,50 +130,44 @@ public class VPolyline : Shape, ICurve
         return length;
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        if (numberOfSegments <= 0) return new List<VPoint>();
+        if (numberOfSegments <= 0) return new List<VXYZ>();
         double totalLength = GetLength();
-        if (totalLength < 1e-9) return new List<VPoint>();
+        if (totalLength < 1e-9) return new List<VXYZ>();
 
         return Measure(totalLength / numberOfSegments);
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var result = new List<VPoint>();
+        var result = new List<VXYZ>();
         if (segmentLength <= 1e-9 || Points.Count < 2) return result;
 
-        // Always include start
         result.Add(Points[0]);
-
 
         double remainingStep = segmentLength;
 
         for (int i = 0; i < Points.Count - 1; i++)
         {
-            VPoint p1 = Points[i];
-            VPoint p2 = Points[i + 1];
+            VXYZ p1 = Points[i];
+            VXYZ p2 = Points[i + 1];
             double segLen = p1.DistanceTo(p2);
 
             double distOnSeg = 0;
 
-            // While we can fit another step on this segment (including carry-over)
             while (distOnSeg + remainingStep <= segLen + 1e-9)
             {
                 distOnSeg += remainingStep;
 
-                // Interpolate
                 double t = distOnSeg / segLen;
                 double x = p1.X + (p2.X - p1.X) * t;
                 double y = p1.Y + (p2.Y - p1.Y) * t;
-                result.Add(VPoint.Internal(x, y));
+                result.Add(new VXYZ(x, y));
 
-                // Reset step for next point
                 remainingStep = segmentLength;
             }
 
-            // Whatever is left on this segment reduces the step needed for next segment
             remainingStep -= (segLen - distOnSeg);
         }
 
@@ -183,17 +176,16 @@ public class VPolyline : Shape, ICurve
 
     // ICurve Implementation
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
-        // Find closest point on any segment
-        VPoint closest = Points[0];
+        VXYZ closest = Points[0];
         double minK = double.MaxValue;
 
         for (int i = 0; i < Points.Count - 1; i++)
         {
-            VPoint p1 = Points[i];
-            VPoint p2 = Points[i+1];
-            VPoint proj = ProjectOnSegment(p1, p2, point);
+            VXYZ p1 = Points[i];
+            VXYZ p2 = Points[i+1];
+            VXYZ proj = ProjectOnSegment(p1, p2, point);
             double d = proj.DistanceTo(point);
             if (d < minK)
             {
@@ -204,19 +196,19 @@ public class VPolyline : Shape, ICurve
         return closest;
     }
 
-    private VPoint ProjectOnSegment(VPoint s, VPoint e, VPoint p)
+    private VXYZ ProjectOnSegment(VXYZ s, VXYZ e, VXYZ p)
     {
-        var v = e.AsVXYZ() - s.AsVXYZ();
-        var u = p.AsVXYZ() - s.AsVXYZ();
+        var v = e - s;
+        var u = p - s;
         var t = u.DotProduct(v) / v.DotProduct(v);
         if (t < 0) return s;
         if (t > 1) return e;
-        return (s.AsVXYZ() + v * t).AsVPoint();
+        return s + v * t;
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
-        if (segmentLength <= 0) return Points.FirstOrDefault() ?? VPoint.Internal(0, 0);
+        if (segmentLength <= 0) return Points.FirstOrDefault() ?? new VXYZ(0, 0);
 
         double currentLen = 0;
         for (int i = 0; i < Points.Count - 1; i++)
@@ -226,48 +218,43 @@ public class VPolyline : Shape, ICurve
             {
                 double rem = segmentLength - currentLen;
                 double r = rem / d;
-                return VPoint.Internal(
+                return new VXYZ(
                     Points[i].X + (Points[i+1].X - Points[i].X) * r,
                     Points[i].Y + (Points[i+1].Y - Points[i].Y) * r
                 );
             }
             currentLen += d;
         }
-        return Points.LastOrDefault() ?? VPoint.Internal(0, 0);
+        return Points.LastOrDefault() ?? new VXYZ(0, 0);
     }
 
     public ICurve Offset(double distance)
     {
         if (Points.Count < 2) return (ICurve)this.Clone();
 
-        var newPoints = new List<VPoint>();
+        var newPoints = new List<VXYZ>();
 
-        // Check if polyline is closed (first and last points are the same)
         bool isClosed = Points.Count > 2 && Points[0].DistanceTo(Points[Points.Count - 1]) < 1e-6;
 
-        // For closed polylines, don't process the duplicate end point
         int pointCount = isClosed ? Points.Count - 1 : Points.Count;
 
-        // Offset by vertex normal with proper miter calculation at corners
         for (int i = 0; i < pointCount; i++)
         {
             VXYZ n1 = new VXYZ(0, 0, 0);
             VXYZ n2 = new VXYZ(0, 0, 0);
 
-            // Get normal from previous segment
             int prevIdx = isClosed ? (i - 1 + pointCount) % pointCount : i - 1;
             if (i > 0 || isClosed)
             {
-                var dir = (Points[i].AsVXYZ() - Points[prevIdx].AsVXYZ()).Normalize();
-                n1 = new VXYZ(-dir.Y, dir.X, 0); // Normal left
+                var dir = (Points[i] - Points[prevIdx]).Normalize();
+                n1 = new VXYZ(-dir.Y, dir.X, 0);
             }
 
-            // Get normal from next segment
             int nextIdx = isClosed ? (i + 1) % pointCount : i + 1;
             if (i < Points.Count - 1 || isClosed)
             {
-                var dir = (Points[nextIdx].AsVXYZ() - Points[i].AsVXYZ()).Normalize();
-                n2 = new VXYZ(-dir.Y, dir.X, 0); // Normal left
+                var dir = (Points[nextIdx] - Points[i]).Normalize();
+                n2 = new VXYZ(-dir.Y, dir.X, 0);
             }
 
             VXYZ offsetVector;
@@ -275,38 +262,32 @@ public class VPolyline : Shape, ICurve
 
             if (isEndpoint)
             {
-                // Open polyline endpoints - use single segment normal
                 offsetVector = (i == 0 ? n2 : n1) * distance;
             }
             else
             {
-                // Interior vertex (or any vertex on closed polyline) - calculate miter
                 var miterDir = (n1 + n2);
                 double miterLength = miterDir.GetLength();
 
                 if (miterLength < 1e-10)
                 {
-                    // Segments are parallel (180 degree turn) - use perpendicular offset
                     offsetVector = n1 * distance;
                 }
                 else
                 {
                     miterDir = miterDir.Normalize();
-                    // cos(theta) = dot(miterDir, n1) where theta is angle between miter and normal
                     double cosTheta = miterDir.DotProduct(n1);
 
-                    // Limit miter to avoid extreme spikes at very sharp angles (miter limit)
-                    const double miterLimit = 4.0; // Standard miter limit
+                    const double miterLimit = 4.0;
                     double miterScale = 1.0 / Math.Max(cosTheta, 1.0 / miterLimit);
 
                     offsetVector = miterDir * distance * miterScale;
                 }
             }
 
-            newPoints.Add((Points[i].AsVXYZ() + offsetVector).AsVPoint());
+            newPoints.Add(Points[i] + offsetVector);
         }
 
-        // For closed polylines, close the offset curve by adding the first point again
         if (isClosed && newPoints.Count > 0)
         {
             newPoints.Add(newPoints[0]);
@@ -322,10 +303,10 @@ public class VPolyline : Shape, ICurve
         return list;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
-        var results = new List<VPoint>();
-        VPoint c = Project(point);
+        var results = new List<VXYZ>();
+        VXYZ c = Project(point);
         double r2 = chordLength;
 
         for (int i=0; i<Points.Count-1; i++)
@@ -333,25 +314,10 @@ public class VPolyline : Shape, ICurve
              double d1 = Points[i].DistanceTo(c);
              double d2 = Points[i+1].DistanceTo(c);
 
-             // Simplistic crossing check
              if ((d1 < r2 && d2 > r2) || (d1 > r2 && d2 < r2))
              {
-                 // Interpolate
-                 double fraction = Math.Abs(d1 - r2) / Math.Abs(d1 - d2);
-                 // Note: distance varies non-linearly, but linear approx is okay for "try projecting" logic
-                 // Better: find t where |Lerp(p1,p2,t) - c| = r2. Quadratic equation.
-
-                 // |P(t) - c|^2 = r^2
-                 // P(t) = p1 + v*t
-                 // |p1-c + v*t|^2 = r^2
-                 // Let A = p1-c
-                 // |A + v*t|^2 = r^2
-                 // (A+vt).(A+vt) = r^2
-                 // A.A + 2(A.v)t + (v.v)t^2 = r^2
-                 // at^2 + bt + c = 0
-
-                 VXYZ A = Points[i].AsVXYZ() - c.AsVXYZ();
-                 VXYZ v = Points[i+1].AsVXYZ() - Points[i].AsVXYZ();
+                 VXYZ A = Points[i] - c;
+                 VXYZ v = Points[i+1] - Points[i];
 
                  double qa = v.DotProduct(v);
                  double qb = 2 * A.DotProduct(v);
@@ -364,31 +330,26 @@ public class VPolyline : Shape, ICurve
                      double tA = (-qb - sqrtDet) / (2*qa);
                      double tB = (-qb + sqrtDet) / (2*qa);
 
-                     if (tA >= 0 && tA <= 1) results.Add((Points[i].AsVXYZ() + v * tA).AsVPoint());
-                     if (tB >= 0 && tB <= 1) results.Add((Points[i].AsVXYZ() + v * tB).AsVPoint());
+                     if (tA >= 0 && tA <= 1) results.Add(Points[i] + v * tA);
+                     if (tB >= 0 && tB <= 1) results.Add(Points[i] + v * tB);
                  }
              }
         }
         return results;
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
-        VPoint p = Project(point);
+        VXYZ p = Project(point);
 
-        // Find segment
         int segmentIndex = -1;
-
-        // We need to know which segment 'p' lies on.
-        // It matches the 'Project' logic if it was robust.
-        // Let's re-scan for closest segment
         double minK = double.MaxValue;
 
         for (int i = 0; i < Points.Count - 1; i++)
         {
-            VPoint proj = ProjectOnSegment(Points[i], Points[i+1], p);
+            VXYZ proj = ProjectOnSegment(Points[i], Points[i+1], p);
             double d = proj.DistanceTo(p);
-            if (d < 1e-5) // Tolerance
+            if (d < 1e-5)
             {
                 segmentIndex = i;
                 break;
@@ -396,25 +357,24 @@ public class VPolyline : Shape, ICurve
             if (d < minK)
             {
                 minK = d;
-                segmentIndex = i; // Fallback to closest
+                segmentIndex = i;
             }
         }
 
-        if (segmentIndex == -1) segmentIndex = 0; // Should not happen
+        if (segmentIndex == -1) segmentIndex = 0;
 
-        // Clone all points to ensure independent curves
-        var l1 = new List<VPoint>();
-        for(int i=0; i<=segmentIndex; i++) l1.Add((VPoint)Points[i].Clone());
-        l1.Add((VPoint)p.Clone());
+        var l1 = new List<VXYZ>();
+        for(int i=0; i<=segmentIndex; i++) l1.Add(Points[i].Clone());
+        l1.Add(p.Clone());
 
-        var l2 = new List<VPoint>();
-        l2.Add((VPoint)p.Clone());
-        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add((VPoint)Points[i].Clone());
+        var l2 = new List<VXYZ>();
+        l2.Add(p.Clone());
+        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add(Points[i].Clone());
 
         return (new VPolyline(l1), new VPolyline(l2));
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         return GeometryHelper.GetPolylineNormalAtPoint(Points, p, false);
     }
@@ -429,11 +389,10 @@ public class VPolyline : Shape, ICurve
 
     /// <summary>
     /// Returns a point on the polyline at the given normalized parameter.
-    /// Parameter is distributed evenly across segments (not by arc length).
     /// </summary>
-    public VPoint PointAtParameter(double parameter)
+    public VXYZ PointAtParameter(double parameter)
     {
-        if (Points.Count == 0) return VPoint.Internal(0, 0);
+        if (Points.Count == 0) return new VXYZ(0, 0);
         if (Points.Count == 1) return Points[0];
         if (parameter <= 0) return Points[0];
         if (parameter >= 1) return Points[^1];
@@ -443,10 +402,10 @@ public class VPolyline : Shape, ICurve
         int segmentIndex = Math.Min((int)scaledT, numSegments - 1);
         double localT = scaledT - segmentIndex;
 
-        VPoint p1 = Points[segmentIndex];
-        VPoint p2 = Points[segmentIndex + 1];
+        VXYZ p1 = Points[segmentIndex];
+        VXYZ p2 = Points[segmentIndex + 1];
 
-        return VPoint.Internal(
+        return new VXYZ(
             p1.X + (p2.X - p1.X) * localT,
             p1.Y + (p2.Y - p1.Y) * localT
         );
@@ -455,7 +414,7 @@ public class VPolyline : Shape, ICurve
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the polyline to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point)
+    public double ParameterAtPoint(VXYZ point)
     {
         if (Points.Count == 0) return 0;
         if (Points.Count == 1) return 0;

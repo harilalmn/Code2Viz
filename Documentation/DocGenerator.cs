@@ -35,9 +35,9 @@ namespace Code2Viz.Documentation
 
                 // Base classes
                 { "Shape", "Abstract base class for all drawable shapes. Provides common properties like Color, FillColor, LineWeight, and animation properties (DrawFactor, OffsetX, OffsetY, RotationAngle). Also defines common methods: Draw(), Clone() (returns same type via covariant return), Move(), Rotate(), Flip(), Scale(), GetBounds() (returns BoundingBox), Contains(), DistanceTo(), BringAbove(otherShape), SendBehind(otherShape)." },
-                { "BoundingBox", "Represents an axis-aligned bounding box with Min and Max corner points (VPoint). Properties: Min, Max, Width, Height, Center, Area. Methods: Contains(point), Intersects(other), Union(other), Expand(distance). Supports tuple deconstruction: var (min, max) = bounds." },
+                { "BoundingBox", "Represents an axis-aligned bounding box with Min and Max corner points (VXYZ). Properties: Min, Max, Width, Height, Center, Area. Methods: Contains(point), Intersects(other), Union(other), Expand(distance). Supports tuple deconstruction: var (min, max) = bounds." },
                 { "IDrawable", "Interface for any object that can be drawn on the canvas. Defines Draw() method and styling properties." },
-                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), Color, FillColor, and LineWeight. Provides curve operations: StartPoint, EndPoint, SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(), PointAtParameter(), ParameterAtPoint(). The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve. PointAtParameter() returns a point at a normalized position (0-1), while ParameterAtPoint() returns the normalized parameter for the closest point on the curve." },
+                { "ICurve", "Interface for geometric shapes that can be treated as curves. Extends IDrawable, so all curves have Draw(), Color, FillColor, and LineWeight. Provides curve operations: StartPoint, EndPoint (VXYZ), SelfIntersecting, Divide(), Measure(), GetLength(), Project(), PointAtSegmentLength(), Offset(), PointsAtChordLengthFromPoint(), SplitAtPoint(), NormalAtPoint(), Intersect(), PointAtParameter(), ParameterAtPoint(). Coordinate properties and methods return VXYZ. The SelfIntersecting property indicates if the curve crosses itself. The Intersect() method computes intersection points with another curve. PointAtParameter() returns a VXYZ at a normalized position (0-1), while ParameterAtPoint() returns the normalized parameter for the closest point on the curve." },
                 { "IntersectionResult", "Represents the result of an intersection operation between curves. Contains Points (list of intersection points) and Curves (list of overlapping segments). Properties: HasIntersection (true if any intersection), IsSinglePoint (exactly one point), HasOverlap (curves share a segment), Count (total elements). Use Intersect() method on any ICurve to compute intersections." },
                 { "CurveIntersection", "Static utility class providing curve intersection algorithms. Supports Line-Line, Line-Circle, Line-Arc, Line-Ellipse, Circle-Circle, Circle-Arc, Arc-Arc intersections with specialized algorithms. Complex curves use segment-based approximation. Also provides IsSelfIntersecting() for detecting self-intersections." },
 
@@ -51,7 +51,7 @@ namespace Code2Viz.Documentation
                 { "VXLine", "Represents an infinite construction line (like AutoCAD's XLine). Extends infinitely in both directions through a base point along a direction. Useful for construction geometry and slicing polygons. Static helpers: Horizontal(y), Vertical(x)." },
                 { "VRay", "Represents a semi-infinite ray (like AutoCAD's Ray). Starts at an origin point and extends infinitely in one direction. Static helpers: HorizontalRight, HorizontalLeft, VerticalUp, VerticalDown, AtAngle." },
                 { "VEllipse", "Represents a 2D ellipse defined by a center point, X radius (horizontal), and Y radius (vertical)." },
-                { "VPoint", "Represents a point in 2D Cartesian space (X, Y). Can be drawn as a small dot on the canvas." },
+                { "VPoint", "Represents a visible point marker on the canvas. For coordinate storage, use VXYZ." },
                 { "VBezier", "Represents a 2D cubic Bezier curve defined by four control points: start, control1, control2, and end." },
                 { "VSpline", "Represents a smooth Catmull-Rom spline curve passing through a series of points." },
                 { "VText", "Represents text drawn at a specific position. Supports font size via Height property or constructor parameter. Constructors: VText(point, text), VText(point, text, height), VText(x, y, text), VText(x, y, text, height). Supports Font, FontWeight, and Anchor properties for styling and alignment." },
@@ -70,7 +70,7 @@ namespace Code2Viz.Documentation
                 { "Polyline2D", "Represents an open sequence of connected line segments." },
                 { "Line2D", "Represents a straight line segment between two points." },
                 { "Ellipse2D", "Represents a 2D ellipse defined by a center, X radius, and Y radius." },
-                { "Point2D", "Represents a point in 2D Cartesian space (X, Y)." },
+                { "Point2D", "Represents a visible point marker on the canvas. For coordinate storage, use VXYZ." },
                 { "Bezier2D", "Represents a 2D cubic Bezier curve." },
                 { "Spline2D", "Represents a smooth spline curve passing through a series of points." },
                 { "Text2D", "Represents text drawn at a specific position." },
@@ -78,7 +78,7 @@ namespace Code2Viz.Documentation
                 { "Grid2D", "Represents a rectangular grid of points." },
 
                 // Support classes
-                { "VXYZ", "Represents a 3D vector or point with X, Y, Z coordinates. Provides vector operations like Add, Subtract, CrossProduct, DotProduct, Normalize, GetLength. Also has static properties BasisX, BasisY, BasisZ, Zero." },
+                { "VXYZ", "3D coordinate type (X, Y, Z) used for all position and vector parameters. Use new VXYZ(x, y) for 2D (Z defaults to 0). Provides vector operations like Add, Subtract, CrossProduct, DotProduct, Normalize, GetLength. Also has static properties BasisX, BasisY, BasisZ, Zero." },
                 { "VPlane", "Represents a plane in 3D space defined by origin and basis vectors. Used for coordinate transformations." },
                 { "VTransform", "Represents a 3D transformation matrix for rotation and reflection operations." },
                 { "VCoordinateSystem", "Represents a 3D coordinate system with origin and orthonormal basis vectors (X, Y, Z axes)." },
@@ -113,12 +113,12 @@ namespace Code2Viz.Documentation
                 { "EndType", "Enum for polygon offset end style. Values: Polygon (closed polygon, default), OpenRound (rounded open ends), OpenSquare (squared open ends), OpenButt (flat cut open ends). Used with BooleanOps.OffsetPolygon." },
 
                 // Hatch Patterns
-                { "VHatch", "Fills a closed polygon boundary with a repeating line pattern. Supports 73 built-in AutoCAD-standard patterns (via BuiltInHatch enum or name string) and custom patterns defined using the .pat format. Constructors: new VHatch(polygon, BuiltInHatch.ANSI31, scale, angle), new VHatch(polygon, \"BRICK\", scale, angle), new VHatch(polygon, hatchType, scale, angle), new VHatch(boundaryPoints, pattern, scale, angle). Static factory: VHatch.FromDefinition(polygon, patString, scale, angle). Properties: Boundary (List<VPoint>), Pattern (HatchType), PatternScale (double), PatternAngle (double), Color, LineWeight, Opacity. Methods: GenerateLines() returns clipped line segments, Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains()." },
+                { "VHatch", "Fills a closed polygon boundary with a repeating line pattern. Supports 73 built-in AutoCAD-standard patterns (via BuiltInHatch enum or name string) and custom patterns defined using the .pat format. Constructors: new VHatch(polygon, BuiltInHatch.ANSI31, scale, angle), new VHatch(polygon, \"BRICK\", scale, angle), new VHatch(polygon, hatchType, scale, angle), new VHatch(boundaryPoints, pattern, scale, angle). Static factory: VHatch.FromDefinition(polygon, patString, scale, angle). Properties: Boundary (List<VXYZ>), Pattern (HatchType), PatternScale (double), PatternAngle (double), Color, LineWeight, Opacity. Methods: GenerateLines() returns clipped line segments, Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds(), Contains()." },
                 { "HatchType", "Defines a hatch pattern composed of one or more line families following the AutoCAD .pat format. Properties: Name, Description, Lines (List<HatchPatternLine>). Static methods: Parse(string patDefinition) parses from .pat format string, GetBuiltIn(string name) or GetBuiltIn(BuiltInHatch enum) retrieves a built-in pattern." },
                 { "HatchPatternLine", "A single line definition within a hatch pattern. Properties: Angle (degrees), OriginX, OriginY, DeltaX (shift along line between rows), DeltaY (spacing between parallel lines), Dashes (double[] - positive=dash, negative=gap, 0=dot, empty=continuous)." },
                 { "BuiltInHatch", "Enum of 73 built-in hatch patterns from the AutoCAD pattern library. Values include: SOLID, ANGLE, ANSI31-ANSI38, AR_B816, AR_B816C, AR_B88, AR_BRELM, AR_BRSTD, AR_CONC, AR_HBONE, AR_PARQ1, AR_RROOF, AR_RSHKE, AR_SAND, BOX, BRASS, BRICK, BRSTONE, CLAY, CORK, CROSS, DASH, DOLMIT, DOTS, EARTH, ESCHER, FLEX, GOST_GLASS, GOST_WOOD, GOST_GROUND, GRASS, GRATE, GRAVEL, HEX, HONEY, HOUND, INSUL, LINE, MUDST, NET, NET3, PLAST, PLASTI, SACNCR, SQUARE, STARS, STEEL, SWAMP, TRANS, TRIANG, ZIGZAG, and ACAD_ISO02W100 through ACAD_ISO15W100." },
                 { "BuiltInHatches", "Static registry of all built-in hatch patterns. Methods: Get(string name) or Get(BuiltInHatch enum) retrieves a pattern, GetAllNames() returns all available pattern names." },
-                { "HatchGenerator", "Static class that generates hatch line segments from a HatchType pattern clipped to a polygon boundary. Method: Generate(boundary, pattern, scale, patternAngle) returns List<(VPoint Start, VPoint End)>." },
+                { "HatchGenerator", "Static class that generates hatch line segments from a HatchType pattern clipped to a polygon boundary. Method: Generate(boundary, pattern, scale, patternAngle) returns List<(VXYZ Start, VXYZ End)>." },
 
                 // Array Operations
                 { "ArrayOps", "Static class providing array and pattern generation for shapes. Includes LinearArray (copies along direction), RectangularArray (grid pattern), CircularArray (polar pattern around center), PathArray (copies along curve), SpiralArray (spiral pattern), and Mirror (create mirrored copy)." },
@@ -438,35 +438,35 @@ namespace Code2Viz.Documentation
         {
             _fsharpSamples = new Dictionary<string, string>
             {
-                { "VPoint", "let p = VPoint(100.0, 200.0)" },
-                { "VLine", "let start = VPoint(0.0, 0.0)\nlet endP = VPoint(200.0, 200.0)\nlet line = VLine(start, endP)\nline.Color <- \"#00FF00\"\nline.LineWeight <- 2.0\nline.Draw()" },
-                { "VXLine", "// Infinite construction line\nlet xline = VXLine(VPoint(0.0, 0.0), VXYZ(1.0, 1.0, 0.0))\nxline.Color <- \"Gray\"\nxline.Draw()\n\n// Horizontal and vertical helpers\nlet hLine = VXLine.Horizontal(100.0)\nlet vLine = VXLine.Vertical(50.0)\nhLine.Draw()\nvLine.Draw()" },
-                { "VRay", "// Semi-infinite ray\nlet ray = VRay(VPoint(0.0, 0.0), VXYZ(1.0, 0.5, 0.0))\nray.Color <- \"Orange\"\nray.Draw()\n\n// Static helpers\nlet rightRay = VRay.HorizontalRight(VPoint(0.0, 0.0))\nlet angledRay = VRay.AtAngle(VPoint(0.0, 0.0), 45.0)\nrightRay.Draw()\nangledRay.Draw()" },
-                { "VCircle", "let center = VPoint(300.0, 200.0)\nlet radius = 50.0\nlet circle = VCircle(center, radius)\ncircle.FillColor <- \"Blue\"\ncircle.Draw()" },
-                { "VRectangle", "let rect = VRectangle(VPoint(50.0, 50.0), 150.0, 100.0)\nrect.FillColor <- \"#800000FF\"\nrect.Draw()\n\n// Create from two corner points (bottom-left and top-right)\nlet rect2 = VRectangle(VPoint(0.0, 0.0), VPoint(100.0, 75.0))\nrect2.Draw()" },
-                { "VEllipse", "let ellipse = VEllipse(VPoint(400.0, 300.0), 80.0, 40.0)\nellipse.LineWeight <- 3.0\nellipse.Draw()" },
-                { "VArc", "let arc = VArc(VPoint(200.0, 200.0), 100.0, 0.0, 180.0)\narc.Draw()" },
-                { "VPolygon", "let pts = [| VPoint(100.0,100.0); VPoint(200.0,100.0); VPoint(150.0,200.0) |]\nlet poly = VPolygon(pts)\npoly.FillColor <- \"Yellow\"\npoly.Draw()" },
-                { "VPolyline", "let pts = [| VPoint(100.0,300.0); VPoint(150.0,350.0); VPoint(200.0,300.0) |]\nlet line = VPolyline(pts)\nline.Draw()" },
-                { "VBezier", "let b = VBezier(VPoint(0.0,0.0), VPoint(0.0,100.0), VPoint(100.0,100.0), VPoint(100.0,0.0))\nb.Draw()" },
-                { "VSpline", "let pts = [| VPoint(0.0,0.0); VPoint(50.0,50.0); VPoint(100.0,0.0) |]\nlet s = VSpline(pts)\ns.Draw()" },
-                { "VText", "let t = VText(VPoint(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Anchor <- VTextAnchor.MiddleCenter\nt.Draw()" },
-                { "VTextAnchor", "// VTextAnchor controls text alignment at its position\nlet t = VText(VPoint(0.0, 0.0), \"Centered\")\nt.Anchor <- VTextAnchor.MiddleCenter  // text is centered on the point\n\n// Values: BottomLeft (default), BottomCenter, BottomRight,\n//         MiddleLeft, MiddleCenter, MiddleRight,\n//         TopLeft, TopCenter, TopRight" },
-                { "VArrow", "// From two points\nlet a = VArrow(VPoint(10.0, 10.0), VPoint(100.0, 10.0))\na.Draw()\n\n// From start point, direction, and length\nlet a2 = VArrow(VPoint(0.0, 0.0), VXYZ.BasisX, 50.0)\na2.Draw()" },
-                { "VDimension", "// Dimension between two points\nlet dim = VDimension(VPoint(0.0, 0.0), VPoint(100.0, 0.0))\ndim.Offset <- 20.0\ndim.Prefix <- \"L=\"\ndim.Suffix <- \"mm\"\ndim.Draw()\n\n// Per-element colors\nlet dim2 = VDimension(0.0, 50.0, 100.0, 50.0)\ndim2.ExtensionLineColor <- \"Green\"\ndim2.DimensionLineColor <- \"Red\"\ndim2.TextColor <- \"Cyan\"\ndim2.Draw()" },
+                { "VPoint", "// VPoint is a visible point marker on the canvas\nlet p = VPoint(100.0, 200.0)\np.Color <- \"Red\"\np.Draw()\n\n// For coordinate storage, use VXYZ instead\nlet coord = VXYZ(100.0, 200.0)" },
+                { "VLine", "let start = VXYZ(0.0, 0.0)\nlet endP = VXYZ(200.0, 200.0)\nlet line = VLine(start, endP)\nline.Color <- \"#00FF00\"\nline.LineWeight <- 2.0\nline.Draw()" },
+                { "VXLine", "// Infinite construction line\nlet xline = VXLine(VXYZ(0.0, 0.0), VXYZ(1.0, 1.0, 0.0))\nxline.Color <- \"Gray\"\nxline.Draw()\n\n// Horizontal and vertical helpers\nlet hLine = VXLine.Horizontal(100.0)\nlet vLine = VXLine.Vertical(50.0)\nhLine.Draw()\nvLine.Draw()" },
+                { "VRay", "// Semi-infinite ray\nlet ray = VRay(VXYZ(0.0, 0.0), VXYZ(1.0, 0.5, 0.0))\nray.Color <- \"Orange\"\nray.Draw()\n\n// Static helpers\nlet rightRay = VRay.HorizontalRight(VXYZ(0.0, 0.0))\nlet angledRay = VRay.AtAngle(VXYZ(0.0, 0.0), 45.0)\nrightRay.Draw()\nangledRay.Draw()" },
+                { "VCircle", "let center = VXYZ(300.0, 200.0)\nlet radius = 50.0\nlet circle = VCircle(center, radius)\ncircle.FillColor <- \"Blue\"\ncircle.Draw()" },
+                { "VRectangle", "let rect = VRectangle(VXYZ(50.0, 50.0), 150.0, 100.0)\nrect.FillColor <- \"#800000FF\"\nrect.Draw()\n\n// Create from two corner points (bottom-left and top-right)\nlet rect2 = VRectangle(VXYZ(0.0, 0.0), VXYZ(100.0, 75.0))\nrect2.Draw()" },
+                { "VEllipse", "let ellipse = VEllipse(VXYZ(400.0, 300.0), 80.0, 40.0)\nellipse.LineWeight <- 3.0\nellipse.Draw()" },
+                { "VArc", "let arc = VArc(VXYZ(200.0, 200.0), 100.0, 0.0, 180.0)\narc.Draw()" },
+                { "VPolygon", "let pts = [| VXYZ(100.0,100.0); VXYZ(200.0,100.0); VXYZ(150.0,200.0) |]\nlet poly = VPolygon(pts)\npoly.FillColor <- \"Yellow\"\npoly.Draw()" },
+                { "VPolyline", "let pts = [| VXYZ(100.0,300.0); VXYZ(150.0,350.0); VXYZ(200.0,300.0) |]\nlet line = VPolyline(pts)\nline.Draw()" },
+                { "VBezier", "let b = VBezier(VXYZ(0.0,0.0), VXYZ(0.0,100.0), VXYZ(100.0,100.0), VXYZ(100.0,0.0))\nb.Draw()" },
+                { "VSpline", "let pts = [| VXYZ(0.0,0.0); VXYZ(50.0,50.0); VXYZ(100.0,0.0) |]\nlet s = VSpline(pts)\ns.Draw()" },
+                { "VText", "let t = VText(VXYZ(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Anchor <- VTextAnchor.MiddleCenter\nt.Draw()" },
+                { "VTextAnchor", "// VTextAnchor controls text alignment at its position\nlet t = VText(VXYZ(0.0, 0.0), \"Centered\")\nt.Anchor <- VTextAnchor.MiddleCenter  // text is centered on the point\n\n// Values: BottomLeft (default), BottomCenter, BottomRight,\n//         MiddleLeft, MiddleCenter, MiddleRight,\n//         TopLeft, TopCenter, TopRight" },
+                { "VArrow", "// From two points\nlet a = VArrow(VXYZ(10.0, 10.0), VXYZ(100.0, 10.0))\na.Draw()\n\n// From start point, direction, and length\nlet a2 = VArrow(VXYZ(0.0, 0.0), VXYZ.BasisX, 50.0)\na2.Draw()" },
+                { "VDimension", "// Dimension between two points\nlet dim = VDimension(VXYZ(0.0, 0.0), VXYZ(100.0, 0.0))\ndim.Offset <- 20.0\ndim.Prefix <- \"L=\"\ndim.Suffix <- \"mm\"\ndim.Draw()\n\n// Per-element colors\nlet dim2 = VDimension(0.0, 50.0, 100.0, 50.0)\ndim2.ExtensionLineColor <- \"Green\"\ndim2.DimensionLineColor <- \"Red\"\ndim2.TextColor <- \"Cyan\"\ndim2.Draw()" },
                 { "VRadialDimension", "// Radius dimension for a circle\nlet circle = VCircle(0.0, 0.0, 50.0)\nlet dim = VRadialDimension(circle)\ndim.LeaderAngle <- 45.0\n\n// Diameter mode\nlet dim2 = VRadialDimension(circle)\ndim2.ShowDiameter <- true\ndim2.Suffix <- \"mm\"" },
-                { "Region", "// Region bounded by lines and an arc\nlet p0 = VPoint.Internal(0.0, 0.0)\nlet p1 = VPoint.Internal(100.0, 0.0)\nlet p2 = VPoint.Internal(100.0, 80.0)\nlet p3 = VPoint.Internal(0.0, 80.0)\nlet curves = System.Collections.Generic.List<ICurve>()\ncurves.Add(VLine(p0, p1))\ncurves.Add(VLine(p1, p2))\ncurves.Add(VLine(p2, p3))\ncurves.Add(VLine(p3, p0))\nlet region = Region(curves)\nregion.Color <- \"Cyan\"\nregion.FillColor <- \"#4000FFFF\"" },
+                { "Region", "// Region bounded by lines and an arc\nlet p0 = VXYZ(0.0, 0.0)\nlet p1 = VXYZ(100.0, 0.0)\nlet p2 = VXYZ(100.0, 80.0)\nlet p3 = VXYZ(0.0, 80.0)\nlet curves = System.Collections.Generic.List<ICurve>()\ncurves.Add(VLine(p0, p1))\ncurves.Add(VLine(p1, p2))\ncurves.Add(VLine(p2, p3))\ncurves.Add(VLine(p3, p0))\nlet region = Region(curves)\nregion.Color <- \"Cyan\"\nregion.FillColor <- \"#4000FFFF\"" },
                 { "VHatch", "// Built-in pattern with enum\nlet rect = VRectangle(0.0, 0.0, 100.0, 80.0)\nlet hatch = VHatch(rect, BuiltInHatch.ANSI31, 10.0)\nhatch.Color <- \"Cyan\"\n\n// By name\nlet hatch2 = VHatch(rect, \"BRICK\", 5.0)\nhatch2.Color <- \"Yellow\"\n\n// Custom from string\nlet custom = VHatch.FromDefinition(rect, \"*CROSS, Cross\\n0, 0,0, 0,10\\n90, 0,0, 0,10\", 1.0)\ncustom.Color <- \"Lime\"" },
                 { "HatchType", "// Parse from .pat format\nlet pattern = HatchType.Parse(\"*MY, Custom\\n45, 0,0, 0,10\\n135, 0,0, 0,10\")\n\n// Get built-in\nlet ansi31 = HatchType.GetBuiltIn(\"ANSI31\")\nlet brick = HatchType.GetBuiltIn(BuiltInHatch.BRICK)" },
                 { "VGroup", @"// Create a group from shapes
-let circle = VCircle(VPoint(0.0, 0.0), 20.0)
-let line1 = VLine(VPoint(-30.0, 0.0), VPoint(30.0, 0.0))
-let line2 = VLine(VPoint(0.0, -30.0), VPoint(0.0, 30.0))
+let circle = VCircle(VXYZ(0.0, 0.0), 20.0)
+let line1 = VLine(VXYZ(-30.0, 0.0), VXYZ(30.0, 0.0))
+let line2 = VLine(VXYZ(0.0, -30.0), VXYZ(0.0, 30.0))
 let group = VGroup([| circle :> Shape; line1 :> Shape; line2 :> Shape |])
 
 // Transform the entire group
 group.Move(VXYZ(100.0, 100.0, 0.0))
-group.Rotate(VPoint(100.0, 100.0), 45.0)
+group.Rotate(VXYZ(100.0, 100.0), 45.0)
 
 // Apply styling to all shapes
 group.Color <- ""Cyan""
@@ -476,7 +476,7 @@ group.ApplyStyle() |> ignore
 group.Draw()" },
 
                 { "VGrid", @"// Create a centered grid at origin: 5 columns x 3 rows, spacing 10
-let grid = VGrid(VPoint(0.0, 0.0), 5, 3, 10.0, true)
+let grid = VGrid(VXYZ(0.0, 0.0), 5, 3, 10.0, true)
 grid.FillColor <- ""Cyan""
 grid.ApplyStyle()
 grid.Draw()
@@ -491,7 +491,7 @@ let thirdCol = grid.GetColumn(2)
 
 // Transform
 grid.Move(VXYZ(50.0, 25.0, 0.0))
-grid.Rotate(VPoint(0.0, 0.0), 45.0)" },
+grid.Rotate(VXYZ(0.0, 0.0), 45.0)" },
 
                 // Support classes
                 { "VXYZ", "let v = VXYZ(10.0, 20.0, 30.0)\nlet len = v.GetLength()" },
@@ -553,7 +553,7 @@ anim.Animate()" },
 
                 { "RotateAnimation", @"// Animates rotating a shape around a pivot
 let rect = VRectangle(0.0, 0.0, 50.0, 30.0)
-let pivot = VPoint(25.0, 15.0)
+let pivot = VXYZ(25.0, 15.0)
 let anim = Animator()
 
 // Rotate 360 degrees over 4 seconds
@@ -561,7 +561,7 @@ anim.AddToAnimations(RotateAnimation(rect, pivot, 360.0, 4.0))
 anim.Animate()" },
 
                 { "FlipAnimation", @"// Animates flipping a shape across a mirror axis
-let triangle = VPolygon(VPoint(0.0,0.0), VPoint(50.0,0.0), VPoint(25.0,50.0))
+let triangle = VPolygon(VXYZ(0.0,0.0), VXYZ(50.0,0.0), VXYZ(25.0,50.0))
 let mirrorAxis = VLine(25.0, -10.0, 25.0, 60.0)
 let anim = Animator()
 
@@ -784,7 +784,7 @@ p.Color = ""Red"";
 p.Draw();" },
 
                 { "VLine", @"// Create a line from two points
-var line = new VLine(new VPoint(0, 0), new VPoint(100, 50));
+var line = new VLine(new VXYZ(0, 0), new VXYZ(100, 50));
 line.Color = ""Cyan"";
 line.LineWeight = 2;
 line.Draw();
@@ -794,16 +794,16 @@ var line2 = new VLine(0, 100, 150, 100);
 line2.Draw();
 
 // Or from a start point, angle (degrees), and length
-var line3 = new VLine(new VPoint(0, 0), 45, 100);
+var line3 = new VLine(new VXYZ(0, 0), 45, 100);
 line3.Draw();" },
 
                 { "VXLine", @"// Create an infinite construction line through a point with direction
-var xline = new VXLine(new VPoint(0, 0), new VXYZ(1, 1, 0));
+var xline = new VXLine(new VXYZ(0, 0), new VXYZ(1, 1, 0));
 xline.Color = ""Gray"";
 xline.Draw();
 
 // Create from two points (line passes through both, extends infinitely)
-var xline2 = new VXLine(new VPoint(0, 50), new VPoint(100, 50));
+var xline2 = new VXLine(new VXYZ(0, 50), new VXYZ(100, 50));
 xline2.Draw();
 
 // Static helpers for horizontal and vertical lines
@@ -813,34 +813,34 @@ hLine.Draw();
 vLine.Draw();
 
 // Use for slicing polygons
-var polygon = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var polygon = new VPolygon(new VXYZ(0,0), new VXYZ(100,0), new VXYZ(100,100), new VXYZ(0,100));
 var sliced = polygon.Slice(xline);
 foreach (var p in sliced) p.Draw();" },
 
                 { "VRay", @"// Create a ray from origin in a direction
-var ray = new VRay(new VPoint(0, 0), new VXYZ(1, 0.5, 0));
+var ray = new VRay(new VXYZ(0, 0), new VXYZ(1, 0.5, 0));
 ray.Color = ""Orange"";
 ray.Draw();
 
 // Create from origin through a point
-var ray2 = new VRay(new VPoint(50, 50), new VPoint(100, 75));
+var ray2 = new VRay(new VXYZ(50, 50), new VXYZ(100, 75));
 ray2.Draw();
 
 // Static helpers for common rays
-var rightRay = VRay.HorizontalRight(new VPoint(0, 0));
-var upRay = VRay.VerticalUp(new VPoint(100, 0));
-var angledRay = VRay.AtAngle(new VPoint(0, 0), 45);  // 45 degrees from origin
+var rightRay = VRay.HorizontalRight(new VXYZ(0, 0));
+var upRay = VRay.VerticalUp(new VXYZ(100, 0));
+var angledRay = VRay.AtAngle(new VXYZ(0, 0), 45);  // 45 degrees from origin
 rightRay.Draw();
 upRay.Draw();
 angledRay.Draw();
 
 // Use for slicing polygons
-var polygon = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var polygon = new VPolygon(new VXYZ(0,0), new VXYZ(100,0), new VXYZ(100,100), new VXYZ(0,100));
 var sliced = polygon.Slice(ray);
 foreach (var p in sliced) p.Draw();" },
 
                 { "VCircle", @"// Create a circle with center and radius
-var circle = new VCircle(new VPoint(50, 50), 30);
+var circle = new VCircle(new VXYZ(50, 50), 30);
 circle.Color = ""Yellow"";
 circle.FillColor = ""#4000FFFF""; // Semi-transparent cyan
 circle.Draw();
@@ -850,14 +850,14 @@ var circle2 = new VCircle(100, 100, 25);
 circle2.Draw();
 
 // Create a circumcircle through 3 points
-var p1 = new VPoint(0, 0);
-var p2 = new VPoint(100, 0);
-var p3 = new VPoint(50, 80);
+var p1 = new VXYZ(0, 0);
+var p2 = new VXYZ(100, 0);
+var p3 = new VXYZ(50, 80);
 var circumcircle = new VCircle(p1, p2, p3);
 circumcircle.Draw();" },
 
                 { "VRectangle", @"// Create a rectangle (corner, width, height)
-var rect = new VRectangle(new VPoint(10, 10), 80, 50);
+var rect = new VRectangle(new VXYZ(10, 10), 80, 50);
 rect.Color = ""LimeGreen"";
 rect.FillColor = ""#2000FF00"";
 rect.Draw();
@@ -867,8 +867,8 @@ var rect2 = new VRectangle(100, 0, 60, 40);
 rect2.Draw();
 
 // Create from two corner points (bottom-left and top-right)
-var bottomLeft = new VPoint(0, 0);
-var topRight = new VPoint(100, 75);
+var bottomLeft = new VXYZ(0, 0);
+var topRight = new VXYZ(100, 75);
 var rect3 = new VRectangle(bottomLeft, topRight);
 rect3.Draw();
 
@@ -876,13 +876,13 @@ rect3.Draw();
 double area = rect.Area;  // Signed area from VPolygon" },
 
                 { "VEllipse", @"// Create an ellipse with center and radii
-var ellipse = new VEllipse(new VPoint(100, 100), 60, 30);
+var ellipse = new VEllipse(new VXYZ(100, 100), 60, 30);
 ellipse.Color = ""Magenta"";
 ellipse.LineWeight = 2;
 ellipse.Draw();" },
 
                 { "VArc", @"// Create an arc (center, radius, startAngle, endAngle)
-var arc = new VArc(new VPoint(50, 50), 40, 0, 270);
+var arc = new VArc(new VXYZ(50, 50), 40, 0, 270);
 arc.Color = ""Orange"";
 arc.LineWeight = 3;
 arc.Draw();
@@ -891,35 +891,35 @@ arc.Draw();
 
                 { "VPolygon", @"// Create a triangle
 var triangle = new VPolygon(
-    new VPoint(0, 0),
-    new VPoint(100, 0),
-    new VPoint(50, 80)
+    new VXYZ(0, 0),
+    new VXYZ(100, 0),
+    new VXYZ(50, 80)
 );
 triangle.Color = ""LimeGreen"";
 triangle.FillColor = ""#4000FF00"";
 triangle.Draw();
 
 // Create from array
-var points = new[] { new VPoint(0,0), new VPoint(50,0), new VPoint(50,50), new VPoint(0,50) };
+var points = new[] { new VXYZ(0,0), new VXYZ(50,0), new VXYZ(50,50), new VXYZ(0,50) };
 var square = new VPolygon(points);
 square.Draw();" },
 
                 { "VPolyline", @"// Create an open polyline (not closed)
 var polyline = new VPolyline(
-    new VPoint(0, 0),
-    new VPoint(30, 50),
-    new VPoint(60, 20),
-    new VPoint(100, 60)
+    new VXYZ(0, 0),
+    new VXYZ(30, 50),
+    new VXYZ(60, 20),
+    new VXYZ(100, 60)
 );
 polyline.Color = ""Cyan"";
 polyline.Draw();" },
 
                 { "VBezier", @"// Create a cubic Bezier curve (4 control points)
 var bezier = new VBezier(
-    new VPoint(0, 0),      // Start point
-    new VPoint(30, 80),    // Control point 1
-    new VPoint(70, 80),    // Control point 2
-    new VPoint(100, 0)     // End point
+    new VXYZ(0, 0),      // Start point
+    new VXYZ(30, 80),    // Control point 1
+    new VXYZ(70, 80),    // Control point 2
+    new VXYZ(100, 0)     // End point
 );
 bezier.Color = ""Magenta"";
 bezier.LineWeight = 2;
@@ -927,16 +927,16 @@ bezier.Draw();" },
 
                 { "VSpline", @"// Create a smooth spline through points
 var spline = new VSpline(
-    new VPoint(0, 0),
-    new VPoint(30, 40),
-    new VPoint(60, 20),
-    new VPoint(100, 50)
+    new VXYZ(0, 0),
+    new VXYZ(30, 40),
+    new VXYZ(60, 20),
+    new VXYZ(100, 50)
 );
 spline.Color = ""Cyan"";
 spline.Draw();" },
 
                 { "VText", @"// Create text at a position
-var text = new VText(new VPoint(50, 50), ""Hello World"");
+var text = new VText(new VXYZ(50, 50), ""Hello World"");
 text.Height = 24;
 text.Color = ""White"";
 text.Draw();
@@ -969,19 +969,19 @@ topRight.Anchor = VTextAnchor.TopRight;
 // BottomLeft, BottomCenter, BottomRight" },
 
                 { "VArrow", @"// Create an arrow from two points
-var arrow = new VArrow(new VPoint(0, 0), new VPoint(100, 0));
+var arrow = new VArrow(new VXYZ(0, 0), new VXYZ(100, 0));
 arrow.Color = ""Orange"";
 arrow.HeadLength = 15;
 arrow.HeadAngle = 30;
 arrow.Draw();
 
 // Create from point, direction, and length
-var arrow2 = new VArrow(new VPoint(0, 50), VXYZ.BasisX, 80);
+var arrow2 = new VArrow(new VXYZ(0, 50), VXYZ.BasisX, 80);
 arrow2.DoubleEnded = true; // Arrow on both ends
 arrow2.Draw();" },
 
                 { "VDimension", @"// Create a dimension line between two points
-var dim = new VDimension(new VPoint(0, 0), new VPoint(100, 0));
+var dim = new VDimension(new VXYZ(0, 0), new VXYZ(100, 0));
 dim.Offset = 20;          // Distance above the line
 dim.DecimalPlaces = 1;    // Show 1 decimal place
 dim.TextHeight = 14;
@@ -1043,7 +1043,7 @@ group2.AddRange(new[] { new VLine(40, 50, 60, 50) });
 
 // Transform the entire group
 group.Move(new VXYZ(100, 100, 0));
-group.Rotate(new VPoint(100, 100), 45);
+group.Rotate(new VXYZ(100, 100), 45);
 group.Scale(group.GetCenter(), 1.5);
 
 // Apply styling to all shapes
@@ -1059,13 +1059,13 @@ group.ForEach(s => s.LineWeight = 2);
 group.Draw();" },
 
                 { "VGrid", @"// Create a centered grid at origin: 5 columns x 3 rows, spacing 10
-var grid = new VGrid(new VPoint(0, 0), 5, 3, 10, true);
+var grid = new VGrid(new VXYZ(0, 0), 5, 3, 10, true);
 grid.FillColor = ""Cyan"";
 grid.ApplyStyle();
 grid.Draw();
 
 // Create grid with bottom-left at (-100, -50), different X/Y spacing
-var grid2 = new VGrid(new VPoint(-100, -50), 4, 4, 20, 15, false);
+var grid2 = new VGrid(new VXYZ(-100, -50), 4, 4, 20, 15, false);
 grid2.Draw();
 
 // Access individual points
@@ -1078,7 +1078,7 @@ var thirdColumn = grid.GetColumn(2);
 
 // Transform entire grid
 grid.Move(new VXYZ(50, 25, 0));
-grid.Rotate(new VPoint(0, 0), 45);
+grid.Rotate(new VXYZ(0, 0), 45);
 grid.Scale(grid.GetCenter(), 2.0);" },
 
                 // Support classes
@@ -1188,17 +1188,17 @@ var circle = new VCircle(0, 0, 50);
 BoundingBox bounds = circle.GetBounds();
 
 // Access min/max corners
-VPoint min = bounds.Min;  // (-50, -50)
-VPoint max = bounds.Max;  // (50, 50)
+VXYZ min = bounds.Min;  // (-50, -50)
+VXYZ max = bounds.Max;  // (50, 50)
 
 // Computed properties
 double w = bounds.Width;   // 100
 double h = bounds.Height;  // 100
-VPoint c = bounds.Center;  // (0, 0)
+VXYZ c = bounds.Center;  // (0, 0)
 double a = bounds.Area;    // 10000
 
 // Methods
-bool hit = bounds.Contains(new VPoint(10, 10));
+bool hit = bounds.Contains(new VXYZ(10, 10));
 bool overlaps = bounds.Intersects(otherBounds);
 BoundingBox combined = bounds.Union(otherBounds);
 BoundingBox expanded = bounds.Expand(10); // expand by 10 units
@@ -1208,7 +1208,7 @@ var (minPt, maxPt) = shape.GetBounds();" },
 
                 { "GeometryHelper", @"// Static methods for geometric calculations
 double dist = GeometryHelper.DistancePointToLine(point, line);
-VPoint? intersection = GeometryHelper.LineLineIntersection(line1, line2);
+VXYZ? intersection = GeometryHelper.LineLineIntersection(line1, line2);
 double angle = GeometryHelper.AngleBetweenVectors(v1, v2);" },
 
                 { "ICurve", @"// ICurve interface - all curve shapes implement this
@@ -1257,8 +1257,8 @@ foreach (var pt in result.Points)
 
 // Check self-intersection
 var polyline = new VPolyline(
-    new VPoint(0, 0), new VPoint(100, 0),
-    new VPoint(50, 50), new VPoint(50, -50));
+    new VXYZ(0, 0), new VXYZ(100, 0),
+    new VXYZ(50, 50), new VXYZ(50, -50));
 bool selfX = CurveIntersection.IsSelfIntersecting(polyline);" },
 
                 // Animation
@@ -1313,7 +1313,7 @@ anim.Animate();" },
 
                 { "RotateAnimation", @"// Animates rotating a shape around a pivot
 var rect = new VRectangle(0, 0, 50, 30);
-var pivot = new VPoint(25, 15); // center of rectangle
+var pivot = new VXYZ(25, 15); // center of rectangle
 var anim = new Animator();
 
 // Rotate 360 degrees over 4 seconds
@@ -1321,7 +1321,7 @@ anim.AddToAnimations(new RotateAnimation(rect, pivot, 360.0, 4.0));
 anim.Animate();" },
 
                 { "FlipAnimation", @"// Animates flipping a shape across a mirror axis
-var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,50));
+var triangle = new VPolygon(new VXYZ(0,0), new VXYZ(50,0), new VXYZ(25,50));
 var mirrorAxis = new VLine(25, -10, 25, 60); // vertical line
 var anim = new Animator();
 
@@ -1418,11 +1418,11 @@ anim.Animate();" },
                 { "BooleanOps", @"// Boolean operations on polygons (native implementation)
 
 var poly1 = new VPolygon(
-    new VPoint(0, 0), new VPoint(100, 0),
-    new VPoint(100, 100), new VPoint(0, 100));
+    new VXYZ(0, 0), new VXYZ(100, 0),
+    new VXYZ(100, 100), new VXYZ(0, 100));
 var poly2 = new VPolygon(
-    new VPoint(50, 50), new VPoint(150, 50),
-    new VPoint(150, 150), new VPoint(50, 150));
+    new VXYZ(50, 50), new VXYZ(150, 50),
+    new VXYZ(150, 150), new VXYZ(50, 150));
 
 // Union - combine polygons
 var union = poly1.Union(poly2);
@@ -1438,7 +1438,7 @@ var difference = poly1.Difference(poly2);
 var xor = poly1.Xor(poly2);
 
 // Utility methods
-bool inside = poly1.Contains(new VPoint(50, 50));
+bool inside = poly1.Contains(new VXYZ(50, 50));
 double area = poly1.GetArea();
 
 // Offset polygon (positive = outward, negative = inward)
@@ -1467,13 +1467,13 @@ rect.RectangularArray(rows: 3, cols: 4, rowSpacing: 40, colSpacing: 50).DrawAll(
 
 // Circular array around a center point
 var shape = new VCircle(50, 0, 10);
-var center = new VPoint(0, 0);
+var center = new VXYZ(0, 0);
 shape.CircularArray(center, count: 8).DrawAll();  // Full circle
 shape.CircularArray(center, count: 6, totalAngleDegrees: 180).DrawAll();  // Half circle
 
 // Path array - distribute along a curve
 var marker = new VCircle(0, 0, 5);
-var path = new VSpline(new VPoint(0,0), new VPoint(50,100), new VPoint(100,0));
+var path = new VSpline(new VXYZ(0,0), new VXYZ(50,100), new VXYZ(100,0));
 marker.PathArray(path, count: 10, alignToPath: true).DrawAll();
 
 // Spiral array
@@ -1481,7 +1481,7 @@ var dot = new VCircle(0, 0, 3);
 dot.SpiralArray(center, count: 30, startRadius: 20, endRadius: 100, totalRevolutions: 2).DrawAll();
 
 // Mirror across an axis
-var triangle = new VPolygon(new VPoint(0,0), new VPoint(50,0), new VPoint(25,40));
+var triangle = new VPolygon(new VXYZ(0,0), new VXYZ(50,0), new VXYZ(25,40));
 var mirrorAxis = new VLine(0, -50, 0, 50);
 triangle.Mirror(mirrorAxis).DrawAll();" },
                 { "PolygonWithHoles", @"// Create a polygon with a hole using boolean difference
@@ -1500,17 +1500,17 @@ foreach (var pwh in results)
 
 // Or create directly
 var pwh2 = new PolygonWithHoles(
-    new VPolygon(new VPoint(0,0), new VPoint(200,0), new VPoint(200,200), new VPoint(0,200)));
-pwh2.AddHole(new VPolygon(new VPoint(50,50), new VPoint(150,50), new VPoint(150,150), new VPoint(50,150)));
+    new VPolygon(new VXYZ(0,0), new VXYZ(200,0), new VXYZ(200,200), new VXYZ(0,200)));
+pwh2.AddHole(new VPolygon(new VXYZ(50,50), new VXYZ(150,50), new VXYZ(150,150), new VXYZ(50,150)));
 VizConsole.Log(pwh2.Area);        // outer area minus hole area
-VizConsole.Log(pwh2.Contains(new VPoint(100, 100)));  // false (inside hole)" },
+VizConsole.Log(pwh2.Contains(new VXYZ(100, 100)));  // false (inside hole)" },
 
                 // Region
                 { "Region", @"// Region bounded by lines (rectangle)
-var p0 = VPoint.Internal(0, 0);
-var p1 = VPoint.Internal(100, 0);
-var p2 = VPoint.Internal(100, 80);
-var p3 = VPoint.Internal(0, 80);
+var p0 = new VXYZ(0, 0);
+var p1 = new VXYZ(100, 0);
+var p2 = new VXYZ(100, 80);
+var p3 = new VXYZ(0, 80);
 
 var curves = new List<ICurve> {
     new VLine(p0, p1),
@@ -1523,29 +1523,29 @@ region.Color = ""Cyan"";
 region.FillColor = ""#4000FFFF"";
 
 // Region with mixed curves (D-shape: line + arc)
-var bottom = VPoint.Internal(0, 0);
-var top = VPoint.Internal(0, 60);
+var bottom = new VXYZ(0, 0);
+var top = new VXYZ(0, 60);
 var arc = VArc.FromStartEndRadius(top, bottom, 40, false);
 var dShape = new Region(new List<ICurve> { new VLine(bottom, top), arc });
 
 // Region with a hole
 var outer = new Region(new List<ICurve> {
-    new VLine(VPoint.Internal(0,0), VPoint.Internal(100,0)),
-    new VLine(VPoint.Internal(100,0), VPoint.Internal(100,100)),
-    new VLine(VPoint.Internal(100,100), VPoint.Internal(0,100)),
-    new VLine(VPoint.Internal(0,100), VPoint.Internal(0,0))
+    new VLine(new VXYZ(0,0), new VXYZ(100,0)),
+    new VLine(new VXYZ(100,0), new VXYZ(100,100)),
+    new VLine(new VXYZ(100,100), new VXYZ(0,100)),
+    new VLine(new VXYZ(0,100), new VXYZ(0,0))
 });
 outer.AddHole(new List<ICurve> {
-    new VLine(VPoint.Internal(30,30), VPoint.Internal(70,30)),
-    new VLine(VPoint.Internal(70,30), VPoint.Internal(70,70)),
-    new VLine(VPoint.Internal(70,70), VPoint.Internal(30,70)),
-    new VLine(VPoint.Internal(30,70), VPoint.Internal(30,30))
+    new VLine(new VXYZ(30,30), new VXYZ(70,30)),
+    new VLine(new VXYZ(70,30), new VXYZ(70,70)),
+    new VLine(new VXYZ(70,70), new VXYZ(30,70)),
+    new VLine(new VXYZ(30,70), new VXYZ(30,30))
 });
 
 // Properties
 VizConsole.Log(region.Area);       // 8000
 VizConsole.Log(region.Perimeter);  // 360
-VizConsole.Log(region.Contains(VPoint.Internal(50, 40)));  // true
+VizConsole.Log(region.Contains(new VXYZ(50, 40)));  // true
 
 // Convert to polygon
 var poly = region.ToPolygon();           // Low-fidelity (endpoints only)
@@ -1553,20 +1553,20 @@ var hires = region.ToPolygonHighRes(32); // High-fidelity (sampled)
 
 // Create from polygon
 var fromPoly = Region.FromPolygon(new VPolygon(
-    new VPoint(0,0), new VPoint(50,0), new VPoint(50,50), new VPoint(0,50)));" },
+    new VXYZ(0,0), new VXYZ(50,0), new VXYZ(50,50), new VXYZ(0,50)));" },
 
                 { "RegionBooleanOps", @"// Boolean operations on Regions
 var regionA = new Region(new List<ICurve> {
-    new VLine(VPoint.Internal(0,0), VPoint.Internal(80,0)),
-    new VLine(VPoint.Internal(80,0), VPoint.Internal(80,80)),
-    new VLine(VPoint.Internal(80,80), VPoint.Internal(0,80)),
-    new VLine(VPoint.Internal(0,80), VPoint.Internal(0,0))
+    new VLine(new VXYZ(0,0), new VXYZ(80,0)),
+    new VLine(new VXYZ(80,0), new VXYZ(80,80)),
+    new VLine(new VXYZ(80,80), new VXYZ(0,80)),
+    new VLine(new VXYZ(0,80), new VXYZ(0,0))
 });
 var regionB = new Region(new List<ICurve> {
-    new VLine(VPoint.Internal(40,40), VPoint.Internal(120,40)),
-    new VLine(VPoint.Internal(120,40), VPoint.Internal(120,120)),
-    new VLine(VPoint.Internal(120,120), VPoint.Internal(40,120)),
-    new VLine(VPoint.Internal(40,120), VPoint.Internal(40,40))
+    new VLine(new VXYZ(40,40), new VXYZ(120,40)),
+    new VLine(new VXYZ(120,40), new VXYZ(120,120)),
+    new VLine(new VXYZ(120,120), new VXYZ(40,120)),
+    new VLine(new VXYZ(40,120), new VXYZ(40,40))
 });
 
 // Union - combine regions
@@ -1592,7 +1592,7 @@ var extDiff = regionA.Difference(regionB);
 var diffWithHoles = RegionBooleanOps.DifferenceWithHoles(regionA, regionB);" },
 
                 { "JoinType", @"// JoinType controls how offset polygon corners are handled
-var poly = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var poly = new VPolygon(new VXYZ(0,0), new VXYZ(100,0), new VXYZ(100,100), new VXYZ(0,100));
 
 // Miter (default) - sharp corners
 var miter = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter);
@@ -1607,7 +1607,7 @@ var square = BooleanOps.OffsetPolygon(poly, 10, JoinType.Square);" },
 // OpenRound - rounded open ends
 // OpenSquare - squared open ends
 // OpenButt - flat cut open ends
-var poly = new VPolygon(new VPoint(0,0), new VPoint(100,0), new VPoint(100,100), new VPoint(0,100));
+var poly = new VPolygon(new VXYZ(0,0), new VXYZ(100,0), new VXYZ(100,100), new VXYZ(0,100));
 var offset = BooleanOps.OffsetPolygon(poly, 10, JoinType.Miter, EndType.Polygon);" },
 
                 // Hatch Patterns
@@ -1811,8 +1811,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VXLine.Vertices", "Gets the base point as the only vertex." },
 
                 // VXLine Constructors
-                { "VXLine(VPoint, VXYZ)", "Creates an infinite line through a base point in the specified direction." },
-                { "VXLine(VPoint, VPoint)", "Creates an infinite line passing through two points." },
+                { "VXLine(VXYZ, VXYZ)", "Creates an infinite line through a base point in the specified direction, or passing through two points." },
                 { "VXLine(double, double, double, double)", "Creates an infinite line through two points specified by coordinates." },
 
                 // VXLine Static Methods
@@ -1848,8 +1847,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VRay.Vertices", "Gets the origin as the only vertex." },
 
                 // VRay Constructors
-                { "VRay(VPoint, VXYZ)", "Creates a ray starting at origin in the specified direction." },
-                { "VRay(VPoint, VPoint)", "Creates a ray starting at origin passing through a second point." },
+                { "VRay(VXYZ, VXYZ)", "Creates a ray starting at origin in the specified direction, or passing through a second point." },
                 { "VRay(double, double, double, double)", "Creates a ray from coordinates (originX, originY, throughX, throughY)." },
 
                 // VRay Static Methods
@@ -1885,12 +1883,12 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VRectangle.Height", "Gets or sets the height of the rectangle (along Y axis). Setting this updates the underlying polygon points." },
                 { "VRectangle.RotationAngle", "Gets or sets the rotation angle in degrees (counter-clockwise) for the rectangle's intrinsic orientation." },
                 { "VRectangle.Area", "Inherited from VPolygon. Gets the signed area using the shoelace formula. Positive for counter-clockwise vertices." },
-                { "VRectangle.Points", "Inherited from VPolygon. Gets the four corner vertices as a list of VPoints." },
+                { "VRectangle.Points", "Inherited from VPolygon. Gets the four corner vertices as a list of VXYZ." },
 
                 // VRectangle Constructors
-                { "VRectangle(VPoint, double, double)", "Creates a rectangle from a corner point, width, and height." },
+                { "VRectangle(VXYZ, double, double)", "Creates a rectangle from a corner point, width, and height." },
                 { "VRectangle(double, double, double, double)", "Creates a rectangle from x, y coordinates, width, and height." },
-                { "VRectangle(VPoint, VPoint)", "Creates a rectangle from two corner points (bottom-left and top-right)." },
+                { "VRectangle(VXYZ, VXYZ)", "Creates a rectangle from two corner points (bottom-left and top-right)." },
 
                 // VRectangle Methods
                 { "VRectangle.Draw", "Renders the rectangle to the canvas." },
@@ -2606,7 +2604,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VHatch.Pattern", "Gets or sets the HatchType pattern definition used for this hatch." },
                 { "VHatch.PatternScale", "Gets or sets the scale factor applied to the pattern. Larger values = less dense. Default 1.0." },
                 { "VHatch.PatternAngle", "Gets or sets the additional rotation angle (degrees) applied to the entire pattern. Default 0." },
-                { "VHatch.GenerateLines", "Generates the hatch line segments clipped to the boundary. Returns a list of (Start, End) VPoint pairs." },
+                { "VHatch.GenerateLines", "Generates the hatch line segments clipped to the boundary. Returns a list of (Start, End) VXYZ pairs." },
 
                 // HatchType Properties/Methods
                 { "HatchType.Name", "Gets or sets the pattern name." },

@@ -18,5 +18,5 @@ public class ControlPoint
         Label = label;
     }
 
-    public VPoint ToVPoint() => VPoint.Internal(X, Y);
+    public VXYZ ToVXYZ() => new VXYZ(X, Y);
 }

@@ -10,16 +10,16 @@ namespace C2VGeometry;
 /// </summary>
 public class VHatch : Shape
 {
-    private List<VPoint> _boundary;
+    private List<VXYZ> _boundary;
     private HatchType _pattern;
     private double _patternScale;
     private double _patternAngle;
 
     /// <summary>The closed boundary polygon points.</summary>
-    public List<VPoint> Boundary
+    public List<VXYZ> Boundary
     {
         get => _boundary;
-        set => _boundary = value ?? new List<VPoint>();
+        set => _boundary = value ?? new List<VXYZ>();
     }
 
     /// <summary>The hatch pattern definition.</summary>
@@ -47,36 +47,36 @@ public class VHatch : Shape
     /// Creates a hatch from a built-in pattern enum applied to a polygon boundary.
     /// </summary>
     public VHatch(VPolygon boundary, BuiltInHatch pattern, double scale = 1.0, double angle = 0.0)
-        : this(boundary.Points, HatchType.GetBuiltIn(pattern), scale, angle) { }
+        : this(boundary.Points.ToList(), HatchType.GetBuiltIn(pattern), scale, angle) { }
 
     /// <summary>
     /// Creates a hatch from a built-in pattern name applied to a polygon boundary.
     /// </summary>
     public VHatch(VPolygon boundary, string patternName, double scale = 1.0, double angle = 0.0)
-        : this(boundary.Points, HatchType.GetBuiltIn(patternName), scale, angle) { }
+        : this(boundary.Points.ToList(), HatchType.GetBuiltIn(patternName), scale, angle) { }
 
     /// <summary>
     /// Creates a hatch from a HatchType applied to a polygon boundary.
     /// </summary>
     public VHatch(VPolygon boundary, HatchType pattern, double scale = 1.0, double angle = 0.0)
-        : this(boundary.Points, pattern, scale, angle) { }
+        : this(boundary.Points.ToList(), pattern, scale, angle) { }
 
     /// <summary>
     /// Creates a hatch from a built-in pattern enum applied to boundary points.
     /// </summary>
-    public VHatch(List<VPoint> boundary, BuiltInHatch pattern, double scale = 1.0, double angle = 0.0)
+    public VHatch(List<VXYZ> boundary, BuiltInHatch pattern, double scale = 1.0, double angle = 0.0)
         : this(boundary, HatchType.GetBuiltIn(pattern), scale, angle) { }
 
     /// <summary>
     /// Creates a hatch from a built-in pattern name applied to boundary points.
     /// </summary>
-    public VHatch(List<VPoint> boundary, string patternName, double scale = 1.0, double angle = 0.0)
+    public VHatch(List<VXYZ> boundary, string patternName, double scale = 1.0, double angle = 0.0)
         : this(boundary, HatchType.GetBuiltIn(patternName), scale, angle) { }
 
     /// <summary>
     /// Creates a hatch from a custom HatchType applied to boundary points.
     /// </summary>
-    public VHatch(List<VPoint> boundary, HatchType pattern, double scale = 1.0, double angle = 0.0)
+    public VHatch(List<VXYZ> boundary, HatchType pattern, double scale = 1.0, double angle = 0.0)
     {
         _boundary = boundary ?? throw new ArgumentNullException(nameof(boundary));
         _pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
@@ -90,7 +90,7 @@ public class VHatch : Shape
     /// Creates a hatch from a custom pattern definition string (AutoCAD .pat format).
     /// </summary>
     public VHatch(VPolygon boundary, HatchType pattern, double scale, double angle, bool _)
-        : this(boundary.Points, pattern, scale, angle) { }
+        : this(boundary.Points.ToList(), pattern, scale, angle) { }
 
     /// <summary>
     /// Creates a hatch using a custom pattern definition string in AutoCAD .pat format.
@@ -105,13 +105,13 @@ public class VHatch : Shape
     public static VHatch FromDefinition(VPolygon boundary, string patDefinition, double scale = 1.0, double angle = 0.0)
     {
         var pattern = HatchType.Parse(patDefinition);
-        return new VHatch(boundary.Points, pattern, scale, angle);
+        return new VHatch(boundary.Points.ToList(), pattern, scale, angle);
     }
 
     /// <summary>
     /// Creates a hatch using a custom pattern definition string applied to boundary points.
     /// </summary>
-    public static VHatch FromDefinition(List<VPoint> boundary, string patDefinition, double scale = 1.0, double angle = 0.0)
+    public static VHatch FromDefinition(List<VXYZ> boundary, string patDefinition, double scale = 1.0, double angle = 0.0)
     {
         var pattern = HatchType.Parse(patDefinition);
         return new VHatch(boundary, pattern, scale, angle);
@@ -121,7 +121,7 @@ public class VHatch : Shape
     /// Generates the hatch line segments clipped to the boundary.
     /// Returns a list of line segments as (start, end) point pairs.
     /// </summary>
-    public List<(VPoint Start, VPoint End)> GenerateLines()
+    public List<(VXYZ Start, VXYZ End)> GenerateLines()
     {
         return HatchGenerator.Generate(_boundary, _pattern, _patternScale, _patternAngle);
     }
@@ -130,9 +130,7 @@ public class VHatch : Shape
 
     public override Shape Clone()
     {
-        var clonedBoundary = new List<VPoint>();
-        foreach (var pt in _boundary)
-            clonedBoundary.Add(pt.Clone());
+        var clonedBoundary = _boundary.Select(pt => pt.Clone()).ToList();
         var clone = new VHatch(clonedBoundary, _pattern, _patternScale, _patternAngle);
         CopyStyleTo(clone);
         return clone;
@@ -140,34 +138,34 @@ public class VHatch : Shape
 
     public override void Move(VXYZ vector)
     {
-        foreach (var pt in _boundary)
-            pt.Move(vector);
+        for (int i = 0; i < _boundary.Count; i++)
+            _boundary[i] = _boundary[i] + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        foreach (var pt in _boundary)
-            pt.Rotate(pivot, angleDegrees);
+        for (int i = 0; i < _boundary.Count; i++)
+            _boundary[i] = GeometryHelper.RotatePoint(_boundary[i], pivot, angleDegrees);
         _patternAngle += angleDegrees;
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        foreach (var pt in _boundary)
-            pt.Flip(mirrorLine);
+        for (int i = 0; i < _boundary.Count; i++)
+            _boundary[i] = GeometryHelper.FlipPoint(_boundary[i], mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        foreach (var pt in _boundary)
-            pt.Scale(center, factor);
+        for (int i = 0; i < _boundary.Count; i++)
+            _boundary[i] = GeometryHelper.ScalePoint(_boundary[i], center, factor);
         _patternScale *= Math.Abs(factor);
     }
 
     public override BoundingBox GetBounds()
     {
         if (_boundary.Count == 0)
-            return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+            return new BoundingBox(new VXYZ(0, 0), new VXYZ(0, 0));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -180,7 +178,7 @@ public class VHatch : Shape
             if (pt.Y > maxY) maxY = pt.Y;
         }
 
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     public override List<ControlPoint> GetControlPoints()
@@ -195,12 +193,12 @@ public class VHatch : Shape
         };
     }
 
-    public override bool Contains(VPoint point)
+    public override bool Contains(VXYZ point)
     {
         return IsPointInPolygon(point, _boundary);
     }
 
-    private static bool IsPointInPolygon(VPoint point, List<VPoint> polygon)
+    private static bool IsPointInPolygon(VXYZ point, List<VXYZ> polygon)
     {
         bool inside = false;
         int j = polygon.Count - 1;

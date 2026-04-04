@@ -12,7 +12,7 @@ public class IntersectionResult
     /// <summary>
     /// Points where the curves cross or touch.
     /// </summary>
-    public List<VPoint> Points { get; } = new();
+    public List<VXYZ> Points { get; } = new();
 
     /// <summary>
     /// Curves representing overlapping segments (e.g., when two lines are collinear and overlap).
@@ -47,7 +47,7 @@ public class IntersectionResult
     /// <summary>
     /// Creates an intersection result with a single point.
     /// </summary>
-    public static IntersectionResult FromPoint(VPoint point)
+    public static IntersectionResult FromPoint(VXYZ point)
     {
         var result = new IntersectionResult();
         result.Points.Add(point);
@@ -57,7 +57,7 @@ public class IntersectionResult
     /// <summary>
     /// Creates an intersection result with multiple points.
     /// </summary>
-    public static IntersectionResult FromPoints(IEnumerable<VPoint> points)
+    public static IntersectionResult FromPoints(IEnumerable<VXYZ> points)
     {
         var result = new IntersectionResult();
         result.Points.AddRange(points);
@@ -99,7 +99,7 @@ public class IntersectionResult
     /// </summary>
     public void RemoveDuplicatePoints(double tolerance = 1e-6)
     {
-        var unique = new List<VPoint>();
+        var unique = new List<VXYZ>();
         foreach (var p in Points)
         {
             if (!unique.Any(existing => existing.DistanceTo(p) < tolerance))

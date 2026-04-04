@@ -20,6 +20,8 @@ public class VXYZ
         Z = z;
     }
 
+    public VXYZ(double x, double y) : this(x, y, 0) { }
+
     public VXYZ() : this(0, 0, 0) { }
 
     // Static properties
@@ -60,7 +62,7 @@ public class VXYZ
     /// Converts this VXYZ to a VPoint (drops Z component).
     /// Uses Internal() to avoid auto-registering intermediate points.
     /// </summary>
-    public VPoint AsVPoint() => VPoint.Internal(X, Y);
+    public VPoint AsVPoint() => new VPoint(X, Y);
 
     public double GetLength() => Math.Sqrt(X * X + Y * Y + Z * Z);
 

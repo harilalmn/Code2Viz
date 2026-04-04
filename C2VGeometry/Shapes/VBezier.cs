@@ -9,26 +9,26 @@ namespace C2VGeometry;
 /// </summary>
 public class VBezier : Shape, ICurve
 {
-    public VPoint P0 { get; set; }  // Start point
-    public VPoint P1 { get; set; }  // Control point 1
-    public VPoint P2 { get; set; }  // Control point 2
-    public VPoint P3 { get; set; }  // End point
+    public VXYZ P0 { get; set; }  // Start point
+    public VXYZ P1 { get; set; }  // Control point 1
+    public VXYZ P2 { get; set; }  // Control point 2
+    public VXYZ P3 { get; set; }  // End point
     private readonly bool _selfIntersecting;
 
     /// <summary>Number of segments for rendering (higher = smoother)</summary>
     public int Segments { get; set; } = 32;
 
-    public VPoint StartPoint => P0;
-    public VPoint EndPoint => P3;
-    public VPoint MidPoint => Evaluate(0.5);
+    public VXYZ StartPoint => P0;
+    public VXYZ EndPoint => P3;
+    public VXYZ MidPoint => Evaluate(0.5);
 
     /// <summary>Indicates whether the bezier curve intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
     /// <summary>Gets the control points of the bezier curve.</summary>
-    public List<VPoint> Vertices => new List<VPoint> { P0, P1, P2, P3 };
+    public List<VXYZ> Vertices => new List<VXYZ> { P0, P1, P2, P3 };
 
-    public VBezier(VPoint p0, VPoint p1, VPoint p2, VPoint p3)
+    public VBezier(VXYZ p0, VXYZ p1, VXYZ p2, VXYZ p3)
     {
         P0 = p0;
         P1 = p1;
@@ -40,10 +40,10 @@ public class VBezier : Shape, ICurve
 
     public VBezier(double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
     {
-        P0 = VPoint.Internal(x0, y0);
-        P1 = VPoint.Internal(x1, y1);
-        P2 = VPoint.Internal(x2, y2);
-        P3 = VPoint.Internal(x3, y3);
+        P0 = new VXYZ(x0, y0);
+        P1 = new VXYZ(x1, y1);
+        P2 = new VXYZ(x2, y2);
+        P3 = new VXYZ(x3, y3);
         Color = "Purple";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
@@ -51,7 +51,7 @@ public class VBezier : Shape, ICurve
     /// <summary>
     /// Evaluates a point on the Bezier curve at parameter t [0,1].
     /// </summary>
-    public VPoint Evaluate(double t)
+    public VXYZ Evaluate(double t)
     {
         double u = 1 - t;
         double tt = t * t;
@@ -62,15 +62,15 @@ public class VBezier : Shape, ICurve
         double x = uuu * P0.X + 3 * uu * t * P1.X + 3 * u * tt * P2.X + ttt * P3.X;
         double y = uuu * P0.Y + 3 * uu * t * P1.Y + 3 * u * tt * P2.Y + ttt * P3.Y;
 
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
     /// <summary>
     /// Gets all points along the curve for rendering.
     /// </summary>
-    public List<VPoint> GetRenderPoints()
+    public List<VXYZ> GetRenderPoints()
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         for (int i = 0; i <= Segments; i++)
         {
             double t = (double)i / Segments;
@@ -94,7 +94,7 @@ public class VBezier : Shape, ICurve
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -104,20 +104,16 @@ public class VBezier : Shape, ICurve
                 Move(delta);
                 break;
             case 1:
-                P0.X = newPosition.X;
-                P0.Y = newPosition.Y;
+                P0 = new VXYZ(newPosition.X, newPosition.Y);
                 break;
             case 2:
-                P1.X = newPosition.X;
-                P1.Y = newPosition.Y;
+                P1 = new VXYZ(newPosition.X, newPosition.Y);
                 break;
             case 3:
-                P2.X = newPosition.X;
-                P2.Y = newPosition.Y;
+                P2 = new VXYZ(newPosition.X, newPosition.Y);
                 break;
             case 4:
-                P3.X = newPosition.X;
-                P3.Y = newPosition.Y;
+                P3 = new VXYZ(newPosition.X, newPosition.Y);
                 break;
         }
     }
@@ -134,42 +130,42 @@ public class VBezier : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        P0.Move(vector);
-        P1.Move(vector);
-        P2.Move(vector);
-        P3.Move(vector);
+        P0 = P0 + vector;
+        P1 = P1 + vector;
+        P2 = P2 + vector;
+        P3 = P3 + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        P0.Rotate(pivot, angleDegrees);
-        P1.Rotate(pivot, angleDegrees);
-        P2.Rotate(pivot, angleDegrees);
-        P3.Rotate(pivot, angleDegrees);
+        P0 = GeometryHelper.RotatePoint(P0, pivot, angleDegrees);
+        P1 = GeometryHelper.RotatePoint(P1, pivot, angleDegrees);
+        P2 = GeometryHelper.RotatePoint(P2, pivot, angleDegrees);
+        P3 = GeometryHelper.RotatePoint(P3, pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        P0.Flip(mirrorLine);
-        P1.Flip(mirrorLine);
-        P2.Flip(mirrorLine);
-        P3.Flip(mirrorLine);
+        P0 = GeometryHelper.FlipPoint(P0, mirrorLine);
+        P1 = GeometryHelper.FlipPoint(P1, mirrorLine);
+        P2 = GeometryHelper.FlipPoint(P2, mirrorLine);
+        P3 = GeometryHelper.FlipPoint(P3, mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        P0.Scale(center, factor);
-        P1.Scale(center, factor);
-        P2.Scale(center, factor);
-        P3.Scale(center, factor);
+        P0 = GeometryHelper.ScalePoint(P0, center, factor);
+        P1 = GeometryHelper.ScalePoint(P1, center, factor);
+        P2 = GeometryHelper.ScalePoint(P2, center, factor);
+        P3 = GeometryHelper.ScalePoint(P3, center, factor);
     }
 
     public override BoundingBox GetBounds()
     {
         var pts = new[] { P0, P1, P2, P3 };
         return new BoundingBox(
-            VPoint.Internal(pts.Min(p => p.X), pts.Min(p => p.Y)),
-            VPoint.Internal(pts.Max(p => p.X), pts.Max(p => p.Y))
+            new VXYZ(pts.Min(p => p.X), pts.Min(p => p.Y)),
+            new VXYZ(pts.Max(p => p.X), pts.Max(p => p.Y))
         );
     }
 
@@ -177,43 +173,42 @@ public class VBezier : Shape, ICurve
 
     public double GetLength()
     {
-        // Approximate length by subdividing
         double length = 0;
-        VPoint prev = P0;
+        VXYZ prev = P0;
         int steps = 100;
         for (int i = 1; i <= steps; i++)
         {
-            VPoint curr = Evaluate((double)i / steps);
+            VXYZ curr = Evaluate((double)i / steps);
             length += prev.DistanceTo(curr);
             prev = curr;
         }
         return length;
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        if (numberOfSegments <= 0) return new List<VPoint>();
+        if (numberOfSegments <= 0) return new List<VXYZ>();
         double totalLength = GetLength();
-        if (totalLength < 1e-9) return new List<VPoint>();
+        if (totalLength < 1e-9) return new List<VXYZ>();
 
         return Measure(totalLength / numberOfSegments);
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var result = new List<VPoint>();
+        var result = new List<VXYZ>();
         if (segmentLength <= 1e-9) return result;
 
-        result.Add(Evaluate(0)); // Start point
+        result.Add(Evaluate(0));
 
         double remainingStep = segmentLength;
-        VPoint p1 = Evaluate(0);
-        int steps = 200; // Resolution for measurement
+        VXYZ p1 = Evaluate(0);
+        int steps = 200;
 
         for (int i = 1; i <= steps; i++)
         {
             double t = (double)i / steps;
-            VPoint p2 = Evaluate(t);
+            VXYZ p2 = Evaluate(t);
             double segLen = p1.DistanceTo(p2);
 
             double distOnSeg = 0;
@@ -221,11 +216,10 @@ public class VBezier : Shape, ICurve
             {
                 distOnSeg += remainingStep;
 
-                // Interpolate
                 double subT = distOnSeg / segLen;
                 double x = p1.X + (p2.X - p1.X) * subT;
                 double y = p1.Y + (p2.Y - p1.Y) * subT;
-                result.Add(VPoint.Internal(x, y));
+                result.Add(new VXYZ(x, y));
 
                 remainingStep = segmentLength;
             }
@@ -239,35 +233,28 @@ public class VBezier : Shape, ICurve
 
     // ICurve Implementation
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
         double t = GetClosestParameter(point);
         return Evaluate(t);
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
-        // Walk for length
-        // This is expensive if done repeatedly.
-        // Cached length parameterization would be better.
-
         double totalLen = GetLength();
         if (segmentLength <= 0) return P0;
         if (segmentLength >= totalLen) return P3;
 
-        // Binary search or walk w/ Measure
-        // Let's use 100 sample walk
         int steps = 100;
         double len = 0;
-        VPoint prev = Evaluate(0);
+        VXYZ prev = Evaluate(0);
         for(int i=1; i<=steps; i++)
         {
             double t = (double)i / steps;
-            VPoint curr = Evaluate(t);
+            VXYZ curr = Evaluate(t);
             double segDescrip = prev.DistanceTo(curr);
             if (len + segDescrip >= segmentLength)
             {
-                // Interpolate t
                 double rem = segmentLength - len;
                 double ratio = rem / segDescrip;
                 double targetT = ((i-1) + ratio) / steps;
@@ -281,29 +268,19 @@ public class VBezier : Shape, ICurve
 
     public ICurve Offset(double distance)
     {
-        // Simple approximation: Offset control points
-        // Tiller-Hansonish approach: Offset legs
+        VXYZ t0 = (P1 - P0).Normalize();
+        if (t0.IsZeroLength()) t0 = (P2 - P0).Normalize();
 
-        // Tangents
-        VXYZ t0 = (P1.AsVXYZ() - P0.AsVXYZ()).Normalize();
-        if (t0.IsZeroLength()) t0 = (P2.AsVXYZ() - P0.AsVXYZ()).Normalize();
+        VXYZ t3 = (P3 - P2).Normalize();
+        if (t3.IsZeroLength()) t3 = (P3 - P1).Normalize();
 
-        VXYZ t3 = (P3.AsVXYZ() - P2.AsVXYZ()).Normalize();
-        if (t3.IsZeroLength()) t3 = (P3.AsVXYZ() - P1.AsVXYZ()).Normalize();
-
-        // Normals (2D: -y, x)
         VXYZ n0 = new VXYZ(-t0.Y, t0.X, 0).Normalize();
         VXYZ n3 = new VXYZ(-t3.Y, t3.X, 0).Normalize();
 
-        // Offset start/end
-        VPoint q0 = (P0.AsVXYZ() + n0 * distance).AsVPoint();
-        VPoint q3 = (P3.AsVXYZ() + n3 * distance).AsVPoint();
-
-        // For P1, P2: Intersect offset tangent lines?
-        // Or just move by normal at endpoints?
-        // Simple shift:
-        VPoint q1 = (P1.AsVXYZ() + n0 * distance).AsVPoint();
-        VPoint q2 = (P2.AsVXYZ() + n3 * distance).AsVPoint();
+        VXYZ q0 = P0 + n0 * distance;
+        VXYZ q3 = P3 + n3 * distance;
+        VXYZ q1 = P1 + n0 * distance;
+        VXYZ q2 = P2 + n3 * distance;
 
         return new VBezier(q0, q1, q2, q3);
     }
@@ -315,72 +292,68 @@ public class VBezier : Shape, ICurve
         return list;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
-        // Numerical circle intersection
-        var results = new List<VPoint>();
+        var results = new List<VXYZ>();
         int steps = 100;
-        VPoint prev = Evaluate(0);
+        VXYZ prev = Evaluate(0);
         double r2 = chordLength;
-        VPoint c2 = Project(point);
+        VXYZ c2 = Project(point);
 
         for(int i=1; i<=steps; i++){
-             VPoint curr = Evaluate((double)i/steps);
+             VXYZ curr = Evaluate((double)i/steps);
              double d1 = curr.DistanceTo(c2);
              double d2 = prev.DistanceTo(c2);
 
              if ((d1 < r2 && d2 > r2) || (d1 > r2 && d2 < r2))
              {
-                 results.Add(VPoint.Internal((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
+                 results.Add(new VXYZ((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
              }
              prev = curr;
         }
         return results;
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
         double t = GetClosestParameter(point);
-        // De Casteljau subdivision at t
 
-        // Clone original control points to ensure independent curves
-        VPoint p0 = (VPoint)P0.Clone();
-        VPoint p1 = P1;
-        VPoint p2 = P2;
-        VPoint p3 = (VPoint)P3.Clone();
+        VXYZ p0 = P0.Clone();
+        VXYZ p1 = P1;
+        VXYZ p2 = P2;
+        VXYZ p3 = P3.Clone();
 
-        VPoint p01 = Lerp(p0, p1, t);
-        VPoint p12 = Lerp(p1, p2, t);
-        VPoint p23 = Lerp(p2, p3, t);
+        VXYZ p01 = Lerp(p0, p1, t);
+        VXYZ p12 = Lerp(p1, p2, t);
+        VXYZ p23 = Lerp(p2, p3, t);
 
-        VPoint p012 = Lerp(p01, p12, t);
-        VPoint p123 = Lerp(p12, p23, t);
+        VXYZ p012 = Lerp(p01, p12, t);
+        VXYZ p123 = Lerp(p12, p23, t);
 
-        VPoint p0123 = Lerp(p012, p123, t); // This is point at t
+        VXYZ p0123 = Lerp(p012, p123, t);
 
-        // Clone shared split point for second curve
-        var c1 = new VBezier(p0, p01, p012, (VPoint)p0123.Clone());
-        var c2 = new VBezier((VPoint)p0123.Clone(), p123, p23, p3);
+        var c1 = new VBezier(p0, p01, p012, p0123.Clone());
+        var c2 = new VBezier(p0123.Clone(), p123, p23, p3);
 
         return (c1, c2);
     }
 
-    private VPoint Lerp(VPoint a, VPoint b, double t)
+    private VXYZ Lerp(VXYZ a, VXYZ b, double t)
     {
-        return VPoint.Internal(
+        return new VXYZ(
             a.X + (b.X - a.X) * t,
             a.Y + (b.Y - a.Y) * t
         );
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         double t = GetClosestParameter(p);
-        VPoint tangent = EvaluateDerivative(t);
+        VXYZ tangent = EvaluateDerivative(t);
         return new VXYZ(-tangent.Y, tangent.X, 0).Normalize();
     }
 
-    private double GetClosestParameter(VPoint p)
+    private double GetClosestParameter(VXYZ p)
     {
         double minSqDist = double.MaxValue;
         double bestT = 0;
@@ -389,8 +362,9 @@ public class VBezier : Shape, ICurve
         for (int i = 0; i <= steps; i++)
         {
             double t = (double)i / steps;
-            double dx = Evaluate(t).X - p.X;
-            double dy = Evaluate(t).Y - p.Y;
+            var pt = Evaluate(t);
+            double dx = pt.X - p.X;
+            double dy = pt.Y - p.Y;
             double sqDist = dx * dx + dy * dy;
 
             if (sqDist < minSqDist)
@@ -402,24 +376,20 @@ public class VBezier : Shape, ICurve
         return bestT;
     }
 
-    private VPoint EvaluateDerivative(double t)
+    private VXYZ EvaluateDerivative(double t)
     {
         double u = 1 - t;
         double uu = u * u;
         double tt = t * t;
-        double tu = t * u;
-
-        // Derivative of cubic Bezier:
-        // 3(1-t)^2(P1-P0) + 6(1-t)t(P2-P1) + 3t^2(P3-P2)
 
         double term1 = 3 * uu;
-        double term2 = 6 * u * t; // Note: was 6 * tu
+        double term2 = 6 * u * t;
         double term3 = 3 * tt;
 
         double x = term1 * (P1.X - P0.X) + term2 * (P2.X - P1.X) + term3 * (P3.X - P2.X);
         double y = term1 * (P1.Y - P0.Y) + term2 * (P2.Y - P1.Y) + term3 * (P3.Y - P2.Y);
 
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
     /// <summary>
@@ -433,10 +403,10 @@ public class VBezier : Shape, ICurve
     /// <summary>
     /// Returns a point on the bezier curve at the given normalized parameter.
     /// </summary>
-    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+    public VXYZ PointAtParameter(double parameter) => Evaluate(parameter);
 
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the bezier curve to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point) => GetClosestParameter(point);
+    public double ParameterAtPoint(VXYZ point) => GetClosestParameter(point);
 }

@@ -57,7 +57,7 @@ public static class ArrayOps
                 else
                 {
                     var clone = shape.Clone();
-                    clone.Move(new VXYZ(col * colSpacing, row * rowSpacing, 0));
+                    clone.Move(new VXYZ(col * colSpacing, row * rowSpacing));
                     result.Add(clone);
                 }
             }
@@ -75,7 +75,7 @@ public static class ArrayOps
     /// <param name="totalAngleDegrees">Total angle span in degrees (360 = full circle).</param>
     /// <param name="rotateItems">Whether to rotate each copy to face outward from center.</param>
     /// <returns>List of shapes including the original.</returns>
-    public static List<Shape> CircularArray(Shape shape, VPoint center, int count, double totalAngleDegrees = 360, bool rotateItems = true)
+    public static List<Shape> CircularArray(Shape shape, VXYZ center, int count, double totalAngleDegrees = 360, bool rotateItems = true)
     {
         if (count <= 0) return new List<Shape>();
 
@@ -102,7 +102,7 @@ public static class ArrayOps
             {
                 // Only move the shape without rotating its orientation
                 var bounds = clone.GetBounds();
-                var shapeCenter = VPoint.Internal(
+                var shapeCenter = new VXYZ(
                     (bounds.Min.X + bounds.Max.X) / 2,
                     (bounds.Min.Y + bounds.Max.Y) / 2
                 );
@@ -119,7 +119,7 @@ public static class ArrayOps
                 double newCenterY = center.Y + dx * sin + dy * cos;
 
                 // Move by the difference
-                clone.Move(new VXYZ(newCenterX - shapeCenter.X, newCenterY - shapeCenter.Y, 0));
+                clone.Move(new VXYZ(newCenterX - shapeCenter.X, newCenterY - shapeCenter.Y));
             }
 
             result.Add(clone);
@@ -145,7 +145,7 @@ public static class ArrayOps
 
         // Get shape's center for positioning
         var bounds = shape.GetBounds();
-        var shapeCenter = VPoint.Internal(
+        var shapeCenter = new VXYZ(
             (bounds.Min.X + bounds.Max.X) / 2,
             (bounds.Min.Y + bounds.Max.Y) / 2
         );
@@ -159,7 +159,7 @@ public static class ArrayOps
             var clone = shape.Clone();
 
             // Move shape so its center is at the path point
-            var offset = new VXYZ(point.X - shapeCenter.X, point.Y - shapeCenter.Y, 0);
+            var offset = new VXYZ(point.X - shapeCenter.X, point.Y - shapeCenter.Y);
             clone.Move(offset);
 
             if (alignToPath)
@@ -201,7 +201,7 @@ public static class ArrayOps
     /// <param name="totalRevolutions">Number of full revolutions.</param>
     /// <param name="rotateItems">Whether to rotate items to face outward.</param>
     /// <returns>List of shapes.</returns>
-    public static List<Shape> SpiralArray(Shape shape, VPoint center, int count,
+    public static List<Shape> SpiralArray(Shape shape, VXYZ center, int count,
         double startRadius, double endRadius, double totalRevolutions = 1, bool rotateItems = true)
     {
         if (count <= 0) return new List<Shape>();
@@ -210,7 +210,7 @@ public static class ArrayOps
 
         // Get shape's center for positioning
         var bounds = shape.GetBounds();
-        var shapeCenter = VPoint.Internal(
+        var shapeCenter = new VXYZ(
             (bounds.Min.X + bounds.Max.X) / 2,
             (bounds.Min.Y + bounds.Max.Y) / 2
         );
@@ -227,13 +227,13 @@ public static class ArrayOps
             double y = center.Y + radius * Math.Sin(angle);
 
             var clone = shape.Clone();
-            var offset = new VXYZ(x - shapeCenter.X, y - shapeCenter.Y, 0);
+            var offset = new VXYZ(x - shapeCenter.X, y - shapeCenter.Y);
             clone.Move(offset);
 
             if (rotateItems)
             {
                 double angleDegrees = t * totalAngle;
-                clone.Rotate(new VPoint(x, y), angleDegrees);
+                clone.Rotate(new VXYZ(x, y), angleDegrees);
             }
 
             result.Add(clone);
@@ -261,7 +261,7 @@ public static class ShapeArrayExtensions
     /// </summary>
     public static List<Shape> LinearArrayX(this Shape shape, int count, double spacing)
     {
-        return ArrayOps.LinearArray(shape, new VXYZ(1, 0, 0), count, spacing);
+        return ArrayOps.LinearArray(shape, new VXYZ(1, 0), count, spacing);
     }
 
     /// <summary>
@@ -269,7 +269,7 @@ public static class ShapeArrayExtensions
     /// </summary>
     public static List<Shape> LinearArrayY(this Shape shape, int count, double spacing)
     {
-        return ArrayOps.LinearArray(shape, new VXYZ(0, 1, 0), count, spacing);
+        return ArrayOps.LinearArray(shape, new VXYZ(0, 1), count, spacing);
     }
 
     /// <summary>
@@ -283,7 +283,7 @@ public static class ShapeArrayExtensions
     /// <summary>
     /// Creates a circular/polar array of this shape around a center point.
     /// </summary>
-    public static List<Shape> CircularArray(this Shape shape, VPoint center, int count, double totalAngleDegrees = 360, bool rotateItems = true)
+    public static List<Shape> CircularArray(this Shape shape, VXYZ center, int count, double totalAngleDegrees = 360, bool rotateItems = true)
     {
         return ArrayOps.CircularArray(shape, center, count, totalAngleDegrees, rotateItems);
     }
@@ -307,7 +307,7 @@ public static class ShapeArrayExtensions
     /// <summary>
     /// Creates a spiral array of this shape.
     /// </summary>
-    public static List<Shape> SpiralArray(this Shape shape, VPoint center, int count,
+    public static List<Shape> SpiralArray(this Shape shape, VXYZ center, int count,
         double startRadius, double endRadius, double totalRevolutions = 1, bool rotateItems = true)
     {
         return ArrayOps.SpiralArray(shape, center, count, startRadius, endRadius, totalRevolutions, rotateItems);

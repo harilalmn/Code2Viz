@@ -69,7 +69,7 @@ public static class CurveIntersection
         // Check if intersection is within both line segments
         if (t >= -Tolerance && t <= 1 + Tolerance && u >= -Tolerance && u <= 1 + Tolerance)
         {
-            var point = VPoint.Internal(p1.X + t * d1x, p1.Y + t * d1y);
+            var point = new VXYZ(p1.X + t * d1x, p1.Y + t * d1y);
             return IntersectionResult.FromPoint(point);
         }
 
@@ -115,13 +115,13 @@ public static class CurveIntersection
         if (Math.Abs(overlapStart - overlapEnd) < Tolerance)
         {
             // Single point overlap (lines touch at endpoint)
-            var point = VPoint.Internal(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
+            var point = new VXYZ(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
             return IntersectionResult.FromPoint(point);
         }
 
         // Overlapping segment
-        var startPt = VPoint.Internal(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
-        var endPt = VPoint.Internal(p1.X + overlapEnd * d1x, p1.Y + overlapEnd * d1y);
+        var startPt = new VXYZ(p1.X + overlapStart * d1x, p1.Y + overlapStart * d1y);
+        var endPt = new VXYZ(p1.X + overlapEnd * d1x, p1.Y + overlapEnd * d1y);
 
         // Check for antiparallel lines (dot product < 0)
         // If antiparallel, they are touching (boundaries meet) but not overlapping in the polygon sense
@@ -178,7 +178,7 @@ public static class CurveIntersection
             double t = -b / (2 * a);
             if (t >= -Tolerance && t <= 1 + Tolerance)
             {
-                result.Points.Add(VPoint.Internal(p1.X + t * dx, p1.Y + t * dy));
+                result.Points.Add(new VXYZ(p1.X + t * dx, p1.Y + t * dy));
             }
         }
         else
@@ -190,11 +190,11 @@ public static class CurveIntersection
 
             if (t1 >= -Tolerance && t1 <= 1 + Tolerance)
             {
-                result.Points.Add(VPoint.Internal(p1.X + t1 * dx, p1.Y + t1 * dy));
+                result.Points.Add(new VXYZ(p1.X + t1 * dx, p1.Y + t1 * dy));
             }
             if (t2 >= -Tolerance && t2 <= 1 + Tolerance)
             {
-                result.Points.Add(VPoint.Internal(p1.X + t2 * dx, p1.Y + t2 * dy));
+                result.Points.Add(new VXYZ(p1.X + t2 * dx, p1.Y + t2 * dy));
             }
         }
 
@@ -229,7 +229,7 @@ public static class CurveIntersection
         return result;
     }
 
-    private static bool IsPointOnArc(VPoint point, VArc arc)
+    private static bool IsPointOnArc(VXYZ point, VArc arc)
     {
         double angle = Math.Atan2(point.Y - arc.Center.Y, point.X - arc.Center.X);
 
@@ -295,7 +295,7 @@ public static class CurveIntersection
             double t = -B / (2 * A);
             if (t >= -Tolerance && t <= 1 + Tolerance)
             {
-                result.Points.Add(VPoint.Internal(p1.X + t * dx, p1.Y + t * dy));
+                result.Points.Add(new VXYZ(p1.X + t * dx, p1.Y + t * dy));
             }
         }
         else
@@ -306,11 +306,11 @@ public static class CurveIntersection
 
             if (t1 >= -Tolerance && t1 <= 1 + Tolerance)
             {
-                result.Points.Add(VPoint.Internal(p1.X + t1 * dx, p1.Y + t1 * dy));
+                result.Points.Add(new VXYZ(p1.X + t1 * dx, p1.Y + t1 * dy));
             }
             if (t2 >= -Tolerance && t2 <= 1 + Tolerance)
             {
-                result.Points.Add(VPoint.Internal(p1.X + t2 * dx, p1.Y + t2 * dy));
+                result.Points.Add(new VXYZ(p1.X + t2 * dx, p1.Y + t2 * dy));
             }
         }
 
@@ -360,7 +360,7 @@ public static class CurveIntersection
         if (h < Tolerance)
         {
             // Circles are tangent
-            result.Points.Add(VPoint.Internal(px, py));
+            result.Points.Add(new VXYZ(px, py));
         }
         else
         {
@@ -368,8 +368,8 @@ public static class CurveIntersection
             double offsetX = h * (c2.Center.Y - c1.Center.Y) / d;
             double offsetY = h * (c2.Center.X - c1.Center.X) / d;
 
-            result.Points.Add(VPoint.Internal(px + offsetX, py - offsetY));
-            result.Points.Add(VPoint.Internal(px - offsetX, py + offsetY));
+            result.Points.Add(new VXYZ(px + offsetX, py - offsetY));
+            result.Points.Add(new VXYZ(px - offsetX, py + offsetY));
         }
 
         return result;
@@ -528,7 +528,7 @@ public static class CurveIntersection
     /// <summary>
     /// Checks if a polyline (given as points) is self-intersecting.
     /// </summary>
-    public static bool IsPolylineSelfIntersecting(List<VPoint> points)
+    public static bool IsPolylineSelfIntersecting(List<VXYZ> points)
     {
         if (points.Count < 4) return false;
 

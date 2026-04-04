@@ -141,7 +141,7 @@ public static class RegionBooleanOps
     /// <summary>
     /// Checks if a point is inside a region.
     /// </summary>
-    public static bool PointInRegion(Region region, VPoint point)
+    public static bool PointInRegion(Region region, VXYZ point)
     {
         return region.Contains(point);
     }
@@ -198,7 +198,7 @@ public static class RegionBooleanExtensions
     /// <summary>
     /// Checks if a point is inside this region.
     /// </summary>
-    public static bool ContainsPoint(this Region region, VPoint point)
+    public static bool ContainsPoint(this Region region, VXYZ point)
     {
         return region.Contains(point);
     }

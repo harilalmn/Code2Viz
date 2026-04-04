@@ -67,7 +67,7 @@ public class PolygonWithHoles
     /// <summary>
     /// Checks if a point is inside the polygon (inside outer, outside all holes).
     /// </summary>
-    public bool Contains(VPoint point)
+    public bool Contains(VXYZ point)
     {
         // Must be inside outer boundary
         if (!PolygonClipper.PointInPolygonTest(point, Outer.Points))

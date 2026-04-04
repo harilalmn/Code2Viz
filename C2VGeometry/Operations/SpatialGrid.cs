@@ -95,8 +95,8 @@ internal class SpatialGrid<T>
 /// </summary>
 internal class IndexedEdge
 {
-    public VPoint Start { get; }
-    public VPoint End { get; }
+    public VXYZ Start { get; }
+    public VXYZ End { get; }
     public int PolygonIndex { get; }
     public int EdgeIndex { get; }
 
@@ -105,7 +105,7 @@ internal class IndexedEdge
     public double MinY => Math.Min(Start.Y, End.Y);
     public double MaxY => Math.Max(Start.Y, End.Y);
 
-    public IndexedEdge(VPoint start, VPoint end, int polygonIndex, int edgeIndex)
+    public IndexedEdge(VXYZ start, VXYZ end, int polygonIndex, int edgeIndex)
     {
         Start = start;
         End = end;
@@ -170,7 +170,7 @@ internal static class SpatialAccelerator
             foreach (var edgeB in grid.Query(minX, minY, maxX, maxY))
             {
                 if (TryGetIntersection(startA, endA, edgeB.Start, edgeB.End,
-                    out double alphaA, out double alphaB, out VPoint intersection))
+                    out double alphaA, out double alphaB, out VXYZ intersection))
                 {
                     results.Add(new EdgeIntersection
                     {
@@ -233,7 +233,7 @@ internal static class SpatialAccelerator
                 if (i == 0 && j == polygon.Points.Count - 1) continue; // First and last are adjacent
 
                 if (TryGetIntersection(startA, endA, edgeB.Start, edgeB.End,
-                    out double alphaA, out double alphaB, out VPoint intersection))
+                    out double alphaA, out double alphaB, out VXYZ intersection))
                 {
                     results.Add(new SelfIntersection
                     {
@@ -250,12 +250,12 @@ internal static class SpatialAccelerator
         return results;
     }
 
-    private static bool TryGetIntersection(VPoint p1, VPoint p2, VPoint p3, VPoint p4,
-        out double alphaA, out double alphaB, out VPoint intersection)
+    private static bool TryGetIntersection(VXYZ p1, VXYZ p2, VXYZ p3, VXYZ p4,
+        out double alphaA, out double alphaB, out VXYZ intersection)
     {
         alphaA = 0;
         alphaB = 0;
-        intersection = VPoint.Internal(0, 0);
+        intersection = new VXYZ(0, 0);
 
         double d1x = p2.X - p1.X;
         double d1y = p2.Y - p1.Y;
@@ -277,7 +277,7 @@ internal static class SpatialAccelerator
         if (alphaA > margin && alphaA < 1 - margin &&
             alphaB > margin && alphaB < 1 - margin)
         {
-            intersection = VPoint.Internal(p1.X + alphaA * d1x, p1.Y + alphaA * d1y);
+            intersection = new VXYZ(p1.X + alphaA * d1x, p1.Y + alphaA * d1y);
             return true;
         }
 
@@ -290,7 +290,7 @@ internal static class SpatialAccelerator
 /// </summary>
 internal class EdgeIntersection
 {
-    public VPoint Point { get; set; } = VPoint.Internal(0, 0);
+    public VXYZ Point { get; set; } = new VXYZ(0, 0);
     public int EdgeIndexA { get; set; }
     public int EdgeIndexB { get; set; }
     public double AlphaA { get; set; }
@@ -302,7 +302,7 @@ internal class EdgeIntersection
 /// </summary>
 internal class SelfIntersection
 {
-    public VPoint Point { get; set; } = VPoint.Internal(0, 0);
+    public VXYZ Point { get; set; } = new VXYZ(0, 0);
     public int EdgeIndex1 { get; set; }
     public int EdgeIndex2 { get; set; }
     public double Alpha1 { get; set; }

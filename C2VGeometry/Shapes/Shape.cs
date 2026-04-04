@@ -177,7 +177,7 @@ public abstract class Shape : IDrawable
     /// <summary>
     /// Pivot point for rotation animation.
     /// </summary>
-    public VPoint? RotationPivot { get; set; }
+    public VXYZ? RotationPivot { get; set; }
 
     /// <summary>
     /// Progress for flip animation (0 = original, 1 = fully flipped).
@@ -290,7 +290,7 @@ public abstract class Shape : IDrawable
     /// <summary>
     /// Rotates this shape around a pivot point by the given angle.
     /// </summary>
-    public abstract void Rotate(VPoint pivot, double angleDegrees);
+    public abstract void Rotate(VXYZ pivot, double angleDegrees);
 
     /// <summary>
     /// Flips (mirrors) this shape across the given line.
@@ -302,7 +302,7 @@ public abstract class Shape : IDrawable
     /// </summary>
     /// <param name="center">The center point to scale around.</param>
     /// <param name="factor">Scale factor (1.0 = no change, 2.0 = double size).</param>
-    public abstract void Scale(VPoint center, double factor);
+    public abstract void Scale(VXYZ center, double factor);
 
     /// <summary>
     /// Gets the bounding box of this shape.
@@ -333,14 +333,15 @@ public abstract class Shape : IDrawable
     /// </summary>
     /// <param name="index">Index of the control point.</param>
     /// <param name="newPosition">New position for the control point.</param>
-    public virtual void MoveControlPoint(int index, VPoint newPosition)
+    public virtual void MoveControlPoint(int index, VXYZ newPosition)
     {
         // Default implementation moves the entire shape
         if (index == 0)
         {
             var bounds = GetBounds();
-            var center = VPoint.Internal((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
-            var delta = new VXYZ(newPosition.X - center.X, newPosition.Y - center.Y, 0);
+            var centerX = (bounds.Min.X + bounds.Max.X) / 2;
+            var centerY = (bounds.Min.Y + bounds.Max.Y) / 2;
+            var delta = new VXYZ(newPosition.X - centerX, newPosition.Y - centerY, 0);
             Move(delta);
         }
     }
@@ -365,7 +366,7 @@ public abstract class Shape : IDrawable
     /// <summary>
     /// Calculates the minimum distance from this shape to a point.
     /// </summary>
-    public virtual double DistanceTo(VPoint point)
+    public virtual double DistanceTo(VXYZ point)
     {
         // Default implementation uses bounding box center
         var bounds = GetBounds();
@@ -379,7 +380,7 @@ public abstract class Shape : IDrawable
     /// <summary>
     /// Checks if a point is inside this shape (for filled shapes).
     /// </summary>
-    public virtual bool Contains(VPoint point)
+    public virtual bool Contains(VXYZ point)
     {
         // Default implementation checks bounding box
         var bounds = GetBounds();

@@ -7,22 +7,22 @@ namespace C2VGeometry;
 public class VRay : Shape, ICurve
 {
     /// <summary>Gets or sets the origin point where the ray starts.</summary>
-    public VPoint Origin { get; set; }
+    public VXYZ Origin { get; set; }
 
     /// <summary>Gets or sets the direction vector of the ray (will be normalized).</summary>
     public VXYZ Direction { get; set; }
 
     /// <summary>Gets the start point of the ray (same as Origin).</summary>
-    public VPoint StartPoint => Origin;
+    public VXYZ StartPoint => Origin;
 
     /// <summary>Gets the end point (for rendering, returns a point far in the direction).</summary>
-    public VPoint EndPoint => GetPointAtDistance(RenderExtent);
+    public VXYZ EndPoint => GetPointAtDistance(RenderExtent);
 
     /// <summary>A ray is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
     /// <summary>Gets the origin as the only vertex.</summary>
-    public List<VPoint> Vertices => new List<VPoint> { Origin };
+    public List<VXYZ> Vertices => new List<VXYZ> { Origin };
 
     /// <summary>
     /// The extent used for rendering and bounds calculation.
@@ -35,7 +35,7 @@ public class VRay : Shape, ICurve
     /// </summary>
     /// <param name="origin">The starting point of the ray.</param>
     /// <param name="direction">The direction the ray extends (will be normalized).</param>
-    public VRay(VPoint origin, VXYZ direction)
+    public VRay(VXYZ origin, VXYZ direction)
     {
         Origin = origin;
         Direction = direction.Normalize();
@@ -43,52 +43,39 @@ public class VRay : Shape, ICurve
     }
 
     /// <summary>
-    /// Creates a ray starting at the first point and passing through the second point.
-    /// </summary>
-    /// <param name="origin">The starting point of the ray.</param>
-    /// <param name="throughPoint">A point the ray passes through.</param>
-    public VRay(VPoint origin, VPoint throughPoint)
-    {
-        Origin = origin;
-        var dir = throughPoint.AsVXYZ() - origin.AsVXYZ();
-        Direction = dir.Normalize();
-        Color = "Gray";
-    }
-
-    /// <summary>
     /// Creates a ray using coordinates.
     /// </summary>
     public VRay(double originX, double originY, double throughX, double throughY)
-        : this(VPoint.Internal(originX, originY), VPoint.Internal(throughX, throughY))
+        : this(new VXYZ(originX, originY), new VXYZ(throughX - originX, throughY - originY))
     {
     }
 
     /// <summary>
     /// Creates a horizontal ray pointing right from the specified point.
     /// </summary>
-    public static VRay HorizontalRight(VPoint origin) => new VRay(origin, VXYZ.BasisX);
+    public static VRay HorizontalRight(VXYZ origin) => new VRay(origin, VXYZ.BasisX);
 
     /// <summary>
     /// Creates a horizontal ray pointing left from the specified point.
     /// </summary>
-    public static VRay HorizontalLeft(VPoint origin) => new VRay(origin, VXYZ.BasisX * -1);
+    public static VRay HorizontalLeft(VXYZ origin) => new VRay(origin, VXYZ.BasisX * -1);
 
     /// <summary>
     /// Creates a vertical ray pointing up from the specified point.
     /// </summary>
-    public static VRay VerticalUp(VPoint origin) => new VRay(origin, VXYZ.BasisY);
+    public static VRay VerticalUp(VXYZ origin) => new VRay(origin, VXYZ.BasisY);
 
     /// <summary>
     /// Creates a vertical ray pointing down from the specified point.
     /// </summary>
-    public static VRay VerticalDown(VPoint origin) => new VRay(origin, VXYZ.BasisY * -1);
+    public static VRay VerticalDown(VXYZ origin) => new VRay(origin, VXYZ.BasisY * -1);
 
     /// <summary>
     /// Creates a ray at a specified angle from the origin.
     /// </summary>
     /// <param name="origin">The starting point of the ray.</param>
     /// <param name="angleDegrees">The angle in degrees (0 = positive X axis, counter-clockwise).</param>
-    public static VRay AtAngle(VPoint origin, double angleDegrees)
+    public static VRay AtAngle(VXYZ origin, double angleDegrees)
     {
         double radians = angleDegrees * Math.PI / 180.0;
         var direction = new VXYZ(Math.Cos(radians), Math.Sin(radians), 0);
@@ -98,16 +85,16 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Gets a point on the ray at the specified distance from origin.
     /// </summary>
-    public VPoint GetPointAtDistance(double distance)
+    public VXYZ GetPointAtDistance(double distance)
     {
-        return (Origin.AsVXYZ() + Direction * distance).AsVPoint();
+        return Origin + Direction * distance;
     }
 
     /// <summary>
     /// Returns a point on the ray at the given normalized parameter.
     /// Parameter 0 is at Origin, parameter 1 is at RenderExtent distance.
     /// </summary>
-    public VPoint PointAtParameter(double parameter)
+    public VXYZ PointAtParameter(double parameter)
     {
         return GetPointAtDistance(parameter * RenderExtent);
     }
@@ -124,12 +111,12 @@ public class VRay : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        Origin.Move(vector);
+        Origin = Origin + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Origin.Rotate(pivot, angleDegrees);
+        Origin = GeometryHelper.RotatePoint(Origin, pivot, angleDegrees);
         // Rotate direction vector
         double radians = angleDegrees * Math.PI / 180.0;
         double cos = Math.Cos(radians);
@@ -141,7 +128,7 @@ public class VRay : Shape, ICurve
 
     public override void Flip(VLine mirrorLine)
     {
-        Origin.Flip(mirrorLine);
+        Origin = GeometryHelper.FlipPoint(Origin, mirrorLine);
         // Reflect direction across the mirror line
         var mirrorDir = mirrorLine.Direction;
         double dot = Direction.X * mirrorDir.X + Direction.Y * mirrorDir.Y;
@@ -150,9 +137,9 @@ public class VRay : Shape, ICurve
         Direction = new VXYZ(newX, newY, 0).Normalize();
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Origin.Scale(center, factor);
+        Origin = GeometryHelper.ScalePoint(Origin, center, factor);
         // Direction remains unchanged for ray scaling
     }
 
@@ -161,8 +148,8 @@ public class VRay : Shape, ICurve
         var p1 = StartPoint;
         var p2 = EndPoint;
         return new BoundingBox(
-            VPoint.Internal(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y)),
-            VPoint.Internal(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y))
+            new VXYZ(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y)),
+            new VXYZ(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y))
         );
     }
 
@@ -175,22 +162,22 @@ public class VRay : Shape, ICurve
     /// Projects a point onto the ray.
     /// If the projection falls behind the origin, returns the origin.
     /// </summary>
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
         var v = Direction;
-        var u = point.AsVXYZ() - Origin.AsVXYZ();
+        var u = point - Origin;
         var t = u.DotProduct(v) / v.DotProduct(v);
 
         // Ray only extends in positive direction
         if (t < 0) return Origin;
 
-        return (Origin.AsVXYZ() + v * t).AsVPoint();
+        return Origin + v * t;
     }
 
     /// <summary>
     /// Returns the normal vector at any point (constant for a ray).
     /// </summary>
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         return new VXYZ(Direction.Y, -Direction.X, 0).Normalize();
     }
@@ -198,10 +185,10 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Returns a point at the specified distance from Origin along the direction.
     /// </summary>
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
         if (segmentLength < 0) return Origin;
-        return (Origin.AsVXYZ() + Direction * segmentLength).AsVPoint();
+        return Origin + Direction * segmentLength;
     }
 
     /// <summary>
@@ -211,7 +198,7 @@ public class VRay : Shape, ICurve
     {
         var normal = NormalAtPoint(Origin);
         var offsetVector = normal * distance;
-        var clone = new VRay((Origin.AsVXYZ() + offsetVector).AsVPoint(), Direction);
+        var clone = new VRay(Origin + offsetVector, Direction);
         clone.RenderExtent = RenderExtent;
         return clone;
     }
@@ -229,9 +216,9 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Divides the rendered portion of the ray into equal segments.
     /// </summary>
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (numberOfSegments <= 0) return points;
 
         for (int i = 0; i <= numberOfSegments; i++)
@@ -245,9 +232,9 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Returns points at fixed intervals starting from Origin.
     /// </summary>
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (segmentLength <= 1e-9) return points;
 
         for (double d = 0; d <= RenderExtent; d += segmentLength)
@@ -261,21 +248,21 @@ public class VRay : Shape, ICurve
     /// Returns points at chord length from a given point (on the ray).
     /// Only returns points that are on the ray (distance >= 0 from origin).
     /// </summary>
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
         var projected = Project(point);
-        var distFromOrigin = (projected.AsVXYZ() - Origin.AsVXYZ()).DotProduct(Direction);
+        var distFromOrigin = (projected - Origin).DotProduct(Direction);
 
-        var results = new List<VPoint>();
+        var results = new List<VXYZ>();
 
         // Point in positive direction
-        results.Add((projected.AsVXYZ() + Direction * chordLength).AsVPoint());
+        results.Add(projected + Direction * chordLength);
 
         // Point in negative direction (only if it's still on the ray)
         double negDist = distFromOrigin - chordLength;
         if (negDist >= 0)
         {
-            results.Add((projected.AsVXYZ() - Direction * chordLength).AsVPoint());
+            results.Add(projected - Direction * chordLength);
         }
 
         return results;
@@ -284,13 +271,13 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Splits the ray at a point, returning a line segment and a ray.
     /// </summary>
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
         var splitPoint = Project(point);
         // First part is a line from Origin to splitPoint
-        var line = new VLine((VPoint)Origin.Clone(), (VPoint)splitPoint.Clone());
+        var line = new VLine(Origin.Clone(), splitPoint.Clone());
         // Second part is a ray from splitPoint in the same direction
-        var ray = new VRay((VPoint)splitPoint.Clone(), Direction);
+        var ray = new VRay(splitPoint.Clone(), Direction);
         return (line, ray);
     }
 
@@ -321,7 +308,7 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Checks if a point is on the ray (within tolerance).
     /// </summary>
-    public bool ContainsPoint(VPoint point)
+    public bool ContainsPoint(VXYZ point)
     {
         var projected = Project(point);
         return projected.DistanceTo(point) < GeometryTolerance.Epsilon;
@@ -332,7 +319,7 @@ public class VRay : Shape, ICurve
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the ray to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point)
+    public double ParameterAtPoint(VXYZ point)
     {
         double dx = Direction.X;
         double dy = Direction.Y;

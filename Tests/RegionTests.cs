@@ -15,10 +15,10 @@ public class RegionTests
     /// </summary>
     private static Region MakeRectRegion(double x, double y, double w, double h)
     {
-        var p0 = VPoint.Internal(x, y);
-        var p1 = VPoint.Internal(x + w, y);
-        var p2 = VPoint.Internal(x + w, y + h);
-        var p3 = VPoint.Internal(x, y + h);
+        var p0 = new VXYZ(x, y);
+        var p1 = new VXYZ(x + w, y);
+        var p2 = new VXYZ(x + w, y + h);
+        var p3 = new VXYZ(x, y + h);
 
         var curves = new List<ICurve>
         {
@@ -47,9 +47,9 @@ public class RegionTests
     [Fact]
     public void Constructor_TriangleFromLines_CreatesRegionWithThreeCurves()
     {
-        var p0 = VPoint.Internal(0, 0);
-        var p1 = VPoint.Internal(4, 0);
-        var p2 = VPoint.Internal(2, 3);
+        var p0 = new VXYZ(0, 0);
+        var p1 = new VXYZ(4, 0);
+        var p2 = new VXYZ(2, 3);
 
         var curves = new List<ICurve>
         {
@@ -67,8 +67,8 @@ public class RegionTests
     public void Constructor_MixedLinesAndArc_CreatesRegion()
     {
         // Create a D-shape: straight left side + arc on the right
-        var p0 = VPoint.Internal(0, 0);
-        var p1 = VPoint.Internal(0, 4);
+        var p0 = new VXYZ(0, 0);
+        var p1 = new VXYZ(0, 4);
 
         // Arc from p1 to p0 (right side)
         var arc = VArc.FromStartEndRadius(p1, p0, 3, false);
@@ -87,10 +87,10 @@ public class RegionTests
     [Fact]
     public void Constructor_UnorderedCurves_OrdersAutomatically()
     {
-        var p0 = VPoint.Internal(0, 0);
-        var p1 = VPoint.Internal(4, 0);
-        var p2 = VPoint.Internal(4, 3);
-        var p3 = VPoint.Internal(0, 3);
+        var p0 = new VXYZ(0, 0);
+        var p1 = new VXYZ(4, 0);
+        var p2 = new VXYZ(4, 3);
+        var p3 = new VXYZ(0, 3);
 
         // Provide curves out of order
         var curves = new List<ICurve>
@@ -111,8 +111,8 @@ public class RegionTests
     {
         var curves = new List<ICurve>
         {
-            new VLine(VPoint.Internal(0, 0), VPoint.Internal(1, 0)),
-            new VLine(VPoint.Internal(5, 5), VPoint.Internal(6, 5))
+            new VLine(new VXYZ(0, 0), new VXYZ(1, 0)),
+            new VLine(new VXYZ(5, 5), new VXYZ(6, 5))
         };
 
         Assert.Throws<ArgumentException>(() => new Region(curves));
@@ -122,7 +122,7 @@ public class RegionTests
     public void Constructor_ClosedCurve_ThrowsArgumentException()
     {
         // A full circle is a closed curve — not accepted
-        var circle = new VCircle(VPoint.Internal(0, 0), 5);
+        var circle = new VCircle(new VXYZ(0, 0), 5);
         var curves = new List<ICurve> { circle };
 
         Assert.Throws<ArgumentException>(() => new Region(curves));
@@ -134,7 +134,7 @@ public class RegionTests
         // Need at least 2 curves to form a loop
         var curves = new List<ICurve>
         {
-            new VLine(VPoint.Internal(0, 0), VPoint.Internal(4, 0))
+            new VLine(new VXYZ(0, 0), new VXYZ(4, 0))
         };
 
         Assert.Throws<ArgumentException>(() => new Region(curves));
@@ -158,10 +158,10 @@ public class RegionTests
         var outer = MakeRectRegion(0, 0, 10, 10);
 
         // Add a 2x2 hole inside
-        var p0 = VPoint.Internal(3, 3);
-        var p1 = VPoint.Internal(5, 3);
-        var p2 = VPoint.Internal(5, 5);
-        var p3 = VPoint.Internal(3, 5);
+        var p0 = new VXYZ(3, 3);
+        var p1 = new VXYZ(5, 3);
+        var p2 = new VXYZ(5, 5);
+        var p3 = new VXYZ(3, 5);
         var holeCurves = new List<ICurve>
         {
             new VLine(p0, p1),
@@ -185,7 +185,7 @@ public class RegionTests
     {
         var region = MakeRectRegion(0, 0, 4, 3);
 
-        Assert.True(region.Contains(VPoint.Internal(2, 1.5)));
+        Assert.True(region.Contains(new VXYZ(2, 1.5)));
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public class RegionTests
     {
         var region = MakeRectRegion(0, 0, 4, 3);
 
-        Assert.False(region.Contains(VPoint.Internal(5, 5)));
+        Assert.False(region.Contains(new VXYZ(5, 5)));
     }
 
     [Fact]
@@ -201,10 +201,10 @@ public class RegionTests
     {
         var outer = MakeRectRegion(0, 0, 10, 10);
 
-        var p0 = VPoint.Internal(3, 3);
-        var p1 = VPoint.Internal(7, 3);
-        var p2 = VPoint.Internal(7, 7);
-        var p3 = VPoint.Internal(3, 7);
+        var p0 = new VXYZ(3, 3);
+        var p1 = new VXYZ(7, 3);
+        var p2 = new VXYZ(7, 7);
+        var p3 = new VXYZ(3, 7);
         outer.AddHole(new List<ICurve>
         {
             new VLine(p0, p1),
@@ -214,9 +214,9 @@ public class RegionTests
         });
 
         // Point in hole
-        Assert.False(outer.Contains(VPoint.Internal(5, 5)));
+        Assert.False(outer.Contains(new VXYZ(5, 5)));
         // Point in outer but outside hole
-        Assert.True(outer.Contains(VPoint.Internal(1, 1)));
+        Assert.True(outer.Contains(new VXYZ(1, 1)));
     }
 
     #endregion
@@ -238,10 +238,10 @@ public class RegionTests
     public void FromPolygon_RoundTrips_SameArea()
     {
         var originalPoly = new VPolygon(
-            VPoint.Internal(0, 0),
-            VPoint.Internal(4, 0),
-            VPoint.Internal(4, 3),
-            VPoint.Internal(0, 3)
+            new VXYZ(0, 0),
+            new VXYZ(4, 0),
+            new VXYZ(4, 3),
+            new VXYZ(0, 3)
         );
 
         var region = Region.FromPolygon(originalPoly);
@@ -277,8 +277,8 @@ public class RegionTests
         Assert.Equal(12.0, region.Area, precision: 1);
 
         // Center should be at (7, 6.5) roughly
-        Assert.True(region.Contains(VPoint.Internal(7, 6.5)));
-        Assert.False(region.Contains(VPoint.Internal(0, 0)));
+        Assert.True(region.Contains(new VXYZ(7, 6.5)));
+        Assert.False(region.Contains(new VXYZ(0, 0)));
     }
 
     #endregion

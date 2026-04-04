@@ -9,7 +9,7 @@ namespace C2VGeometry;
 /// </summary>
 internal class ClipVertex
 {
-    public VPoint Point { get; set; }
+    public VXYZ Point { get; set; }
     public bool IsIntersection { get; set; }
     public bool IsEntry { get; set; }
     public ClipVertex? Neighbor { get; set; }
@@ -18,7 +18,7 @@ internal class ClipVertex
     public bool Visited { get; set; }
     public double Alpha { get; set; } // Parameter along edge (0-1) for sorting intersections
 
-    public ClipVertex(VPoint point, bool isIntersection = false)
+    public ClipVertex(VXYZ point, bool isIntersection = false)
     {
         Point = point;
         IsIntersection = isIntersection;
@@ -71,7 +71,7 @@ internal static class PolygonClipper
         }
 
         // Build augmented point list with intersection points inserted
-        var augmented = new List<(VPoint point, bool isIntersection, int intersectionIdx, int originalEdge)>();
+        var augmented = new List<(VXYZ point, bool isIntersection, int intersectionIdx, int originalEdge)>();
 
         // Sort intersections by edge index, then by alpha
         var sortedIntersections = intersections
@@ -123,7 +123,7 @@ internal static class PolygonClipper
             if (!augmented[startIdx].isIntersection || visited.Contains(startIdx))
                 continue;
 
-            var polyPoints = new List<VPoint>();
+            var polyPoints = new List<VXYZ>();
             int currentIdx = startIdx;
             int iterations = 0;
             int maxIterations = augmented.Count * 2;
@@ -133,7 +133,7 @@ internal static class PolygonClipper
                 if (iterations++ > maxIterations)
                     break;
 
-                polyPoints.Add(VPoint.Internal(augmented[currentIdx].point.X, augmented[currentIdx].point.Y));
+                polyPoints.Add(new VXYZ(augmented[currentIdx].point.X, augmented[currentIdx].point.Y));
 
                 if (augmented[currentIdx].isIntersection)
                 {
@@ -183,9 +183,9 @@ internal static class PolygonClipper
         return result;
     }
 
-    private static List<VPoint> CleanupPoints(List<VPoint> points)
+    private static List<VXYZ> CleanupPoints(List<VXYZ> points)
     {
-        var cleaned = new List<VPoint>();
+        var cleaned = new List<VXYZ>();
         for (int i = 0; i < points.Count; i++)
         {
             if (cleaned.Count == 0 || !GeometryTolerance.PointsAreEqual(points[i], cleaned[^1]))
@@ -419,7 +419,7 @@ internal static class PolygonClipper
                  a.Max.Y < b.Min.Y - Epsilon || b.Max.Y < a.Min.Y - Epsilon);
     }
 
-    private static bool AllPointsInsidePolygon(List<VPoint> points, VPolygon polygon)
+    private static bool AllPointsInsidePolygon(List<VXYZ> points, VPolygon polygon)
     {
         foreach (var point in points)
         {
@@ -457,7 +457,7 @@ internal static class PolygonClipper
         return false;
     }
 
-    private static ClipVertex BuildVertexList(List<VPoint> points)
+    private static ClipVertex BuildVertexList(List<VXYZ> points)
     {
         if (points.Count == 0)
             throw new ArgumentException("Polygon must have at least one point");
@@ -501,7 +501,7 @@ internal static class PolygonClipper
                     // Create intersection point
                     double ix = subjectCurrent.Point.X + alphaS * (subjectNext.Point.X - subjectCurrent.Point.X);
                     double iy = subjectCurrent.Point.Y + alphaS * (subjectNext.Point.Y - subjectCurrent.Point.Y);
-                    var intersectionPoint = VPoint.Internal(ix, iy);
+                    var intersectionPoint = new VXYZ(ix, iy);
 
                     // Create intersection vertices for both lists
                     var subjectIntersection = new ClipVertex(intersectionPoint, true) { Alpha = alphaS };
@@ -529,7 +529,7 @@ internal static class PolygonClipper
         return count;
     }
 
-    private static bool EdgesIntersect(VPoint p1, VPoint p2, VPoint p3, VPoint p4,
+    private static bool EdgesIntersect(VXYZ p1, VXYZ p2, VXYZ p3, VXYZ p4,
                                         out double alphaS, out double alphaC)
     {
         alphaS = 0;
@@ -574,7 +574,7 @@ internal static class PolygonClipper
         current.Next = intersection;
     }
 
-    private static void MarkEntryExitPoints(ClipVertex start, List<VPoint> otherPolygon)
+    private static void MarkEntryExitPoints(ClipVertex start, List<VXYZ> otherPolygon)
     {
         var current = start;
 
@@ -649,7 +649,7 @@ internal static class PolygonClipper
 
     private static VPolygon? TracePolygon(ClipVertex start, ClipOperation operation)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         var current = start;
         bool onSubject = true;
 
@@ -664,7 +664,7 @@ internal static class PolygonClipper
                 return null;
             }
 
-            points.Add(VPoint.Internal(current.Point.X, current.Point.Y));
+            points.Add(new VXYZ(current.Point.X, current.Point.Y));
             current.Visited = true;
 
             if (current.IsIntersection)
@@ -711,7 +711,7 @@ internal static class PolygonClipper
             return null;
 
         // Remove duplicate consecutive points
-        var cleanedPoints = new List<VPoint>();
+        var cleanedPoints = new List<VXYZ>();
         for (int i = 0; i < points.Count; i++)
         {
             if (cleanedPoints.Count == 0 ||
@@ -737,7 +737,7 @@ internal static class PolygonClipper
     /// <summary>
     /// Tests if a point is inside a polygon using the ray casting algorithm.
     /// </summary>
-    public static bool PointInPolygonTest(VPoint point, List<VPoint> polygon)
+    public static bool PointInPolygonTest(VXYZ point, List<VXYZ> polygon)
     {
         if (polygon.Count < 3)
             return false;
@@ -765,7 +765,7 @@ internal static class PolygonClipper
         return inside;
     }
 
-    private static bool IsPointOnEdge(VPoint point, VPoint edgeStart, VPoint edgeEnd)
+    private static bool IsPointOnEdge(VXYZ point, VXYZ edgeStart, VXYZ edgeEnd)
     {
         // Check if point is collinear with edge
         double cross = (point.X - edgeStart.X) * (edgeEnd.Y - edgeStart.Y) -

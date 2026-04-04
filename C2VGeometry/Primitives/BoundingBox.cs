@@ -11,19 +11,19 @@ public class BoundingBox
     /// <summary>
     /// The minimum corner point (lower-left) of the bounding box.
     /// </summary>
-    public VPoint Min { get; }
+    public VXYZ Min { get; }
 
     /// <summary>
     /// The maximum corner point (upper-right) of the bounding box.
     /// </summary>
-    public VPoint Max { get; }
+    public VXYZ Max { get; }
 
     /// <summary>
     /// Creates a new bounding box from minimum and maximum corner points.
     /// </summary>
     /// <param name="min">The minimum corner point (lower-left).</param>
     /// <param name="max">The maximum corner point (upper-right).</param>
-    public BoundingBox(VPoint min, VPoint max)
+    public BoundingBox(VXYZ min, VXYZ max)
     {
         Min = min;
         Max = max;
@@ -42,7 +42,7 @@ public class BoundingBox
     /// <summary>
     /// Gets the center point of the bounding box.
     /// </summary>
-    public VPoint Center => VPoint.Internal((Min.X + Max.X) / 2, (Min.Y + Max.Y) / 2);
+    public VXYZ Center => new VXYZ((Min.X + Max.X) / 2, (Min.Y + Max.Y) / 2);
 
     /// <summary>
     /// Gets the area of the bounding box.
@@ -54,7 +54,7 @@ public class BoundingBox
     /// </summary>
     /// <param name="point">The point to check.</param>
     /// <returns>True if the point is inside or on the boundary of the bounding box.</returns>
-    public bool Contains(VPoint point)
+    public bool Contains(VXYZ point)
     {
         return point.X >= Min.X && point.X <= Max.X &&
                point.Y >= Min.Y && point.Y <= Max.Y;
@@ -79,8 +79,8 @@ public class BoundingBox
     public BoundingBox Union(BoundingBox other)
     {
         return new BoundingBox(
-            VPoint.Internal(Math.Min(Min.X, other.Min.X), Math.Min(Min.Y, other.Min.Y)),
-            VPoint.Internal(Math.Max(Max.X, other.Max.X), Math.Max(Max.Y, other.Max.Y))
+            new VXYZ(Math.Min(Min.X, other.Min.X), Math.Min(Min.Y, other.Min.Y)),
+            new VXYZ(Math.Max(Max.X, other.Max.X), Math.Max(Max.Y, other.Max.Y))
         );
     }
 
@@ -92,15 +92,15 @@ public class BoundingBox
     public BoundingBox Expand(double distance)
     {
         return new BoundingBox(
-            VPoint.Internal(Min.X - distance, Min.Y - distance),
-            VPoint.Internal(Max.X + distance, Max.Y + distance)
+            new VXYZ(Min.X - distance, Min.Y - distance),
+            new VXYZ(Max.X + distance, Max.Y + distance)
         );
     }
 
     /// <summary>
     /// Deconstructs the bounding box into min and max points for tuple-style access.
     /// </summary>
-    public void Deconstruct(out VPoint min, out VPoint max)
+    public void Deconstruct(out VXYZ min, out VXYZ max)
     {
         min = Min;
         max = Max;

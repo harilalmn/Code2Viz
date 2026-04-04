@@ -63,37 +63,66 @@ using Code2Viz.Animation;
 
 ## Shapes
 
-### VPoint
+### VXYZ (Coordinate Type)
+VXYZ is the coordinate type used for all positions, vectors, and parameters (similar to Revit's XYZ). VPoint is a separate drawable shape (visible marker on canvas).
+
+```csharp
+new VXYZ(x, y);        // Z defaults to 0
+new VXYZ(x, y, z);     // explicit Z
+VXYZ.Zero;              // (0, 0, 0)
+VXYZ.BasisX;            // (1, 0, 0)
+VXYZ.BasisY;            // (0, 1, 0)
+// Properties: X, Y, Z
+// Operators: +, -, *, /, unary -, ==, !=
+```
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `GetLength()` | double | Magnitude |
+| `Normalize()` | VXYZ | Unit vector |
+| `DotProduct(other)` | double | Dot product |
+| `CrossProduct(other)` | VXYZ | Cross product |
+| `AngleTo(other)` | double | Angle in radians |
+| `DistanceTo(other)` | double | Distance |
+| `AsVPoint()` | VPoint | Convert to drawable VPoint (drops Z) |
+| `Rotate(angleDeg)` | VXYZ | Rotate around Z-axis by angle in degrees |
+| `IsZeroLength()` | bool | Check if zero |
+| `IsUnitLength()` | bool | Check if unit length |
+
+### VPoint (Drawable Point Marker)
+VPoint is a visible point marker drawn on the canvas. For coordinates and vectors, use VXYZ instead.
+
 ```csharp
 new VPoint(x, y);
+// Properties: X, Y (read-only position)
+// Methods: DistanceTo(VPoint other), AsVXYZ()
+// No arithmetic operators — use VXYZ for math
 ```
-Methods: `DistanceTo(VPoint other)`, `AsVXYZ()`, `Add(VPoint)`, `Add(VXYZ)`
-Operators: `+`, `-`, `*`, `/` (with VPoint, VXYZ, or double)
 
 ### VLine
 ```csharp
 new VLine(x1, y1, x2, y2);
-new VLine(startPoint, endPoint);
-new VLine(startPoint, angleInDegrees, length);  // from point + angle + length
-// Properties: Start, End, MidPoint, Direction (VXYZ)
+new VLine(VXYZ start, VXYZ end);
+new VLine(VXYZ startPoint, angleInDegrees, length);  // from point + angle + length
+// Properties: Start, End, MidPoint, Direction (all VXYZ)
 ```
 
 ### VCircle
 ```csharp
 new VCircle(centerX, centerY, radius);
-new VCircle(center, radius);                       // VPoint center
-new VCircle(p1, p2, p3);                           // circumcircle through 3 points
-VCircle.FromCenterDiameter(center, diameter);      // from center + diameter
-VCircle.FromCenterDiameter(cx, cy, diameter);      // from coordinates + diameter
-VCircle.FromTwoPoints(p1, p2);                     // circle with p1,p2 as diameter endpoints
-// Properties: Center, Radius, Area, Circumference
+new VCircle(VXYZ center, radius);                      // VXYZ center
+new VCircle(VXYZ p1, VXYZ p2, VXYZ p3);               // circumcircle through 3 points
+VCircle.FromCenterDiameter(VXYZ center, diameter);     // from center + diameter
+VCircle.FromCenterDiameter(cx, cy, diameter);          // from coordinates + diameter
+VCircle.FromTwoPoints(VXYZ p1, VXYZ p2);              // circle with p1,p2 as diameter endpoints
+// Properties: Center (VXYZ), Radius, Area, Circumference
 ```
 
 ### VArc
 ```csharp
 new VArc(centerX, centerY, radius, startAngleDeg, endAngleDeg);
-new VArc(center, radius, startAngleDeg, endAngleDeg);  // VPoint center
-new VArc(start, mid, end);                              // arc through 3 points
+new VArc(VXYZ center, radius, startAngleDeg, endAngleDeg);  // VXYZ center
+new VArc(VXYZ start, VXYZ mid, VXYZ end);                   // arc through 3 points
 // Counter-clockwise from start to end
 
 // Factory methods
@@ -117,25 +146,25 @@ new VRectangle(x1, y1, x2, y2, fromCorners: true); // from two corners
 ### VEllipse
 ```csharp
 new VEllipse(centerX, centerY, radiusX, radiusY);
-new VEllipse(center, radiusX, radiusY);                           // VPoint center
-new VEllipse(center, radiusX, radiusY, startAngle, endAngle);    // partial ellipse (angles in degrees)
-// Properties: Center, RadiusX, RadiusY, StartAngle (default 0), EndAngle (default 360), Area, Circumference
+new VEllipse(VXYZ center, radiusX, radiusY);                      // VXYZ center
+new VEllipse(VXYZ center, radiusX, radiusY, startAngle, endAngle);  // partial ellipse (angles in degrees)
+// Properties: Center (VXYZ), RadiusX, RadiusY, StartAngle (default 0), EndAngle (default 360), Area, Circumference
 ```
 
 ### VPolygon
 ```csharp
-new VPolygon(new VPoint(0,100), new VPoint(95,31), new VPoint(59,-81), new VPoint(-59,-81), new VPoint(-95,31));
-new VPolygon(listOfPoints);
-new VPolygon(listOfCurves);  // from ordered curves forming closed loop
+new VPolygon(new VXYZ(0,100), new VXYZ(95,31), new VXYZ(59,-81), new VXYZ(-59,-81), new VXYZ(-95,31));
+new VPolygon(List<VXYZ> points);
+new VPolygon(List<ICurve> curves);  // from ordered curves forming closed loop
 // Auto-closes
-// Properties: Points, Area, SignedArea (positive=CCW, negative=CW)
-// Methods: AddPoint(point), AddPoint(x, y)
+// Properties: Points (List<VXYZ>), Area, SignedArea (positive=CCW, negative=CW)
+// Methods: AddPoint(VXYZ point), AddPoint(x, y)
 // Slice: polygon.Slice(point1, point2) / polygon.Slice(xline) / polygon.Slice(ray) — returns List<VPolygon>
 ```
 
 ### VPolyline
 ```csharp
-new VPolyline(new VPoint(0,0), new VPoint(50,50), new VPoint(100,0));
+new VPolyline(new VXYZ(0,0), new VXYZ(50,50), new VXYZ(100,0));
 // Open path
 ```
 
@@ -146,7 +175,7 @@ new VBezier(x1,y1, cx1,cy1, cx2,cy2, x2,y2);
 
 ### VSpline
 ```csharp
-new VSpline(new VPoint(0,0), new VPoint(50,80), new VPoint(100,0), new VPoint(150,80));
+new VSpline(new VXYZ(0,0), new VXYZ(50,80), new VXYZ(100,0), new VXYZ(150,80));
 // Catmull-Rom through all points
 // Properties: ControlPoints, SegmentsPerSpan (default 16), Tension (default 0.5, range 0=sharp to 1=loose)
 ```
@@ -186,7 +215,7 @@ new VArrow(startPoint, direction, length);  // from point + direction vector + l
 | HeadLength | double | 15 | Arrowhead length |
 | HeadAngle | double | 30 | Arrowhead angle (degrees) |
 | DoubleEnded | bool | false | Arrowhead at both ends |
-| MidPoint | VPoint | | Midpoint (read-only) |
+| MidPoint | VXYZ | | Midpoint (read-only) |
 
 ### VGroup
 ```csharp
@@ -203,7 +232,7 @@ var g = new VGroup(); // empty, then add
 | `RemoveAt(index)` | void | Remove by index |
 | `Clear()` | void | Remove all |
 | `ContainsShape(shape)` | bool | Check containment |
-| `GetCenter()` | VPoint | Group center |
+| `GetCenter()` | VXYZ | Group center |
 | `GetShapesOfType<T>()` | IEnumerable\<T\> | Filter by type |
 | `Flatten()` | List\<Shape\> | Flatten nested groups |
 | `ForEach(action)` | VGroup | Apply action (fluent) |
@@ -218,7 +247,9 @@ Properties: `Shapes` (List\<Shape\>), `Count` (int), indexer `[int]`
 
 ### VGrid
 ```csharp
-new VGrid(new VPoint(0,0), xCount: 5, yCount: 5, xSpacing: 20, ySpacing: 20, centered: true);
+new VGrid(new VXYZ(0,0), xCount: 5, yCount: 5, xSpacing: 20, ySpacing: 20, centered: true);
+// Location property is VXYZ, but grid creates VPoint shapes (drawable markers)
+// Properties: Points (List<VPoint>), Location (VXYZ)
 ```
 
 ### VDimension
@@ -253,12 +284,12 @@ new VDimension(point1, point2);
 ```csharp
 new VRadialDimension(circle);          // from VCircle
 new VRadialDimension(arc);             // from VArc
-new VRadialDimension(center, radius);  // from VPoint + radius
+new VRadialDimension(VXYZ center, radius);  // from VXYZ + radius
 ```
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| Center | VPoint | | Center of circle/arc |
+| Center | VXYZ | | Center of circle/arc |
 | Radius | double | | Radius of circle/arc |
 | LeaderAngle | double | 45 | Angle of leader line (degrees) |
 | ShowDiameter | bool | false | Show diameter instead of radius |
@@ -276,8 +307,8 @@ new VRadialDimension(center, radius);  // from VPoint + radius
 
 ### VXLine (infinite construction line)
 ```csharp
-new VXLine(basePoint, direction);       // VPoint + VXYZ direction
-new VXLine(point1, point2);            // through two VPoints
+new VXLine(VXYZ basePoint, VXYZ direction);  // VXYZ + VXYZ direction
+new VXLine(VXYZ point1, VXYZ point2);      // through two VXYZ points
 new VXLine(x1, y1, x2, y2);           // through two coordinate pairs
 VXLine.Horizontal(y);                  // horizontal through y
 VXLine.Vertical(x);                    // vertical through x
@@ -285,15 +316,15 @@ VXLine.Vertical(x);                    // vertical through x
 
 ### VRay (semi-infinite ray)
 ```csharp
-new VRay(origin, direction);            // VPoint origin + VXYZ direction
-new VRay(origin, throughPoint);         // VPoint origin + VPoint it passes through
+new VRay(VXYZ origin, VXYZ direction);      // VXYZ origin + VXYZ direction
+new VRay(VXYZ origin, VXYZ throughPoint);  // VXYZ origin + VXYZ it passes through
 new VRay(ox, oy, tx, ty);              // coordinates for origin and through-point
-VRay.AtAngle(origin, angleDeg);        // ray from VPoint origin at angle
-VRay.HorizontalRight(origin);          // ray pointing right
-VRay.HorizontalLeft(origin);           // ray pointing left
-VRay.VerticalUp(origin);               // ray pointing up
-VRay.VerticalDown(origin);             // ray pointing down
-// Properties: Origin, Direction, RenderExtent (default 10000)
+VRay.AtAngle(VXYZ origin, angleDeg);   // ray from VXYZ origin at angle
+VRay.HorizontalRight(VXYZ origin);     // ray pointing right
+VRay.HorizontalLeft(VXYZ origin);      // ray pointing left
+VRay.VerticalUp(VXYZ origin);          // ray pointing up
+VRay.VerticalDown(VXYZ origin);        // ray pointing down
+// Properties: Origin (VXYZ), Direction (VXYZ), RenderExtent (default 10000)
 // Methods: GetPointAtDistance(distance), ContainsPoint(point), ToFiniteLine(), ToXLine()
 ```
 
@@ -303,10 +334,10 @@ A Region represents an enclosed 2D area bounded by curves (lines, arcs, beziers,
 ```csharp
 // From a list of curves forming a closed loop (auto-orders and validates)
 var region = new Region(new List<ICurve> {
-    new VLine(new VPoint(0, 0), new VPoint(10, 0)),
-    VArc.FromStartEndRadius(new VPoint(10, 0), new VPoint(10, 10), 5),
-    new VLine(new VPoint(10, 10), new VPoint(0, 10)),
-    new VLine(new VPoint(0, 10), new VPoint(0, 0))
+    new VLine(new VXYZ(0, 0), new VXYZ(10, 0)),
+    VArc.FromStartEndRadius(new VXYZ(10, 0), new VXYZ(10, 10), 5),
+    new VLine(new VXYZ(10, 10), new VXYZ(0, 10)),
+    new VLine(new VXYZ(0, 10), new VXYZ(0, 0))
 });
 
 // With holes
@@ -328,7 +359,7 @@ var regionFromPwh = Region.FromPolygonWithHoles(pwh);
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `AddHole(curves)` | void | Add a hole (list of curves forming closed loop) |
-| `Contains(point)` | bool | Point inside region (outside holes) |
+| `Contains(VXYZ point)` | bool | Point inside region (outside holes) |
 | `ToPolygon()` | VPolygon | Low-fidelity polygon (endpoints only) |
 | `ToPolygonHighRes(n)` | VPolygon | High-fidelity polygon (n segments/curve) |
 | `ToPolygonWithHoles(n)` | PolygonWithHoles | With holes, high-fidelity |
@@ -364,7 +395,7 @@ var hatch3 = new VHatch(rect, pattern, scale: 2.0);
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| Boundary | List\<VPoint\> | - | Closed boundary polygon points |
+| Boundary | List\<VXYZ\> | - | Closed boundary polygon points |
 | Pattern | HatchType | - | Hatch pattern definition |
 | PatternScale | double | 1.0 | Scale factor for the pattern |
 | PatternAngle | double | 0 | Additional rotation (degrees) |
@@ -373,7 +404,7 @@ var hatch3 = new VHatch(rect, pattern, scale: 2.0);
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `GenerateLines()` | List\<(VPoint,VPoint)\> | Generate clipped line segments |
+| `GenerateLines()` | List\<(VXYZ,VXYZ)\> | Generate clipped line segments |
 | `FromDefinition(poly, patString, scale, angle)` | VHatch | Create from .pat format string (static) |
 
 **Built-in patterns (BuiltInHatch enum)**: SOLID, ANGLE, ANSI31-ANSI38, AR_B816, AR_BRSTD, AR_CONC, AR_HBONE, AR_SAND, BOX, BRASS, BRICK, BRSTONE, CLAY, CORK, CROSS, DASH, DOTS, EARTH, ESCHER, GRASS, GRATE, HEX, HONEY, LINE, NET, NET3, SQUARE, STARS, STEEL, TRIANG, ZIGZAG, and more (73 total). Use `BuiltInHatches.GetAllNames()` to list all.
@@ -399,8 +430,8 @@ var hatch3 = new VHatch(rect, pattern, scale: 2.0);
 | Method | Description |
 |--------|-------------|
 | `Move(new VXYZ(dx, dy, 0))` | Translate by vector |
-| `Rotate(pivot, angleDeg)` | Rotate around a VPoint pivot |
-| `Scale(center, factor)` | Scale around a VPoint center |
+| `Rotate(VXYZ pivot, angleDeg)` | Rotate around a VXYZ pivot |
+| `Scale(VXYZ center, factor)` | Scale around a VXYZ center |
 | `Flip(mirrorLine)` | Mirror across a VLine |
 | `Clone()` | Deep copy (returns same type, no cast needed) |
 | `GetBounds()` | Returns `BoundingBox` with `Min`, `Max`, `Width`, `Height`, `Center`, `Area` |
@@ -409,8 +440,8 @@ var hatch3 = new VHatch(rect, pattern, scale: 2.0);
 | `Remove()` | Remove from canvas |
 | `BringAbove(otherShape)` | Move above another shape in draw order (renders on top) |
 | `SendBehind(otherShape)` | Move behind another shape in draw order (renders underneath) |
-| `Contains(point)` | Check if point is inside shape |
-| `DistanceTo(point)` | Distance from shape to point |
+| `Contains(VXYZ point)` | Check if point is inside shape |
+| `DistanceTo(VXYZ point)` | Distance from shape to point |
 | `DoesIntersect(other)` | Check intersection with another shape |
 | `Intersect(other)` | Get intersection shape (or null) |
 
@@ -420,10 +451,10 @@ shape.Move(new VXYZ(50, 0, 0));      // move right 50
 shape.Move(new VXYZ(0, 100, 0));     // move up 100
 
 // Rotate examples
-shape.Rotate(new VPoint(0, 0), 45);  // rotate 45 degrees around origin
+shape.Rotate(new VXYZ(0, 0), 45);   // rotate 45 degrees around origin
 
 // Scale examples
-shape.Scale(new VPoint(0, 0), 2.0);  // double size around origin
+shape.Scale(new VXYZ(0, 0), 2.0);   // double size around origin
 
 // Flip examples
 shape.Flip(new VLine(0, 0, 0, 100)); // flip across Y axis
@@ -431,11 +462,11 @@ shape.Flip(new VLine(0, 0, 100, 0)); // flip across X axis
 
 // GetBounds example
 BoundingBox bounds = shape.GetBounds();
-VPoint min = bounds.Min;      // lower-left corner
-VPoint max = bounds.Max;      // upper-right corner
+VXYZ min = bounds.Min;        // lower-left corner
+VXYZ max = bounds.Max;        // upper-right corner
 double w = bounds.Width;      // width
 double h = bounds.Height;     // height
-VPoint c = bounds.Center;     // center point
+VXYZ c = bounds.Center;       // center point
 ```
 
 ## BoundingBox
@@ -445,11 +476,11 @@ Returned by `GetBounds()` method on all shapes.
 ### Properties
 | Property | Type | Description |
 |----------|------|-------------|
-| Min | VPoint | Lower-left corner |
-| Max | VPoint | Upper-right corner |
+| Min | VXYZ | Lower-left corner |
+| Max | VXYZ | Upper-right corner |
 | Width | double | Max.X - Min.X |
 | Height | double | Max.Y - Min.Y |
-| Center | VPoint | Center point |
+| Center | VXYZ | Center point |
 | Area | double | Width * Height |
 
 ### Methods
@@ -462,7 +493,7 @@ Returned by `GetBounds()` method on all shapes.
 
 ```csharp
 BoundingBox bounds = circle.GetBounds();
-bool hit = bounds.Contains(new VPoint(10, 10));
+bool hit = bounds.Contains(new VXYZ(10, 10));
 BoundingBox combined = bounds.Union(otherBounds);
 var (min, max) = bounds;  // tuple deconstruction
 ```
@@ -474,32 +505,32 @@ Implemented by: VLine, VCircle, VArc, VEllipse, VPolyline, VPolygon, VBezier, VS
 ### Properties
 | Property | Type | Description |
 |----------|------|-------------|
-| StartPoint | VPoint | Start point of curve |
-| EndPoint | VPoint | End point (same as start for closed curves) |
-| Vertices | List\<VPoint\> | Key vertices/control points |
+| StartPoint | VXYZ | Start point of curve |
+| EndPoint | VXYZ | End point (same as start for closed curves) |
+| Vertices | List\<VXYZ\> | Key vertices/control points |
 | SelfIntersecting | bool | Whether curve self-intersects |
 
 ### Methods
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `GetLength()` | double | Total arc length |
-| `Divide(n)` | List\<VPoint\> | Divide into n equal segments |
-| `Measure(segmentLength)` | List\<VPoint\> | Points at fixed distance intervals |
-| `PointAtSegmentLength(len)` | VPoint | Point at distance along curve |
-| `PointAtParameter(t)` | VPoint | Point at parameter (0.0 to 1.0) |
+| `Divide(n)` | List\<VXYZ\> | Divide into n equal segments |
+| `Measure(segmentLength)` | List\<VXYZ\> | Points at fixed distance intervals |
+| `PointAtSegmentLength(len)` | VXYZ | Point at distance along curve |
+| `PointAtParameter(t)` | VXYZ | Point at parameter (0.0 to 1.0) |
 | `ParameterAtPoint(point)` | double | Get parameter (0-1) for closest point on curve |
-| `Project(point)` | VPoint | Closest point on curve |
+| `Project(point)` | VXYZ | Closest point on curve |
 | `Offset(distance)` | ICurve | Parallel offset curve |
 | `Offset(List<double> distances)` | List\<ICurve\> | Multiple offsets |
 | `Intersect(otherCurve)` | IntersectionResult | Find intersection points |
 | `SplitAtPoint(point)` | (ICurve, ICurve) | Split curve at point |
 | `NormalAtPoint(point)` | VXYZ | Normal vector at point |
-| `PointsAtChordLengthFromPoint(point, chordLength)` | List\<VPoint\> | Points at chord distance |
+| `PointsAtChordLengthFromPoint(point, chordLength)` | List\<VXYZ\> | Points at chord distance |
 
 ### IntersectionResult
 | Property | Type | Description |
 |----------|------|-------------|
-| Points | List\<VPoint\> | Intersection points |
+| Points | List\<VXYZ\> | Intersection points |
 | Curves | List\<ICurve\> | Overlapping curve segments |
 | HasIntersection | bool | Any intersection exists |
 | IsSinglePoint | bool | Exactly one point |
@@ -544,9 +575,9 @@ var arr = shape.LinearArray(new VXYZ(1, 1, 0), 5, 30); // diagonal
 var grid = shape.RectangularArray(3, 4, 40, 40); // 3 rows, 4 cols
 
 // Circular array
-var ring = shape.CircularArray(new VPoint(0, 0), 8);          // 8 copies, full circle
-var arc = shape.CircularArray(new VPoint(0, 0), 6, 180);      // 6 copies, half circle
-var noRot = shape.CircularArray(new VPoint(0, 0), 8, 360, false); // don't rotate items
+var ring = shape.CircularArray(new VXYZ(0, 0), 8);          // 8 copies, full circle
+var arc = shape.CircularArray(new VXYZ(0, 0), 6, 180);      // 6 copies, half circle
+var noRot = shape.CircularArray(new VXYZ(0, 0), 8, 360, false); // don't rotate items
 
 // Path array
 var along = shape.PathArray(curve, 10);         // 10 copies along curve
@@ -556,7 +587,7 @@ var noAlign = shape.PathArray(curve, 10, false); // don't align to path
 var mirrored = shape.Mirror(new VLine(0, -100, 0, 100)); // mirror across Y axis
 
 // Spiral array
-var spiral = shape.SpiralArray(new VPoint(0, 0), 20, 30, 150, 3); // 20 items, radius 30→150, 3 revolutions
+var spiral = shape.SpiralArray(new VXYZ(0, 0), 20, 30, 150, 3); // 20 items, radius 30→150, 3 revolutions
 ```
 
 ## Boolean Operations (VPolygon only)
@@ -580,7 +611,7 @@ bool selfIntersects = polygon.HasSelfIntersections();
 var simple = polygon.MakeSimple();               // List<VPolygon> - resolves self-intersections
 
 // Point in polygon / Area
-bool inside = polygon.Contains(new VPoint(5, 5));
+bool inside = polygon.Contains(new VXYZ(5, 5));
 double area = polygon.GetArea();
 ```
 
@@ -645,7 +676,7 @@ var results = RegionBooleanOps.IntersectWithHoles(a, b);   // List<Region>
 var results = RegionBooleanOps.DifferenceWithHoles(a, b);  // List<Region>
 
 // Point containment and area
-bool inside = region.Contains(new VPoint(5, 5));
+bool inside = region.Contains(new VXYZ(5, 5));
 double area = region.Area;
 ```
 
@@ -750,7 +781,7 @@ animator.Stop();     // Stop all playback
 | DrawAnimation | `(Shape target, double duration)` | Progressively draws shape (0% to 100%) |
 | MoveAnimation | `(Shape target, VXYZ displacement, double duration)` | Translates by displacement vector |
 | PathAnimation | `(Shape target, ICurve path, double duration)` | Moves shape along any ICurve path |
-| RotateAnimation | `(Shape target, VPoint pivot, double angleDeg, double duration)` | Rotates around pivot |
+| RotateAnimation | `(Shape target, VXYZ pivot, double angleDeg, double duration)` | Rotates around pivot |
 | FlipAnimation | `(Shape target, VLine mirrorAxis, double duration)` | Flips across mirror axis |
 | FadeInAnimation | `(Shape target, double duration)` | Fades from transparent to opaque |
 | FadeOutAnimation | `(Shape target, double duration)` | Fades from opaque to transparent |
@@ -765,12 +796,12 @@ animator.Stop();     // Stop all playback
 public class Wheel
 {
     VCircle c = new VCircle(0, 0, 100);
-    VCircle hub = new VCircle(new VPoint(40, 40), 10);
+    VCircle hub = new VCircle(new VXYZ(40, 40), 10);
     private double rotation = 0.0;
     public double Rotation
     {
         get { return rotation; }
-        set { hub.Rotate(new VPoint(0, 0), value - rotation); rotation = value; }
+        set { hub.Rotate(new VXYZ(0, 0), value - rotation); rotation = value; }
     }
 }
 
@@ -825,11 +856,11 @@ for (int r = 20; r <= 200; r += 20)
 
 ### Star polygon
 ```csharp
-var points = new List<VPoint>();
+var points = new List<VXYZ>();
 for (int i = 0; i < 5; i++)
 {
     double angle = Math.PI / 2 + i * 4 * Math.PI / 5;
-    points.Add(new VPoint(Math.Cos(angle) * 100, Math.Sin(angle) * 100));
+    points.Add(new VXYZ(Math.Cos(angle) * 100, Math.Sin(angle) * 100));
 }
 var star = new VPolygon(points) { Color = "Gold", FillColor = "DarkGoldenrod" };
 ```
@@ -848,10 +879,10 @@ for (int x = -150; x <= 150; x += 50)
 ```csharp
 var hex = new VPolygon(Enumerable.Range(0, 6).Select(i => {
     double a = Math.PI / 3 * i;
-    return new VPoint(Math.Cos(a) * 20, Math.Sin(a) * 20);
+    return new VXYZ(Math.Cos(a) * 20, Math.Sin(a) * 20);
 }).ToArray()) { Color = "Cyan", FillColor = "#1a3a4a" };
 
-var ring = hex.CircularArray(new VPoint(0, 0), 12);
+var ring = hex.CircularArray(new VXYZ(0, 0), 12);
 
 var animator = new Animator { Repeat = true };
 foreach (var s in ring)
@@ -862,8 +893,8 @@ animator.Animate();
 ### Offset curves
 ```csharp
 var spline = new VSpline(
-    new VPoint(-100, 0), new VPoint(-50, 80),
-    new VPoint(50, -80), new VPoint(100, 0)) { Color = "White" };
+    new VXYZ(-100, 0), new VXYZ(-50, 80),
+    new VXYZ(50, -80), new VXYZ(100, 0)) { Color = "White" };
 
 for (int i = 1; i <= 5; i++)
 {

@@ -161,7 +161,7 @@ public class Region : Shape
     /// Checks if a point is inside this region (inside the outer loop, outside all holes).
     /// Uses the winding number algorithm on a polygon approximation.
     /// </summary>
-    public override bool Contains(VPoint point)
+    public override bool Contains(VXYZ point)
     {
         var outerPoints = SampleLoop(OuterLoop, DefaultSegmentsPerCurve);
         if (!PolygonClipper.PointInPolygonTest(point, outerPoints))
@@ -187,14 +187,15 @@ public class Region : Shape
     /// </summary>
     public VPolygon ToPolygon()
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         foreach (var curve in OuterLoop)
         {
-            if (points.Count == 0 || !PointsAreClose(points[^1], curve.StartPoint))
-                points.Add(curve.StartPoint);
+            var sp = curve.StartPoint;
+            if (points.Count == 0 || !VxyzAreClose(points[^1], sp))
+                points.Add(sp);
         }
         // Remove last if it duplicates first
-        if (points.Count > 1 && PointsAreClose(points[0], points[^1]))
+        if (points.Count > 1 && VxyzAreClose(points[0], points[^1]))
             points.RemoveAt(points.Count - 1);
 
         return new VPolygon(points);
@@ -215,12 +216,14 @@ public class Region : Shape
     /// </summary>
     public PolygonWithHoles ToPolygonWithHoles(int segmentsPerCurve = DefaultSegmentsPerCurve)
     {
-        var outerPoly = new VPolygon(SampleLoop(OuterLoop, segmentsPerCurve));
+        var outerPoints = SampleLoop(OuterLoop, segmentsPerCurve);
+        var outerPoly = new VPolygon(outerPoints);
         var result = new PolygonWithHoles(outerPoly);
 
         foreach (var hole in Holes)
         {
-            var holePoly = new VPolygon(SampleLoop(hole, segmentsPerCurve));
+            var holePoints = SampleLoop(hole, segmentsPerCurve);
+            var holePoly = new VPolygon(holePoints);
             result.AddHole(holePoly);
         }
 
@@ -277,39 +280,43 @@ public class Region : Shape
 
     public override void Move(VXYZ vector)
     {
-        var movedPoints = new HashSet<VPoint>(ReferenceEqualityComparer.Instance);
-        MoveUniquePoints(OuterLoop, vector, movedPoints);
+        foreach (var curve in OuterLoop)
+            if (curve is Shape shape) shape.Move(vector);
         foreach (var hole in Holes)
-            MoveUniquePoints(hole, vector, movedPoints);
+            foreach (var curve in hole)
+                if (curve is Shape shape) shape.Move(vector);
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        var rotatedPoints = new HashSet<VPoint>(ReferenceEqualityComparer.Instance);
-        RotateUniquePoints(OuterLoop, pivot, angleDegrees, rotatedPoints);
+        foreach (var curve in OuterLoop)
+            if (curve is Shape shape) shape.Rotate(pivot, angleDegrees);
         foreach (var hole in Holes)
-            RotateUniquePoints(hole, pivot, angleDegrees, rotatedPoints);
+            foreach (var curve in hole)
+                if (curve is Shape shape) shape.Rotate(pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        var flippedPoints = new HashSet<VPoint>(ReferenceEqualityComparer.Instance);
-        FlipUniquePoints(OuterLoop, mirrorLine, flippedPoints);
+        foreach (var curve in OuterLoop)
+            if (curve is Shape shape) shape.Flip(mirrorLine);
         foreach (var hole in Holes)
-            FlipUniquePoints(hole, mirrorLine, flippedPoints);
+            foreach (var curve in hole)
+                if (curve is Shape shape) shape.Flip(mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        var scaledPoints = new HashSet<VPoint>(ReferenceEqualityComparer.Instance);
-        ScaleUniquePoints(OuterLoop, center, factor, scaledPoints);
+        foreach (var curve in OuterLoop)
+            if (curve is Shape shape) shape.Scale(center, factor);
         foreach (var hole in Holes)
-            ScaleUniquePoints(hole, center, factor, scaledPoints);
+            foreach (var curve in hole)
+                if (curve is Shape shape) shape.Scale(center, factor);
     }
 
     public override BoundingBox GetBounds()
     {
-        var allPoints = new List<VPoint>();
+        var allPoints = new List<VXYZ>();
         foreach (var curve in OuterLoop)
         {
             var bounds = ((Shape)curve).GetBounds();
@@ -317,13 +324,13 @@ public class Region : Shape
             allPoints.Add(bounds.Max);
         }
 
-        if (allPoints.Count == 0) return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+        if (allPoints.Count == 0) return new BoundingBox(new VXYZ(0, 0), new VXYZ(0, 0));
 
         double minX = allPoints.Min(p => p.X);
         double minY = allPoints.Min(p => p.Y);
         double maxX = allPoints.Max(p => p.X);
         double maxY = allPoints.Max(p => p.Y);
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     public override string ToString()
@@ -339,17 +346,17 @@ public class Region : Shape
     /// <summary>
     /// Samples a curve loop into a list of points for polygon approximation.
     /// </summary>
-    internal static List<VPoint> SampleLoop(List<ICurve> loop, int segmentsPerCurve)
+    internal static List<VXYZ> SampleLoop(List<ICurve> loop, int segmentsPerCurve)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
 
         foreach (var curve in loop)
         {
-            List<VPoint> curvePoints;
+            List<VXYZ> curvePoints;
 
             if (curve is VLine line)
             {
-                curvePoints = new List<VPoint> { line.StartPoint, line.EndPoint };
+                curvePoints = new List<VXYZ> { line.StartPoint, line.EndPoint };
             }
             else
             {
@@ -359,13 +366,13 @@ public class Region : Shape
             // Add all points except the last (to avoid duplication with next curve's start)
             for (int i = 0; i < curvePoints.Count - 1; i++)
             {
-                if (points.Count == 0 || !PointsAreClose(points[^1], curvePoints[i]))
+                if (points.Count == 0 || !VxyzAreClose(points[^1], curvePoints[i]))
                     points.Add(curvePoints[i]);
             }
         }
 
         // Remove the last point if it duplicates the first (closed loop)
-        if (points.Count > 1 && PointsAreClose(points[0], points[^1]))
+        if (points.Count > 1 && VxyzAreClose(points[0], points[^1]))
             points.RemoveAt(points.Count - 1);
 
         return points;
@@ -380,7 +387,7 @@ public class Region : Shape
         for (int i = 0; i < curves.Count; i++)
         {
             var curve = curves[i];
-            if (PointsAreClose(curve.StartPoint, curve.EndPoint))
+            if (VxyzAreClose(curve.StartPoint, curve.EndPoint))
             {
                 string curveType = curve.GetType().Name;
                 throw new ArgumentException(
@@ -392,7 +399,7 @@ public class Region : Shape
 
     private static void ValidateNoBranching(List<ICurve> curves)
     {
-        var endpoints = new List<(VPoint point, int curveIndex, bool isStart)>();
+        var endpoints = new List<(VXYZ point, int curveIndex, bool isStart)>();
         for (int i = 0; i < curves.Count; i++)
         {
             endpoints.Add((curves[i].StartPoint, i, true));
@@ -408,7 +415,7 @@ public class Region : Shape
             {
                 if (i == j) continue;
                 if (endpoints[j].curveIndex == curveIdx) continue;
-                if (PointsAreClose(point, endpoints[j].point))
+                if (VxyzAreClose(point, endpoints[j].point))
                     connectionCount++;
             }
 
@@ -438,7 +445,7 @@ public class Region : Shape
         remaining.RemoveAt(0);
         ordered.Add((firstCurve, false));
 
-        VPoint currentEnd = firstCurve.EndPoint;
+        VXYZ currentEnd = firstCurve.EndPoint;
 
         while (remaining.Count > 0)
         {
@@ -448,7 +455,7 @@ public class Region : Shape
             {
                 var candidate = remaining[i];
 
-                if (PointsAreClose(candidate.StartPoint, currentEnd))
+                if (VxyzAreClose(candidate.StartPoint, currentEnd))
                 {
                     ordered.Add((candidate, false));
                     currentEnd = candidate.EndPoint;
@@ -457,7 +464,7 @@ public class Region : Shape
                     break;
                 }
 
-                if (PointsAreClose(candidate.EndPoint, currentEnd))
+                if (VxyzAreClose(candidate.EndPoint, currentEnd))
                 {
                     ordered.Add((candidate, true));
                     currentEnd = candidate.StartPoint;
@@ -471,13 +478,13 @@ public class Region : Shape
             {
                 // Try building from the start of the chain
                 var firstOrdered = ordered[0];
-                VPoint currentStart = firstOrdered.reversed ? firstOrdered.curve.EndPoint : firstOrdered.curve.StartPoint;
+                VXYZ currentStart = firstOrdered.reversed ? firstOrdered.curve.EndPoint : firstOrdered.curve.StartPoint;
 
                 for (int i = 0; i < remaining.Count; i++)
                 {
                     var candidate = remaining[i];
 
-                    if (PointsAreClose(candidate.EndPoint, currentStart))
+                    if (VxyzAreClose(candidate.EndPoint, currentStart))
                     {
                         ordered.Insert(0, (candidate, false));
                         remaining.RemoveAt(i);
@@ -485,7 +492,7 @@ public class Region : Shape
                         break;
                     }
 
-                    if (PointsAreClose(candidate.StartPoint, currentStart))
+                    if (VxyzAreClose(candidate.StartPoint, currentStart))
                     {
                         ordered.Insert(0, (candidate, true));
                         remaining.RemoveAt(i);
@@ -504,10 +511,10 @@ public class Region : Shape
         // Verify the loop is closed
         var first = ordered[0];
         var last = ordered[^1];
-        VPoint loopStart = first.reversed ? first.curve.EndPoint : first.curve.StartPoint;
-        VPoint loopEnd = last.reversed ? last.curve.StartPoint : last.curve.EndPoint;
+        VXYZ loopStart = first.reversed ? first.curve.EndPoint : first.curve.StartPoint;
+        VXYZ loopEnd = last.reversed ? last.curve.StartPoint : last.curve.EndPoint;
 
-        if (!PointsAreClose(loopStart, loopEnd))
+        if (!VxyzAreClose(loopStart, loopEnd))
             throw new ArgumentException(
                 "Curves do not form a closed loop. " +
                 $"Loop start ({loopStart.X:F2}, {loopStart.Y:F2}) does not connect to " +
@@ -520,8 +527,8 @@ public class Region : Shape
     {
         // Sample all curves and check for segment intersections
         int n = orderedCurves.Count;
-        var allSegments = new List<List<(VPoint p1, VPoint p2)>>();
-        var curveEndpoints = new List<(VPoint start, VPoint end)>();
+        var allSegments = new List<List<(VXYZ p1, VXYZ p2)>>();
+        var curveEndpoints = new List<(VXYZ start, VXYZ end)>();
 
         for (int i = 0; i < n; i++)
         {
@@ -529,8 +536,8 @@ public class Region : Shape
             var segments = GetCurveSegments(curve, reversed);
             allSegments.Add(segments);
 
-            VPoint start = reversed ? curve.EndPoint : curve.StartPoint;
-            VPoint end = reversed ? curve.StartPoint : curve.EndPoint;
+            VXYZ start = reversed ? curve.EndPoint : curve.StartPoint;
+            VXYZ end = reversed ? curve.StartPoint : curve.EndPoint;
             curveEndpoints.Add((start, end));
         }
 
@@ -541,7 +548,7 @@ public class Region : Shape
                 bool sameCurve = (i == j);
                 bool adjacent = !sameCurve && (Math.Abs(i - j) == 1 || Math.Abs(i - j) == n - 1);
 
-                VPoint? allowedPt = null;
+                VXYZ? allowedPt = null;
                 if (adjacent)
                 {
                     allowedPt = GetSharedEndpoint(curveEndpoints[i], curveEndpoints[j]);
@@ -560,7 +567,7 @@ public class Region : Shape
 
                         bool shareEndpt = SegmentsShareEndpoint(s1, s2);
 
-                        if (SegmentsIntersect(s1.p1, s1.p2, s2.p1, s2.p2, shareEndpt, allowedPt, out VPoint? ix))
+                        if (SegmentsIntersect(s1.p1, s1.p2, s2.p1, s2.p2, shareEndpt, allowedPt, out VXYZ? ix))
                         {
                             string err = sameCurve ? "Self-intersection within a curve" : "Intersection between curves";
                             throw new ArgumentException(
@@ -579,32 +586,39 @@ public class Region : Shape
 
     private static bool PointsAreClose(VPoint p1, VPoint p2)
     {
+        double dx = p1.X - p2.X;
+        double dy = p1.Y - p2.Y;
+        return Math.Sqrt(dx * dx + dy * dy) < ConnectionTolerance;
+    }
+
+    private static bool VxyzAreClose(VXYZ p1, VXYZ p2)
+    {
         return p1.DistanceTo(p2) < ConnectionTolerance;
     }
 
-    private static VPoint? GetSharedEndpoint((VPoint start, VPoint end) c1, (VPoint start, VPoint end) c2)
+    private static VXYZ? GetSharedEndpoint((VXYZ start, VXYZ end) c1, (VXYZ start, VXYZ end) c2)
     {
-        if (PointsAreClose(c1.end, c2.start)) return c1.end;
-        if (PointsAreClose(c1.start, c2.end)) return c1.start;
-        if (PointsAreClose(c1.end, c2.end)) return c1.end;
-        if (PointsAreClose(c1.start, c2.start)) return c1.start;
+        if (VxyzAreClose(c1.end, c2.start)) return c1.end;
+        if (VxyzAreClose(c1.start, c2.end)) return c1.start;
+        if (VxyzAreClose(c1.end, c2.end)) return c1.end;
+        if (VxyzAreClose(c1.start, c2.start)) return c1.start;
         return null;
     }
 
-    private static bool SegmentsShareEndpoint((VPoint p1, VPoint p2) s1, (VPoint p1, VPoint p2) s2)
+    private static bool SegmentsShareEndpoint((VXYZ p1, VXYZ p2) s1, (VXYZ p1, VXYZ p2) s2)
     {
-        return PointsAreClose(s1.p1, s2.p1) || PointsAreClose(s1.p1, s2.p2) ||
-               PointsAreClose(s1.p2, s2.p1) || PointsAreClose(s1.p2, s2.p2);
+        return VxyzAreClose(s1.p1, s2.p1) || VxyzAreClose(s1.p1, s2.p2) ||
+               VxyzAreClose(s1.p2, s2.p1) || VxyzAreClose(s1.p2, s2.p2);
     }
 
-    private static List<(VPoint p1, VPoint p2)> GetCurveSegments(ICurve curve, bool reversed)
+    private static List<(VXYZ p1, VXYZ p2)> GetCurveSegments(ICurve curve, bool reversed)
     {
-        var segments = new List<(VPoint p1, VPoint p2)>();
-        List<VPoint> points;
+        var segments = new List<(VXYZ p1, VXYZ p2)>();
+        List<VXYZ> points;
 
         if (curve is VLine line)
         {
-            points = new List<VPoint> { line.StartPoint, line.EndPoint };
+            points = new List<VXYZ> { line.StartPoint, line.EndPoint };
         }
         else if (curve is VPolyline polyline)
         {
@@ -623,9 +637,9 @@ public class Region : Shape
         return segments;
     }
 
-    private static bool SegmentsIntersect(VPoint p1, VPoint p2, VPoint p3, VPoint p4,
-                                          bool segmentsShareEndpoint, VPoint? allowedIntersection,
-                                          out VPoint? intersection)
+    private static bool SegmentsIntersect(VXYZ p1, VXYZ p2, VXYZ p3, VXYZ p4,
+                                          bool segmentsShareEndpoint, VXYZ? allowedIntersection,
+                                          out VXYZ? intersection)
     {
         intersection = null;
 
@@ -657,7 +671,7 @@ public class Region : Shape
             bool canTouch = segmentsShareEndpoint || allowedIntersection != null;
             if (canTouch && Math.Abs(overlapEnd - overlapStart) < ConnectionTolerance * 2) return false;
 
-            intersection = VPoint.Internal((p1.X + p3.X) / 2, (p1.Y + p3.Y) / 2);
+            intersection = new VXYZ((p1.X + p3.X) / 2, (p1.Y + p3.Y) / 2);
             return true;
         }
 
@@ -668,16 +682,16 @@ public class Region : Shape
         if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
         {
             double ix = p1.X + t * d1x, iy = p1.Y + t * d1y;
-            intersection = VPoint.Internal(ix, iy);
+            intersection = new VXYZ(ix, iy);
 
-            if (allowedIntersection != null && PointsAreClose(intersection, allowedIntersection))
+            if (allowedIntersection != null && VxyzAreClose(intersection, allowedIntersection))
                 return false;
 
             if (segmentsShareEndpoint)
             {
                 bool atSharedEndpoint =
-                    (PointsAreClose(intersection, p1) || PointsAreClose(intersection, p2)) &&
-                    (PointsAreClose(intersection, p3) || PointsAreClose(intersection, p4));
+                    (VxyzAreClose(intersection, p1) || VxyzAreClose(intersection, p2)) &&
+                    (VxyzAreClose(intersection, p3) || VxyzAreClose(intersection, p4));
                 return !atSharedEndpoint;
             }
 
@@ -735,74 +749,6 @@ public class Region : Shape
             return new VLine(points.First(), points.Last());
 
         return new VPolyline(points);
-    }
-
-    /// <summary>
-    /// Moves points in a curve loop, tracking already-moved points to avoid double-moves
-    /// when adjacent curves share VPoint instances.
-    /// </summary>
-    private static void MoveUniquePoints(List<ICurve> loop, VXYZ vector, HashSet<VPoint> processed)
-    {
-        foreach (var curve in loop)
-        {
-            if (curve is VLine line)
-            {
-                if (processed.Add(line.Start)) line.Start.Move(vector);
-                if (processed.Add(line.End)) line.End.Move(vector);
-            }
-            else if (curve is Shape shape)
-            {
-                shape.Move(vector);
-            }
-        }
-    }
-
-    private static void RotateUniquePoints(List<ICurve> loop, VPoint pivot, double angleDegrees, HashSet<VPoint> processed)
-    {
-        foreach (var curve in loop)
-        {
-            if (curve is VLine line)
-            {
-                if (processed.Add(line.Start)) line.Start.Rotate(pivot, angleDegrees);
-                if (processed.Add(line.End)) line.End.Rotate(pivot, angleDegrees);
-            }
-            else if (curve is Shape shape)
-            {
-                shape.Rotate(pivot, angleDegrees);
-            }
-        }
-    }
-
-    private static void FlipUniquePoints(List<ICurve> loop, VLine mirrorLine, HashSet<VPoint> processed)
-    {
-        foreach (var curve in loop)
-        {
-            if (curve is VLine line)
-            {
-                if (processed.Add(line.Start)) line.Start.Flip(mirrorLine);
-                if (processed.Add(line.End)) line.End.Flip(mirrorLine);
-            }
-            else if (curve is Shape shape)
-            {
-                shape.Flip(mirrorLine);
-            }
-        }
-    }
-
-    private static void ScaleUniquePoints(List<ICurve> loop, VPoint center, double factor, HashSet<VPoint> processed)
-    {
-        foreach (var curve in loop)
-        {
-            if (curve is VLine line)
-            {
-                if (processed.Add(line.Start)) line.Start.Scale(center, factor);
-                if (processed.Add(line.End)) line.End.Scale(center, factor);
-            }
-            else if (curve is Shape shape)
-            {
-                shape.Scale(center, factor);
-            }
-        }
     }
 
     #endregion

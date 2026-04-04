@@ -6,21 +6,21 @@ namespace C2VGeometry;
 
 public class VPolygon : Shape, ICurve
 {
-    public List<VPoint> Points { get; set; }
+    public List<VXYZ> Points { get; set; }
     public List<ICurve> Curves { get; private set; } = new();
     private readonly bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polygon.</summary>
-    public VPoint StartPoint => Points.Count > 0 ? Points[0] : VPoint.Internal(0, 0);
+    public VXYZ StartPoint => Points.Count > 0 ? Points[0] : new VXYZ(0, 0);
 
     /// <summary>Gets the end point of the polygon (same as StartPoint, since it's closed).</summary>
-    public VPoint EndPoint => StartPoint;
+    public VXYZ EndPoint => StartPoint;
 
     /// <summary>Indicates whether the polygon intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
     /// <summary>Gets the vertices of the polygon.</summary>
-    public List<VPoint> Vertices => Points;
+    public List<VXYZ> Vertices => Points;
 
     /// <summary>
     /// Gets the area of the polygon using the shoelace formula.
@@ -65,7 +65,7 @@ public class VPolygon : Shape, ICurve
         }
     }
 
-    public VPolygon(params VPoint[] points)
+    public VPolygon(params VXYZ[] points)
     {
         Points = points.ToList();
         Color = "LightBlue";
@@ -74,7 +74,7 @@ public class VPolygon : Shape, ICurve
         BuildCurvesFromPoints();
     }
 
-    public VPolygon(IEnumerable<VPoint> points)
+    public VPolygon(IEnumerable<VXYZ> points)
     {
         Points = points.ToList();
         Color = "LightBlue";
@@ -99,10 +99,10 @@ public class VPolygon : Shape, ICurve
         }
     }
 
-    private List<VPoint> GetClosedPoints()
+    private List<VXYZ> GetClosedPoints()
     {
         if (Points.Count == 0) return Points;
-        var closed = new List<VPoint>(Points);
+        var closed = new List<VXYZ>(Points);
         if (closed.Count > 0 && closed[0].DistanceTo(closed[^1]) > 1e-6)
         {
             closed.Add(closed[0]);
@@ -178,7 +178,7 @@ public class VPolygon : Shape, ICurve
     private static void ValidateNoBranching(List<ICurve> curves)
     {
         // Collect all endpoints
-        var endpoints = new List<(VPoint point, int curveIndex, bool isStart)>();
+        var endpoints = new List<(VXYZ point, int curveIndex, bool isStart)>();
         for (int i = 0; i < curves.Count; i++)
         {
             endpoints.Add((curves[i].StartPoint, i, true));
@@ -232,7 +232,7 @@ public class VPolygon : Shape, ICurve
         remaining.RemoveAt(0);
         ordered.Add((firstCurve, false));
 
-        VPoint currentEnd = firstCurve.EndPoint;
+        VXYZ currentEnd = firstCurve.EndPoint;
 
         // Try to chain all remaining curves
         while (remaining.Count > 0)
@@ -268,7 +268,7 @@ public class VPolygon : Shape, ICurve
             {
                 // Try building from the start of the chain instead
                 var firstOrdered = ordered[0];
-                VPoint currentStart = firstOrdered.reversed ? firstOrdered.curve.EndPoint : firstOrdered.curve.StartPoint;
+                VXYZ currentStart = firstOrdered.reversed ? firstOrdered.curve.EndPoint : firstOrdered.curve.StartPoint;
 
                 for (int i = 0; i < remaining.Count; i++)
                 {
@@ -303,8 +303,8 @@ public class VPolygon : Shape, ICurve
         // Verify the loop is closed
         var first = ordered[0];
         var last = ordered[^1];
-        VPoint loopStart = first.reversed ? first.curve.EndPoint : first.curve.StartPoint;
-        VPoint loopEnd = last.reversed ? last.curve.StartPoint : last.curve.EndPoint;
+        VXYZ loopStart = first.reversed ? first.curve.EndPoint : first.curve.StartPoint;
+        VXYZ loopEnd = last.reversed ? last.curve.StartPoint : last.curve.EndPoint;
 
         if (!PointsAreClose(loopStart, loopEnd))
             throw new ArgumentException(
@@ -327,8 +327,8 @@ public class VPolygon : Shape, ICurve
         int n = orderedCurves.Count;
 
         // Get segments for each curve (approximated for curved types)
-        var curveSegments = new List<List<(VPoint p1, VPoint p2)>>();
-        var curveEndpoints = new List<(VPoint start, VPoint end)>();
+        var curveSegments = new List<List<(VXYZ p1, VXYZ p2)>>();
+        var curveEndpoints = new List<(VXYZ start, VXYZ end)>();
 
         for (int i = 0; i < n; i++)
         {
@@ -337,8 +337,8 @@ public class VPolygon : Shape, ICurve
             curveSegments.Add(segments);
 
             // Store the effective start/end points after considering reversal
-            VPoint start = reversed ? curve.EndPoint : curve.StartPoint;
-            VPoint end = reversed ? curve.StartPoint : curve.EndPoint;
+            VXYZ start = reversed ? curve.EndPoint : curve.StartPoint;
+            VXYZ end = reversed ? curve.StartPoint : curve.EndPoint;
             curveEndpoints.Add((start, end));
         }
 
@@ -351,7 +351,7 @@ public class VPolygon : Shape, ICurve
                 bool adjacentCurves = !sameCurve && AreCurvesAdjacent(i, j, n);
 
                 // Determine the allowed intersection point (if any)
-                VPoint? allowedIntersection = null;
+                VXYZ? allowedIntersection = null;
                 if (adjacentCurves)
                 {
                     // Adjacent curves share exactly one endpoint
@@ -378,7 +378,7 @@ public class VPolygon : Shape, ICurve
 
                         if (SegmentsIntersect(seg1.p1, seg1.p2, seg2.p1, seg2.p2,
                                               segmentsShareEndpoint, allowedIntersection,
-                                              out VPoint? intersection))
+                                              out VXYZ? intersection))
                         {
                             string errorType = sameCurve ? "Self-intersection within a curve" : "Intersection between curves";
                             throw new ArgumentException(
@@ -403,7 +403,7 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Gets the shared endpoint between two adjacent curves, if any.
     /// </summary>
-    private static VPoint? GetSharedEndpoint((VPoint start, VPoint end) curve1, (VPoint start, VPoint end) curve2)
+    private static VXYZ? GetSharedEndpoint((VXYZ start, VXYZ end) curve1, (VXYZ start, VXYZ end) curve2)
     {
         if (PointsAreClose(curve1.end, curve2.start)) return curve1.end;
         if (PointsAreClose(curve1.start, curve2.end)) return curve1.start;
@@ -415,7 +415,7 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Checks if two segments share an endpoint.
     /// </summary>
-    private static bool SegmentsShareEndpoint((VPoint p1, VPoint p2) seg1, (VPoint p1, VPoint p2) seg2)
+    private static bool SegmentsShareEndpoint((VXYZ p1, VXYZ p2) seg1, (VXYZ p1, VXYZ p2) seg2)
     {
         return PointsAreClose(seg1.p1, seg2.p1) || PointsAreClose(seg1.p1, seg2.p2) ||
                PointsAreClose(seg1.p2, seg2.p1) || PointsAreClose(seg1.p2, seg2.p2);
@@ -424,16 +424,16 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Gets line segments approximating the curve.
     /// </summary>
-    private static List<(VPoint p1, VPoint p2)> GetCurveSegments(ICurve curve, bool reversed)
+    private static List<(VXYZ p1, VXYZ p2)> GetCurveSegments(ICurve curve, bool reversed)
     {
-        var segments = new List<(VPoint p1, VPoint p2)>();
+        var segments = new List<(VXYZ p1, VXYZ p2)>();
 
         // Get points along the curve
-        List<VPoint> points;
+        List<VXYZ> points;
 
         if (curve is VLine line)
         {
-            points = new List<VPoint> { line.StartPoint, line.EndPoint };
+            points = new List<VXYZ> { line.StartPoint, line.EndPoint };
         }
         else if (curve is VPolyline polyline)
         {
@@ -468,9 +468,9 @@ public class VPolygon : Shape, ICurve
     /// <param name="allowedIntersection">If not null, intersection at this point is allowed (for adjacent curves)</param>
     /// <param name="intersection">The intersection point if found</param>
     /// <returns>True if segments intersect at a disallowed location</returns>
-    private static bool SegmentsIntersect(VPoint p1, VPoint p2, VPoint p3, VPoint p4,
-                                          bool segmentsShareEndpoint, VPoint? allowedIntersection,
-                                          out VPoint? intersection)
+    private static bool SegmentsIntersect(VXYZ p1, VXYZ p2, VXYZ p3, VXYZ p4,
+                                          bool segmentsShareEndpoint, VXYZ? allowedIntersection,
+                                          out VXYZ? intersection)
     {
         intersection = null;
 
@@ -487,8 +487,7 @@ public class VPolygon : Shape, ICurve
             // Check for collinear overlap (excluding shared endpoints)
             if (AreCollinearAndOverlapping(p1, p2, p3, p4, segmentsShareEndpoint, allowedIntersection))
             {
-                // Use Internal() to avoid auto-registering intermediate points
-                intersection = VPoint.Internal((p1.X + p3.X) / 2, (p1.Y + p3.Y) / 2);
+                intersection = new VXYZ((p1.X + p3.X) / 2, (p1.Y + p3.Y) / 2);
                 return true;
             }
             return false;
@@ -505,8 +504,7 @@ public class VPolygon : Shape, ICurve
         {
             double ix = p1.X + t * d1x;
             double iy = p1.Y + t * d1y;
-            // Use Internal() to avoid auto-registering intermediate points
-            intersection = VPoint.Internal(ix, iy);
+            intersection = new VXYZ(ix, iy);
 
             // Check if intersection is at an allowed point
             if (allowedIntersection != null && PointsAreClose(intersection, allowedIntersection))
@@ -532,8 +530,8 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Checks if two collinear segments overlap (excluding allowed intersection points).
     /// </summary>
-    private static bool AreCollinearAndOverlapping(VPoint p1, VPoint p2, VPoint p3, VPoint p4,
-                                                    bool segmentsShareEndpoint, VPoint? allowedIntersection)
+    private static bool AreCollinearAndOverlapping(VXYZ p1, VXYZ p2, VXYZ p3, VXYZ p4,
+                                                    bool segmentsShareEndpoint, VXYZ? allowedIntersection)
     {
         // Project all points onto the line direction
         double dx = p2.X - p1.X;
@@ -581,14 +579,14 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Extracts vertices from ordered curves to form a polygon.
     /// </summary>
-    private static List<VPoint> ExtractVerticesFromCurves(List<(ICurve curve, bool reversed)> orderedCurves)
+    private static List<VXYZ> ExtractVerticesFromCurves(List<(ICurve curve, bool reversed)> orderedCurves)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
 
         foreach (var (curve, reversed) in orderedCurves)
         {
             // Get the starting point of this curve segment
-            VPoint startPt = reversed ? curve.EndPoint : curve.StartPoint;
+            VXYZ startPt = reversed ? curve.EndPoint : curve.StartPoint;
 
             // Add the start point if it's not already added (or if it's the first point)
             if (points.Count == 0 || !PointsAreClose(points[^1], startPt))
@@ -617,12 +615,12 @@ public class VPolygon : Shape, ICurve
         return points;
     }
 
-    private static bool PointsAreClose(VPoint p1, VPoint p2)
+    private static bool PointsAreClose(VXYZ p1, VXYZ p2)
     {
         return p1.DistanceTo(p2) < ConnectionTolerance;
     }
 
-    public void AddPoint(VPoint point)
+    public void AddPoint(VXYZ point)
     {
         Points.Add(point);
         BuildCurvesFromPoints();
@@ -630,8 +628,7 @@ public class VPolygon : Shape, ICurve
 
     public void AddPoint(double x, double y)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        Points.Add(VPoint.Internal(x, y));
+        Points.Add(new VXYZ(x, y));
         BuildCurvesFromPoints();
     }
 
@@ -655,7 +652,7 @@ public class VPolygon : Shape, ICurve
         return result;
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         if (index == 0)
         {
@@ -669,8 +666,7 @@ public class VPolygon : Shape, ICurve
         {
             // Move individual vertex
             int ptIdx = index - 1;
-            Points[ptIdx].X = newPosition.X;
-            Points[ptIdx].Y = newPosition.Y;
+            Points[ptIdx] = new VXYZ(newPosition.X, newPosition.Y);
             BuildCurvesFromPoints();
         }
     }
@@ -684,35 +680,34 @@ public class VPolygon : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        foreach (var point in Points)
-            point.Move(vector);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = Points[i] + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        foreach (var point in Points)
-            point.Rotate(pivot, angleDegrees);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = GeometryHelper.RotatePoint(Points[i], pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        foreach (var point in Points)
-            point.Flip(mirrorLine);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = GeometryHelper.FlipPoint(Points[i], mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        foreach (var point in Points)
-            point.Scale(center, factor);
+        for (int i = 0; i < Points.Count; i++)
+            Points[i] = GeometryHelper.ScalePoint(Points[i], center, factor);
     }
 
     public override BoundingBox GetBounds()
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (Points.Count == 0) return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+        if (Points.Count == 0) return new BoundingBox(new VXYZ(0, 0), new VXYZ(0, 0));
         double minX = Points.Min(p => p.X), minY = Points.Min(p => p.Y);
         double maxX = Points.Max(p => p.X), maxY = Points.Max(p => p.Y);
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     public override string ToString() => $"VPolygon({Points.Count} points)";
@@ -727,18 +722,18 @@ public class VPolygon : Shape, ICurve
         return length;
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        if (numberOfSegments <= 0) return new List<VPoint>();
+        if (numberOfSegments <= 0) return new List<VXYZ>();
         double totalLength = GetLength();
-        if (totalLength < 1e-9) return new List<VPoint>();
+        if (totalLength < 1e-9) return new List<VXYZ>();
 
         return Measure(totalLength / numberOfSegments);
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var result = new List<VPoint>();
+        var result = new List<VXYZ>();
         if (segmentLength <= 1e-9 || Points.Count < 2) return result;
 
         // Always include start
@@ -748,8 +743,8 @@ public class VPolygon : Shape, ICurve
 
         for (int i = 0; i < Points.Count; i++)
         {
-            VPoint p1 = Points[i];
-            VPoint p2 = Points[(i + 1) % Points.Count];
+            VXYZ p1 = Points[i];
+            VXYZ p2 = Points[(i + 1) % Points.Count];
             double segLen = p1.DistanceTo(p2);
 
             double distOnSeg = 0;
@@ -762,8 +757,7 @@ public class VPolygon : Shape, ICurve
                 double t = distOnSeg / segLen;
                 double x = p1.X + (p2.X - p1.X) * t;
                 double y = p1.Y + (p2.Y - p1.Y) * t;
-                // Use Internal() to avoid auto-registering intermediate points
-                result.Add(VPoint.Internal(x, y));
+                result.Add(new VXYZ(x, y));
 
                 remainingStep = segmentLength;
             }
@@ -774,18 +768,17 @@ public class VPolygon : Shape, ICurve
         return result;
     }
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (Points.Count == 0) return VPoint.Internal(0, 0);
-        VPoint closest = Points[0];
+        if (Points.Count == 0) return new VXYZ(0, 0);
+        VXYZ closest = Points[0];
         double minK = double.MaxValue;
 
         for (int i = 0; i < Points.Count; i++)
         {
-            VPoint p1 = Points[i];
-            VPoint p2 = Points[(i + 1) % Points.Count];
-            VPoint proj = ProjectOnSegment(p1, p2, point);
+            VXYZ p1 = Points[i];
+            VXYZ p2 = Points[(i + 1) % Points.Count];
+            VXYZ proj = ProjectOnSegment(p1, p2, point);
             double d = proj.DistanceTo(point);
             if (d < minK)
             {
@@ -796,38 +789,37 @@ public class VPolygon : Shape, ICurve
         return closest;
     }
 
-    private VPoint ProjectOnSegment(VPoint s, VPoint e, VPoint p)
+    private VXYZ ProjectOnSegment(VXYZ s, VXYZ e, VXYZ p)
     {
-        var v = e.AsVXYZ() - s.AsVXYZ();
-        var u = p.AsVXYZ() - s.AsVXYZ();
+        var v = e - s;
+        var u = p - s;
         double lenSq = v.DotProduct(v);
         if (lenSq < 1e-9) return s;
 
         var t = u.DotProduct(v) / lenSq;
         if (t < 0) return s;
         if (t > 1) return e;
-        return (s.AsVXYZ() + v * t).AsVPoint();
+        return s + v * t;
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (segmentLength <= 0 || Points.Count == 0) return Points.FirstOrDefault() ?? VPoint.Internal(0, 0);
+        if (segmentLength <= 0 || Points.Count == 0) return Points.FirstOrDefault() ?? new VXYZ(0, 0);
         double inputLen = segmentLength;
 
         double currentLen = 0;
 
         for (int i = 0; i < Points.Count; i++)
         {
-            VPoint p1 = Points[i];
-            VPoint p2 = Points[(i + 1) % Points.Count];
+            VXYZ p1 = Points[i];
+            VXYZ p2 = Points[(i + 1) % Points.Count];
             double d = p1.DistanceTo(p2);
 
             if (currentLen + d >= inputLen)
             {
                 double rem = inputLen - currentLen;
                 double r = rem / d;
-                return VPoint.Internal(
+                return new VXYZ(
                     p1.X + (p2.X - p1.X) * r,
                     p1.Y + (p2.Y - p1.Y) * r
                 );
@@ -841,7 +833,7 @@ public class VPolygon : Shape, ICurve
     {
         if (Points.Count < 3) return (ICurve)this.Clone();
 
-        var newPoints = new List<VPoint>();
+        var newPoints = new List<VXYZ>();
 
         // Simple offset by vertex normal (average of adjacent segment normals)
         // For polygon, indices wrap.
@@ -852,16 +844,16 @@ public class VPolygon : Shape, ICurve
             // Next segment: i -> (i+1)
             int nextIdx = (i + 1) % Points.Count;
 
-            var dir1 = (Points[i].AsVXYZ() - Points[prevIdx].AsVXYZ()).Normalize();
+            var dir1 = (Points[i] - Points[prevIdx]).Normalize();
             VXYZ n1 = new VXYZ(-dir1.Y, dir1.X, 0);
 
-            var dir2 = (Points[nextIdx].AsVXYZ() - Points[i].AsVXYZ()).Normalize();
+            var dir2 = (Points[nextIdx] - Points[i]).Normalize();
             VXYZ n2 = new VXYZ(-dir2.Y, dir2.X, 0);
 
             VXYZ normal = (n1 + n2).Normalize();
             // Miter adjustment could go here
 
-            newPoints.Add((Points[i].AsVXYZ() + normal * distance).AsVPoint());
+            newPoints.Add(Points[i] + normal * distance);
         }
 
         return new VPolygon(newPoints);
@@ -874,29 +866,28 @@ public class VPolygon : Shape, ICurve
         return list;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
-        var results = new List<VPoint>();
-        VPoint c = Project(point);
+        var results = new List<VXYZ>();
+        VXYZ c = Project(point);
         double r2 = chordLength;
 
         for (int i=0; i<Points.Count; i++)
         {
-             VPoint p1 = Points[i];
-             VPoint p2 = Points[(i+1)%Points.Count];
+             VXYZ p1 = Points[i];
+             VXYZ p2 = Points[(i+1)%Points.Count];
 
              double d1 = p1.DistanceTo(c);
              double d2 = p2.DistanceTo(c);
 
              if ((d1 < r2 && d2 > r2) || (d1 > r2 && d2 < r2))
              {
-                 VXYZ A = p1.AsVXYZ() - c.AsVXYZ();
-                 VXYZ v = p2.AsVXYZ() - p1.AsVXYZ();
+                 VXYZ A = p1 - c;
+                 VXYZ v = p2 - p1;
 
                  double qa = v.DotProduct(v);
                  double qb = 2 * A.DotProduct(v);
                  double qc = A.DotProduct(A) - r2 * r2;
-
                  double det = qb*qb - 4*qa*qc;
                  if (det >= 0)
                  {
@@ -904,26 +895,26 @@ public class VPolygon : Shape, ICurve
                      double tA = (-qb - sqrtDet) / (2*qa);
                      double tB = (-qb + sqrtDet) / (2*qa);
 
-                     if (tA >= 0 && tA <= 1) results.Add((p1.AsVXYZ() + v * tA).AsVPoint());
-                     if (tB >= 0 && tB <= 1) results.Add((p1.AsVXYZ() + v * tB).AsVPoint());
+                     if (tA >= 0 && tA <= 1) results.Add(p1 + v * tA);
+                     if (tB >= 0 && tB <= 1) results.Add(p1 + v * tB);
                  }
              }
         }
         return results;
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
-        VPoint p = Project(point);
+        VXYZ p = Project(point);
 
         int segmentIndex = -1;
         double minK = double.MaxValue;
 
         for (int i = 0; i < Points.Count; i++)
         {
-            VPoint p1 = Points[i];
-            VPoint p2 = Points[(i+1)%Points.Count];
-            VPoint proj = ProjectOnSegment(p1, p2, p);
+            VXYZ p1 = Points[i];
+            VXYZ p2 = Points[(i+1)%Points.Count];
+            VXYZ proj = ProjectOnSegment(p1, p2, p);
             double d = proj.DistanceTo(p);
             if (d < 1e-5)
             {
@@ -945,19 +936,19 @@ public class VPolygon : Shape, ICurve
         // L2: P -> segmentIndex+1 -> ... -> 0
 
         // Clone all points to ensure independent curves
-        var l1 = new List<VPoint>();
-        for(int i=0; i<=segmentIndex; i++) l1.Add((VPoint)Points[i].Clone());
-        l1.Add((VPoint)p.Clone());
+        var l1 = new List<VXYZ>();
+        for(int i=0; i<=segmentIndex; i++) l1.Add(Points[i].Clone());
+        l1.Add(p.Clone());
 
-        var l2 = new List<VPoint>();
-        l2.Add((VPoint)p.Clone());
-        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add((VPoint)Points[i].Clone());
-        l2.Add((VPoint)Points[0].Clone()); // Close the second part back to Start
+        var l2 = new List<VXYZ>();
+        l2.Add(p.Clone());
+        for(int i=segmentIndex+1; i<Points.Count; i++) l2.Add(Points[i].Clone());
+        l2.Add(Points[0].Clone()); // Close the second part back to Start
 
         return (new VPolyline(l1), new VPolyline(l2));
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         return GeometryHelper.GetPolylineNormalAtPoint(Points, p, true);
     }
@@ -975,10 +966,9 @@ public class VPolygon : Shape, ICurve
     /// Parameter is distributed evenly across segments (not by arc length).
     /// Parameter 0 and 1 both return the first point (closed curve).
     /// </summary>
-    public VPoint PointAtParameter(double parameter)
+    public VXYZ PointAtParameter(double parameter)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (Points.Count == 0) return VPoint.Internal(0, 0);
+        if (Points.Count == 0) return new VXYZ(0, 0);
         if (Points.Count == 1) return Points[0];
         if (parameter <= 0 || parameter >= 1) return Points[0];
 
@@ -987,10 +977,10 @@ public class VPolygon : Shape, ICurve
         int segmentIndex = Math.Min((int)scaledT, numSegments - 1);
         double localT = scaledT - segmentIndex;
 
-        VPoint p1 = Points[segmentIndex];
-        VPoint p2 = Points[(segmentIndex + 1) % Points.Count];
+        VXYZ p1 = Points[segmentIndex];
+        VXYZ p2 = Points[(segmentIndex + 1) % Points.Count];
 
-        return VPoint.Internal(
+        return new VXYZ(
             p1.X + (p2.X - p1.X) * localT,
             p1.Y + (p2.Y - p1.Y) * localT
         );
@@ -999,7 +989,7 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the polygon boundary to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point)
+    public double ParameterAtPoint(VXYZ point)
     {
         if (Points.Count == 0) return 0;
         if (Points.Count == 1) return 0;
@@ -1049,7 +1039,7 @@ public class VPolygon : Shape, ICurve
     /// <param name="linePoint1">First point defining the slice line</param>
     /// <param name="linePoint2">Second point defining the slice line</param>
     /// <returns>List of polygons resulting from the slice operation</returns>
-    public List<VPolygon> Slice(VPoint linePoint1, VPoint linePoint2)
+    public List<VPolygon> Slice(VXYZ linePoint1, VXYZ linePoint2)
     {
         var result = new List<VPolygon>();
 
@@ -1089,9 +1079,9 @@ public class VPolygon : Shape, ICurve
     /// <summary>
     /// Finds all intersection points between an infinite line and the polygon edges.
     /// </summary>
-    private List<(int edgeIndex, double t, VPoint point)> FindSliceIntersections(VPoint p1, VPoint p2)
+    private List<(int edgeIndex, double t, VXYZ point)> FindSliceIntersections(VXYZ p1, VXYZ p2)
     {
-        var intersections = new List<(int edgeIndex, double t, VPoint point)>();
+        var intersections = new List<(int edgeIndex, double t, VXYZ point)>();
 
         // Direction vector of the slice line
         double lineDx = p2.X - p1.X;
@@ -1099,8 +1089,8 @@ public class VPolygon : Shape, ICurve
 
         for (int i = 0; i < Points.Count; i++)
         {
-            VPoint edgeStart = Points[i];
-            VPoint edgeEnd = Points[(i + 1) % Points.Count];
+            VXYZ edgeStart = Points[i];
+            VXYZ edgeEnd = Points[(i + 1) % Points.Count];
 
             // Edge direction
             double edgeDx = edgeEnd.X - edgeStart.X;
@@ -1132,8 +1122,7 @@ public class VPolygon : Shape, ICurve
             {
                 double ix = edgeStart.X + t * edgeDx;
                 double iy = edgeStart.Y + t * edgeDy;
-                // Use Internal() to avoid auto-registering intermediate points
-                intersections.Add((i, t, VPoint.Internal(ix, iy)));
+                intersections.Add((i, t, new VXYZ(ix, iy)));
             }
             else if (Math.Abs(t) < 1e-9)
             {
@@ -1141,13 +1130,12 @@ public class VPolygon : Shape, ICurve
                 // We'll handle this by checking if previous edge was also intersected at its end
                 double ix = edgeStart.X;
                 double iy = edgeStart.Y;
-                // Use Internal() to avoid auto-registering intermediate points
-                intersections.Add((i, 0, VPoint.Internal(ix, iy)));
+                intersections.Add((i, 0, new VXYZ(ix, iy)));
             }
         }
 
         // Remove duplicate intersection points (can happen at vertices)
-        var uniqueIntersections = new List<(int edgeIndex, double t, VPoint point)>();
+        var uniqueIntersections = new List<(int edgeIndex, double t, VXYZ point)>();
         foreach (var intersection in intersections)
         {
             bool isDuplicate = false;
@@ -1172,7 +1160,7 @@ public class VPolygon : Shape, ICurve
     /// Builds the resulting polygons after slicing.
     /// Points are cloned to ensure independent polygons.
     /// </summary>
-    private List<VPolygon> BuildSlicedPolygons(List<(int edgeIndex, double t, VPoint point)> intersections)
+    private List<VPolygon> BuildSlicedPolygons(List<(int edgeIndex, double t, VXYZ point)> intersections)
     {
         var result = new List<VPolygon>();
 
@@ -1183,15 +1171,15 @@ public class VPolygon : Shape, ICurve
             var int2 = intersections[1];
 
             // Polygon 1: from int1 along edges to int2, then back via slice line
-            var poly1Points = new List<VPoint>();
-            poly1Points.Add((VPoint)int1.point.Clone());
+            var poly1Points = new List<VXYZ>();
+            poly1Points.Add(int1.point.Clone());
 
             // Add vertices from after int1's edge to int2's edge
             for (int i = int1.edgeIndex + 1; i <= int2.edgeIndex; i++)
             {
-                poly1Points.Add((VPoint)Points[i].Clone());
+                poly1Points.Add(Points[i].Clone());
             }
-            poly1Points.Add((VPoint)int2.point.Clone());
+            poly1Points.Add(int2.point.Clone());
 
             if (poly1Points.Count >= 3)
             {
@@ -1199,19 +1187,19 @@ public class VPolygon : Shape, ICurve
             }
 
             // Polygon 2: from int2 along remaining edges to int1, then back via slice line
-            var poly2Points = new List<VPoint>();
-            poly2Points.Add((VPoint)int2.point.Clone());
+            var poly2Points = new List<VXYZ>();
+            poly2Points.Add(int2.point.Clone());
 
             // Add vertices from after int2's edge, wrapping around to int1's edge
             for (int i = int2.edgeIndex + 1; i < Points.Count; i++)
             {
-                poly2Points.Add((VPoint)Points[i].Clone());
+                poly2Points.Add(Points[i].Clone());
             }
             for (int i = 0; i <= int1.edgeIndex; i++)
             {
-                poly2Points.Add((VPoint)Points[i].Clone());
+                poly2Points.Add(Points[i].Clone());
             }
-            poly2Points.Add((VPoint)int1.point.Clone());
+            poly2Points.Add(int1.point.Clone());
 
             if (poly2Points.Count >= 3)
             {
@@ -1231,12 +1219,12 @@ public class VPolygon : Shape, ICurve
     /// General algorithm for building sliced polygons with multiple intersection pairs.
     /// Points are cloned to ensure independent polygons.
     /// </summary>
-    private List<VPolygon> BuildSlicedPolygonsGeneral(List<(int edgeIndex, double t, VPoint point)> intersections)
+    private List<VPolygon> BuildSlicedPolygonsGeneral(List<(int edgeIndex, double t, VXYZ point)> intersections)
     {
         var result = new List<VPolygon>();
 
         // Create an augmented list of points with intersection points inserted
-        var augmentedPoints = new List<(VPoint point, bool isIntersection, int intersectionIndex)>();
+        var augmentedPoints = new List<(VXYZ point, bool isIntersection, int intersectionIndex)>();
         int intIdx = 0;
 
         for (int i = 0; i < Points.Count; i++)
@@ -1290,14 +1278,14 @@ public class VPolygon : Shape, ICurve
             if (startPos == -1) continue;
 
             // Walk forward collecting points until we hit another intersection
-            var polyPoints = new List<VPoint>();
+            var polyPoints = new List<VXYZ>();
             int currentPos = startPos;
             bool foundPair = false;
 
             do
             {
                 // Clone the point to ensure independence
-                polyPoints.Add((VPoint)augmentedPoints[currentPos].point.Clone());
+                polyPoints.Add(augmentedPoints[currentPos].point.Clone());
 
                 currentPos = (currentPos + 1) % augmentedPoints.Count;
 
@@ -1308,7 +1296,7 @@ public class VPolygon : Shape, ICurve
                     if (hitInt != startInt && !used.Contains(hitInt))
                     {
                         // Add this intersection point (cloned) and close the polygon via the slice line
-                        polyPoints.Add((VPoint)augmentedPoints[currentPos].point.Clone());
+                        polyPoints.Add(augmentedPoints[currentPos].point.Clone());
                         used.Add(startInt);
                         used.Add(hitInt);
                         foundPair = true;

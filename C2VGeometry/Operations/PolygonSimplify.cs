@@ -45,13 +45,13 @@ internal static class PolygonSimplify
         }
 
         // Build two chains: maxIdx1 -> maxIdx2 and maxIdx2 -> maxIdx1 (wrapping)
-        var chain1 = new List<VPoint>();
+        var chain1 = new List<VXYZ>();
         for (int i = maxIdx1; i <= maxIdx2; i++)
         {
             chain1.Add(points[i]);
         }
 
-        var chain2 = new List<VPoint>();
+        var chain2 = new List<VXYZ>();
         for (int i = maxIdx2; i < points.Count; i++)
         {
             chain2.Add(points[i]);
@@ -66,7 +66,7 @@ internal static class PolygonSimplify
         var simplified2 = DouglasPeucker(chain2, tolerance);
 
         // Combine the simplified chains (remove duplicate endpoints)
-        var result = new List<VPoint>();
+        var result = new List<VXYZ>();
         result.AddRange(simplified1);
 
         // Add chain2 points except the first (it's the same as last of chain1)
@@ -87,11 +87,11 @@ internal static class PolygonSimplify
     /// <summary>
     /// Douglas-Peucker algorithm for polyline simplification.
     /// </summary>
-    private static List<VPoint> DouglasPeucker(List<VPoint> points, double tolerance)
+    private static List<VXYZ> DouglasPeucker(List<VXYZ> points, double tolerance)
     {
         if (points.Count <= 2)
         {
-            return new List<VPoint>(points);
+            return new List<VXYZ>(points);
         }
 
         // Find the point with maximum distance from the line between first and last
@@ -119,21 +119,21 @@ internal static class PolygonSimplify
             var right = DouglasPeucker(points.GetRange(maxIdx, points.Count - maxIdx), tolerance);
 
             // Combine results (remove duplicate at junction)
-            var result = new List<VPoint>(left);
+            var result = new List<VXYZ>(left);
             result.AddRange(right.GetRange(1, right.Count - 1));
             return result;
         }
         else
         {
             // Just return endpoints
-            return new List<VPoint> { first, last };
+            return new List<VXYZ> { first, last };
         }
     }
 
     /// <summary>
     /// Computes the perpendicular distance from a point to a line defined by two points.
     /// </summary>
-    private static double PerpendicularDistance(VPoint point, VPoint lineStart, VPoint lineEnd)
+    private static double PerpendicularDistance(VXYZ point, VXYZ lineStart, VXYZ lineEnd)
     {
         double dx = lineEnd.X - lineStart.X;
         double dy = lineEnd.Y - lineStart.Y;

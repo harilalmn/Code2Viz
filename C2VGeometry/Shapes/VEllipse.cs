@@ -2,7 +2,7 @@ namespace C2VGeometry;
 
 public class VEllipse : Shape, ICurve
 {
-    public VPoint Center { get; set; }
+    public VXYZ Center { get; set; }
     public double RadiusX { get; set; }
     public double RadiusY { get; set; }
 
@@ -14,7 +14,6 @@ public class VEllipse : Shape, ICurve
 
     /// <summary>
     /// Gets the approximate circumference of the ellipse using Ramanujan's formula.
-    /// This is an approximation since ellipse perimeter has no closed-form solution.
     /// </summary>
     public double Circumference
     {
@@ -27,7 +26,7 @@ public class VEllipse : Shape, ICurve
         }
     }
 
-    public VEllipse(VPoint center, double radiusX, double radiusY)
+    public VEllipse(VXYZ center, double radiusX, double radiusY)
     {
         Center = center;
         RadiusX = radiusX;
@@ -37,14 +36,13 @@ public class VEllipse : Shape, ICurve
 
     public VEllipse(double centerX, double centerY, double radiusX, double radiusY)
     {
-        Center = VPoint.Internal(centerX, centerY);
+        Center = new VXYZ(centerX, centerY);
         RadiusX = radiusX;
         RadiusY = radiusY;
         Color = "Pink";
     }
 
-    // Additional constructor for partial ellipse
-    public VEllipse(VPoint center, double radiusX, double radiusY, double startAngle, double endAngle)
+    public VEllipse(VXYZ center, double radiusX, double radiusY, double startAngle, double endAngle)
         : this(center, radiusX, radiusY)
     {
         StartAngle = startAngle;
@@ -63,7 +61,7 @@ public class VEllipse : Shape, ICurve
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -89,50 +87,47 @@ public class VEllipse : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        Center.Move(vector);
+        Center = Center + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Center.Rotate(pivot, angleDegrees);
-        // Note: Full ellipse rotation requires efficient handling of axes rotation.
+        Center = GeometryHelper.RotatePoint(Center, pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Center.Flip(mirrorLine);
+        Center = GeometryHelper.FlipPoint(Center, mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Center.Scale(center, factor);
+        Center = GeometryHelper.ScalePoint(Center, center, factor);
         RadiusX *= Math.Abs(factor);
         RadiusY *= Math.Abs(factor);
     }
 
     public override BoundingBox GetBounds()
     {
-        // Simple bounding box for non-rotated aligned ellipse
         return new BoundingBox(
-            VPoint.Internal(Center.X - RadiusX, Center.Y - RadiusY),
-            VPoint.Internal(Center.X + RadiusX, Center.Y + RadiusY)
+            new VXYZ(Center.X - RadiusX, Center.Y - RadiusY),
+            new VXYZ(Center.X + RadiusX, Center.Y + RadiusY)
         );
     }
 
     public override string ToString() => $"VEllipse({Center}, RX:{RadiusX}, RY:{RadiusY}, {StartAngle}-{EndAngle})";
 
-    public VPoint Evaluate(double parameter)
+    public VXYZ Evaluate(double parameter)
     {
-        // Interpolate angle
         double angleDeg = StartAngle + (EndAngle - StartAngle) * parameter;
         double angleRad = angleDeg * Math.PI / 180.0;
 
         double x = Center.X + RadiusX * Math.Cos(angleRad);
         double y = Center.Y + RadiusY * Math.Sin(angleRad);
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         double dx = (p.X - Center.X) / (RadiusX * RadiusX);
         double dy = (p.Y - Center.Y) / (RadiusY * RadiusY);
@@ -141,17 +136,15 @@ public class VEllipse : Shape, ICurve
 
     // ICurve Impl
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
-        // Numerical approximation: scan points
-        // 100 samples
-        VPoint bestP = Evaluate(0);
+        VXYZ bestP = Evaluate(0);
         double minD = point.DistanceTo(bestP);
 
         int steps = 100;
         for (int i = 1; i <= steps; i++)
         {
-            VPoint p = Evaluate((double)i / steps);
+            VXYZ p = Evaluate((double)i / steps);
             double d = point.DistanceTo(p);
             if (d < minD)
             {
@@ -160,13 +153,11 @@ public class VEllipse : Shape, ICurve
             }
         }
 
-        // Refine around bestP? (omitted for brevity)
         return bestP;
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
-        // Walk along
         var points = Measure(segmentLength < 1.0 ? 1.0 : segmentLength / 10.0);
         double dist = 0;
         for(int i=0; i<points.Count-1; i++)
@@ -174,10 +165,9 @@ public class VEllipse : Shape, ICurve
             double d = points[i].DistanceTo(points[i+1]);
             if (dist + d >= segmentLength)
             {
-                // Interpolate
                 double rem = segmentLength - dist;
-                VXYZ dir = (points[i+1].AsVXYZ() - points[i].AsVXYZ()).Normalize();
-                return (points[i].AsVXYZ() + dir * rem).AsVPoint();
+                VXYZ dir = (points[i+1] - points[i]).Normalize();
+                return points[i] + dir * rem;
             }
             dist += d;
         }
@@ -186,39 +176,27 @@ public class VEllipse : Shape, ICurve
 
     public double GetLength()
     {
-        // Approximation for partial ellipse is harder.
-        // Full perimeter Ramanujan approx:
-        // double h = Math.Pow(RadiusX - RadiusY, 2) / Math.Pow(RadiusX + RadiusY, 2);
-        // double p = Math.PI * (RadiusX + RadiusY) * (1 + 3*h/(10 + Math.Sqrt(4 - 3*h)));
-
-        // Use numerical integration
-        return Measure(RadiusX / 10.0).Count * (RadiusX / 10.0); // Rough count * precision? No, better sum distances
+        return Measure(RadiusX / 10.0).Count * (RadiusX / 10.0);
     }
 
     private double GetLengthNumerical()
     {
-        // Sum distances of measured points
-         // ... effectively duplicated logic in Measure
-         // But we need total length for GetLength interface.
-         // Let's implement robustly.
          double len = 0;
          int steps = 100;
-         VPoint prev = Evaluate(0);
+         VXYZ prev = Evaluate(0);
          for(int i=1; i<=steps; i++){
-             VPoint curr = Evaluate((double)i/steps);
+             VXYZ curr = Evaluate((double)i/steps);
              len += prev.DistanceTo(curr);
              prev = curr;
          }
          return len;
     }
 
-    // Override base implementation
     double ICurve.GetLength() => GetLengthNumerical();
 
     public ICurve Offset(double distance)
     {
-        // Approximate
-        return new VEllipse((VPoint)Center.Clone(), RadiusX + distance, RadiusY + distance, StartAngle, EndAngle);
+        return new VEllipse(Center.Clone(), RadiusX + distance, RadiusY + distance, StartAngle, EndAngle);
     }
 
     public List<ICurve> Offset(List<double> distances)
@@ -228,47 +206,31 @@ public class VEllipse : Shape, ICurve
         return list;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
-        // Numerical circle intersection
-        var results = new List<VPoint>();
+        var results = new List<VXYZ>();
         int steps = 100;
-        VPoint prev = Evaluate(0);
+        VXYZ prev = Evaluate(0);
         double r2 = chordLength;
-        VPoint c2 = Project(point); // Use projected center
+        VXYZ c2 = Project(point);
 
-        // Actually the requirement is "from point".
-        // "if the point is not on the curve, try projecting it to get the point"
-        // So center of chord circle is Project(point).
-
-        // Check intersections of curve segments with circle
         for(int i=1; i<=steps; i++){
-             VPoint curr = Evaluate((double)i/steps);
-             // simplistic check: if one point inside, one outside, there's a crossing
+             VXYZ curr = Evaluate((double)i/steps);
              double d1 = curr.DistanceTo(c2);
              double d2 = prev.DistanceTo(c2);
 
              if ((d1 < r2 && d2 > r2) || (d1 > r2 && d2 < r2))
              {
-                 // Interpolate
-                 // Assume linear segment
-                 // Find t in [0,1] where |Lerp(prev, curr, t) - c2| = r2
-                 // Simplified: Average?
-                 results.Add(VPoint.Internal((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
+                 results.Add(new VXYZ((curr.X+prev.X)/2, (curr.Y+prev.Y)/2));
              }
              prev = curr;
         }
         return results;
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
-        VPoint p = Project(point);
-        // Find parameter t for p
-        // Simple search again...
-        // Or analytical angle
-        // x = cx + rx cos a, y = cy + ry sin a
-        // (x-cx)/rx = cos a, (y-cy)/ry = sin a
+        VXYZ p = Project(point);
         double nx = (p.X - Center.X) / RadiusX;
         double ny = (p.Y - Center.Y) / RadiusY;
         double angle = Math.Atan2(ny, nx) * 180.0 / Math.PI;
@@ -280,9 +242,9 @@ public class VEllipse : Shape, ICurve
         );
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (numberOfSegments <= 0) return points;
 
         for (int i = 0; i <= numberOfSegments; i++)
@@ -292,36 +254,28 @@ public class VEllipse : Shape, ICurve
         return points;
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        // Numerical approach: walk the ellipse
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (segmentLength <= 1e-9) return points;
 
         double totalLen = GetLengthNumerical();
-        // ... simplistic impl
         int count = (int)(totalLen / segmentLength);
         for(int i=0; i<=count; i++)
         {
-             // Need inverse arc length mapping
-             // Linear approx
              points.Add(Evaluate((double)i * segmentLength / totalLen));
-             // Note: This is uniform in parameter, NOT in arc length.
-             // For Ellipse, parameter != arc length.
-             // This is a known simplification/error.
-             // Correcting it requires reparameterization.
         }
         return points;
     }
 
-    public VPoint StartPoint => Evaluate(0);
-    public VPoint EndPoint => Evaluate(1);
+    public VXYZ StartPoint => Evaluate(0);
+    public VXYZ EndPoint => Evaluate(1);
 
     /// <summary>An ellipse is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
     /// <summary>Gets the vertices of the ellipse (center point).</summary>
-    public List<VPoint> Vertices => new List<VPoint> { Center };
+    public List<VXYZ> Vertices => new List<VXYZ> { Center };
 
     /// <summary>
     /// Computes the intersection between this ellipse and another curve.
@@ -334,21 +288,18 @@ public class VEllipse : Shape, ICurve
     /// <summary>
     /// Returns a point on the ellipse at the given normalized parameter.
     /// </summary>
-    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+    public VXYZ PointAtParameter(double parameter) => Evaluate(parameter);
 
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the ellipse to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point)
+    public double ParameterAtPoint(VXYZ point)
     {
-        // Convert to angle space (accounting for different radii)
         double angle = Math.Atan2((point.Y - Center.Y) / RadiusY, (point.X - Center.X) / RadiusX);
         double angleDeg = angle * 180.0 / Math.PI;
 
-        // Normalize to [0, 360)
         if (angleDeg < 0) angleDeg += 360;
 
-        // Map from angle to parameter based on StartAngle/EndAngle
         double sweep = EndAngle - StartAngle;
         if (Math.Abs(sweep) < 1e-10) return 0;
 

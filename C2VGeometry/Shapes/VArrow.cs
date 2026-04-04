@@ -5,8 +5,8 @@ namespace C2VGeometry;
 /// </summary>
 public class VArrow : Shape
 {
-    public VPoint Start { get; set; }
-    public VPoint End { get; set; }
+    public VXYZ Start { get; set; }
+    public VXYZ End { get; set; }
 
     /// <summary>Size of the arrowhead (length from tip to base)</summary>
     public double HeadLength { get; set; } = 15;
@@ -17,11 +17,11 @@ public class VArrow : Shape
     /// <summary>Whether to draw arrowhead at start as well</summary>
     public bool DoubleEnded { get; set; } = false;
 
-    public VPoint StartPoint => Start;
-    public VPoint EndPoint => End;
-    public VPoint MidPoint => VPoint.Internal((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
+    public VXYZ StartPoint => Start;
+    public VXYZ EndPoint => End;
+    public VXYZ MidPoint => new VXYZ((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
 
-    public VArrow(VPoint start, VPoint end)
+    public VArrow(VXYZ start, VXYZ end)
     {
         Start = start;
         End = end;
@@ -30,23 +30,23 @@ public class VArrow : Shape
 
     public VArrow(double x1, double y1, double x2, double y2)
     {
-        Start = VPoint.Internal(x1, y1);
-        End = VPoint.Internal(x2, y2);
+        Start = new VXYZ(x1, y1);
+        End = new VXYZ(x2, y2);
         Color = "Orange";
     }
 
-    public VArrow(VPoint startPoint, VXYZ direction, double length)
+    public VArrow(VXYZ startPoint, VXYZ direction, double length)
     {
         Start = startPoint;
         var normalizedDir = direction.Normalize();
-        End = VPoint.Internal(startPoint.X + normalizedDir.X * length, startPoint.Y + normalizedDir.Y * length);
+        End = new VXYZ(startPoint.X + normalizedDir.X * length, startPoint.Y + normalizedDir.Y * length);
         Color = "Orange";
     }
 
     /// <summary>
     /// Gets the arrowhead points for the end of the arrow.
     /// </summary>
-    public (VPoint wing1, VPoint wing2) GetEndArrowhead()
+    public (VXYZ wing1, VXYZ wing2) GetEndArrowhead()
     {
         return GetArrowheadPoints(End, Start);
     }
@@ -54,12 +54,12 @@ public class VArrow : Shape
     /// <summary>
     /// Gets the arrowhead points for the start of the arrow (if double-ended).
     /// </summary>
-    public (VPoint wing1, VPoint wing2) GetStartArrowhead()
+    public (VXYZ wing1, VXYZ wing2) GetStartArrowhead()
     {
         return GetArrowheadPoints(Start, End);
     }
 
-    private (VPoint wing1, VPoint wing2) GetArrowheadPoints(VPoint tip, VPoint from)
+    private (VXYZ wing1, VXYZ wing2) GetArrowheadPoints(VXYZ tip, VXYZ from)
     {
         double dx = tip.X - from.X;
         double dy = tip.Y - from.Y;
@@ -81,8 +81,8 @@ public class VArrow : Shape
         double perpY = dx;
 
         // Wing points at the base
-        var wing1 = VPoint.Internal(baseX + perpX * halfWidth, baseY + perpY * halfWidth);
-        var wing2 = VPoint.Internal(baseX - perpX * halfWidth, baseY - perpY * halfWidth);
+        var wing1 = new VXYZ(baseX + perpX * halfWidth, baseY + perpY * halfWidth);
+        var wing2 = new VXYZ(baseX - perpX * halfWidth, baseY - perpY * halfWidth);
 
         return (wing1, wing2);
     }
@@ -100,7 +100,7 @@ public class VArrow : Shape
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -110,12 +110,10 @@ public class VArrow : Shape
                 Move(delta);
                 break;
             case 1:
-                Start.X = newPosition.X;
-                Start.Y = newPosition.Y;
+                Start = new VXYZ(newPosition.X, newPosition.Y);
                 break;
             case 2:
-                End.X = newPosition.X;
-                End.Y = newPosition.Y;
+                End = new VXYZ(newPosition.X, newPosition.Y);
                 break;
         }
     }
@@ -134,34 +132,34 @@ public class VArrow : Shape
 
     public override void Move(VXYZ vector)
     {
-        Start.Move(vector);
-        End.Move(vector);
+        Start = Start + vector;
+        End = End + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Start.Rotate(pivot, angleDegrees);
-        End.Rotate(pivot, angleDegrees);
+        Start = GeometryHelper.RotatePoint(Start, pivot, angleDegrees);
+        End = GeometryHelper.RotatePoint(End, pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Start.Flip(mirrorLine);
-        End.Flip(mirrorLine);
+        Start = GeometryHelper.FlipPoint(Start, mirrorLine);
+        End = GeometryHelper.FlipPoint(End, mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Start.Scale(center, factor);
-        End.Scale(center, factor);
+        Start = GeometryHelper.ScalePoint(Start, center, factor);
+        End = GeometryHelper.ScalePoint(End, center, factor);
         HeadLength *= Math.Abs(factor);
     }
 
     public override BoundingBox GetBounds()
     {
         return new BoundingBox(
-            VPoint.Internal(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
-            VPoint.Internal(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
+            new VXYZ(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
+            new VXYZ(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
         );
     }
 

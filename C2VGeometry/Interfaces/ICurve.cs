@@ -10,13 +10,13 @@ public interface ICurve : IDrawable
     /// <summary>
     /// Gets the start point of the curve.
     /// </summary>
-    VPoint StartPoint { get; }
+    VXYZ StartPoint { get; }
 
     /// <summary>
     /// Gets the end point of the curve.
     /// For closed curves, this returns the same point as StartPoint.
     /// </summary>
-    VPoint EndPoint { get; }
+    VXYZ EndPoint { get; }
 
     /// <summary>
     /// Gets the key vertices/control points of the curve.
@@ -25,7 +25,7 @@ public interface ICurve : IDrawable
     /// For polygons/polylines: all vertices.
     /// For beziers/splines: all control points.
     /// </summary>
-    List<VPoint> Vertices { get; }
+    List<VXYZ> Vertices { get; }
 
     /// <summary>
     /// Indicates whether the curve intersects itself.
@@ -38,13 +38,13 @@ public interface ICurve : IDrawable
     /// Divides the curve into the specified number of segments.
     /// </summary>
     /// <returns>A list of points including the start and end points.</returns>
-    List<VPoint> Divide(int numberOfSegments);
+    List<VXYZ> Divide(int numberOfSegments);
 
     /// <summary>
     /// Measures points along the curve at fixed intervals.
     /// </summary>
     /// <returns>A list of points separated by the specified length.</returns>
-    List<VPoint> Measure(double segmentLength);
+    List<VXYZ> Measure(double segmentLength);
 
     /// <summary>
     /// Gets the total length of the curve.
@@ -54,12 +54,12 @@ public interface ICurve : IDrawable
     /// <summary>
     /// Projects a point onto the curve.
     /// </summary>
-    VPoint Project(VPoint point);
+    VXYZ Project(VXYZ point);
 
     /// <summary>
     /// Returns a point at a given distance along the curve from the start.
     /// </summary>
-    VPoint PointAtSegmentLength(double segmentLength);
+    VXYZ PointAtSegmentLength(double segmentLength);
 
     /// <summary>
     /// Creates an offset curve at the specified distance.
@@ -75,18 +75,18 @@ public interface ICurve : IDrawable
     /// Finds points on the curve that are at a specific chord length from a given point.
     /// If the point is not on the curve, it is projected first.
     /// </summary>
-    List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength);
+    List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength);
 
     /// <summary>
     /// Splits the curve at the specified point.
     /// Returns a tuple of two segments.
     /// </summary>
-    (ICurve, ICurve) SplitAtPoint(VPoint point);
+    (ICurve, ICurve) SplitAtPoint(VXYZ point);
 
     /// <summary>
     /// Calculates the normal vector at a specific point on the curve.
     /// </summary>
-    VXYZ NormalAtPoint(VPoint p);
+    VXYZ NormalAtPoint(VXYZ p);
 
     /// <summary>
     /// Computes the intersection between this curve and another curve.
@@ -99,12 +99,12 @@ public interface ICurve : IDrawable
     /// </summary>
     /// <param name="parameter">A value from 0 to 1, where 0 is the start and 1 is the end of the curve.</param>
     /// <returns>The point on the curve at the specified parameter.</returns>
-    VPoint PointAtParameter(double parameter);
+    VXYZ PointAtParameter(double parameter);
 
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the curve to the given point.
     /// </summary>
     /// <param name="point">The point to find the parameter for.</param>
     /// <returns>A value from 0 to 1 representing the position along the curve.</returns>
-    double ParameterAtPoint(VPoint point);
+    double ParameterAtPoint(VXYZ point);
 }

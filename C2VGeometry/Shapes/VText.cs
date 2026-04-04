@@ -51,7 +51,7 @@ public enum VFontWeight
 
 public class VText : Shape
 {
-    public VPoint Location { get; set; }
+    public VXYZ Location { get; set; }
     public string Content { get; set; }
     public double Height { get; set; } = 12;
     public double Width { get; set; } = 0; // 0 = auto (measured)
@@ -59,17 +59,17 @@ public class VText : Shape
     public VFontWeight FontWeight { get; set; } = VFontWeight.Normal;
     public VTextAnchor Anchor { get; set; } = VTextAnchor.BottomLeft;
 
-    public VText(VPoint location, string content)
+    public VText(VXYZ location, string content)
     {
-        Location = VPoint.Internal(location.X, location.Y);
+        Location = new VXYZ(location.X, location.Y);
         Content = content;
         Color = "White";
         FillColor = "Transparent";
     }
 
-    public VText(VPoint location, string content, double height)
+    public VText(VXYZ location, string content, double height)
     {
-        Location = VPoint.Internal(location.X, location.Y);
+        Location = new VXYZ(location.X, location.Y);
         Content = content;
         Height = height;
         Color = "White";
@@ -78,7 +78,7 @@ public class VText : Shape
 
     public VText(double x, double y, string content)
     {
-        Location = VPoint.Internal(x, y);
+        Location = new VXYZ(x, y);
         Content = content;
         Color = "White";
         FillColor = "Transparent";
@@ -86,7 +86,7 @@ public class VText : Shape
 
     public VText(double x, double y, string content, double height)
     {
-        Location = VPoint.Internal(x, y);
+        Location = new VXYZ(x, y);
         Content = content;
         Height = height;
         Color = "White";
@@ -103,12 +103,11 @@ public class VText : Shape
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         if (index == 0)
         {
-            Location.X = newPosition.X;
-            Location.Y = newPosition.Y;
+            Location = new VXYZ(newPosition.X, newPosition.Y);
         }
     }
 
@@ -128,22 +127,22 @@ public class VText : Shape
 
     public override void Move(VXYZ vector)
     {
-        Location.Move(vector);
+        Location = Location + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Location.Rotate(pivot, angleDegrees);
+        Location = GeometryHelper.RotatePoint(Location, pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Location.Flip(mirrorLine);
+        Location = GeometryHelper.FlipPoint(Location, mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Location.Scale(center, factor);
+        Location = GeometryHelper.ScalePoint(Location, center, factor);
         Height *= Math.Abs(factor);
         if (Width > 0)
             Width *= Math.Abs(factor);
@@ -153,8 +152,8 @@ public class VText : Shape
     {
         var textWidth = Width > 0 ? Width : Height * Content.Length * 0.6;
         var (offsetX, offsetY) = GetAnchorOffset(textWidth, Height);
-        var bottomLeft = VPoint.Internal(Location.X + offsetX, Location.Y + offsetY);
-        return new BoundingBox(bottomLeft, VPoint.Internal(bottomLeft.X + textWidth, bottomLeft.Y + Height));
+        var bottomLeft = new VXYZ(Location.X + offsetX, Location.Y + offsetY);
+        return new BoundingBox(bottomLeft, new VXYZ(bottomLeft.X + textWidth, bottomLeft.Y + Height));
     }
 
     internal (double offsetX, double offsetY) GetAnchorOffset(double textWidth, double textHeight)

@@ -74,9 +74,9 @@ public static class GeometryTolerance
         => AreEqual(x1, x2, epsilon) && AreEqual(y1, y2, epsilon);
 
     /// <summary>
-    /// Checks if two VPoint objects are coincident within tolerance.
+    /// Checks if two VXYZ objects are coincident within tolerance.
     /// </summary>
-    public static bool PointsAreEqual(VPoint p1, VPoint p2, double epsilon = Epsilon)
+    public static bool PointsAreEqual(VXYZ p1, VXYZ p2, double epsilon = Epsilon)
         => PointsAreEqual(p1.X, p1.Y, p2.X, p2.Y, epsilon);
 
     /// <summary>
@@ -156,9 +156,9 @@ public static class GeometryTolerance
     }
 
     /// <summary>
-    /// Computes the squared distance between two VPoints.
+    /// Computes the squared distance between two VXYZ points.
     /// </summary>
-    public static double DistanceSquared(VPoint p1, VPoint p2)
+    public static double DistanceSquared(VXYZ p1, VXYZ p2)
         => DistanceSquared(p1.X, p1.Y, p2.X, p2.Y);
 
     /// <summary>
@@ -168,16 +168,16 @@ public static class GeometryTolerance
         => Math.Sqrt(DistanceSquared(x1, y1, x2, y2));
 
     /// <summary>
-    /// Computes the distance between two VPoints.
+    /// Computes the distance between two VXYZ points.
     /// </summary>
-    public static double Distance(VPoint p1, VPoint p2)
+    public static double Distance(VXYZ p1, VXYZ p2)
         => Math.Sqrt(DistanceSquared(p1, p2));
 
     /// <summary>
     /// Checks if a point lies on a line segment within tolerance.
     /// Uses perpendicular distance and parametric bounds checking.
     /// </summary>
-    public static bool PointOnSegment(VPoint point, VPoint lineStart, VPoint lineEnd, double epsilon = Epsilon)
+    public static bool PointOnSegment(VXYZ point, VXYZ lineStart, VXYZ lineEnd, double epsilon = Epsilon)
     {
         double dx = lineEnd.X - lineStart.X;
         double dy = lineEnd.Y - lineStart.Y;
@@ -207,7 +207,7 @@ public static class GeometryTolerance
     /// <summary>
     /// Computes the perpendicular distance from a point to an infinite line.
     /// </summary>
-    public static double PointToLineDistance(VPoint point, VPoint lineStart, VPoint lineEnd)
+    public static double PointToLineDistance(VXYZ point, VXYZ lineStart, VXYZ lineEnd)
     {
         double dx = lineEnd.X - lineStart.X;
         double dy = lineEnd.Y - lineStart.Y;
@@ -225,7 +225,7 @@ public static class GeometryTolerance
     /// Determines the orientation of three points (counterclockwise, clockwise, or collinear).
     /// Returns: positive = CCW, negative = CW, zero = collinear
     /// </summary>
-    public static double Orientation(VPoint p1, VPoint p2, VPoint p3)
+    public static double Orientation(VXYZ p1, VXYZ p2, VXYZ p3)
     {
         return (p2.X - p1.X) * (p3.Y - p1.Y) - (p2.Y - p1.Y) * (p3.X - p1.X);
     }
@@ -233,7 +233,7 @@ public static class GeometryTolerance
     /// <summary>
     /// Checks if three points are collinear within tolerance.
     /// </summary>
-    public static bool AreCollinear(VPoint p1, VPoint p2, VPoint p3, double epsilon = Epsilon)
+    public static bool AreCollinear(VXYZ p1, VXYZ p2, VXYZ p3, double epsilon = Epsilon)
     {
         return IsZero(Orientation(p1, p2, p3), epsilon);
     }

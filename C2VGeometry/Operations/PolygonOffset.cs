@@ -139,7 +139,7 @@ internal static class PolygonOffset
         // For clockwise polygons, we need to invert the offset direction
         double effectiveDistance = isClockwise ? -distance : distance;
 
-        var offsetPoints = new List<VPoint>();
+        var offsetPoints = new List<VXYZ>();
 
         for (int i = 0; i < n; i++)
         {
@@ -213,7 +213,7 @@ internal static class PolygonOffset
 
     #region Helper Methods
 
-    private static double PointToSegmentDistance(VPoint point, VPoint segStart, VPoint segEnd)
+    private static double PointToSegmentDistance(VXYZ point, VXYZ segStart, VXYZ segEnd)
     {
         double dx = segEnd.X - segStart.X;
         double dy = segEnd.Y - segStart.Y;
@@ -243,7 +243,7 @@ internal static class PolygonOffset
         return (dx / len, dy / len);
     }
 
-    private static List<VPoint> ComputeCornerPoints(VPoint vertex,
+    private static List<VXYZ> ComputeCornerPoints(VXYZ vertex,
                                                      (double nx, double ny) n1,
                                                      (double nx, double ny) n2,
                                                      (double dx, double dy) dir1,
@@ -251,7 +251,7 @@ internal static class PolygonOffset
                                                      double distance,
                                                      JoinType joinType)
     {
-        var result = new List<VPoint>();
+        var result = new List<VXYZ>();
 
         // Compute bisector
         double bisectorX = n1.nx + n2.nx;
@@ -261,7 +261,7 @@ internal static class PolygonOffset
         if (bisectorLen < Epsilon)
         {
             // Normals are opposite (180 degree turn) - use n1
-            result.Add(VPoint.Internal(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
+            result.Add(new VXYZ(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
             return result;
         }
 
@@ -284,7 +284,7 @@ internal static class PolygonOffset
         if (Math.Abs(cosHalfAngle) < Epsilon)
         {
             // Very sharp corner - use simple offset
-            result.Add(VPoint.Internal(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
+            result.Add(new VXYZ(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
             return result;
         }
 
@@ -298,14 +298,14 @@ internal static class PolygonOffset
                 if (miterRatio <= DefaultMiterLimit || !isConvex)
                 {
                     // Use miter join
-                    result.Add(VPoint.Internal(vertex.X + bisectorX * miterDistance * Math.Sign(distance),
+                    result.Add(new VXYZ(vertex.X + bisectorX * miterDistance * Math.Sign(distance),
                                                vertex.Y + bisectorY * miterDistance * Math.Sign(distance)));
                 }
                 else
                 {
                     // Miter limit exceeded - use bevel (square) instead
-                    result.Add(VPoint.Internal(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
-                    result.Add(VPoint.Internal(vertex.X + n2.nx * distance, vertex.Y + n2.ny * distance));
+                    result.Add(new VXYZ(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
+                    result.Add(new VXYZ(vertex.X + n2.nx * distance, vertex.Y + n2.ny * distance));
                 }
                 break;
 
@@ -329,13 +329,13 @@ internal static class PolygonOffset
                         double a = startAngle + t * angleDiff;
                         double px = vertex.X + Math.Cos(a) * Math.Abs(distance);
                         double py = vertex.Y + Math.Sin(a) * Math.Abs(distance);
-                        result.Add(VPoint.Internal(px, py));
+                        result.Add(new VXYZ(px, py));
                     }
                 }
                 else
                 {
                     // Concave corner - use miter
-                    result.Add(VPoint.Internal(vertex.X + bisectorX * miterDistance * Math.Sign(distance),
+                    result.Add(new VXYZ(vertex.X + bisectorX * miterDistance * Math.Sign(distance),
                                                vertex.Y + bisectorY * miterDistance * Math.Sign(distance)));
                 }
                 break;
@@ -344,13 +344,13 @@ internal static class PolygonOffset
                 if (isConvex)
                 {
                     // Add two points for squared corner
-                    result.Add(VPoint.Internal(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
-                    result.Add(VPoint.Internal(vertex.X + n2.nx * distance, vertex.Y + n2.ny * distance));
+                    result.Add(new VXYZ(vertex.X + n1.nx * distance, vertex.Y + n1.ny * distance));
+                    result.Add(new VXYZ(vertex.X + n2.nx * distance, vertex.Y + n2.ny * distance));
                 }
                 else
                 {
                     // Concave corner - use miter
-                    result.Add(VPoint.Internal(vertex.X + bisectorX * miterDistance * Math.Sign(distance),
+                    result.Add(new VXYZ(vertex.X + bisectorX * miterDistance * Math.Sign(distance),
                                                vertex.Y + bisectorY * miterDistance * Math.Sign(distance)));
                 }
                 break;
@@ -359,10 +359,10 @@ internal static class PolygonOffset
         return result;
     }
 
-    private static List<VPoint> CleanupOffsetPolygon(List<VPoint> points)
+    private static List<VXYZ> CleanupOffsetPolygon(List<VXYZ> points)
     {
         // Remove duplicate consecutive points
-        var cleaned = new List<VPoint>();
+        var cleaned = new List<VXYZ>();
 
         for (int i = 0; i < points.Count; i++)
         {
@@ -382,7 +382,7 @@ internal static class PolygonOffset
         // Remove collinear points
         if (cleaned.Count >= 3)
         {
-            var simplified = new List<VPoint>();
+            var simplified = new List<VXYZ>();
             for (int i = 0; i < cleaned.Count; i++)
             {
                 int prev = (i - 1 + cleaned.Count) % cleaned.Count;

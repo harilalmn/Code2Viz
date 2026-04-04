@@ -2,27 +2,27 @@ namespace C2VGeometry;
 
 public class VArc : Shape, ICurve
 {
-    public VPoint Center { get; set; }
+    public VXYZ Center { get; set; }
     public double Radius { get; set; }
     public double StartAngle { get; set; }  // In degrees
     public double EndAngle { get; set; }    // In degrees
 
     /// <summary>Gets the start point of the arc.</summary>
-    public VPoint StartPoint => Evaluate(0);
+    public VXYZ StartPoint => Evaluate(0);
 
     /// <summary>Gets the end point of the arc.</summary>
-    public VPoint EndPoint => Evaluate(1);
+    public VXYZ EndPoint => Evaluate(1);
 
     /// <summary>An arc is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
     /// <summary>Gets the vertices of the arc (center, start point, end point).</summary>
-    public List<VPoint> Vertices => new List<VPoint> { Center, StartPoint, EndPoint };
+    public List<VXYZ> Vertices => new List<VXYZ> { Center, StartPoint, EndPoint };
 
     /// <summary>Gets the midpoint of the arc.</summary>
-    public VPoint MidPoint => Evaluate(0.5);
+    public VXYZ MidPoint => Evaluate(0.5);
 
-    public VArc(VPoint center, double radius, double startAngle, double endAngle)
+    public VArc(VXYZ center, double radius, double startAngle, double endAngle)
     {
         Center = center;
         Radius = radius;
@@ -33,7 +33,7 @@ public class VArc : Shape, ICurve
 
     public VArc(double centerX, double centerY, double radius, double startAngle, double endAngle)
     {
-        Center = VPoint.Internal(centerX, centerY);
+        Center = new VXYZ(centerX, centerY);
         Radius = radius;
         StartAngle = startAngle;
         EndAngle = endAngle;
@@ -43,16 +43,13 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Creates an arc passing through three points.
     /// </summary>
-    public VArc(VPoint start, VPoint mid, VPoint end)
+    public VArc(VXYZ start, VXYZ mid, VXYZ end)
     {
         // Check collinearity via determinant (2 * signed area)
         double D = 2 * (start.X * (mid.Y - end.Y) + mid.X * (end.Y - start.Y) + end.X * (start.Y - mid.Y));
 
         if (GeometryTolerance.IsZero(D))
         {
-            // Collinear - theoretically a straight line/infinite radius.
-            // Fallback to a valid but flat arc or throw?
-            // Construct a flat arc (huge radius)? Or just throw.
             throw new ArgumentException("Points are collinear, cannot define a unique arc.");
         }
 
@@ -64,7 +61,7 @@ public class VArc : Shape, ICurve
         double cx = (s1 * (mid.Y - end.Y) + s2 * (end.Y - start.Y) + s3 * (start.Y - mid.Y)) / D;
         double cy = (s1 * (end.X - mid.X) + s2 * (start.X - end.X) + s3 * (mid.X - start.X)) / D;
 
-        Center = VPoint.Internal(cx, cy);
+        Center = new VXYZ(cx, cy);
         Radius = Center.DistanceTo(start);
         Color = "Orange";
 
@@ -74,9 +71,6 @@ public class VArc : Shape, ICurve
         double a3 = Math.Atan2(end.Y - cy, end.X - cx) * 180.0 / Math.PI;
 
         StartAngle = a1;
-
-        // D > 0 implies CCW (in standard system). D < 0 implies CW.
-        // We accumulate sweep from Start towards End via Mid.
 
         double sweep1, sweep2;
 
@@ -96,21 +90,19 @@ public class VArc : Shape, ICurve
 
     /// <summary>
     /// Creates an arc from start point, center, and end point.
-    /// The arc goes from start to end through the shorter path.
     /// </summary>
-    public static VArc FromStartCenterEnd(VPoint start, VPoint center, VPoint end)
+    public static VArc FromStartCenterEnd(VXYZ start, VXYZ center, VXYZ end)
     {
         double radius = center.DistanceTo(start);
         double startAngle = Math.Atan2(start.Y - center.Y, start.X - center.X) * 180.0 / Math.PI;
         double endAngle = Math.Atan2(end.Y - center.Y, end.X - center.X) * 180.0 / Math.PI;
-        return new VArc(VPoint.Internal(center.X, center.Y), radius, startAngle, endAngle);
+        return new VArc(new VXYZ(center.X, center.Y), radius, startAngle, endAngle);
     }
 
     /// <summary>
     /// Creates an arc from center, start point, and end point.
-    /// Same as FromStartCenterEnd but with different parameter order.
     /// </summary>
-    public static VArc FromCenterStartEnd(VPoint center, VPoint start, VPoint end)
+    public static VArc FromCenterStartEnd(VXYZ center, VXYZ start, VXYZ end)
     {
         return FromStartCenterEnd(start, center, end);
     }
@@ -118,18 +110,18 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Creates an arc from start point, center, and sweep angle (in degrees).
     /// </summary>
-    public static VArc FromStartCenterAngle(VPoint start, VPoint center, double sweepAngleDegrees)
+    public static VArc FromStartCenterAngle(VXYZ start, VXYZ center, double sweepAngleDegrees)
     {
         double radius = center.DistanceTo(start);
         double startAngle = Math.Atan2(start.Y - center.Y, start.X - center.X) * 180.0 / Math.PI;
         double endAngle = startAngle + sweepAngleDegrees;
-        return new VArc(VPoint.Internal(center.X, center.Y), radius, startAngle, endAngle);
+        return new VArc(new VXYZ(center.X, center.Y), radius, startAngle, endAngle);
     }
 
     /// <summary>
     /// Creates an arc from center, start point, and sweep angle (in degrees).
     /// </summary>
-    public static VArc FromCenterStartAngle(VPoint center, VPoint start, double sweepAngleDegrees)
+    public static VArc FromCenterStartAngle(VXYZ center, VXYZ start, double sweepAngleDegrees)
     {
         return FromStartCenterAngle(start, center, sweepAngleDegrees);
     }
@@ -137,7 +129,7 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Creates an arc from start point, center, and arc length.
     /// </summary>
-    public static VArc FromStartCenterLength(VPoint start, VPoint center, double arcLength)
+    public static VArc FromStartCenterLength(VXYZ start, VXYZ center, double arcLength)
     {
         double radius = center.DistanceTo(start);
         double sweepAngleRad = arcLength / radius;
@@ -148,7 +140,7 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Creates an arc from center, start point, and arc length.
     /// </summary>
-    public static VArc FromCenterStartLength(VPoint center, VPoint start, double arcLength)
+    public static VArc FromCenterStartLength(VXYZ center, VXYZ start, double arcLength)
     {
         return FromStartCenterLength(start, center, arcLength);
     }
@@ -157,9 +149,8 @@ public class VArc : Shape, ICurve
     /// Creates an arc from start point, end point, and radius.
     /// </summary>
     /// <param name="largeArc">If true, creates the larger arc; otherwise the smaller arc.</param>
-    public static VArc FromStartEndRadius(VPoint start, VPoint end, double radius, bool largeArc = false)
+    public static VArc FromStartEndRadius(VXYZ start, VXYZ end, double radius, bool largeArc = false)
     {
-        // Find the two possible centers
         double d = start.DistanceTo(end);
         if (d > 2 * radius)
             throw new ArgumentException("Radius too small for the given points.");
@@ -167,24 +158,19 @@ public class VArc : Shape, ICurve
         double midX = (start.X + end.X) / 2.0;
         double midY = (start.Y + end.Y) / 2.0;
 
-        // Distance from midpoint to center
         double h = Math.Sqrt(radius * radius - (d / 2.0) * (d / 2.0));
 
-        // Perpendicular direction
         double dx = end.X - start.X;
         double dy = end.Y - start.Y;
         double perpX = -dy / d;
         double perpY = dx / d;
 
-        // Two possible centers
         double cx1 = midX + h * perpX;
         double cy1 = midY + h * perpY;
         double cx2 = midX - h * perpX;
         double cy2 = midY - h * perpY;
 
-        // Choose center based on largeArc flag
-        // For simplicity, use center1 for small arc, center2 for large arc
-        VPoint center = largeArc ? VPoint.Internal(cx2, cy2) : VPoint.Internal(cx1, cy1);
+        VXYZ center = largeArc ? new VXYZ(cx2, cy2) : new VXYZ(cx1, cy1);
 
         double startAngle = Math.Atan2(start.Y - center.Y, start.X - center.X) * 180.0 / Math.PI;
         double endAngle = Math.Atan2(end.Y - center.Y, end.X - center.X) * 180.0 / Math.PI;
@@ -195,9 +181,8 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Creates an arc from start point, end point, and sweep angle.
     /// </summary>
-    public static VArc FromStartEndAngle(VPoint start, VPoint end, double sweepAngleDegrees)
+    public static VArc FromStartEndAngle(VXYZ start, VXYZ end, double sweepAngleDegrees)
     {
-        // Calculate radius from chord length and sweep angle
         double chordLength = start.DistanceTo(end);
         double sweepRad = Math.Abs(sweepAngleDegrees) * Math.PI / 180.0;
         double radius = chordLength / (2 * Math.Sin(sweepRad / 2));
@@ -212,12 +197,10 @@ public class VArc : Shape, ICurve
     {
         var start = previous.EndPoint;
         var tangent = previous.NormalAtPoint(start);
-        // Rotate 90 degrees to get tangent direction
         var direction = new VXYZ(-tangent.Y, tangent.X, 0);
 
-        // Create arc with arbitrary radius, adjusted by arc length
-        double radius = arcLength / Math.PI; // Semicircle as default
-        var center = VPoint.Internal(start.X - direction.X * radius, start.Y - direction.Y * radius);
+        double radius = arcLength / Math.PI;
+        var center = new VXYZ(start.X - direction.X * radius, start.Y - direction.Y * radius);
 
         return FromStartCenterLength(start, center, arcLength);
     }
@@ -239,21 +222,19 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Evaluates a point along the arc at the given normalized parameter.
     /// </summary>
-    public VPoint Evaluate(double parameter)
+    public VXYZ Evaluate(double parameter)
     {
         double startRad = StartAngle * Math.PI / 180.0;
         double endRad = EndAngle * Math.PI / 180.0;
 
-        // Handle wrapping if needed? Usually angle is not wrapped for Arc unless specified.
-        // Assuming simple sweep for now.
         double angleRad = startRad + (endRad - startRad) * parameter;
 
         double x = Center.X + Radius * Math.Cos(angleRad);
         double y = Center.Y + Radius * Math.Sin(angleRad);
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         return new VXYZ(p.X - Center.X, p.Y - Center.Y, 0).Normalize();
     }
@@ -264,9 +245,9 @@ public class VArc : Shape, ICurve
         return Radius * angleDiff * Math.PI / 180.0;
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (numberOfSegments <= 0) return points;
 
         for (int i = 0; i <= numberOfSegments; i++)
@@ -276,9 +257,9 @@ public class VArc : Shape, ICurve
         return points;
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (segmentLength <= 0) return points;
 
         double totalLength = GetLength();
@@ -300,21 +281,13 @@ public class VArc : Shape, ICurve
         return points;
     }
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
-        // Vector from center to point
-        VXYZ cp = (point.AsVXYZ() - Center.AsVXYZ());
-        if (cp.IsZeroLength()) cp = new VXYZ(1, 0, 0); // Arbitrary if point is center
+        VXYZ cp = point - Center;
+        if (cp.IsZeroLength()) cp = new VXYZ(1, 0, 0);
 
-        // Angle of the point
         double angle = Math.Atan2(cp.Y, cp.X) * 180.0 / Math.PI;
 
-        // Normalize angles to be compatible with Start/End sweep logic
-        // This can be complex depending on how Start/End are defined (e.g., crossing 0/360)
-        // For simplicity: Assuming StartAngle <= EndAngle logic handled in normalization
-
-        // Clamp angle to arc range?
-        // A simple way is to check if angle is within range, if not, snap to closest end.
         if (!IsAngleInArc(angle))
         {
             double distStart = GeometryHelper.AngleDifference(angle, StartAngle);
@@ -323,49 +296,42 @@ public class VArc : Shape, ICurve
         }
 
         double rad = angle * Math.PI / 180.0;
-        return VPoint.Internal(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
+        return new VXYZ(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
     }
 
     private bool IsAngleInArc(double angle)
     {
-        // Normalize all angles to [0, 360)
         double s = GeometryHelper.NormalizeAngle(StartAngle);
         double e = GeometryHelper.NormalizeAngle(EndAngle);
         double a = GeometryHelper.NormalizeAngle(angle);
 
         if (s < e) return a >= s && a <= e;
-        return a >= s || a <= e; // Arc crosses 0
+        return a >= s || a <= e;
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
-        // L = R * theta(rad)
-        // theta = L / R
         double angleRad = segmentLength / Radius;
         double angleDeg = angleRad * 180.0 / Math.PI;
 
-        // Direction of sweep depends on EndAngle - StartAngle sign?
-        // Usually arcs are CCW, but EndAngle can be smaller than StartAngle effectively?
-        // Using explicit diff
         double totalSweep = EndAngle - StartAngle;
         double dir = Math.Sign(totalSweep);
         if (dir == 0) dir = 1;
 
         double targetAngle = StartAngle + dir * angleDeg;
 
-        // Clamp to end
         if (Math.Abs(targetAngle - StartAngle) > Math.Abs(EndAngle - StartAngle))
             targetAngle = EndAngle;
 
         double rad = targetAngle * Math.PI / 180.0;
-        return VPoint.Internal(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
+        return new VXYZ(Center.X + Radius * Math.Cos(rad), Center.Y + Radius * Math.Sin(rad));
     }
 
     public ICurve Offset(double distance)
     {
         double newRadius = Radius + distance;
-        if (newRadius < 0) newRadius = 0; // Or flip?
-        return new VArc(VPoint.Internal(Center.X, Center.Y), newRadius, StartAngle, EndAngle);
+        if (newRadius < 0) newRadius = 0;
+        return new VArc(new VXYZ(Center.X, Center.Y), newRadius, StartAngle, EndAngle);
     }
 
     public List<ICurve> Offset(List<double> distances)
@@ -375,33 +341,27 @@ public class VArc : Shape, ICurve
         return result;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
         var projected = Project(point);
-        // Intersection of two circles:
-        // 1. Center=this.Center, Radius=this.Radius
-        // 2. Center=projected, Radius=chordLength
-
         var points = GeometryHelper.IntersectCircleCircle(Center, Radius, projected, chordLength);
 
-        // Filter points on arc
-        var results = new List<VPoint>();
+        var results = new List<VXYZ>();
         foreach (var p in points)
         {
-            VXYZ cp = (p.AsVXYZ() - Center.AsVXYZ());
+            VXYZ cp = p - Center;
             double angle = Math.Atan2(cp.Y, cp.X) * 180.0 / Math.PI;
             if (IsAngleInArc(angle)) results.Add(p);
         }
         return results;
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
         var proj = Project(point);
-        VXYZ cp = (proj.AsVXYZ() - Center.AsVXYZ());
+        VXYZ cp = proj - Center;
         double angle = Math.Atan2(cp.Y, cp.X) * 180.0 / Math.PI;
 
-        // Assuming angle is within arc
         return (
             new VArc(Center, Radius, StartAngle, angle),
             new VArc(Center, Radius, angle, EndAngle)
@@ -427,7 +387,7 @@ public class VArc : Shape, ICurve
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -458,35 +418,35 @@ public class VArc : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        Center.Move(vector);
+        Center = Center + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Center.Rotate(pivot, angleDegrees);
+        Center = GeometryHelper.RotatePoint(Center, pivot, angleDegrees);
         StartAngle = GeometryHelper.NormalizeAngle(StartAngle + angleDegrees);
         EndAngle = GeometryHelper.NormalizeAngle(EndAngle + angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Center.Flip(mirrorLine);
+        Center = GeometryHelper.FlipPoint(Center, mirrorLine);
         double temp = StartAngle;
         StartAngle = -EndAngle;
         EndAngle = -temp;
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Center.Scale(center, factor);
+        Center = GeometryHelper.ScalePoint(Center, center, factor);
         Radius *= Math.Abs(factor);
     }
 
     public override BoundingBox GetBounds()
     {
         return new BoundingBox(
-            VPoint.Internal(Center.X - Radius, Center.Y - Radius),
-            VPoint.Internal(Center.X + Radius, Center.Y + Radius)
+            new VXYZ(Center.X - Radius, Center.Y - Radius),
+            new VXYZ(Center.X + Radius, Center.Y + Radius)
         );
     }
 
@@ -503,34 +463,30 @@ public class VArc : Shape, ICurve
     /// <summary>
     /// Returns a point on the arc at the given normalized parameter.
     /// </summary>
-    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+    public VXYZ PointAtParameter(double parameter) => Evaluate(parameter);
 
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the arc to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point)
+    public double ParameterAtPoint(VXYZ point)
     {
         double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X) * 180.0 / Math.PI;
         double startRad = StartAngle;
         double endRad = EndAngle;
 
-        // Normalize angle to arc range
         double sweep = endRad - startRad;
         double relativeAngle = angle - startRad;
 
-        // Handle angle wrapping
         while (relativeAngle < 0) relativeAngle += 360;
         while (relativeAngle > 360) relativeAngle -= 360;
 
         if (sweep < 0)
         {
-            // Arc goes clockwise
             if (relativeAngle > -sweep) relativeAngle = -sweep;
             return Math.Clamp(relativeAngle / -sweep, 0, 1);
         }
         else
         {
-            // Arc goes counter-clockwise
             if (relativeAngle > sweep) relativeAngle = sweep;
             return Math.Clamp(relativeAngle / sweep, 0, 1);
         }

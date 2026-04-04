@@ -27,10 +27,10 @@ public class GeometryParityTests
 
     private static CoreGeo.Region MakeCoreRectRegion(double x, double y, double w, double h)
     {
-        var p0 = CoreGeo.VPoint.Internal(x, y);
-        var p1 = CoreGeo.VPoint.Internal(x + w, y);
-        var p2 = CoreGeo.VPoint.Internal(x + w, y + h);
-        var p3 = CoreGeo.VPoint.Internal(x, y + h);
+        var p0 = new CoreGeo.VXYZ(x, y);
+        var p1 = new CoreGeo.VXYZ(x + w, y);
+        var p2 = new CoreGeo.VXYZ(x + w, y + h);
+        var p3 = new CoreGeo.VXYZ(x, y + h);
 
         var curves = new List<CoreGeo.ICurve>
         {
@@ -47,7 +47,7 @@ public class GeometryParityTests
     public void CircleAreaAndCircumference_MatchBetweenLibraries()
     {
         var appCircle = new AppGeo.VCircle(0, 0, 12.5);
-        var coreCircle = new CoreGeo.VCircle(CoreGeo.VPoint.Internal(0, 0), 12.5);
+        var coreCircle = new CoreGeo.VCircle(new CoreGeo.VXYZ(0, 0), 12.5);
 
         Assert.Equal(coreCircle.Area, appCircle.Area, precision: 6);
         Assert.Equal(coreCircle.Circumference, appCircle.Circumference, precision: 6);
@@ -66,12 +66,12 @@ public class GeometryParityTests
         Assert.Equal(coreRegion.Area, appRegion.Area, precision: 6);
 
         var appInside = appRegion.Contains(new AppGeo.VPoint(7, 6.5));
-        var coreInside = coreRegion.Contains(CoreGeo.VPoint.Internal(7, 6.5));
+        var coreInside = coreRegion.Contains(new CoreGeo.VXYZ(7, 6.5));
         Assert.Equal(coreInside, appInside);
         Assert.True(appInside);
 
         var appOutside = appRegion.Contains(new AppGeo.VPoint(0, 0));
-        var coreOutside = coreRegion.Contains(CoreGeo.VPoint.Internal(0, 0));
+        var coreOutside = coreRegion.Contains(new CoreGeo.VXYZ(0, 0));
         Assert.Equal(coreOutside, appOutside);
         Assert.False(appOutside);
     }
@@ -83,8 +83,8 @@ public class GeometryParityTests
         var appR2 = new AppGeo.VRectangle(new AppGeo.VPoint(10, 0), 10, 10);
         var appResult = AppGeo.CurveIntersection.Intersect(appR1, appR2);
 
-        var coreR1 = new CoreGeo.VRectangle(CoreGeo.VPoint.Internal(0, 0), 10, 10);
-        var coreR2 = new CoreGeo.VRectangle(CoreGeo.VPoint.Internal(10, 0), 10, 10);
+        var coreR1 = new CoreGeo.VRectangle(new CoreGeo.VXYZ(0, 0), 10, 10);
+        var coreR2 = new CoreGeo.VRectangle(new CoreGeo.VXYZ(10, 0), 10, 10);
         var coreResult = CoreGeo.CurveIntersection.Intersect(coreR1, coreR2);
 
         Assert.Equal(coreResult.HasIntersection, appResult.HasIntersection);
@@ -107,15 +107,15 @@ public class GeometryParityTests
             new AppGeo.VPoint(2, 6));
 
         var coreA = new CoreGeo.VPolygon(
-            CoreGeo.VPoint.Internal(0, 0),
-            CoreGeo.VPoint.Internal(4, 0),
-            CoreGeo.VPoint.Internal(4, 4),
-            CoreGeo.VPoint.Internal(0, 4));
+            new CoreGeo.VXYZ(0, 0),
+            new CoreGeo.VXYZ(4, 0),
+            new CoreGeo.VXYZ(4, 4),
+            new CoreGeo.VXYZ(0, 4));
         var coreB = new CoreGeo.VPolygon(
-            CoreGeo.VPoint.Internal(2, 2),
-            CoreGeo.VPoint.Internal(6, 2),
-            CoreGeo.VPoint.Internal(6, 6),
-            CoreGeo.VPoint.Internal(2, 6));
+            new CoreGeo.VXYZ(2, 2),
+            new CoreGeo.VXYZ(6, 2),
+            new CoreGeo.VXYZ(6, 6),
+            new CoreGeo.VXYZ(2, 6));
 
         var appUnion = AppGeo.BooleanOps.Union(appA, appB);
         var coreUnion = CoreGeo.BooleanOps.Union(coreA, coreB);

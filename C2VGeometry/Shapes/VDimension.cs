@@ -5,8 +5,8 @@ namespace C2VGeometry;
 /// </summary>
 public class VDimension : Shape
 {
-    public VPoint Point1 { get; set; }
-    public VPoint Point2 { get; set; }
+    public VXYZ Point1 { get; set; }
+    public VXYZ Point2 { get; set; }
 
     /// <summary>Offset distance of the dimension line from the points</summary>
     public double Offset { get; set; } = 20;
@@ -44,7 +44,7 @@ public class VDimension : Shape
     /// <summary>Text suffix appended to the dimension value</summary>
     public string Suffix { get; set; } = "";
 
-    public VDimension(VPoint point1, VPoint point2)
+    public VDimension(VXYZ point1, VXYZ point2)
     {
         Point1 = point1;
         Point2 = point2;
@@ -53,8 +53,8 @@ public class VDimension : Shape
 
     public VDimension(double x1, double y1, double x2, double y2)
     {
-        Point1 = VPoint.Internal(x1, y1);
-        Point2 = VPoint.Internal(x2, y2);
+        Point1 = new VXYZ(x1, y1);
+        Point2 = new VXYZ(x2, y2);
         Color = "Yellow";
     }
 
@@ -79,7 +79,7 @@ public class VDimension : Shape
     /// <summary>
     /// Gets the geometry for rendering the dimension.
     /// </summary>
-    public (VPoint dimStart, VPoint dimEnd, VPoint textPos, VPoint ext1Start, VPoint ext1End, VPoint ext2Start, VPoint ext2End) GetDimensionGeometry()
+    public (VXYZ dimStart, VXYZ dimEnd, VXYZ textPos, VXYZ ext1Start, VXYZ ext1End, VXYZ ext2Start, VXYZ ext2End) GetDimensionGeometry()
     {
         double dx = Point2.X - Point1.X;
         double dy = Point2.Y - Point1.Y;
@@ -95,17 +95,17 @@ public class VDimension : Shape
         double perpY = dx / length;
 
         // Dimension line endpoints
-        var dimStart = VPoint.Internal(Point1.X + perpX * Offset, Point1.Y + perpY * Offset);
-        var dimEnd = VPoint.Internal(Point2.X + perpX * Offset, Point2.Y + perpY * Offset);
+        var dimStart = new VXYZ(Point1.X + perpX * Offset, Point1.Y + perpY * Offset);
+        var dimEnd = new VXYZ(Point2.X + perpX * Offset, Point2.Y + perpY * Offset);
 
         // Text position (center of dimension line)
-        var textPos = VPoint.Internal((dimStart.X + dimEnd.X) / 2, (dimStart.Y + dimEnd.Y) / 2);
+        var textPos = new VXYZ((dimStart.X + dimEnd.X) / 2, (dimStart.Y + dimEnd.Y) / 2);
 
         // Extension lines: from OffsetFromOrigin gap to Offset + ExtendBeyondDimLines
-        var ext1Start = VPoint.Internal(Point1.X + perpX * OffsetFromOrigin, Point1.Y + perpY * OffsetFromOrigin);
-        var ext1End = VPoint.Internal(Point1.X + perpX * (Offset + ExtendBeyondDimLines), Point1.Y + perpY * (Offset + ExtendBeyondDimLines));
-        var ext2Start = VPoint.Internal(Point2.X + perpX * OffsetFromOrigin, Point2.Y + perpY * OffsetFromOrigin);
-        var ext2End = VPoint.Internal(Point2.X + perpX * (Offset + ExtendBeyondDimLines), Point2.Y + perpY * (Offset + ExtendBeyondDimLines));
+        var ext1Start = new VXYZ(Point1.X + perpX * OffsetFromOrigin, Point1.Y + perpY * OffsetFromOrigin);
+        var ext1End = new VXYZ(Point1.X + perpX * (Offset + ExtendBeyondDimLines), Point1.Y + perpY * (Offset + ExtendBeyondDimLines));
+        var ext2Start = new VXYZ(Point2.X + perpX * OffsetFromOrigin, Point2.Y + perpY * OffsetFromOrigin);
+        var ext2End = new VXYZ(Point2.X + perpX * (Offset + ExtendBeyondDimLines), Point2.Y + perpY * (Offset + ExtendBeyondDimLines));
 
         return (dimStart, dimEnd, textPos, ext1Start, ext1End, ext2Start, ext2End);
     }
@@ -124,7 +124,7 @@ public class VDimension : Shape
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -135,12 +135,10 @@ public class VDimension : Shape
                 Move(delta);
                 break;
             case 1:
-                Point1.X = newPosition.X;
-                Point1.Y = newPosition.Y;
+                Point1 = new VXYZ(newPosition.X, newPosition.Y);
                 break;
             case 2:
-                Point2.X = newPosition.X;
-                Point2.Y = newPosition.Y;
+                Point2 = new VXYZ(newPosition.X, newPosition.Y);
                 break;
         }
     }
@@ -168,26 +166,26 @@ public class VDimension : Shape
 
     public override void Move(VXYZ vector)
     {
-        Point1.Move(vector);
-        Point2.Move(vector);
+        Point1 = Point1 + vector;
+        Point2 = Point2 + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Point1.Rotate(pivot, angleDegrees);
-        Point2.Rotate(pivot, angleDegrees);
+        Point1 = GeometryHelper.RotatePoint(Point1, pivot, angleDegrees);
+        Point2 = GeometryHelper.RotatePoint(Point2, pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Point1.Flip(mirrorLine);
-        Point2.Flip(mirrorLine);
+        Point1 = GeometryHelper.FlipPoint(Point1, mirrorLine);
+        Point2 = GeometryHelper.FlipPoint(Point2, mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Point1.Scale(center, factor);
-        Point2.Scale(center, factor);
+        Point1 = GeometryHelper.ScalePoint(Point1, center, factor);
+        Point2 = GeometryHelper.ScalePoint(Point2, center, factor);
         Offset *= Math.Abs(factor);
         ExtensionLength *= Math.Abs(factor);
         TextHeight *= Math.Abs(factor);
@@ -199,8 +197,8 @@ public class VDimension : Shape
     public override BoundingBox GetBounds()
     {
         return new BoundingBox(
-            VPoint.Internal(Math.Min(Point1.X, Point2.X), Math.Min(Point1.Y, Point2.Y)),
-            VPoint.Internal(Math.Max(Point1.X, Point2.X), Math.Max(Point1.Y, Point2.Y))
+            new VXYZ(Math.Min(Point1.X, Point2.X), Math.Min(Point1.Y, Point2.Y)),
+            new VXYZ(Math.Max(Point1.X, Point2.X), Math.Max(Point1.Y, Point2.Y))
         );
     }
 

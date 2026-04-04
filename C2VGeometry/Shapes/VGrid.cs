@@ -13,7 +13,7 @@ public class VGrid : Shape
     /// <summary>
     /// The location point (center if centered, bottom-left if not).
     /// </summary>
-    public VPoint Location { get; private set; }
+    public VXYZ Location { get; private set; }
 
     /// <summary>
     /// Number of points along the X axis.
@@ -66,7 +66,7 @@ public class VGrid : Shape
     /// <param name="xSpacing">Spacing between points along X (default: 1.0)</param>
     /// <param name="ySpacing">Spacing between points along Y (default: 1.0)</param>
     /// <param name="centered">If true, grid is centered at location; if false, location is bottom-left corner</param>
-    public VGrid(VPoint location, int xcount, int ycount, double xSpacing = 1.0, double ySpacing = 1.0, bool centered = true)
+    public VGrid(VXYZ location, int xcount, int ycount, double xSpacing = 1.0, double ySpacing = 1.0, bool centered = true)
     {
         Location = location;
         XCount = Math.Max(1, xcount);
@@ -89,7 +89,7 @@ public class VGrid : Shape
     /// <param name="ycount">Number of points along the Y axis</param>
     /// <param name="spacing">Uniform spacing between points (default: 1.0)</param>
     /// <param name="centered">If true, grid is centered at location; if false, location is bottom-left corner</param>
-    public VGrid(VPoint location, int xcount, int ycount, double spacing, bool centered = true)
+    public VGrid(VXYZ location, int xcount, int ycount, double spacing, bool centered = true)
         : this(location, xcount, ycount, spacing, spacing, centered)
     {
     }
@@ -101,7 +101,7 @@ public class VGrid : Shape
     /// <param name="xcount">Number of points along the X axis</param>
     /// <param name="ycount">Number of points along the Y axis</param>
     /// <param name="centered">If true, grid is centered at location; if false, location is bottom-left corner</param>
-    public VGrid(VPoint location, int xcount, int ycount, bool centered)
+    public VGrid(VXYZ location, int xcount, int ycount, bool centered)
         : this(location, xcount, ycount, 1.0, 1.0, centered)
     {
     }
@@ -127,13 +127,14 @@ public class VGrid : Shape
         }
 
         // Generate points row by row, from bottom to top
+        // These are actual drawable VPoint instances
         for (int row = 0; row < YCount; row++)
         {
             for (int col = 0; col < XCount; col++)
             {
                 double x = offsetX + col * XSpacing;
                 double y = offsetY + row * YSpacing;
-                var point = VPoint.Internal(x, y);
+                var point = new VPoint(x, y);
                 point.Color = Color;
                 point.FillColor = FillColor;
                 point.LineWeight = LineWeight;
@@ -153,7 +154,7 @@ public class VGrid : Shape
     public override VGrid Clone()
     {
         var clone = new VGrid(
-            VPoint.Internal(Location.X, Location.Y),
+            new VXYZ(Location.X, Location.Y),
             XCount, YCount, XSpacing, YSpacing, Centered);
         CopyStyleTo(clone);
         clone.ApplyStyle();
@@ -165,7 +166,7 @@ public class VGrid : Shape
     /// </summary>
     public override void Move(VXYZ vector)
     {
-        Location = VPoint.Internal(Location.X + vector.X, Location.Y + vector.Y);
+        Location = new VXYZ(Location.X + vector.X, Location.Y + vector.Y);
         foreach (var point in Points)
         {
             point.Move(vector);
@@ -175,7 +176,7 @@ public class VGrid : Shape
     /// <summary>
     /// Rotates all points in the grid around a pivot point.
     /// </summary>
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
         Location = GeometryHelper.RotatePoint(Location, pivot, angleDegrees);
         foreach (var point in Points)
@@ -199,11 +200,9 @@ public class VGrid : Shape
     /// <summary>
     /// Scales all points in the grid from a center point.
     /// </summary>
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Location = VPoint.Internal(
-            center.X + (Location.X - center.X) * factor,
-            center.Y + (Location.Y - center.Y) * factor);
+        Location = GeometryHelper.ScalePoint(Location, center, factor);
         foreach (var point in Points)
         {
             point.Scale(center, factor);
@@ -216,7 +215,7 @@ public class VGrid : Shape
     public override BoundingBox GetBounds()
     {
         if (Points.Count == 0)
-            return new BoundingBox(VPoint.Internal(Location.X, Location.Y), VPoint.Internal(Location.X, Location.Y));
+            return new BoundingBox(new VXYZ(Location.X, Location.Y), new VXYZ(Location.X, Location.Y));
 
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
@@ -229,13 +228,13 @@ public class VGrid : Shape
             maxY = Math.Max(maxY, point.Y);
         }
 
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     /// <summary>
     /// Returns the distance from the nearest point in the grid to the specified point.
     /// </summary>
-    public override double DistanceTo(VPoint point)
+    public override double DistanceTo(VXYZ point)
     {
         if (Points.Count == 0)
             return Location.DistanceTo(point);
@@ -243,7 +242,9 @@ public class VGrid : Shape
         double minDistance = double.MaxValue;
         foreach (var gridPoint in Points)
         {
-            double dist = gridPoint.DistanceTo(point);
+            double dx = gridPoint.X - point.X;
+            double dy = gridPoint.Y - point.Y;
+            double dist = Math.Sqrt(dx * dx + dy * dy);
             minDistance = Math.Min(minDistance, dist);
         }
         return minDistance;
@@ -297,10 +298,10 @@ public class VGrid : Shape
     /// <summary>
     /// Gets the center point of the grid.
     /// </summary>
-    public VPoint GetCenter()
+    public VXYZ GetCenter()
     {
         var bounds = GetBounds();
-        return VPoint.Internal((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
+        return new VXYZ((bounds.Min.X + bounds.Max.X) / 2, (bounds.Min.Y + bounds.Max.Y) / 2);
     }
 
     public override string ToString() => $"VGrid({XCount}x{YCount}, Location={Location}, Centered={Centered})";

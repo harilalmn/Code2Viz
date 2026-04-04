@@ -5,25 +5,25 @@ namespace C2VGeometry;
 
 public class VLine : Shape, ICurve
 {
-    public VPoint Start { get; set; }
-    public VPoint End { get; set; }
+    public VXYZ Start { get; set; }
+    public VXYZ End { get; set; }
 
     /// <summary>Gets the start point of the line.</summary>
-    public VPoint StartPoint => Start;
+    public VXYZ StartPoint => Start;
 
     /// <summary>Gets the end point of the line.</summary>
-    public VPoint EndPoint => End;
+    public VXYZ EndPoint => End;
 
     /// <summary>A line is never self-intersecting.</summary>
     public bool SelfIntersecting => false;
 
     /// <summary>Gets the vertices of the line (start and end points).</summary>
-    public List<VPoint> Vertices => new List<VPoint> { Start, End };
+    public List<VXYZ> Vertices => new List<VXYZ> { Start, End };
 
     /// <summary>Gets the midpoint of the line.</summary>
-    public VPoint MidPoint => Evaluate(0.5);
+    public VXYZ MidPoint => Evaluate(0.5);
 
-    public VLine(VPoint start, VPoint end)
+    public VLine(VXYZ start, VXYZ end)
     {
         Start = start;
         End = end;
@@ -32,32 +32,30 @@ public class VLine : Shape, ICurve
 
     public VLine(double x1, double y1, double x2, double y2)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        Start = VPoint.Internal(x1, y1);
-        End = VPoint.Internal(x2, y2);
+        Start = new VXYZ(x1, y1);
+        End = new VXYZ(x2, y2);
         Color = Shape.DefaultColor;
     }
 
-    public VLine(VPoint startPoint, double angleInDegrees, double length)
+    public VLine(VXYZ startPoint, double angleInDegrees, double length)
     {
         double radians = angleInDegrees * Math.PI / 180.0;
         Start = startPoint;
-        End = VPoint.Internal(startPoint.X + length * Math.Cos(radians), startPoint.Y + length * Math.Sin(radians));
+        End = new VXYZ(startPoint.X + length * Math.Cos(radians), startPoint.Y + length * Math.Sin(radians));
         Color = Shape.DefaultColor;
     }
 
     /// <summary>
     /// Evaluates a point along the line at the given normalized parameter.
     /// </summary>
-    public VPoint Evaluate(double parameter)
+    public VXYZ Evaluate(double parameter)
     {
         double x = Start.X + (End.X - Start.X) * parameter;
         double y = Start.Y + (End.Y - Start.Y) * parameter;
-        // Use Internal() to avoid auto-registering intermediate points
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         double dx = End.X - Start.X;
         double dy = End.Y - Start.Y;
@@ -69,9 +67,9 @@ public class VLine : Shape, ICurve
         return Start.DistanceTo(End);
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (numberOfSegments <= 0) return points;
 
         for (int i = 0; i <= numberOfSegments; i++)
@@ -81,9 +79,9 @@ public class VLine : Shape, ICurve
         return points;
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (segmentLength <= 1e-9) return points;
 
         double totalLength = GetLength();
@@ -108,7 +106,7 @@ public class VLine : Shape, ICurve
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -118,12 +116,10 @@ public class VLine : Shape, ICurve
                 Move(delta);
                 break;
             case 1:
-                Start.X = newPosition.X;
-                Start.Y = newPosition.Y;
+                Start = new VXYZ(newPosition.X, newPosition.Y);
                 break;
             case 2:
-                End.X = newPosition.X;
-                End.Y = newPosition.Y;
+                End = new VXYZ(newPosition.X, newPosition.Y);
                 break;
         }
     }
@@ -137,56 +133,55 @@ public class VLine : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        Start.Move(vector);
-        End.Move(vector);
+        Start = Start + vector;
+        End = End + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Start.Rotate(pivot, angleDegrees);
-        End.Rotate(pivot, angleDegrees);
+        Start = GeometryHelper.RotatePoint(Start, pivot, angleDegrees);
+        End = GeometryHelper.RotatePoint(End, pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Start.Flip(mirrorLine);
-        End.Flip(mirrorLine);
+        Start = GeometryHelper.FlipPoint(Start, mirrorLine);
+        End = GeometryHelper.FlipPoint(End, mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Start.Scale(center, factor);
-        End.Scale(center, factor);
+        Start = GeometryHelper.ScalePoint(Start, center, factor);
+        End = GeometryHelper.ScalePoint(End, center, factor);
     }
 
     public override BoundingBox GetBounds()
     {
-        // Use Internal() to avoid auto-registering intermediate points
         return new BoundingBox(
-            VPoint.Internal(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
-            VPoint.Internal(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
+            new VXYZ(Math.Min(Start.X, End.X), Math.Min(Start.Y, End.Y)),
+            new VXYZ(Math.Max(Start.X, End.X), Math.Max(Start.Y, End.Y))
         );
     }
 
     /// <summary> Gets the direction vector of the line. </summary>
-    public VXYZ Direction => (End.AsVXYZ() - Start.AsVXYZ()).Normalize();
+    public VXYZ Direction => (End - Start).Normalize();
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
-        var v = End.AsVXYZ() - Start.AsVXYZ();
-        var u = point.AsVXYZ() - Start.AsVXYZ();
+        var v = End - Start;
+        var u = point - Start;
         var t = u.DotProduct(v) / v.DotProduct(v);
 
         if (t < 0) return Start;
         if (t > 1) return End;
 
-        return (Start.AsVXYZ() + v * t).AsVPoint();
+        return Start + v * t;
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
         var dir = Direction;
-        return (Start.AsVXYZ() + dir * segmentLength).AsVPoint();
+        return Start + dir * segmentLength;
     }
 
     public ICurve Offset(double distance)
@@ -194,10 +189,7 @@ public class VLine : Shape, ICurve
         var normal = NormalAtPoint(Start); // Normal is constant for a line
         var offsetVector = normal * distance;
 
-        return new VLine(
-            (Start.AsVXYZ() + offsetVector).AsVPoint(),
-            (End.AsVXYZ() + offsetVector).AsVPoint()
-        );
+        return new VLine(Start + offsetVector, End + offsetVector);
     }
 
     public List<ICurve> Offset(List<double> distances)
@@ -210,18 +202,17 @@ public class VLine : Shape, ICurve
         return result;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
         // 1. Project point to curve to get reference point on curve
         var projected = Project(point);
 
         // 2. Find points at distance = chordLength from projected point along the line geometry
-        // Since it's a line, we can just go forward and backward from the projected point
         var dir = Direction;
-        var p1 = (projected.AsVXYZ() + dir * chordLength).AsVPoint();
-        var p2 = (projected.AsVXYZ() - dir * chordLength).AsVPoint();
+        var p1 = projected + dir * chordLength;
+        var p2 = projected - dir * chordLength;
 
-        var results = new List<VPoint>();
+        var results = new List<VXYZ>();
 
         // Check if points are within the line segment
         if (IsOnSegment(p1)) results.Add(p1);
@@ -230,7 +221,7 @@ public class VLine : Shape, ICurve
         return results;
     }
 
-    private bool IsOnSegment(VPoint p)
+    private bool IsOnSegment(VXYZ p)
     {
         // Simple check: dist(Start, p) + dist(p, End) == dist(Start, End) within tolerance
         double d1 = Start.DistanceTo(p);
@@ -239,16 +230,12 @@ public class VLine : Shape, ICurve
         return GeometryTolerance.IsZero((d1 + d2) - total);
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
-        // Assuming point is on the line. If not, maybe we should project it first?
-        // The requirement says "spliting a curve at a given point".
-        // Robustness: Project point to line segment first.
         var splitPoint = Project(point);
 
-        // Clone all points to ensure independent curves
-        return (new VLine((VPoint)Start.Clone(), (VPoint)splitPoint.Clone()),
-                new VLine((VPoint)splitPoint.Clone(), (VPoint)End.Clone()));
+        return (new VLine(Start.Clone(), splitPoint.Clone()),
+                new VLine(splitPoint.Clone(), End.Clone()));
     }
 
     public override Shape? Intersect(Shape other)
@@ -275,12 +262,12 @@ public class VLine : Shape, ICurve
     /// <summary>
     /// Returns a point on the line at the given normalized parameter.
     /// </summary>
-    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+    public VXYZ PointAtParameter(double parameter) => Evaluate(parameter);
 
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the line to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point)
+    public double ParameterAtPoint(VXYZ point)
     {
         double dx = End.X - Start.X;
         double dy = End.Y - Start.Y;

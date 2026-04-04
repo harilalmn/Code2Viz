@@ -5,12 +5,12 @@ namespace C2VGeometry;
 
 public class VRectangle : VPolygon
 {
-    private VPoint _corner;
+    private VXYZ _corner;
     private double _width;
     private double _height;
     private double _rotationAngle;
 
-    public VPoint Corner
+    public VXYZ Corner
     {
         get => _corner;
         set
@@ -51,7 +51,7 @@ public class VRectangle : VPolygon
         }
     }
 
-    public VRectangle(VPoint corner, double width, double height)
+    public VRectangle(VXYZ corner, double width, double height)
         : base(ComputeCorners(corner, width, height, 0))
     {
         _corner = corner;
@@ -63,38 +63,33 @@ public class VRectangle : VPolygon
     }
 
     public VRectangle(double x, double y, double width, double height)
-        : this(VPoint.Internal(x, y), width, height)
+        : this(new VXYZ(x, y), width, height)
     {
     }
 
     /// <summary>
     /// Creates a rectangle from two corner points (bottom-left and top-right).
     /// </summary>
-    /// <param name="bottomLeft">The bottom-left corner of the rectangle.</param>
-    /// <param name="topRight">The top-right corner of the rectangle.</param>
-    public VRectangle(VPoint bottomLeft, VPoint topRight)
+    public VRectangle(VXYZ bottomLeft, VXYZ topRight)
         : this(bottomLeft, topRight.X - bottomLeft.X, topRight.Y - bottomLeft.Y)
     {
     }
 
-    private static VPoint[] ComputeCorners(VPoint corner, double width, double height, double rotationAngle)
+    private static VXYZ[] ComputeCorners(VXYZ corner, double width, double height, double rotationAngle)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        var p0 = VPoint.Internal(corner.X, corner.Y);
-        var p1 = VPoint.Internal(corner.X + width, corner.Y);
-        var p2 = VPoint.Internal(corner.X + width, corner.Y + height);
-        var p3 = VPoint.Internal(corner.X, corner.Y + height);
+        var p0 = new VXYZ(corner.X, corner.Y);
+        var p1 = new VXYZ(corner.X + width, corner.Y);
+        var p2 = new VXYZ(corner.X + width, corner.Y + height);
+        var p3 = new VXYZ(corner.X, corner.Y + height);
 
         if (Math.Abs(rotationAngle) >= 1e-9)
         {
-            double centerX = corner.X + width / 2;
-            double centerY = corner.Y + height / 2;
-            var center = VPoint.Internal(centerX, centerY);
+            var center = new VXYZ(corner.X + width / 2, corner.Y + height / 2);
 
-            p0.Rotate(center, rotationAngle);
-            p1.Rotate(center, rotationAngle);
-            p2.Rotate(center, rotationAngle);
-            p3.Rotate(center, rotationAngle);
+            p0 = GeometryHelper.RotatePoint(p0, center, rotationAngle);
+            p1 = GeometryHelper.RotatePoint(p1, center, rotationAngle);
+            p2 = GeometryHelper.RotatePoint(p2, center, rotationAngle);
+            p3 = GeometryHelper.RotatePoint(p3, center, rotationAngle);
         }
 
         return new[] { p0, p1, p2, p3 };
@@ -120,7 +115,7 @@ public class VRectangle : VPolygon
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -133,7 +128,7 @@ public class VRectangle : VPolygon
             case 1: // Bottom-left corner - resize keeping opposite corner fixed
                 double oppX = _corner.X + _width;
                 double oppY = _corner.Y + _height;
-                _corner = VPoint.Internal(Math.Min(newPosition.X, oppX), Math.Min(newPosition.Y, oppY));
+                _corner = new VXYZ(Math.Min(newPosition.X, oppX), Math.Min(newPosition.Y, oppY));
                 _width = Math.Abs(oppX - newPosition.X);
                 _height = Math.Abs(oppY - newPosition.Y);
                 UpdatePoints();
@@ -142,9 +137,9 @@ public class VRectangle : VPolygon
                 _width = Math.Abs(newPosition.X - _corner.X);
                 _height = Math.Abs(newPosition.Y - _corner.Y);
                 if (newPosition.X < _corner.X)
-                    _corner = VPoint.Internal(newPosition.X, _corner.Y);
+                    _corner = new VXYZ(newPosition.X, _corner.Y);
                 if (newPosition.Y < _corner.Y)
-                    _corner = VPoint.Internal(_corner.X, newPosition.Y);
+                    _corner = new VXYZ(_corner.X, newPosition.Y);
                 UpdatePoints();
                 break;
         }
@@ -161,32 +156,32 @@ public class VRectangle : VPolygon
 
     public override void Move(VXYZ vector)
     {
-        _corner.Move(vector);
+        _corner = _corner + vector;
         UpdatePoints();
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        _corner.Rotate(pivot, angleDegrees);
+        _corner = GeometryHelper.RotatePoint(_corner, pivot, angleDegrees);
         _rotationAngle += angleDegrees;
         UpdatePoints();
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        _corner.Flip(mirrorLine);
+        _corner = GeometryHelper.FlipPoint(_corner, mirrorLine);
         UpdatePoints();
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        _corner.Scale(center, factor);
+        _corner = GeometryHelper.ScalePoint(_corner, center, factor);
         _width *= Math.Abs(factor);
         _height *= Math.Abs(factor);
         UpdatePoints();
     }
 
-    public override bool Contains(VPoint point)
+    public override bool Contains(VXYZ point)
     {
         // For axis-aligned check (no rotation), use simple bounds
         if (Math.Abs(_rotationAngle) < 1e-9)
@@ -198,7 +193,7 @@ public class VRectangle : VPolygon
         return IsPointInPolygon(point);
     }
 
-    private bool IsPointInPolygon(VPoint point)
+    private bool IsPointInPolygon(VXYZ point)
     {
         // Ray casting algorithm
         bool inside = false;
@@ -239,18 +234,15 @@ public class VRectangle : VPolygon
 
     public new ICurve Offset(double distance)
     {
-        // Simple inflation for axis-aligned rectangle
         if (Math.Abs(_rotationAngle) < 1e-9)
         {
             double newWidth = _width + 2 * distance;
             double newHeight = _height + 2 * distance;
-            // Use Internal() for the corner point to avoid registering intermediate
             return new VRectangle(
-                VPoint.Internal(_corner.X - distance, _corner.Y - distance),
+                new VXYZ(_corner.X - distance, _corner.Y - distance),
                 newWidth, newHeight
             );
         }
-        // For rotated rectangles, use polygon offset
         return base.Offset(distance);
     }
 

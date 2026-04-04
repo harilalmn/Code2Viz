@@ -9,7 +9,7 @@ namespace C2VGeometry;
 /// </summary>
 public class VSpline : Shape, ICurve
 {
-    public List<VPoint> ControlPoints { get; set; }
+    public List<VXYZ> ControlPoints { get; set; }
     private readonly bool _selfIntersecting;
 
     /// <summary>Number of segments between each pair of control points</summary>
@@ -18,23 +18,23 @@ public class VSpline : Shape, ICurve
     /// <summary>Tension parameter (0 = sharp corners, 0.5 = standard Catmull-Rom)</summary>
     public double Tension { get; set; } = 0.5;
 
-    public VPoint StartPoint => ControlPoints.Count > 0 ? ControlPoints[0] : VPoint.Internal(0, 0);
-    public VPoint EndPoint => ControlPoints.Count > 0 ? ControlPoints[^1] : VPoint.Internal(0, 0);
+    public VXYZ StartPoint => ControlPoints.Count > 0 ? ControlPoints[0] : new VXYZ(0, 0);
+    public VXYZ EndPoint => ControlPoints.Count > 0 ? ControlPoints[^1] : new VXYZ(0, 0);
 
     /// <summary>Indicates whether the spline intersects itself.</summary>
     public bool SelfIntersecting => _selfIntersecting;
 
     /// <summary>Gets the control points of the spline.</summary>
-    public List<VPoint> Vertices => ControlPoints;
+    public List<VXYZ> Vertices => ControlPoints;
 
-    public VSpline(params VPoint[] points)
+    public VSpline(params VXYZ[] points)
     {
         ControlPoints = points.ToList();
         Color = "Violet";
         _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
     }
 
-    public VSpline(IEnumerable<VPoint> points)
+    public VSpline(IEnumerable<VXYZ> points)
     {
         ControlPoints = points.ToList();
         Color = "Violet";
@@ -44,14 +44,13 @@ public class VSpline : Shape, ICurve
     /// <summary>
     /// Evaluates a point on the spline at parameter t [0, 1].
     /// </summary>
-    public VPoint Evaluate(double t)
+    public VXYZ Evaluate(double t)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (ControlPoints.Count < 2) return ControlPoints.FirstOrDefault() ?? VPoint.Internal(0, 0);
+        if (ControlPoints.Count < 2) return ControlPoints.FirstOrDefault() ?? new VXYZ(0, 0);
         if (ControlPoints.Count == 2)
         {
             // Linear interpolation for 2 points
-            return VPoint.Internal(
+            return new VXYZ(
                 ControlPoints[0].X + t * (ControlPoints[1].X - ControlPoints[0].X),
                 ControlPoints[0].Y + t * (ControlPoints[1].Y - ControlPoints[0].Y));
         }
@@ -65,7 +64,7 @@ public class VSpline : Shape, ICurve
         return EvaluateSpan(spanIndex, localT);
     }
 
-    private VPoint EvaluateSpan(int spanIndex, double t)
+    private VXYZ EvaluateSpan(int spanIndex, double t)
     {
         // Get 4 points for Catmull-Rom (p0, p1, p2, p3)
         var p0 = ControlPoints[Math.Max(0, spanIndex - 1)];
@@ -89,16 +88,15 @@ public class VSpline : Shape, ICurve
             (-3 * t3 + 4 * t2 + t) * p2.Y +
             (t3 - t2) * p3.Y);
 
-        // Use Internal() to avoid auto-registering intermediate points
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
     /// <summary>
     /// Gets all points along the spline for rendering.
     /// </summary>
-    public List<VPoint> GetRenderPoints()
+    public List<VXYZ> GetRenderPoints()
     {
-        var points = new List<VPoint>();
+        var points = new List<VXYZ>();
         if (ControlPoints.Count < 2)
         {
             points.AddRange(ControlPoints);
@@ -132,7 +130,7 @@ public class VSpline : Shape, ICurve
         return result;
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         if (index == 0)
         {
@@ -144,8 +142,7 @@ public class VSpline : Shape, ICurve
         else if (index > 0 && index <= ControlPoints.Count)
         {
             int ptIdx = index - 1;
-            ControlPoints[ptIdx].X = newPosition.X;
-            ControlPoints[ptIdx].Y = newPosition.Y;
+            ControlPoints[ptIdx] = new VXYZ(newPosition.X, newPosition.Y);
         }
     }
 
@@ -162,31 +159,34 @@ public class VSpline : Shape, ICurve
 
     public override void Move(VXYZ vector)
     {
-        foreach (var p in ControlPoints) p.Move(vector);
+        for (int i = 0; i < ControlPoints.Count; i++)
+            ControlPoints[i] = ControlPoints[i] + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        foreach (var p in ControlPoints) p.Rotate(pivot, angleDegrees);
+        for (int i = 0; i < ControlPoints.Count; i++)
+            ControlPoints[i] = GeometryHelper.RotatePoint(ControlPoints[i], pivot, angleDegrees);
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        foreach (var p in ControlPoints) p.Flip(mirrorLine);
+        for (int i = 0; i < ControlPoints.Count; i++)
+            ControlPoints[i] = GeometryHelper.FlipPoint(ControlPoints[i], mirrorLine);
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        foreach (var p in ControlPoints) p.Scale(center, factor);
+        for (int i = 0; i < ControlPoints.Count; i++)
+            ControlPoints[i] = GeometryHelper.ScalePoint(ControlPoints[i], center, factor);
     }
 
     public override BoundingBox GetBounds()
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (ControlPoints.Count == 0) return new BoundingBox(VPoint.Internal(0, 0), VPoint.Internal(0, 0));
+        if (ControlPoints.Count == 0) return new BoundingBox(new VXYZ(0, 0), new VXYZ(0, 0));
         double minX = ControlPoints.Min(p => p.X), minY = ControlPoints.Min(p => p.Y);
         double maxX = ControlPoints.Max(p => p.X), maxY = ControlPoints.Max(p => p.Y);
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     public override string ToString() => $"VSpline({ControlPoints.Count} control points)";
@@ -203,18 +203,18 @@ public class VSpline : Shape, ICurve
         return len;
     }
 
-    public List<VPoint> Divide(int numberOfSegments)
+    public List<VXYZ> Divide(int numberOfSegments)
     {
-        if (numberOfSegments <= 0) return new List<VPoint>();
+        if (numberOfSegments <= 0) return new List<VXYZ>();
         double totalLength = GetLength();
-        if (totalLength < 1e-9) return new List<VPoint>();
+        if (totalLength < 1e-9) return new List<VXYZ>();
 
         return Measure(totalLength / numberOfSegments);
     }
 
-    public List<VPoint> Measure(double segmentLength)
+    public List<VXYZ> Measure(double segmentLength)
     {
-        var result = new List<VPoint>();
+        var result = new List<VXYZ>();
         if (segmentLength <= 1e-9) return result;
 
         result.Add(Evaluate(0));
@@ -223,12 +223,12 @@ public class VSpline : Shape, ICurve
 
         // Use high-resolution points for measurement
         int totalSteps = (ControlPoints.Count - 1) * 32; // same as render points or higher
-        VPoint p1 = Evaluate(0);
+        VXYZ p1 = Evaluate(0);
 
         for (int i = 1; i <= totalSteps; i++)
         {
             double t = (double)i / totalSteps;
-            VPoint p2 = Evaluate(t);
+            VXYZ p2 = Evaluate(t);
             double segLen = p1.DistanceTo(p2);
 
             double distOnSeg = 0;
@@ -240,8 +240,7 @@ public class VSpline : Shape, ICurve
                 double subT = distOnSeg / segLen;
                 double x = p1.X + (p2.X - p1.X) * subT;
                 double y = p1.Y + (p2.Y - p1.Y) * subT;
-                // Use Internal() to avoid auto-registering intermediate points
-                result.Add(VPoint.Internal(x, y));
+                result.Add(new VXYZ(x, y));
 
                 remainingStep = segmentLength;
             }
@@ -255,13 +254,13 @@ public class VSpline : Shape, ICurve
 
     // ICurve Implementation
 
-    public VPoint Project(VPoint point)
+    public VXYZ Project(VXYZ point)
     {
         double t = GetClosestParameter(point);
         return Evaluate(t);
     }
 
-    public VPoint PointAtSegmentLength(double segmentLength)
+    public VXYZ PointAtSegmentLength(double segmentLength)
     {
         // Simple walk
         double totalLen = GetLength();
@@ -278,8 +277,7 @@ public class VSpline : Shape, ICurve
             {
                 double rem = segmentLength - currentLen;
                 double r = rem / d;
-                // Use Internal() to avoid auto-registering intermediate points
-                return VPoint.Internal(
+                return new VXYZ(
                     points[i].X + (points[i+1].X - points[i].X) * r,
                     points[i].Y + (points[i+1].Y - points[i].Y) * r
                 );
@@ -292,38 +290,38 @@ public class VSpline : Shape, ICurve
     public ICurve Offset(double distance)
     {
         // Offset control points by normal at that point
-        var newPoints = new List<VPoint>();
+        var newPoints = new List<VXYZ>();
 
         for (int i = 0; i < ControlPoints.Count; i++)
         {
-            VPoint p = ControlPoints[i];
+            VXYZ p = ControlPoints[i];
 
             // Estimate tangent
             VXYZ tangent;
             if (i == 0)
             {
                 if (ControlPoints.Count > 1)
-                    tangent = (ControlPoints[1].AsVXYZ() - p.AsVXYZ()).Normalize();
+                    tangent = (ControlPoints[1] - p).Normalize();
                 else
                     tangent = new VXYZ(1, 0, 0);
             }
             else if (i == ControlPoints.Count - 1)
             {
                 if (ControlPoints.Count > 1)
-                    tangent = (p.AsVXYZ() - ControlPoints[i-1].AsVXYZ()).Normalize();
+                    tangent = (p - ControlPoints[i-1]).Normalize();
                 else
                     tangent = new VXYZ(1, 0, 0);
             }
             else
             {
                 // Catmull-Rom tangent is parallel to P(i+1) - P(i-1)
-                tangent = (ControlPoints[i+1].AsVXYZ() - ControlPoints[i-1].AsVXYZ()).Normalize();
+                tangent = (ControlPoints[i+1] - ControlPoints[i-1]).Normalize();
             }
 
             // Normal (-y, x)
             VXYZ normal = new VXYZ(-tangent.Y, tangent.X, 0).Normalize();
 
-            newPoints.Add((p.AsVXYZ() + normal * distance).AsVPoint());
+            newPoints.Add(p + normal * distance);
         }
 
         return new VSpline(newPoints)
@@ -340,12 +338,12 @@ public class VSpline : Shape, ICurve
         return list;
     }
 
-    public List<VPoint> PointsAtChordLengthFromPoint(VPoint point, double chordLength)
+    public List<VXYZ> PointsAtChordLengthFromPoint(VXYZ point, double chordLength)
     {
         // Use high-res polyline approximation
         var poly = GetRenderPoints();
-        var results = new List<VPoint>();
-        VPoint c = Project(point);
+        var results = new List<VXYZ>();
+        VXYZ c = Project(point);
         double r2 = chordLength;
 
         for (int i = 0; i < poly.Count - 1; i++)
@@ -357,14 +355,13 @@ public class VSpline : Shape, ICurve
 
             if ((d1 < r2 && d2 > r2) || (d1 > r2 && d2 < r2))
             {
-                // Use Internal() to avoid auto-registering intermediate points
-                results.Add(VPoint.Internal((poly[i].X + poly[i + 1].X) / 2, (poly[i].Y + poly[i + 1].Y) / 2));
+                results.Add(new VXYZ((poly[i].X + poly[i + 1].X) / 2, (poly[i].Y + poly[i + 1].Y) / 2));
             }
         }
         return results;
     }
 
-    public (ICurve, ICurve) SplitAtPoint(VPoint point)
+    public (ICurve, ICurve) SplitAtPoint(VXYZ point)
     {
         // This is destructive to shape, but split logic:
         // Find segment index
@@ -380,25 +377,25 @@ public class VSpline : Shape, ICurve
         // Curve 2: splitP, P(spanIndex+1) ... Pn
 
         // Clone all points to ensure independent curves
-        var list1 = new List<VPoint>();
-        for(int i=0; i<=spanIndex; i++) list1.Add((VPoint)ControlPoints[i].Clone());
-        list1.Add((VPoint)splitP.Clone());
+        var list1 = new List<VXYZ>();
+        for(int i=0; i<=spanIndex; i++) list1.Add(ControlPoints[i].Clone());
+        list1.Add(splitP.Clone());
 
-        var list2 = new List<VPoint>();
-        list2.Add((VPoint)splitP.Clone());
-        for(int i=spanIndex+1; i<ControlPoints.Count; i++) list2.Add((VPoint)ControlPoints[i].Clone());
+        var list2 = new List<VXYZ>();
+        list2.Add(splitP.Clone());
+        for(int i=spanIndex+1; i<ControlPoints.Count; i++) list2.Add(ControlPoints[i].Clone());
 
         return (new VSpline(list1), new VSpline(list2));
     }
 
-    public VXYZ NormalAtPoint(VPoint p)
+    public VXYZ NormalAtPoint(VXYZ p)
     {
         double t = GetClosestParameter(p);
-        VPoint tangent = EvaluateDerivative(t);
+        VXYZ tangent = EvaluateDerivative(t);
         return new VXYZ(-tangent.Y, tangent.X, 0).Normalize();
     }
 
-    private double GetClosestParameter(VPoint p)
+    private double GetClosestParameter(VXYZ p)
     {
         double minSqDist = double.MaxValue;
         double bestT = 0;
@@ -409,7 +406,7 @@ public class VSpline : Shape, ICurve
         for (int i = 0; i <= steps; i++)
         {
             double t = (double)i / steps;
-            VPoint pt = Evaluate(t);
+            VXYZ pt = Evaluate(t);
             double dx = pt.X - p.X;
             double dy = pt.Y - p.Y;
             double sqDist = dx * dx + dy * dy;
@@ -423,10 +420,9 @@ public class VSpline : Shape, ICurve
         return bestT;
     }
 
-    private VPoint EvaluateDerivative(double t)
+    private VXYZ EvaluateDerivative(double t)
     {
-        // Use Internal() to avoid auto-registering intermediate points
-        if (ControlPoints.Count < 2) return VPoint.Internal(0, 0);
+        if (ControlPoints.Count < 2) return new VXYZ(0, 0);
 
         // Find span
         int numSpans = ControlPoints.Count - 1;
@@ -437,7 +433,7 @@ public class VSpline : Shape, ICurve
         return EvaluateSpanDerivative(spanIndex, localT);
     }
 
-    private VPoint EvaluateSpanDerivative(int spanIndex, double t)
+    private VXYZ EvaluateSpanDerivative(int spanIndex, double t)
     {
         var p0 = ControlPoints[Math.Max(0, spanIndex - 1)];
         var p1 = ControlPoints[spanIndex];
@@ -459,8 +455,7 @@ public class VSpline : Shape, ICurve
         double x = Tension * (d1 * p0.X + d2 * p1.X + d3 * p2.X + d4 * p3.X);
         double y = Tension * (d1 * p0.Y + d2 * p1.Y + d3 * p2.Y + d4 * p3.Y);
 
-        // Use Internal() to avoid auto-registering intermediate points
-        return VPoint.Internal(x, y);
+        return new VXYZ(x, y);
     }
 
     /// <summary>
@@ -474,10 +469,10 @@ public class VSpline : Shape, ICurve
     /// <summary>
     /// Returns a point on the spline at the given normalized parameter.
     /// </summary>
-    public VPoint PointAtParameter(double parameter) => Evaluate(parameter);
+    public VXYZ PointAtParameter(double parameter) => Evaluate(parameter);
 
     /// <summary>
     /// Returns the normalized parameter (0 to 1) for the closest point on the spline to the given point.
     /// </summary>
-    public double ParameterAtPoint(VPoint point) => GetClosestParameter(point);
+    public double ParameterAtPoint(VXYZ point) => GetClosestParameter(point);
 }

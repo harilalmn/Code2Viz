@@ -7,7 +7,7 @@ namespace C2VGeometry;
 public class VRadialDimension : Shape
 {
     /// <summary>Center of the circle/arc being dimensioned</summary>
-    public VPoint Center { get; set; }
+    public VXYZ Center { get; set; }
 
     /// <summary>Radius of the circle/arc being dimensioned</summary>
     public double Radius { get; set; }
@@ -38,22 +38,22 @@ public class VRadialDimension : Shape
 
     public VRadialDimension(VCircle circle)
     {
-        Center = VPoint.Internal(circle.Center.X, circle.Center.Y);
+        Center = new VXYZ(circle.Center.X, circle.Center.Y);
         Radius = circle.Radius;
         Color = "Yellow";
     }
 
     public VRadialDimension(VArc arc)
     {
-        Center = VPoint.Internal(arc.Center.X, arc.Center.Y);
+        Center = new VXYZ(arc.Center.X, arc.Center.Y);
         Radius = arc.Radius;
         LeaderAngle = (arc.StartAngle + arc.EndAngle) / 2;
         Color = "Yellow";
     }
 
-    public VRadialDimension(VPoint center, double radius)
+    public VRadialDimension(VXYZ center, double radius)
     {
-        Center = VPoint.Internal(center.X, center.Y);
+        Center = new VXYZ(center.X, center.Y);
         Radius = radius;
         Color = "Yellow";
     }
@@ -79,28 +79,28 @@ public class VRadialDimension : Shape
     /// <summary>
     /// Gets the geometry for rendering: leader line from center to circumference point, and text position.
     /// </summary>
-    public (VPoint leaderStart, VPoint leaderEnd, VPoint textPos) GetDimensionGeometry()
+    public (VXYZ leaderStart, VXYZ leaderEnd, VXYZ textPos) GetDimensionGeometry()
     {
         double angleRad = LeaderAngle * Math.PI / 180.0;
         double dirX = Math.Cos(angleRad);
         double dirY = Math.Sin(angleRad);
 
-        var circumferencePoint = VPoint.Internal(Center.X + dirX * Radius, Center.Y + dirY * Radius);
+        var circumferencePoint = new VXYZ(Center.X + dirX * Radius, Center.Y + dirY * Radius);
 
-        VPoint leaderStart;
+        VXYZ leaderStart;
         if (ShowDiameter)
         {
             // For diameter: line goes through center from one side to the other
-            leaderStart = VPoint.Internal(Center.X - dirX * Radius, Center.Y - dirY * Radius);
+            leaderStart = new VXYZ(Center.X - dirX * Radius, Center.Y - dirY * Radius);
         }
         else
         {
             // For radius: line goes from center to circumference
-            leaderStart = VPoint.Internal(Center.X, Center.Y);
+            leaderStart = new VXYZ(Center.X, Center.Y);
         }
 
         // Text at midpoint of leader line, offset slightly outward
-        var textPos = VPoint.Internal(
+        var textPos = new VXYZ(
             (leaderStart.X + circumferencePoint.X) / 2,
             (leaderStart.Y + circumferencePoint.Y) / 2);
 
@@ -117,7 +117,7 @@ public class VRadialDimension : Shape
         };
     }
 
-    public override void MoveControlPoint(int index, VPoint newPosition)
+    public override void MoveControlPoint(int index, VXYZ newPosition)
     {
         switch (index)
         {
@@ -151,24 +151,24 @@ public class VRadialDimension : Shape
 
     public override void Move(VXYZ vector)
     {
-        Center.Move(vector);
+        Center = Center + vector;
     }
 
-    public override void Rotate(VPoint pivot, double angleDegrees)
+    public override void Rotate(VXYZ pivot, double angleDegrees)
     {
-        Center.Rotate(pivot, angleDegrees);
+        Center = GeometryHelper.RotatePoint(Center, pivot, angleDegrees);
         LeaderAngle += angleDegrees;
     }
 
     public override void Flip(VLine mirrorLine)
     {
-        Center.Flip(mirrorLine);
+        Center = GeometryHelper.FlipPoint(Center, mirrorLine);
         LeaderAngle = -LeaderAngle;
     }
 
-    public override void Scale(VPoint center, double factor)
+    public override void Scale(VXYZ center, double factor)
     {
-        Center.Scale(center, factor);
+        Center = GeometryHelper.ScalePoint(Center, center, factor);
         Radius *= Math.Abs(factor);
         TextHeight *= Math.Abs(factor);
         ArrowSize *= Math.Abs(factor);
@@ -181,7 +181,7 @@ public class VRadialDimension : Shape
         double minY = Math.Min(Math.Min(start.Y, end.Y), textPos.Y);
         double maxX = Math.Max(Math.Max(start.X, end.X), textPos.X);
         double maxY = Math.Max(Math.Max(start.Y, end.Y), textPos.Y);
-        return new BoundingBox(VPoint.Internal(minX, minY), VPoint.Internal(maxX, maxY));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     public override string ToString() => $"VRadialDimension(Center: {Center}, R: {Radius}, {DisplayText})";
