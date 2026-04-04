@@ -95,8 +95,12 @@ VPoint is a visible point marker drawn on the canvas. For coordinates and vector
 ```csharp
 new VPoint(x, y);
 // Properties: X, Y (read-only position)
-// Methods: DistanceTo(VPoint other), AsVXYZ()
-// No arithmetic operators — use VXYZ for math
+// Methods: DistanceTo(VPoint other), AsVXYZ(), PolarPoint(angleDeg, distance)
+// Operators: +, -, *, / (with VPoint, VXYZ, or double)
+
+// PolarPoint: create a new point at angle and distance from this point
+var center = new VPoint(0, 0);
+var p = center.PolarPoint(45, 100);  // point at 45 degrees, distance 100
 ```
 
 ### VLine

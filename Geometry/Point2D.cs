@@ -65,6 +65,15 @@ public class VPoint : Shape
     // Scalar division
     public static VPoint operator /(VPoint a, double scalar) => Internal(a.X / scalar, a.Y / scalar);
 
+    /// <summary>
+    /// Creates a new VPoint at the given angle and distance from this point.
+    /// </summary>
+    public VPoint PolarPoint(double angleInDegrees, double distance)
+    {
+        var radians = angleInDegrees * Math.PI / 180.0;
+        return new VPoint(X + distance * Math.Cos(radians), Y + distance * Math.Sin(radians));
+    }
+
 
 
     public override VPoint Clone()

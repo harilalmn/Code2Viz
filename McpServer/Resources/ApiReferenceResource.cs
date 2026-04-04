@@ -73,8 +73,10 @@ public class ApiReferenceResource
         ```csharp
         new VPoint(x, y);
         // Properties: X, Y
-        // Methods: DistanceTo(other), AsVXYZ()
+        // Methods: DistanceTo(other), AsVXYZ(), PolarPoint(angleDeg, distance)
         // Operators: +, -, *, / (with VPoint, VXYZ, or double)
+        // PolarPoint: create a point at angle (degrees) and distance from this point
+        var p = new VPoint(0, 0).PolarPoint(45, 100); // 45 degrees, distance 100
         ```
 
         ### VLine

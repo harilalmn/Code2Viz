@@ -438,7 +438,7 @@ namespace Code2Viz.Documentation
         {
             _fsharpSamples = new Dictionary<string, string>
             {
-                { "VPoint", "// VPoint is a visible point marker on the canvas\nlet p = VPoint(100.0, 200.0)\np.Color <- \"Red\"\np.Draw()\n\n// For coordinate storage, use VXYZ instead\nlet coord = VXYZ(100.0, 200.0)" },
+                { "VPoint", "// VPoint is a visible point marker on the canvas\nlet p = VPoint(100.0, 200.0)\np.Color <- \"Red\"\np.Draw()\n\n// PolarPoint: create a new point at angle and distance\nlet center = VPoint(0.0, 0.0)\nlet q = center.PolarPoint(45.0, 100.0)  // 45 degrees, distance 100\n\n// For coordinate storage, use VXYZ instead\nlet coord = VXYZ(100.0, 200.0)" },
                 { "VLine", "let start = VXYZ(0.0, 0.0)\nlet endP = VXYZ(200.0, 200.0)\nlet line = VLine(start, endP)\nline.Color <- \"#00FF00\"\nline.LineWeight <- 2.0\nline.Draw()" },
                 { "VXLine", "// Infinite construction line\nlet xline = VXLine(VXYZ(0.0, 0.0), VXYZ(1.0, 1.0, 0.0))\nxline.Color <- \"Gray\"\nxline.Draw()\n\n// Horizontal and vertical helpers\nlet hLine = VXLine.Horizontal(100.0)\nlet vLine = VXLine.Vertical(50.0)\nhLine.Draw()\nvLine.Draw()" },
                 { "VRay", "// Semi-infinite ray\nlet ray = VRay(VXYZ(0.0, 0.0), VXYZ(1.0, 0.5, 0.0))\nray.Color <- \"Orange\"\nray.Draw()\n\n// Static helpers\nlet rightRay = VRay.HorizontalRight(VXYZ(0.0, 0.0))\nlet angledRay = VRay.AtAngle(VXYZ(0.0, 0.0), 45.0)\nrightRay.Draw()\nangledRay.Draw()" },
@@ -781,7 +781,11 @@ anim.Animate()" }
                 { "VPoint", @"// Create a point
 var p = new VPoint(100, 200);
 p.Color = ""Red"";
-p.Draw();" },
+p.Draw();
+
+// PolarPoint: create a new point at angle and distance from this point
+var center = new VPoint(0, 0);
+var q = center.PolarPoint(45, 100);  // 45 degrees, distance 100" },
 
                 { "VLine", @"// Create a line from two points
 var line = new VLine(new VXYZ(0, 0), new VXYZ(100, 50));
@@ -1737,6 +1741,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VPoint.GetBounds", "Returns the bounding box (point itself for both min and max)." },
                 { "VPoint.DistanceTo", "Returns the Euclidean distance from this point to another point." },
                 { "VPoint.Intersect", "Returns a copy of this point if it lies inside the other shape, otherwise null." },
+                { "VPoint.PolarPoint", "Creates a new VPoint at the given angle (degrees, counter-clockwise from positive X-axis) and distance from this point." },
                 { "VPoint.ToString", "Returns a string representation: \"VPoint(X, Y)\"." },
 
                 // VLine Properties

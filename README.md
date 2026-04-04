@@ -69,7 +69,7 @@ With **Auto-update Canvas** enabled (default), the canvas updates automatically 
 | Shape | Description | Constructor Examples |
 |-------|-------------|---------------------|
 | **VXYZ** | Coordinate/vector type (like Revit's XYZ) | `new VXYZ(x, y)` or `new VXYZ(x, y, z)` |
-| **VPoint** | A visible point marker on the canvas | `new VPoint(x, y)` |
+| **VPoint** | A visible point marker on the canvas | `new VPoint(x, y)` or `point.PolarPoint(angle, distance)` |
 | **VLine** | A line segment | `new VLine(p1, p2)` or `new VLine(x1, y1, x2, y2)` |
 | **VXLine** | An infinite construction line | `new VXLine(basePoint, direction)` or `new VXLine(p1, p2)` |
 | **VRay** | A semi-infinite ray | `new VRay(origin, direction)` or `new VRay(origin, throughPoint)` |
