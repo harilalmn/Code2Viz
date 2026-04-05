@@ -87,6 +87,8 @@ With **Auto-update Canvas** enabled (default), the canvas updates automatically 
 | **VRadialDimension** | Radial/diameter dimension | `new VRadialDimension(circle)` or `new VRadialDimension(arc)` |
 | **VGroup** | Group of shapes | `new VGroup(shape1, shape2, ...)` or `new VGroup(shapeList)` |
 | **VGrid** | Grid of visible VPoints | `new VGrid(location, xcount, ycount, spacing, centered)` |
+| **VCell** | Square cell with neighbours | Created by `VSpatialGrid` |
+| **VSpatialGrid** | Grid of cells with A* pathfinding | `new VSpatialGrid(location, xCount, yCount, cellSize)` |
 | **Region** | Curve-bounded region | `new Region(curves)` or `new Region(outerCurves, holes)` |
 | **VHatch** | Pattern fill within boundary | `new VHatch(polygon, BuiltInHatch.ANSI31, scale)` |
 
@@ -467,6 +469,75 @@ grid.Rotate(new VXYZ(0, 0), 45);
 grid.Scale(grid.GetCenter(), 2.0);
 
 grid.Draw();
+```
+
+---
+
+## Spatial Grid (VCell & VSpatialGrid)
+
+VSpatialGrid creates a grid of square VCell instances with automatic neighbour connectivity (4-way: left, right, below, above) and built-in A* pathfinding.
+
+### Creating a Spatial Grid
+
+```csharp
+// 10x10 grid of cells, each 5 units wide, starting at origin
+var grid = new VSpatialGrid(new VXYZ(0, 0), 10, 10, 5);
+```
+
+The `location` parameter is the **center of the bottom-left cell** (cell[0,0]).
+
+### Cell Properties
+
+```csharp
+VCell cell = grid[3, 4];           // Access by (col, row)
+int id = cell.UniqueId;            // 0-based sequential ID
+VXYZ center = cell.Center;         // Center point of the cell
+double size = cell.CellSize;       // Side length
+int col = cell.Column;             // Column index
+int row = cell.Row;                // Row index
+List<VCell> neighbours = cell.Neighbours; // Adjacent cells
+bool blocked = cell.Blocked;       // Whether cell is impassable
+```
+
+### A* Pathfinding
+
+```csharp
+var grid = new VSpatialGrid(new VXYZ(0, 0), 20, 20, 5);
+
+// Block cells to create obstacles
+for (int i = 5; i < 15; i++)
+    grid[10, i].Blocked = true;
+
+// Find shortest path around obstacles
+VCell start = grid[0, 0];
+VCell end = grid[19, 19];
+List<VCell> path = grid.FindPath(start, end);
+
+// Visualize the path
+foreach (var cell in path)
+    cell.FillColor = "LimeGreen";
+```
+
+### Nearest Cell Lookup
+
+```csharp
+// O(log n) lookup using KD-tree
+VCell closest = grid.GetClosestCell(new VPoint(12.5, 7.3));
+```
+
+### Grid Operations
+
+```csharp
+List<VCell> row0 = grid.GetRow(0);       // Bottom row
+List<VCell> col2 = grid.GetColumn(2);    // Third column
+VXYZ center = grid.GetCenter();          // Grid center
+VCell? hit = grid.GetCellAt(new VXYZ(12, 8)); // Cell containing point
+
+// Style and transform
+grid.Color = "DarkGray";
+grid.ApplyStyle();
+grid.Move(new VXYZ(50, 0, 0));
+grid.Rotate(new VXYZ(0, 0), 45);
 ```
 
 ---

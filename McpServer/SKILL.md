@@ -256,6 +256,32 @@ new VGrid(new VXYZ(0,0), xCount: 5, yCount: 5, xSpacing: 20, ySpacing: 20, cente
 // Properties: Points (List<VPoint>), Location (VXYZ)
 ```
 
+### VCell
+```csharp
+// Created by VSpatialGrid, not directly
+// Properties: UniqueId (int), Neighbours (List<VCell>), Center (VXYZ), CellSize (double)
+// Column (int), Row (int), Blocked (bool)
+// Extends VPolygon (square boundary)
+```
+
+### VSpatialGrid
+```csharp
+new VSpatialGrid(new VXYZ(0, 0), xCount: 10, yCount: 10, cellSize: 5.0);
+// Location = center of bottom-left cell
+// Properties: Cells (List<VCell>), Location (VXYZ), XCount, YCount, CellSize, Count
+// Indexers: [index], [col, row]
+```
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `FindPath(start, end)` | `List<VCell>` | A* shortest path (respects Blocked cells) |
+| `GetClosestCell(point)` | `VCell` | O(log n) nearest cell via KD-tree |
+| `GetCellAt(point)` | `VCell?` | Cell containing point, or null |
+| `GetRow(row)` | `List<VCell>` | All cells in a row |
+| `GetColumn(col)` | `List<VCell>` | All cells in a column |
+| `GetCenter()` | `VXYZ` | Grid center point |
+| `ApplyStyle()` | `void` | Propagate style to all cells |
+
 ### VDimension
 ```csharp
 new VDimension(x1, y1, x2, y2);

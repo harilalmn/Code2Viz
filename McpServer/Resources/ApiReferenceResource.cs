@@ -184,6 +184,26 @@ public class ApiReferenceResource
         new VGrid(origin, xCount, yCount, xSpacing, ySpacing, centered);
         ```
 
+        ### VCell
+        ```csharp
+        // Created by VSpatialGrid. Extends VPolygon (square boundary).
+        // Properties: UniqueId (int), Neighbours (List<VCell>), Center (VXYZ), CellSize (double)
+        // Column (int), Row (int), Blocked (bool, default false)
+        ```
+
+        ### VSpatialGrid
+        ```csharp
+        new VSpatialGrid(location, xCount, yCount, cellSize);
+        // location = center of bottom-left cell (VXYZ)
+        // Properties: Cells (List<VCell>), Location (VXYZ), XCount, YCount, CellSize, Count
+        // Indexers: [index], [col, row]
+        // Methods: FindPath(start, end) -> List<VCell> (A* pathfinding, respects Blocked)
+        //          GetClosestCell(point) -> VCell (O(log n) KD-tree lookup)
+        //          GetCellAt(point) -> VCell? (cell containing point)
+        //          GetRow(row), GetColumn(col), GetCenter(), ApplyStyle()
+        // 4-connectivity neighbours (left, right, below, above)
+        ```
+
         ### VDimension
         ```csharp
         new VDimension(x1, y1, x2, y2);

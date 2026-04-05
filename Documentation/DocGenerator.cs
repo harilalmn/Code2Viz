@@ -58,6 +58,8 @@ namespace Code2Viz.Documentation
                 { "VTextAnchor", "Enum specifying the anchor (alignment) point for VText. Values: BottomLeft (default), BottomCenter, BottomRight, MiddleLeft, MiddleCenter, MiddleRight, TopLeft, TopCenter, TopRight. Controls which point of the text bounding box is placed at the text's position." },
                 { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
                 { "VGrid", "Represents a rectangular grid of VPoints. Constructor: VGrid(location, xcount, ycount, xSpacing, ySpacing, centered). If centered=true, grid is centered at location; if false, location is bottom-left corner. Access points via Points property, indexers [index] or [col, row], or GetRow()/GetColumn() methods. Supports all Shape transformations (Move, Rotate, Scale, Flip) and ApplyStyle() to set colors on all points." },
+                { "VCell", "Represents a square cell with a VPolygon boundary. Extends VPolygon. Properties: UniqueId (int), Neighbours (List<VCell>), Center (VXYZ), CellSize (double), Column (int), Row (int), Blocked (bool). Used as a building block for VSpatialGrid. Neighbours are set by the parent grid (4-connectivity: left, right, below, above)." },
+                { "VSpatialGrid", "Represents a grid of square VCell instances with neighbour connectivity and A* pathfinding. Constructor: VSpatialGrid(location, xCount, yCount, cellSize). Location is the center of the bottom-left cell. Each cell knows its adjacent neighbours (4-connectivity). Access cells via Cells property, indexers [index] or [col, row], or GetRow()/GetColumn(). Use FindPath(start, end) for A* shortest path, GetClosestCell(point) for O(log n) nearest-cell lookup via KD-tree." },
                 { "VArrow", "Represents an arrow (line with arrowhead). Supports single or double-ended arrows with configurable head size and angle." },
                 { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. AutoCAD-style properties: Offset, ArrowSize, TextHeight, DecimalPlaces, ExtendBeyondDimLines, OffsetFromOrigin, SuppressExtLine1/2, SuppressDimensionLine, Prefix, Suffix, TextBackgroundOpaque. Per-element colors: ExtensionLineColor, DimensionLineColor, TextColor (null = use base Color). The dimension line is always split around the text for readability. Renders arrowheads at both ends of the dimension line." },
                 { "VRadialDimension", "Represents a radial or diameter dimension for circles and arcs. Draws a leader line from center to circumference with an arrowhead and text label (R for radius, \u2300 for diameter). Constructors: VRadialDimension(circle), VRadialDimension(arc), VRadialDimension(center, radius). Properties: LeaderAngle (direction of leader), ShowDiameter (diameter mode), ArrowSize, TextHeight, DecimalPlaces, Prefix, Suffix, CustomText, TextBackgroundOpaque. Per-element colors: DimensionLineColor, TextColor." },
@@ -183,7 +185,10 @@ namespace Code2Viz.Documentation
             doc.ColumnWidth = double.NaN; // Force single column mode
 
             // Title
-            var title = new Paragraph(new Run(type.Name + " Class"))
+            var displayName = GetDisplayTypeName(type);
+            var cleanName = GetCleanTypeName(type);
+
+            var title = new Paragraph(new Run(displayName + " Class"))
             {
                 FontSize = 24,
                 FontWeight = FontWeights.Bold,
@@ -193,7 +198,7 @@ namespace Code2Viz.Documentation
             doc.Blocks.Add(title);
 
             // Summary
-            var summaryText = GetSummary(type.Name);
+            var summaryText = GetSummary(cleanName);
             doc.Blocks.Add(new Paragraph(new Run(summaryText)) { FontSize = 14, Margin = new Thickness(0, 0, 0, 20) });
 
             // Inheritance
@@ -203,7 +208,7 @@ namespace Code2Viz.Documentation
              // C# Samples
             AddSectionHeader(doc, "C# Sample Code");
             if (_csharpSamples == null) InitializeCSharpSamples();
-            if (_csharpSamples.TryGetValue(type.Name, out var sample))
+            if (_csharpSamples.TryGetValue(cleanName, out var sample))
             {
                  var p = new Paragraph(new Run(sample));
                  p.FontFamily = new FontFamily("Consolas");
@@ -227,7 +232,7 @@ namespace Code2Viz.Documentation
             if (dtors.Length > 0)
             {
                 AddSectionHeader(doc, "Constructors");
-                doc.Blocks.Add(GenerateMemberTable(dtors, type.Name));
+                doc.Blocks.Add(GenerateMemberTable(dtors, cleanName));
             }
 
             // Properties
@@ -235,7 +240,7 @@ namespace Code2Viz.Documentation
             if (props.Length > 0)
             {
                 AddSectionHeader(doc, "Properties");
-                doc.Blocks.Add(GenerateMemberTable(props, type.Name));
+                doc.Blocks.Add(GenerateMemberTable(props, cleanName));
             }
 
             // Methods
@@ -246,7 +251,7 @@ namespace Code2Viz.Documentation
             if (methods.Length > 0)
             {
                 AddSectionHeader(doc, "Methods");
-                doc.Blocks.Add(GenerateMemberTable(methods, type.Name));
+                doc.Blocks.Add(GenerateMemberTable(methods, cleanName));
             }
 
             return doc;
@@ -279,7 +284,7 @@ namespace Code2Viz.Documentation
 
             for (int i = 0; i < hierarchy.Count; i++)
             {
-                var run = new Run(hierarchy[i].Name);
+                var run = new Run(GetDisplayTypeName(hierarchy[i]));
                 if (i == hierarchy.Count - 1) run.FontWeight = FontWeights.Bold;
                 p.Inlines.Add(run);
                 if (i < hierarchy.Count - 1) p.Inlines.Add(" → ");
@@ -289,15 +294,15 @@ namespace Code2Viz.Documentation
 
         private Paragraph GenerateSyntax(Type type)
         {
-            var syntax = $"public class {type.Name}";
+            var syntax = $"public class {GetDisplayTypeName(type)}";
             if (type.BaseType != null && type.BaseType != typeof(object))
-                syntax += $" : {type.BaseType.Name}";
+                syntax += $" : {GetDisplayTypeName(type.BaseType)}";
 
             var interfaces = type.GetInterfaces();
             if (interfaces.Length > 0)
             {
                 syntax += (type.BaseType != null && type.BaseType != typeof(object) ? ", " : " : ");
-                syntax += string.Join(", ", interfaces.Select(i => i.Name));
+                syntax += string.Join(", ", interfaces.Select(i => GetDisplayTypeName(i)));
             }
 
             var p = new Paragraph(new Run(syntax))
@@ -424,6 +429,32 @@ namespace Code2Viz.Documentation
             return type.Name;
         }
 
+        /// <summary>
+        /// Returns the type name without the generic arity suffix (e.g., "ValueAnimation" instead of "ValueAnimation`1").
+        /// Used for dictionary lookups and display where generic parameters aren't needed.
+        /// </summary>
+        internal static string GetCleanTypeName(Type type)
+        {
+            var name = type.Name;
+            var tickIndex = name.IndexOf('`');
+            return tickIndex > 0 ? name.Substring(0, tickIndex) : name;
+        }
+
+        /// <summary>
+        /// Returns a display-friendly type name with generic parameters (e.g., "ValueAnimation&lt;T&gt;").
+        /// </summary>
+        internal static string GetDisplayTypeName(Type type)
+        {
+            var cleanName = GetCleanTypeName(type);
+            if (type.IsGenericType)
+            {
+                var args = type.GetGenericArguments();
+                var argNames = string.Join(", ", args.Select(a => a.IsGenericParameter ? a.Name : GetCleanTypeName(a)));
+                return $"{cleanName}<{argNames}>";
+            }
+            return cleanName;
+        }
+
         private TableCell CreateHeaderCell(string text)
         {
             return new TableCell(new Paragraph(new Run(text)) { FontWeight = FontWeights.Bold })
@@ -492,6 +523,35 @@ let thirdCol = grid.GetColumn(2)
 // Transform
 grid.Move(VXYZ(50.0, 25.0, 0.0))
 grid.Rotate(VXYZ(0.0, 0.0), 45.0)" },
+
+                { "VCell", @"// VCell is typically created by VSpatialGrid
+let grid = VSpatialGrid(VXYZ(0.0, 0.0), 5, 5, 10.0)
+let cell = grid.[2, 2]
+VizConsole.Log($""Cell {cell.UniqueId} at ({cell.Column}, {cell.Row})"")
+VizConsole.Log($""Neighbours: {cell.Neighbours.Count}"")
+
+// Mark cell as blocked
+cell.Blocked <- true
+cell.FillColor <- ""Red""" },
+
+                { "VSpatialGrid", @"// Create a 10x10 grid of cells, each 5 units wide
+let grid = VSpatialGrid(VXYZ(0.0, 0.0), 10, 10, 5.0)
+
+// Access cells
+let corner = grid.[0, 0]
+let center = grid.[5, 5]
+
+// Block some cells
+grid.[3, 3].Blocked <- true
+grid.[3, 4].Blocked <- true
+
+// Find shortest path using A*
+let path = grid.FindPath(corner, center)
+for cell in path do
+    cell.FillColor <- ""LimeGreen""
+
+// Find closest cell to a point
+let closest = grid.GetClosestCell(VPoint(12.0, 8.0))" },
 
                 // Support classes
                 { "VXYZ", "let v = VXYZ(10.0, 20.0, 30.0)\nlet len = v.GetLength()" },
@@ -660,24 +720,27 @@ anim.Animate()" }
             doc.PagePadding = new Thickness(20);
             doc.ColumnWidth = double.NaN;
 
-            var title = new Paragraph(new Run(type.Name + " (F#)"))
+            var displayName = GetDisplayTypeName(type);
+            var cleanName = GetCleanTypeName(type);
+
+            var title = new Paragraph(new Run(displayName + " (F#)"))
             {
                 FontSize = 24, FontWeight = FontWeights.Bold, Foreground = Brushes.DarkSlateGray, Margin = new Thickness(0, 0, 0, 10)
             };
             doc.Blocks.Add(title);
 
-            var summaryText = GetSummary(type.Name);
-            if (summaryText == "No description available." && type.Name.StartsWith("V"))
+            var summaryText = GetSummary(cleanName);
+            if (summaryText == "No description available." && cleanName.StartsWith("V"))
             {
-                 var altName = type.Name.Substring(1) + "2D";
+                 var altName = cleanName.Substring(1) + "2D";
                  summaryText = GetSummary(altName);
-                 if (summaryText == "No description available.") summaryText = GetSummary(type.Name.Substring(1));
+                 if (summaryText == "No description available.") summaryText = GetSummary(cleanName.Substring(1));
             }
             doc.Blocks.Add(new Paragraph(new Run(summaryText)) { FontSize = 14, Margin = new Thickness(0, 0, 0, 20) });
 
             AddSectionHeader(doc, "F# Sample Code");
             if (_fsharpSamples == null) InitializeFSharpSamples();
-            if (_fsharpSamples.TryGetValue(type.Name, out var sample))
+            if (_fsharpSamples.TryGetValue(cleanName, out var sample))
             {
                  var p = new Paragraph(new Run(sample));
                  p.FontFamily = new FontFamily("Consolas");
@@ -1083,6 +1146,46 @@ var thirdColumn = grid.GetColumn(2);
 // Transform entire grid
 grid.Move(new VXYZ(50, 25, 0));
 grid.Rotate(new VXYZ(0, 0), 45);
+grid.Scale(grid.GetCenter(), 2.0);" },
+
+                { "VCell", @"// VCell is typically created by VSpatialGrid
+var grid = new VSpatialGrid(new VXYZ(0, 0), 5, 5, 10);
+VCell cell = grid[2, 2];
+VizConsole.Log($""Cell {cell.UniqueId} at ({cell.Column}, {cell.Row})"");
+VizConsole.Log($""Neighbours: {cell.Neighbours.Count}"");  // 4 (interior)
+VizConsole.Log($""Center: {cell.Center}"");
+VizConsole.Log($""CellSize: {cell.CellSize}"");
+
+// Mark cell as blocked
+cell.Blocked = true;
+cell.FillColor = ""Red"";" },
+
+                { "VSpatialGrid", @"// Create a 10x10 grid of cells, each 5 units wide
+var grid = new VSpatialGrid(new VXYZ(0, 0), 10, 10, 5);
+
+// Access cells by index or (col, row)
+VCell corner = grid[0, 0];          // Bottom-left
+VCell center = grid[5, 5];          // Near center
+List<VCell> row = grid.GetRow(0);   // Bottom row
+List<VCell> col = grid.GetColumn(0); // Left column
+
+// Block cells to create obstacles
+grid[3, 3].Blocked = true;
+grid[3, 4].Blocked = true;
+grid[3, 5].Blocked = true;
+
+// A* pathfinding around obstacles
+List<VCell> path = grid.FindPath(corner, center);
+foreach (var cell in path)
+    cell.FillColor = ""LimeGreen"";
+
+// O(log n) nearest-cell lookup via KD-tree
+VCell closest = grid.GetClosestCell(new VPoint(12, 8));
+
+// Style and transform
+grid.Color = ""DarkGray"";
+grid.ApplyStyle();
+grid.Move(new VXYZ(50, 0, 0));
 grid.Scale(grid.GetCenter(), 2.0);" },
 
                 // Support classes
