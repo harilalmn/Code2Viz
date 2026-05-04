@@ -2128,6 +2128,7 @@ public class RenderCanvas : FrameworkElement
         var fontFamily = GetFontFamilyName(text.Font);
         var fontWeight = text.FontWeight == VFontWeight.Bold ? FontWeights.Bold : FontWeights.Normal;
         var typeface = new Typeface(new FontFamily(fontFamily), FontStyles.Normal, fontWeight, FontStretches.Normal);
+        var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var formattedText = new FormattedText(
             text.Content,
             CultureInfo.CurrentCulture,
@@ -2135,16 +2136,36 @@ public class RenderCanvas : FrameworkElement
             typeface,
             fontSize,
             brush,
-            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            dpi);
 
-        // Apply anchor offset (convert world-space offset to screen-space)
+        // Anchor offset uses full text size so the layout stays put while characters reveal.
         var (anchorOffsetX, anchorOffsetY) = text.GetAnchorOffset(
             formattedText.Width / _viewport.Scale,
             formattedText.Height / _viewport.Scale);
         var drawX = screenPos.X + anchorOffsetX * _viewport.Scale;
         // Y is inverted in screen coords, so negate the world offsetY
         var drawY = screenPos.Y - formattedText.Height - anchorOffsetY * _viewport.Scale;
-        dc.DrawText(formattedText, new Point(drawX, drawY));
+
+        if (text.DrawFactor < 1.0)
+        {
+            int visibleCount = (int)Math.Floor(text.DrawFactor * text.Content.Length);
+            if (visibleCount > 0)
+            {
+                var partial = new FormattedText(
+                    text.Content.Substring(0, visibleCount),
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    typeface,
+                    fontSize,
+                    brush,
+                    dpi);
+                dc.DrawText(partial, new Point(drawX, drawY));
+            }
+        }
+        else
+        {
+            dc.DrawText(formattedText, new Point(drawX, drawY));
+        }
 
         if (applyOpacity) dc.Pop();
     }
