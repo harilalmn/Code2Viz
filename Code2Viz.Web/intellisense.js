@@ -262,6 +262,7 @@ const MEMBER_COMPLETIONS = {
         { text: 'font', kind: 'property', detail: '→ string', doc: 'Font family. Use VFont.Arial etc.' },
         { text: 'fontWeight', kind: 'property', detail: '→ string', doc: 'VFontWeight.Normal or VFontWeight.Bold.' },
         { text: 'anchor', kind: 'property', detail: '→ string', doc: 'VTextAnchor.BottomLeft, MiddleCenter, etc.' },
+        { text: 'angle', kind: 'property', detail: '→ number', doc: 'Rotation in degrees, CCW around location. Default 0 (horizontal).' },
     ],
 
     VDimension: [

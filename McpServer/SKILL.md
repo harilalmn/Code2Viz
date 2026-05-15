@@ -192,6 +192,10 @@ new VText(x, y, "Big Text", 24);   // with font height
 // Anchor controls alignment at position
 var t = new VText(0, 0, "Centered", 20);
 t.Anchor = VTextAnchor.MiddleCenter;  // center text on position
+
+// Angle rotates the entire text block (CCW degrees around Location)
+var vertical = new VText(0, 0, "Vertical", 16);
+vertical.Angle = 90;  // reads bottom-to-top
 ```
 
 | Property | Type | Default | Description |
@@ -202,6 +206,7 @@ t.Anchor = VTextAnchor.MiddleCenter;  // center text on position
 | Font | VFont | Arial | Font family |
 | FontWeight | VFontWeight | Normal | Normal or Bold |
 | Anchor | VTextAnchor | BottomLeft | Text anchor/alignment point |
+| Angle | double | 0 | Rotation in degrees, CCW around Location (Excel-style block rotation) |
 
 **VFont enum values**: Arial, TimesNewRoman, CourierNew, Verdana, Georgia, Tahoma, TrebuchetMS, Consolas, Calibri, Cambria, SegoeUI, ComicSansMS, Impact, LucidaConsole
 

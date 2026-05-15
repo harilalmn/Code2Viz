@@ -86,6 +86,7 @@ export class PropertiesPanel {
         } else if (shape instanceof VText) {
             this._addTextProp(el, 'Text', shape.content, v => { shape._content = v; });
             this._addNumberProp(el, 'Size', shape.height, v => { shape._height = v; });
+            this._addNumberProp(el, 'Angle', shape.angle, v => { shape._angle = v; });
         }
 
         // Separator

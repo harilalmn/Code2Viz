@@ -547,7 +547,17 @@ export class CanvasRenderer {
         else if (anchor.includes('Middle')) ctx.textBaseline = 'middle';
         else ctx.textBaseline = 'bottom';
 
-        ctx.fillText(shape.content, s.x, s.y);
+        const angle = shape.angle || 0;
+        if (angle !== 0) {
+            ctx.save();
+            // Canvas rotate is CW (Y-down screen); world is CCW → negate.
+            ctx.translate(s.x, s.y);
+            ctx.rotate(-angle * Math.PI / 180);
+            ctx.fillText(shape.content, 0, 0);
+            ctx.restore();
+        } else {
+            ctx.fillText(shape.content, s.x, s.y);
+        }
     }
 
     _drawDimension(ctx, shape) {

@@ -2146,6 +2146,11 @@ public class RenderCanvas : FrameworkElement
         // Y is inverted in screen coords, so negate the world offsetY
         var drawY = screenPos.Y - formattedText.Height - anchorOffsetY * _viewport.Scale;
 
+        // Angle is CCW in world (Y-up); WPF screen Y is down, so negate for RotateTransform.
+        bool applyRotation = text.Angle != 0;
+        if (applyRotation)
+            dc.PushTransform(new RotateTransform(-text.Angle, screenPos.X, screenPos.Y));
+
         if (text.DrawFactor < 1.0)
         {
             int visibleCount = (int)Math.Floor(text.DrawFactor * text.Content.Length);
@@ -2167,6 +2172,7 @@ public class RenderCanvas : FrameworkElement
             dc.DrawText(formattedText, new Point(drawX, drawY));
         }
 
+        if (applyRotation) dc.Pop();
         if (applyOpacity) dc.Pop();
     }
 

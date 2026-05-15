@@ -54,7 +54,7 @@ namespace Code2Viz.Documentation
                 { "VPoint", "Represents a visible point marker on the canvas. For coordinate storage, use VXYZ." },
                 { "VBezier", "Represents a 2D cubic Bezier curve defined by four control points: start, control1, control2, and end." },
                 { "VSpline", "Represents a smooth Catmull-Rom spline curve passing through a series of points." },
-                { "VText", "Represents text drawn at a specific position. Supports font size via Height property or constructor parameter. Constructors: VText(point, text), VText(point, text, height), VText(x, y, text), VText(x, y, text, height). Supports Font, FontWeight, and Anchor properties for styling and alignment." },
+                { "VText", "Represents text drawn at a specific position. Supports font size via Height property or constructor parameter. Constructors: VText(point, text), VText(point, text, height), VText(x, y, text), VText(x, y, text, height). Supports Font, FontWeight, Anchor, and Angle properties for styling, alignment, and rotation." },
                 { "VTextAnchor", "Enum specifying the anchor (alignment) point for VText. Values: BottomLeft (default), BottomCenter, BottomRight, MiddleLeft, MiddleCenter, MiddleRight, TopLeft, TopCenter, TopRight. Controls which point of the text bounding box is placed at the text's position." },
                 { "VGroup", "Represents a collection of shapes treated as a single unit. Supports multiple constructors (empty, params, IEnumerable, List), group transformations (Move, Rotate, Scale, Flip), style application (ApplyStyle, ApplyColor, ApplyFillColor), and utility methods (Flatten, ForEach, Where, GetShapesOfType). When drawn, the group is rendered and selected as a single entity on the canvas." },
                 { "VGrid", "Represents a rectangular grid of VPoints. Constructor: VGrid(location, xcount, ycount, xSpacing, ySpacing, centered). If centered=true, grid is centered at location; if false, location is bottom-left corner. Access points via Points property, indexers [index] or [col, row], or GetRow()/GetColumn() methods. Supports all Shape transformations (Move, Rotate, Scale, Flip) and ApplyStyle() to set colors on all points." },
@@ -482,7 +482,7 @@ namespace Code2Viz.Documentation
                 { "VPolyline", "let pts = [| VXYZ(100.0,300.0); VXYZ(150.0,350.0); VXYZ(200.0,300.0) |]\nlet line = VPolyline(pts)\nline.Draw()" },
                 { "VBezier", "let b = VBezier(VXYZ(0.0,0.0), VXYZ(0.0,100.0), VXYZ(100.0,100.0), VXYZ(100.0,0.0))\nb.Draw()" },
                 { "VSpline", "let pts = [| VXYZ(0.0,0.0); VXYZ(50.0,50.0); VXYZ(100.0,0.0) |]\nlet s = VSpline(pts)\ns.Draw()" },
-                { "VText", "let t = VText(VXYZ(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Anchor <- VTextAnchor.MiddleCenter\nt.Draw()" },
+                { "VText", "let t = VText(VXYZ(50.0, 50.0), \"Hi\")\nt.Height <- 40.0\nt.Anchor <- VTextAnchor.MiddleCenter\nt.Angle <- 45.0  // rotate CCW around Location\nt.Draw()" },
                 { "VTextAnchor", "// VTextAnchor controls text alignment at its position\nlet t = VText(VXYZ(0.0, 0.0), \"Centered\")\nt.Anchor <- VTextAnchor.MiddleCenter  // text is centered on the point\n\n// Values: BottomLeft (default), BottomCenter, BottomRight,\n//         MiddleLeft, MiddleCenter, MiddleRight,\n//         TopLeft, TopCenter, TopRight" },
                 { "VArrow", "// From two points\nlet a = VArrow(VXYZ(10.0, 10.0), VXYZ(100.0, 10.0))\na.Draw()\n\n// From start point, direction, and length\nlet a2 = VArrow(VXYZ(0.0, 0.0), VXYZ.BasisX, 50.0)\na2.Draw()" },
                 { "VDimension", "// Dimension between two points\nlet dim = VDimension(VXYZ(0.0, 0.0), VXYZ(100.0, 0.0))\ndim.Offset <- 20.0\ndim.Prefix <- \"L=\"\ndim.Suffix <- \"mm\"\ndim.Draw()\n\n// Per-element colors\nlet dim2 = VDimension(0.0, 50.0, 100.0, 50.0)\ndim2.ExtensionLineColor <- \"Green\"\ndim2.DimensionLineColor <- \"Red\"\ndim2.TextColor <- \"Cyan\"\ndim2.Draw()" },
@@ -1017,7 +1017,16 @@ text2.Draw();
 // Use Anchor to control alignment
 var text3 = new VText(0, 0, ""Centered"", 20);
 text3.Anchor = VTextAnchor.MiddleCenter; // center text on position
-text3.Draw();" },
+text3.Draw();
+
+// Rotate the entire text block (CCW degrees around Location)
+var tilted = new VText(0, -100, ""45 degrees"", 18);
+tilted.Angle = 45;
+tilted.Draw();
+
+var vertical = new VText(80, 0, ""Vertical"", 16);
+vertical.Angle = 90; // reads bottom-to-top
+vertical.Draw();" },
 
                 { "VTextAnchor", @"// VTextAnchor controls which point of the text is placed at its position
 // Default is BottomLeft (text extends right and up from the position)
@@ -2142,6 +2151,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VText.Height", "Gets or sets the font height in world units." },
                 { "VText.FontFamily", "Gets or sets the font family name." },
                 { "VText.Anchor", "Gets or sets the text anchor point (VTextAnchor enum). Controls which point of the text bounding box is placed at the text's position. Default is BottomLeft." },
+                { "VText.Angle", "Gets or sets the rotation of the text block in degrees, counterclockwise around Location. Characters rotate with the block (Excel-style). 0 = horizontal (default), 90 = reads bottom-to-top." },
 
                 // VTextAnchor enum values
                 { "VTextAnchor.BottomLeft", "Anchor at the bottom-left corner of the text (default). Text extends right and up from the position." },

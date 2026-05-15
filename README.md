@@ -298,8 +298,23 @@ header.Anchor = VTextAnchor.TopCenter;
 | `Font` | VFont | Arial | Font family enum |
 | `FontWeight` | VFontWeight | Normal | Normal or Bold |
 | `Anchor` | VTextAnchor | BottomLeft | Which point of the text is placed at Location |
+| `Angle` | double | 0 | Rotation in degrees, CCW around Location (Excel-style block rotation) |
 
 **VFont values**: Arial, TimesNewRoman, CourierNew, Verdana, Georgia, Tahoma, TrebuchetMS, Consolas, Calibri, Cambria, SegoeUI, ComicSansMS, Impact, LucidaConsole
+
+### Text Rotation
+
+The `Angle` property rotates the entire text block (characters included) counterclockwise around `Location`:
+
+```csharp
+var horizontal = new VText(0, 0, "0 degrees", 16);
+
+var tilted = new VText(100, 0, "45 degrees", 16);
+tilted.Angle = 45;  // reads diagonally up-and-to-the-right
+
+var vertical = new VText(200, 0, "90 degrees", 16);
+vertical.Angle = 90;  // reads bottom-to-top
+```
 
 ---
 

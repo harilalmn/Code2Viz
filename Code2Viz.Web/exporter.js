@@ -167,8 +167,11 @@ function shapeToSVG(s, tx, ty) {
         let dy = '0';
         if (anchor.includes('Top')) dy = `${s.height}`;
         else if (anchor.includes('Middle')) dy = `${s.height / 2}`;
+        // SVG rotate is CW; world is CCW → negate. tx,ty already accounts for any parent Y-flip.
+        const angle = s.angle || 0;
+        const transform = angle !== 0 ? ` transform="rotate(${-angle} ${x} ${y})"` : '';
         // Text in SVG with Y-flip needs dominant-baseline handling
-        return `  <text x="${x}" y="${y}" fill="${c}" font-family="${s.font}" font-size="${s.height}" font-weight="${s.fontWeight}" text-anchor="${textAnchor}" dy="${dy}"${opacity}>${escXml(s.content)}</text>\n`;
+        return `  <text x="${x}" y="${y}" fill="${c}" font-family="${s.font}" font-size="${s.height}" font-weight="${s.fontWeight}" text-anchor="${textAnchor}" dy="${dy}"${transform}${opacity}>${escXml(s.content)}</text>\n`;
     }
 
     if (s instanceof VDimension) {
@@ -320,7 +323,9 @@ function shapeToDXF(s) {
     }
 
     if (s instanceof VText) {
-        return `0\nTEXT\n8\n0\n62\n${col}\n10\n${s.location.X}\n20\n${s.location.Y}\n30\n0\n40\n${s.height}\n1\n${s.content}\n`;
+        const angle = s.angle || 0;
+        const angleStr = angle !== 0 ? `50\n${angle}\n` : '';
+        return `0\nTEXT\n8\n0\n62\n${col}\n10\n${s.location.X}\n20\n${s.location.Y}\n30\n0\n40\n${s.height}\n1\n${s.content}\n${angleStr}`;
     }
 
     if (s instanceof VDimension) {
@@ -501,7 +506,13 @@ function drawShapePDF(doc, s, tx, ty) {
         const c = stroke || [255, 255, 255];
         doc.setTextColor(c[0], c[1], c[2]);
         doc.setFontSize(s.height);
-        doc.text(s.content, tx(s.location.X), ty(s.location.Y));
+        const angle = s.angle || 0;
+        if (angle !== 0) {
+            // jsPDF text angle option rotates CCW in degrees.
+            doc.text(s.content, tx(s.location.X), ty(s.location.Y), { angle });
+        } else {
+            doc.text(s.content, tx(s.location.X), ty(s.location.Y));
+        }
         return;
     }
 

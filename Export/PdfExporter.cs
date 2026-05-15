@@ -460,9 +460,12 @@ public class PdfExporter
         var measuredHeight = text.Height;
         var (anchorOffsetX, anchorOffsetY) = text.GetAnchorOffset(measuredWidth, measuredHeight);
 
-        // Text drawing with Y-flip correction
+        // Text drawing with Y-flip correction. Angle rotates around Location (CCW in world Y-up).
         gfx.Save();
-        gfx.TranslateTransform(text.Location.X + anchorOffsetX, text.Location.Y + anchorOffsetY);
+        gfx.TranslateTransform(text.Location.X, text.Location.Y);
+        if (text.Angle != 0)
+            gfx.RotateTransform(text.Angle); // Outer scale(1,-1) makes RotateTransform CCW in world coords.
+        gfx.TranslateTransform(anchorOffsetX, anchorOffsetY);
         gfx.ScaleTransform(1, -1); // Un-flip for text
         gfx.DrawString(text.Content ?? "", font, brush, 0, 0);
         gfx.Restore();

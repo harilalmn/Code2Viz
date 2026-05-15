@@ -346,6 +346,8 @@ public class DxfExporter
         WriteCoord(10, 20, 30, text.Location.X, text.Location.Y, 0);
         WriteDouble(40, text.Height);
         WriteLine(1, text.Content ?? "");
+        if (text.Angle != 0)
+            WriteDouble(50, text.Angle); // DXF text rotation is CCW degrees, same convention as world.
         WriteLine(7, "STANDARD");
     }
 

@@ -81,10 +81,18 @@ public static class SvgExporter
             VSpline s => SplineToSvg(s),
             VArrow ar => ArrowToSvg(ar),
             VDimension d => DimensionToSvg(d),
-            VText t => $"<text x=\"{F(t.Location.X)}\" y=\"{F(t.Location.Y)}\" fill=\"{t.Color}\" font-size=\"{F(t.Height)}\" transform=\"scale(1,-1)\">{EscapeXml(t.Content)}</text>",
+            VText t => TextToSvg(t),
             VGroup g => GroupToSvg(g),
             _ => ""
         };
+    }
+
+    private static string TextToSvg(VText t)
+    {
+        var inner = $"<text x=\"{F(t.Location.X)}\" y=\"{F(t.Location.Y)}\" fill=\"{t.Color}\" font-size=\"{F(t.Height)}\" transform=\"scale(1,-1)\">{EscapeXml(t.Content)}</text>";
+        if (t.Angle == 0) return inner;
+        // World Angle is CCW (Y-up); parent group's scale(1,-1) flips Y, so we negate to keep CCW visually.
+        return $"<g transform=\"rotate({F(-t.Angle)}, {F(t.Location.X)}, {F(t.Location.Y)})\">{inner}</g>";
     }
 
     private static string ArcToSvg(VArc arc)

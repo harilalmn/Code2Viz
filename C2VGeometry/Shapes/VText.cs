@@ -58,6 +58,11 @@ public class VText : Shape
     public VFont Font { get; set; } = VFont.Arial;
     public VFontWeight FontWeight { get; set; } = VFontWeight.Normal;
     public VTextAnchor Anchor { get; set; } = VTextAnchor.BottomLeft;
+    /// <summary>
+    /// Rotation of the text block in degrees, counterclockwise around <see cref="Location"/>.
+    /// Characters rotate with the block (Excel-style). 0 = horizontal, 90 = reads bottom-to-top.
+    /// </summary>
+    public double Angle { get; set; } = 0;
 
     public VText(VXYZ location, string content)
     {
@@ -119,7 +124,8 @@ public class VText : Shape
             Width = Width,
             Font = Font,
             FontWeight = FontWeight,
-            Anchor = Anchor
+            Anchor = Anchor,
+            Angle = Angle
         };
         CopyStyleTo(clone);
         return clone;
@@ -152,8 +158,34 @@ public class VText : Shape
     {
         var textWidth = Width > 0 ? Width : Height * Content.Length * 0.6;
         var (offsetX, offsetY) = GetAnchorOffset(textWidth, Height);
-        var bottomLeft = new VXYZ(Location.X + offsetX, Location.Y + offsetY);
-        return new BoundingBox(bottomLeft, new VXYZ(bottomLeft.X + textWidth, bottomLeft.Y + Height));
+
+        if (Angle == 0)
+        {
+            var bottomLeft = new VXYZ(Location.X + offsetX, Location.Y + offsetY);
+            return new BoundingBox(bottomLeft, new VXYZ(bottomLeft.X + textWidth, bottomLeft.Y + Height));
+        }
+
+        var rad = Angle * Math.PI / 180.0;
+        var cos = Math.Cos(rad);
+        var sin = Math.Sin(rad);
+        double rx0 = offsetX, ry0 = offsetY;
+        double rx1 = offsetX + textWidth, ry1 = offsetY;
+        double rx2 = offsetX + textWidth, ry2 = offsetY + Height;
+        double rx3 = offsetX, ry3 = offsetY + Height;
+
+        VXYZ Rotate(double rx, double ry) =>
+            new VXYZ(Location.X + rx * cos - ry * sin, Location.Y + rx * sin + ry * cos);
+
+        var p0 = Rotate(rx0, ry0);
+        var p1 = Rotate(rx1, ry1);
+        var p2 = Rotate(rx2, ry2);
+        var p3 = Rotate(rx3, ry3);
+
+        var minX = Math.Min(Math.Min(p0.X, p1.X), Math.Min(p2.X, p3.X));
+        var maxX = Math.Max(Math.Max(p0.X, p1.X), Math.Max(p2.X, p3.X));
+        var minY = Math.Min(Math.Min(p0.Y, p1.Y), Math.Min(p2.Y, p3.Y));
+        var maxY = Math.Max(Math.Max(p0.Y, p1.Y), Math.Max(p2.Y, p3.Y));
+        return new BoundingBox(new VXYZ(minX, minY), new VXYZ(maxX, maxY));
     }
 
     internal (double offsetX, double offsetY) GetAnchorOffset(double textWidth, double textHeight)

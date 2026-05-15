@@ -157,7 +157,8 @@ public class ApiReferenceResource
         new VText(x, y, "text");
         new VText(x, y, "text", height);
         // Properties: Content, Height, Width (0=auto), Font (VFont enum), FontWeight (Normal/Bold),
-        //   Anchor (VTextAnchor enum, default BottomLeft)
+        //   Anchor (VTextAnchor enum, default BottomLeft),
+        //   Angle (degrees, CCW around Location, default 0; rotates the whole text block Excel-style)
         // VFont: Arial, TimesNewRoman, CourierNew, Verdana, Georgia, Tahoma, Consolas, etc.
         // VTextAnchor: BottomLeft (default), BottomCenter, BottomRight, MiddleLeft, MiddleCenter,
         //   MiddleRight, TopLeft, TopCenter, TopRight

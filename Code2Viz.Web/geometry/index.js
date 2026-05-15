@@ -1623,6 +1623,7 @@ class VText extends Shape {
         this._font = VFont.Arial;
         this._fontWeight = VFontWeight.Normal;
         this._anchor = VTextAnchor.BottomLeft;
+        this._angle = 0;
     }
 
     get location() { return this._location; }
@@ -1639,11 +1640,13 @@ class VText extends Shape {
     set fontWeight(v) { this._fontWeight = v; }
     get anchor() { return this._anchor; }
     set anchor(v) { this._anchor = v; }
+    get angle() { return this._angle; }
+    set angle(v) { this._angle = v; }
 
     clone() {
         const t = new VText(this._location, this._content, this._height);
         t._color = this._color; t._font = this._font; t._fontWeight = this._fontWeight;
-        t._anchor = this._anchor; t._width = this._width;
+        t._anchor = this._anchor; t._width = this._width; t._angle = this._angle;
         return t;
     }
 
@@ -1657,9 +1660,22 @@ class VText extends Shape {
 
     getBounds() {
         const w = this._width || this._content.length * this._height * 0.6;
+        const h = this._height;
+        if (!this._angle) {
+            return new BoundingBox(
+                VPoint.internal(this._location.X, this._location.Y),
+                VPoint.internal(this._location.X + w, this._location.Y + h)
+            );
+        }
+        const rad = this._angle * Math.PI / 180;
+        const cos = Math.cos(rad), sin = Math.sin(rad);
+        const lx = this._location.X, ly = this._location.Y;
+        const rot = (rx, ry) => [lx + rx * cos - ry * sin, ly + rx * sin + ry * cos];
+        const corners = [rot(0, 0), rot(w, 0), rot(w, h), rot(0, h)];
+        const xs = corners.map(c => c[0]), ys = corners.map(c => c[1]);
         return new BoundingBox(
-            VPoint.internal(this._location.X, this._location.Y),
-            VPoint.internal(this._location.X + w, this._location.Y + this._height)
+            VPoint.internal(Math.min(...xs), Math.min(...ys)),
+            VPoint.internal(Math.max(...xs), Math.max(...ys))
         );
     }
 }
