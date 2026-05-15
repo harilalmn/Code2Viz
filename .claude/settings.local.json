@@ -83,7 +83,19 @@
       "Bash(cp -r \"C:\\\\Users\\\\haril\\\\OneDrive\\\\ドキュメント\\\\Code2VizProjects\\\\VisibilityGraph\" \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\Sample Projects\\\\\" && ls \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\Sample Projects\")",
       "PowerShell(Copy-Item *)",
       "PowerShell(Get-ChildItem \"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\Sample Projects\" -Recurse -File | ForEach-Object { $_.FullName })",
-      "PowerShell(Remove-Item *)"
+      "PowerShell(Remove-Item *)",
+      "PowerShell($asm = [System.Reflection.Assembly]::LoadFile\\('C:/Users/haril/.nuget/packages/avalonedit/6.3.0.90/lib/net7.0-windows7.0/ICSharpCode.AvalonEdit.dll'\\); $t = $asm.GetType\\('ICSharpCode.AvalonEdit.Rendering.VisualLineElement'\\); $t.GetConstructors\\([System.Reflection.BindingFlags]'Public,NonPublic,Instance'\\) | ForEach-Object { \"$\\($_\\)\" })",
+      "PowerShell($dll = 'C:/Users/haril/.nuget/packages/avalonedit/6.3.0.90/lib/net7.0-windows7.0/ICSharpCode.AvalonEdit.dll'; Add-Type -Path $dll; $t = [ICSharpCode.AvalonEdit.Rendering.VisualLineElement]; $t.GetConstructors\\([System.Reflection.BindingFlags]'Public,NonPublic,Instance'\\) | ForEach-Object { \"$\\($_\\)\" })",
+      "Bash(\"/c/Program Files \\(x86\\)/Microsoft SDKs/Windows/v10.0A/bin/NETFX 4.8.1 Tools/ildasm.exe\" /text /item:ICSharpCode.AvalonEdit.Rendering.VisualLine::PerformVisualElementConstruction \"C:\\\\Users\\\\haril\\\\.nuget\\\\packages\\\\avalonedit\\\\6.3.0.90\\\\lib\\\\net7.0-windows7.0\\\\ICSharpCode.AvalonEdit.dll\")",
+      "Bash(\"/c/Program Files \\(x86\\)/Microsoft SDKs/Windows/v10.0A/bin/NETFX 4.8.1 Tools/ildasm.exe\" /text /out=/tmp/avalon.il \"C:\\\\Users\\\\haril\\\\.nuget\\\\packages\\\\avalonedit\\\\6.3.0.90\\\\lib\\\\net7.0-windows7.0\\\\ICSharpCode.AvalonEdit.dll\")",
+      "Bash(cp \"C:/Users/haril/.nuget/packages/avalonedit/6.3.0.90/lib/net7.0-windows7.0/ICSharpCode.AvalonEdit.dll\" /tmp/ae.dll)",
+      "Bash(\"/c/Program Files \\(x86\\)/Microsoft SDKs/Windows/v10.0A/bin/NETFX 4.8.1 Tools/ildasm.exe\" /text /out=/tmp/ae.il /tmp/ae.dll)",
+      "Bash(cp \"C:\\\\\\\\Users\\\\\\\\haril\\\\\\\\.nuget\\\\\\\\packages\\\\\\\\avalonedit\\\\\\\\6.3.0.90\\\\\\\\lib\\\\\\\\net7.0-windows7.0\\\\\\\\ICSharpCode.AvalonEdit.dll\" /tmp/ae.dll)",
+      "Bash(\"/c/Program Files \\(x86\\)/Microsoft SDKs/Windows/v10.0A/bin/NETFX 4.8.1 Tools/ildasm.exe\" /TEXT /OUT=- /tmp/ae.dll)",
+      "PowerShell(cp *)",
+      "PowerShell(New-Item *)",
+      "Bash(tasklist /FI \"IMAGENAME eq Code2Viz.exe\")",
+      "Bash(\"C:\\\\Work\\\\Nicety\\\\Projects\\\\Code2Viz\\\\bin\\\\Debug\\\\net9.0-windows\\\\Code2Viz.exe\")"
     ]
   }
 }

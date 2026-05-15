@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.TextFormatting;
 using ICSharpCode.AvalonEdit;
@@ -20,6 +21,7 @@ using FontStyles = System.Windows.FontStyles;
 using FontWeights = System.Windows.FontWeights;
 using FontStyle = System.Windows.FontStyle;
 using FontWeight = System.Windows.FontWeight;
+using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace Code2Viz.Editor
 {
@@ -33,6 +35,11 @@ namespace Code2Viz.Editor
         private readonly object _lock = new();
         private List<CodeLensItem> _items = new();
         private bool _enabled = true;
+
+        public int ItemCount
+        {
+            get { lock (_lock) return _items.Count; }
+        }
 
         public bool Enabled
         {
@@ -264,7 +271,8 @@ namespace Code2Viz.Editor
                 var item = snapshot.FirstOrDefault(i => i.Offset == offset);
                 if (item == null) return null;
 
-                return new CodeLensElement(item.Text);
+                var lineHeight = CurrentContext?.TextView?.DefaultLineHeight ?? 16.0;
+                return new CodeLensElement(item.Text, lineHeight);
             }
             catch (Exception ex)
             {
@@ -292,88 +300,44 @@ namespace Code2Viz.Editor
     }
 
     /// <summary>
-    /// Visual element that renders code lens text inline (at the start of the line).
+    /// Visual element that renders code lens text on its own row above the line.
+    /// Wraps a zero-width Canvas so it doesn't displace the line text horizontally;
+    /// the canvas is taller than one line so the line itself is rendered at the bottom,
+    /// leaving room above for the code lens label.
     /// </summary>
-    public class CodeLensElement : VisualLineElement
+    public class CodeLensElement : InlineObjectElement
     {
-        private readonly string _text;
-
-        public CodeLensElement(string text) : base(ComputeVisualLength(text), 0)
+        public CodeLensElement(string text, double lineHeight)
+            : base(0, BuildElement(text, lineHeight))
         {
-            // Visual length must match the TextRun length
-            // Document length = 0 (doesn't consume any document characters)
-            _text = text + " | ";
         }
 
-        private static int ComputeVisualLength(string text)
+        private static UIElement BuildElement(string text, double lineHeight)
         {
-            return (text + " | ").Length;
-        }
-
-        public override TextRun CreateTextRun(
-            int startVisualColumn,
-            ITextRunConstructionContext context)
-        {
-            try
+            var label = new TextBlock
             {
-                var props = new CodeLensTextRunProperties(context.GlobalTextRunProperties);
-                return new CodeLensTextRun(_text, props);
-            }
-            catch (Exception ex)
+                Text = text,
+                Foreground = new SolidColorBrush(Color.FromRgb(120, 120, 120)),
+                FontStyle = FontStyles.Italic,
+                FontSize = Math.Max(8, lineHeight * 0.65),
+                IsHitTestVisible = false,
+            };
+
+            // Zero-width host so the line's normal characters keep their indentation.
+            // Height = 2x line height: AvalonEdit baselines the line text at the host's
+            // bottom, so the upper half becomes empty space where we render the label.
+            // ClipToBounds=false lets the label paint past the canvas's reported width.
+            var host = new System.Windows.Controls.Canvas
             {
-                System.Diagnostics.Debug.WriteLine($"CodeLens CreateTextRun error: {ex.Message}");
-                // Return a minimal text run on error
-                return new TextCharacters(" ", context.GlobalTextRunProperties);
-            }
+                Width = 0,
+                Height = lineHeight * 2,
+                ClipToBounds = false,
+                IsHitTestVisible = false,
+            };
+            System.Windows.Controls.Canvas.SetLeft(label, 0);
+            System.Windows.Controls.Canvas.SetTop(label, 0);
+            host.Children.Add(label);
+            return host;
         }
-    }
-
-    public class CodeLensTextRun : TextRun
-    {
-        private readonly char[] _textChars;
-        private readonly TextRunProperties _properties;
-
-        public CodeLensTextRun(string text, TextRunProperties properties)
-        {
-            _textChars = text.ToCharArray();
-            _properties = properties;
-        }
-
-        public override CharacterBufferReference CharacterBufferReference =>
-            new CharacterBufferReference(_textChars, 0);
-
-        public override int Length => _textChars.Length;
-
-        public override TextRunProperties Properties => _properties;
-    }
-
-    public class CodeLensTextRunProperties : TextRunProperties
-    {
-        private readonly TextRunProperties _baseProperties;
-
-        public CodeLensTextRunProperties(TextRunProperties baseProperties)
-        {
-            _baseProperties = baseProperties;
-        }
-
-        public override Brush BackgroundBrush => Brushes.Transparent;
-
-        public override System.Globalization.CultureInfo CultureInfo => _baseProperties.CultureInfo;
-
-        public override double FontHintingEmSize => _baseProperties.FontHintingEmSize * 0.8;
-
-        public override double FontRenderingEmSize => _baseProperties.FontRenderingEmSize * 0.8;
-
-        public override Brush ForegroundBrush => new SolidColorBrush(Color.FromRgb(120, 120, 120));
-
-        public override System.Windows.TextDecorationCollection? TextDecorations => null;
-
-        public override System.Windows.Media.TextEffectCollection? TextEffects => null;
-
-        public override Typeface Typeface => new Typeface(
-            _baseProperties.Typeface.FontFamily,
-            FontStyles.Italic,
-            _baseProperties.Typeface.Weight,
-            _baseProperties.Typeface.Stretch);
     }
 }

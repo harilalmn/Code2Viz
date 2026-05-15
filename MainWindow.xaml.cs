@@ -4928,6 +4928,11 @@ public partial class MainWindow : Window
             if (_codeLensGenerator.Enabled)
             {
                 UpdateCodeLens();
+                SetStatus($"Code Lens enabled ({_codeLensGenerator.ItemCount} item{(_codeLensGenerator.ItemCount != 1 ? "s" : "")})", isError: false);
+            }
+            else
+            {
+                SetStatus("Code Lens disabled", isError: false);
             }
 
             CodeEditor.TextArea.TextView.Redraw();

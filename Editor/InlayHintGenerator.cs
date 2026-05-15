@@ -191,6 +191,8 @@ namespace Code2Viz.Editor
                 "Ceiling" => new List<string> { "d" },
                 "WriteLine" => new List<string> { "value" },
                 "Write" => new List<string> { "value" },
+                "Log" => new List<string> { "value", "itemize" },
+                "Print" => new List<string> { "value" },
                 _ => null
             };
         }
@@ -324,7 +326,7 @@ namespace Code2Viz.Editor
             if (!_enabled) return null;
 
             var hint = _hints.FirstOrDefault(h => h.Offset == offset);
-            if (hint == null) return null;
+            if (hint == null || string.IsNullOrEmpty(hint.Text)) return null;
 
             return new InlayHintElement(hint.Text, hint.Kind);
         }
@@ -351,7 +353,8 @@ namespace Code2Viz.Editor
         private readonly string _text;
         private readonly InlayHintKind _kind;
 
-        public InlayHintElement(string text, InlayHintKind kind) : base(0, 0)
+        public InlayHintElement(string text, InlayHintKind kind)
+            : base(text.Length, 0)
         {
             _text = text;
             _kind = kind;
@@ -360,30 +363,8 @@ namespace Code2Viz.Editor
         public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
         {
             var textProps = new InlayHintTextRunProperties(context.GlobalTextRunProperties, _kind);
-            return new InlayHintTextRun(_text, textProps);
+            return new TextCharacters(_text, textProps);
         }
-    }
-
-    /// <summary>
-    /// Custom text run for inlay hints.
-    /// </summary>
-    public class InlayHintTextRun : TextRun
-    {
-        private readonly string _text;
-        private readonly TextRunProperties _properties;
-
-        public InlayHintTextRun(string text, TextRunProperties properties)
-        {
-            _text = text;
-            _properties = properties;
-        }
-
-        public override CharacterBufferReference CharacterBufferReference =>
-            new CharacterBufferReference(_text.ToCharArray(), 0);
-
-        public override int Length => _text.Length;
-
-        public override TextRunProperties Properties => _properties;
     }
 
     /// <summary>
