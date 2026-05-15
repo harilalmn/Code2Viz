@@ -1,0 +1,27 @@
+{
+  "Name": "VisibilityGraph",
+  "Language": 0,
+  "Packages": [],
+  "References": [],
+  "Settings": {
+    "DefaultColor": null,
+    "DefaultFillColor": null,
+    "DefaultCanvasBackgroundColor": null,
+    "DefaultExportBackground": null,
+    "DefaultLineWeight": null,
+    "DefaultLineTypeScale": null,
+    "DimOffset": null,
+    "DimArrowSize": null,
+    "DimTextHeight": null,
+    "DimDecimalPlaces": null,
+    "DimExtendBeyondDimLines": null,
+    "DimOffsetFromOrigin": null,
+    "DimPrefix": null,
+    "DimSuffix": null,
+    "DimTextBgOpaque": null,
+    "DimExtensionLineColor": null,
+    "DimDimensionLineColor": null,
+    "DimTextColor": null,
+    "DimSuppressDimensionLine": null
+  }
+}
