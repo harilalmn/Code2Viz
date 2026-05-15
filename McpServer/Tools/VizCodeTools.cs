@@ -24,7 +24,7 @@ public static class VizCodeTools
         "Shape properties: Color, FillColor, LineWeight, LineType(Continuous/Dashed/Dotted/DashDot/DashDotDot/Center/Phantom/Hidden), LineTypeScale, Name, IsVisible, Opacity. " +
         "Shape methods: Move(new VXYZ(dx,dy,0)), Rotate(pivot,angleDeg), Scale(center,factor), Flip(mirrorLine), Clone(), GetBounds() returns BoundingBox(Min,Max,Width,Height,Center,Area), Show(), Hide(), Remove(), Contains(point), DistanceTo(point). " +
         "ICurve methods (VLine,VCircle,VArc,VEllipse,VPolyline,VPolygon,VBezier,VSpline): GetLength(), Divide(n), Measure(segLen), PointAtSegmentLength(len), Project(point), Offset(dist), Intersect(otherCurve), StartPoint, EndPoint, Vertices, SplitAtPoint(pt), NormalAtPoint(pt). " +
-        "VText props: Content, Height, Font(VFont enum: Arial,TimesNewRoman,CourierNew,Consolas,etc), FontWeight(Normal/Bold). " +
+        "VText props: Content, Height, Font(VFont enum: Arial,TimesNewRoman,CourierNew,Consolas,etc), FontWeight(Normal/Bold), Anchor(VTextAnchor enum, default BottomLeft), Angle(degrees CCW around Location, default 0 — Excel-style block rotation). " +
         "VArrow props: HeadLength(15), HeadAngle(30), DoubleEnded(false). VDimension props: Offset(20), CustomText, TextHeight(12), DecimalPlaces(2). " +
         "VGroup: Add(shape), AddRange(shapes), Remove(shape), ForEach(action), Where(predicate), ApplyColor(), ApplyFillColor(), ApplyLineWeight(), SetOpacity(val), GetCenter(), Flatten(), GetShapesOfType<T>(). " +
         "VPoint: DistanceTo(point), AsVXYZ(), operators +,-,*,/. VXYZ(x,y,z): GetLength(), Normalize(), DotProduct(), CrossProduct(), AngleTo(), static Zero/BasisX/BasisY. " +
