@@ -19,7 +19,6 @@
   <ItemGroup>
     <!-- Exclude sample project folders from compilation -->
     <Compile Remove="FSharp-SampleProject\**" />
-    <Compile Remove="CSharp-SampleProject\**" />
     <Compile Remove="Tests\**" />
     <Compile Remove="McpBridge\**" />
     <Compile Remove="McpServer\**" />
@@ -47,10 +46,6 @@
     <EmbeddedResource Include="Editor\CSharpHighlighting.xshd" />
     <EmbeddedResource Include="Editor\FSharpHighlighting.xshd" />
     <EmbeddedResource Include="FSharp\VizDsl.fs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="CSharp-SampleProject\CSharpSample.vizproj" />
   </ItemGroup>
 
   <ItemGroup>
