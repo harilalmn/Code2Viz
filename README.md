@@ -1978,6 +1978,31 @@ namespace StartViz
 
 ---
 
+## Shape Visibility & Naming Rules
+
+After your script's `Main()` returns, Code2Viz hides any shape with an empty `Name` that wasn't explicitly drawn. This suppresses intermediate construction shapes. The auto-naming pass only fills `Name` for two C# patterns:
+
+- **Local declarations** — `var circle = new VCircle(0, 0, 50);`
+- **Field declarations** — `private VLine _axis = new VLine(...);`
+
+The following patterns slip past the rewriter, so the shapes stay nameless and get hidden. Set `Name` explicitly in those cases:
+
+```csharp
+// List.Add — rewriter does not see the construction
+trails.Add(new VLine(a, b) { Color = "Cyan", Name = "trail" });
+
+// Array slot assignment — not a var declaration
+hulls[i] = new VPolygon(pts) { Color = "Lime", Name = $"hull{i}" };
+
+// Helper-function return — the returned shape has no caller-side variable name
+VLine MakeEdge(VPoint a, VPoint b) =>
+    new VLine(a, b) { Color = "Gold", Name = "edge" };
+```
+
+When this happens, the console will log a warning naming the count and per-type breakdown — e.g. `Warning: 178 unnamed shape(s) hidden (178 VLine). To keep them visible, assign to a var ... or set Name explicitly in the initializer.` Calling `shape.Draw()` also keeps it visible (it sets `IsExplicitlyDrawn = true`).
+
+---
+
 ## Building and Running
 
 ### Prerequisites

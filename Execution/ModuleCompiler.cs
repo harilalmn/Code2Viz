@@ -373,12 +373,28 @@ public class ModuleCompiler
     private static void HideUnnamedShapes()
     {
         var shapes = CanvasRenderer.Instance.GetShapes();
+        int hiddenCount = 0;
+        var typeCounts = new Dictionary<string, int>();
         foreach (var drawable in shapes)
         {
-            if (drawable is Geometry.Shape shape && string.IsNullOrEmpty(shape.Name) && !shape.IsExplicitlyDrawn)
+            if (drawable is Geometry.Shape shape && string.IsNullOrEmpty(shape.Name) && !shape.IsExplicitlyDrawn && shape.IsVisible)
             {
                 shape.IsVisible = false;
+                hiddenCount++;
+                var typeName = shape.GetType().Name;
+                typeCounts[typeName] = typeCounts.GetValueOrDefault(typeName) + 1;
             }
+        }
+
+        if (hiddenCount > 0)
+        {
+            var breakdown = string.Join(", ", typeCounts
+                .OrderByDescending(kv => kv.Value)
+                .Select(kv => $"{kv.Value} {kv.Key}"));
+            ConsoleOutput.Instance.WriteLine("Code2Viz", 0,
+                $"Warning: {hiddenCount} unnamed shape(s) hidden ({breakdown}). " +
+                "To keep them visible, assign to a var (e.g. var x = new VLine(...)) " +
+                "or set Name explicitly in the initializer.");
         }
     }
 

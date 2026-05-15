@@ -43,6 +43,26 @@ var line = new VLine(-100, -100, 100, 100) { Color = "Green", LineWeight = 3 };
 // new VCircle(0, 0, 100);
 ```
 
+### When auto-naming fails — set `Name` explicitly
+
+Code2Viz auto-fills `Shape.Name` from the variable name for `var x = new VShape(...)` declarations and field declarations only. After the script runs, any shape with empty `Name` (and not explicitly `.Draw()`-ed) is hidden. These patterns slip past the rewriter and need an explicit `Name`:
+
+```csharp
+// list.Add: rewriter does not see the construction
+var trails = new List<VLine>();
+trails.Add(new VLine(0, 0, 100, 100) { Color = "Cyan", Name = "trail" });
+
+// array slot assignment: not a var declaration
+var hulls = new VPolygon[3];
+hulls[0] = new VPolygon(pts) { Color = "Lime", Name = "hull0" };
+
+// helper function return: the returned shape has no variable name
+VLine MakeTrail(VPoint a, VPoint b) =>
+    new VLine(a, b) { Color = "Gold", Name = "trail" };
+```
+
+The Code2Viz console will warn: `Warning: N unnamed shape(s) hidden (...)`. If you see it, add `Name = "..."` to the construction.
+
 ## Coordinate System
 
 - Origin (0,0) is at the canvas center

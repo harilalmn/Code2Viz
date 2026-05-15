@@ -46,7 +46,7 @@ public class ApiReferenceResource
         | LineWeight | double | 2 | Stroke width |
         | LineType | LineType | Continuous | Continuous, Dashed, Dotted, DashDot, DashDotDot, Center, Phantom, Hidden |
         | LineTypeScale | double | 1.0 | Scale for dash pattern |
-        | Name | string | "" | Shape identifier |
+        | Name | string | "" | Shape identifier. Shapes with an empty Name are auto-hidden after a script run (see Shape Visibility Rules below) |
         | IsVisible | bool | true | Show/hide shape |
         | Opacity | double | 1.0 | Transparency (0-1) |
         | Id | long | auto | Unique identifier (read-only) |
@@ -272,6 +272,20 @@ public class ApiReferenceResource
         // Built-in patterns (73): ANSI31-38, BRICK, STEEL, HEX, HONEY, NET, DOTS, CROSS, etc.
         // Custom: HatchType.Parse("*NAME, Desc\n45, 0,0, 0,10"), or new HatchType(name, desc, lines)
         ```
+
+        ## Shape Visibility Rules (important!)
+        After your script's `Main()` returns, Code2Viz hides any Shape where `Name` is empty and `IsExplicitlyDrawn` is false. The intent is to suppress intermediate construction shapes. The auto-naming pass only fills `Name` from these two C# patterns:
+        - Local declarations: `var x = new VShape(...)`
+        - Field declarations: `private VShape myShape = new VShape(...);`
+
+        These patterns slip past the rewriter and need an explicit `Name`:
+        ```csharp
+        list.Add(new VLine(0, 0, 100, 100) { Color = "Cyan", Name = "edge" });  // List.Add
+        hulls[i] = new VPolygon(pts) { Color = "Lime", Name = $"hull{i}" };      // array slot
+        VLine Make(VPoint a, VPoint b) =>                                        // helper return
+            new VLine(a, b) { Color = "Gold", Name = "edge" };
+        ```
+        If shapes get hidden, the console logs `Warning: N unnamed shape(s) hidden (...)`. Calling `.Draw()` on a shape also keeps it visible (sets `IsExplicitlyDrawn = true`).
 
         ## ICurve Interface (VLine, VCircle, VArc, VEllipse, VPolyline, VPolygon, VBezier, VSpline)
         Properties: StartPoint, EndPoint, Vertices, SelfIntersecting
