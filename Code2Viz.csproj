@@ -25,6 +25,7 @@
     <Compile Remove="McpServer\**" />
     <Compile Remove="C2VGeometry\**" />
     <Compile Remove="RegionSample\**" />
+    <Compile Remove="Sample Projects\**" />
   </ItemGroup>
 
 
