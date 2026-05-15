@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Code2Viz.Geometry;
 using Code2Viz.Console;
 
-namespace MyVizProject
+namespace ConvexHull
 {
     public class Step
     {

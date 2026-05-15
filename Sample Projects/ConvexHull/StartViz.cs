@@ -6,7 +6,7 @@ using Code2Viz.Geometry;
 using Code2Viz.Console;
 using Code2Viz.Animation;
 
-namespace MyVizProject
+namespace ConvexHull
 {
     public class Viz
     {
