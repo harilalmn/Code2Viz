@@ -761,6 +761,15 @@ if (hit is { } h)
 // Closest hit within a distance cap (prunes BVH sub-trees).
 RayHit? near = caster.FindIntersection(origin, direction, maxDistance: 50);
 
+// Exclude specific shapes — useful when casting from inside / off a known
+// shape, or for "find the next hit past these" queries.
+RayHit? past = caster.FindIntersection(
+    origin, direction,
+    exclusionList: new List<Shape> { sourceShape });
+RayHit? pastCapped = caster.FindIntersection(
+    origin, direction, maxDistance: 100,
+    exclusionList: new List<Shape> { sourceShape });
+
 // Any-hit / "is anything blocking?" — faster than closest-hit.
 bool blocked = caster.HasIntersection(origin, direction);
 bool nearby  = caster.HasIntersection(origin, direction, maxDistance: 100);
@@ -787,8 +796,8 @@ caster.Refit();
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `FindIntersection(location, direction)` | `RayHit?` | Closest hit (XY plane; Z ignored). |
-| `FindIntersection(location, direction, maxDistance)` | `RayHit?` | Closest hit, capped by distance. |
+| `FindIntersection(location, direction, exclusionList = null)` | `RayHit?` | Closest hit (XY plane; Z ignored). Optional `List<Shape>` excludes specific shapes from the candidate set. |
+| `FindIntersection(location, direction, maxDistance, exclusionList = null)` | `RayHit?` | Closest hit, capped by distance, with optional exclusion list. |
 | `HasIntersection(location, direction, maxDistance = +∞)` | `bool` | Any-hit early-out (shadow-ray style). |
 | `FindIntersections(queries, parallel = true)` | `RayHit?[]` | Batch query aligned with input. |
 | `Refit()` | `void` | In-place AABB refresh after shape movement. |

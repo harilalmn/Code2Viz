@@ -423,6 +423,12 @@ public class ApiReferenceResource
         // With distance cap (prunes BVH sub-trees)
         var near = caster.FindIntersection(origin, dir, maxDistance: 50);
 
+        // Exclude specific shapes (e.g. the source shape) from the candidate set
+        var past = caster.FindIntersection(origin, dir,
+            exclusionList: new List<Shape> { sourceShape });
+        var pastCapped = caster.FindIntersection(origin, dir, maxDistance: 100,
+            exclusionList: new List<Shape> { sourceShape });
+
         // Any-hit early-out (faster than closest-hit for shadow rays)
         bool blocked = caster.HasIntersection(origin, dir);
         bool nearby  = caster.HasIntersection(origin, dir, maxDistance: 100);

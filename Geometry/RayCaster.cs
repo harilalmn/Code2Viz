@@ -149,16 +149,24 @@ public class RayCaster
     /// Casts a ray from <paramref name="location"/> in <paramref name="direction"/>
     /// and returns the closest shape it hits, or <c>null</c> if nothing is hit.
     /// </summary>
-    public RayHit? FindIntersection(VXYZ location, VXYZ direction)
-        => ClosestHit(location, direction, double.PositiveInfinity);
+    /// <param name="exclusionList">Optional. Shapes in this list are ignored
+    /// during the query — useful for skipping the source shape when casting
+    /// from inside or off a known shape, or for "find the next hit past
+    /// these" queries. Reference equality; converted internally to a
+    /// <see cref="HashSet{Shape}"/> for O(1) lookup.</param>
+    public RayHit? FindIntersection(VXYZ location, VXYZ direction,
+                                    List<Shape>? exclusionList = null)
+        => ClosestHit(location, direction, double.PositiveInfinity, exclusionList);
 
     /// <summary>
-    /// Same as <see cref="FindIntersection(VXYZ, VXYZ)"/> but ignores any
-    /// shape farther than <paramref name="maxDistance"/> from the origin.
-    /// The cap is also used to prune BVH sub-trees during traversal.
+    /// Same as <see cref="FindIntersection(VXYZ, VXYZ, List{Shape}?)"/> but
+    /// ignores any shape farther than <paramref name="maxDistance"/> from
+    /// the origin. The cap is also used to prune BVH sub-trees during
+    /// traversal.
     /// </summary>
-    public RayHit? FindIntersection(VXYZ location, VXYZ direction, double maxDistance)
-        => ClosestHit(location, direction, maxDistance);
+    public RayHit? FindIntersection(VXYZ location, VXYZ direction, double maxDistance,
+                                    List<Shape>? exclusionList = null)
+        => ClosestHit(location, direction, maxDistance, exclusionList);
 
     /// <summary>
     /// Returns <c>true</c> as soon as any shape is found within
@@ -225,7 +233,8 @@ public class RayCaster
         public double HitY;
     }
 
-    private RayHit? ClosestHit(VXYZ location, VXYZ direction, double maxDistance)
+    private RayHit? ClosestHit(VXYZ location, VXYZ direction, double maxDistance,
+                               List<Shape>? exclusionList)
     {
         if (_rootIndex < 0 || location == null || direction == null) return null;
 
@@ -240,6 +249,11 @@ public class RayCaster
         double maxSq = double.IsPositiveInfinity(maxDistance)
             ? double.PositiveInfinity
             : (maxDistance > 0 ? maxDistance * maxDistance : 0);
+
+        // Build a hash set once per query for O(1) per-shape exclusion checks.
+        HashSet<Shape>? excluded = (exclusionList != null && exclusionList.Count > 0)
+            ? new HashSet<Shape>(exclusionList)
+            : null;
 
         HitState hit = default;
         hit.BestDistSq = maxSq;
@@ -265,12 +279,14 @@ public class RayCaster
                 for (int i = s; i < end; i++)
                 {
                     int shapeIdx = _orderedIndices[i];
+                    var shape = _shapes[shapeIdx];
+                    if (excluded != null && excluded.Contains(shape)) continue;
                     if (!RayHitsAabb(ox, oy, invDx, invDy,
                             _minX[shapeIdx], _minY[shapeIdx],
                             _maxX[shapeIdx], _maxY[shapeIdx], out double tShape)
                         || tShape * tShape > hit.BestDistSq)
                         continue;
-                    IntersectShape(_shapes[shapeIdx], shapeIdx, ox, oy, dx, dy, ref hit);
+                    IntersectShape(shape, shapeIdx, ox, oy, dx, dy, ref hit);
                 }
                 continue;
             }

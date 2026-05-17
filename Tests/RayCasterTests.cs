@@ -237,6 +237,69 @@ public class RayCasterTests : IDisposable
         Assert.Same(near, hit!.Value.Shape);
     }
 
+    // -- Exclusion list -------------------------------------------------------
+
+    [Fact]
+    public void FindIntersection_SkipsExcludedShape_AndPicksNextClosest()
+    {
+        var near = new VCircle(10, 0, 1);
+        var far  = new VCircle(50, 0, 1);
+        var rc = new RayCaster();
+
+        var hit = rc.FindIntersection(
+            new VXYZ(0, 0, 0), new VXYZ(1, 0, 0),
+            exclusionList: new List<Shape> { near });
+
+        Assert.NotNull(hit);
+        Assert.Same(far, hit!.Value.Shape);
+        Assert.Equal(49.0, hit.Value.Point.X, 6);
+    }
+
+    [Fact]
+    public void FindIntersection_ReturnsNullWhenAllCandidatesAreExcluded()
+    {
+        var c1 = new VCircle(10, 0, 1);
+        var c2 = new VCircle(50, 0, 1);
+        var rc = new RayCaster();
+
+        var hit = rc.FindIntersection(
+            new VXYZ(0, 0, 0), new VXYZ(1, 0, 0),
+            exclusionList: new List<Shape> { c1, c2 });
+
+        Assert.Null(hit);
+    }
+
+    [Fact]
+    public void FindIntersection_EmptyExclusionList_BehavesLikeNoExclusion()
+    {
+        var near = new VCircle(10, 0, 1);
+        _ = new VCircle(50, 0, 1);
+        var rc = new RayCaster();
+
+        var hit = rc.FindIntersection(
+            new VXYZ(0, 0, 0), new VXYZ(1, 0, 0),
+            exclusionList: new List<Shape>());
+
+        Assert.NotNull(hit);
+        Assert.Same(near, hit!.Value.Shape);
+    }
+
+    [Fact]
+    public void FindIntersection_ExclusionList_RespectsMaxDistance()
+    {
+        var near = new VCircle(10, 0, 1);
+        _ = new VCircle(100, 0, 1);
+        var rc = new RayCaster();
+
+        // Exclude the near circle and cap distance below the far one: no hit.
+        var hit = rc.FindIntersection(
+            new VXYZ(0, 0, 0), new VXYZ(1, 0, 0),
+            maxDistance: 50,
+            exclusionList: new List<Shape> { near });
+
+        Assert.Null(hit);
+    }
+
     // -- HasIntersection (any-hit) -------------------------------------------
 
     [Fact]
