@@ -206,3 +206,9 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 - Query API: `FindIntersection` (closest hit, optional `maxDistance`), `HasIntersection` (any-hit early-out), `FindIntersections` (parallel batch), `Refit` (in-place AABB refresh after shape movement)
 - Inline ray-vs-shape math for VLine, VCircle, VArc, VEllipse, VPolygon (and VRectangle), VPolyline; AABB fallback for other shape types
 - `RayHit` and `RayQuery` record structs for ergonomic results and batching
+
+### Version 1.3.1 (Implemented)
+- RayCaster constructor now snapshots every visible Shape on `CanvasRenderer.Instance` (`new RayCaster()` — no explicit shape collection arg)
+- `VPoint` markers are always excluded from the index (zero-area visual labels; not useful ray targets)
+- Optional `List<Shape>? exclusionList` on `FindIntersection` — skip specified shapes from the candidate set (useful for casting off a source shape or finding the next hit past a known set)
+- Slab-test robustness fix: zero direction components on a perpendicular degenerate AABB no longer poison the comparison chain with NaN

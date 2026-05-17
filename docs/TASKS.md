@@ -158,6 +158,15 @@
 
 ---
 
+### Phase 19: RayCaster Refinements
+- [x] Replace the `IEnumerable<Shape>` constructor with a canvas-driven `new RayCaster(leafSize = 8)` that snapshots every visible `Shape` on `CanvasRenderer.Instance` at construction time (no explicit collection arg)
+- [x] Always exclude `VPoint` markers from the index (zero-area visual labels, not useful ray targets) — independent of `IsVisible` or how the `VPoint` was registered
+- [x] Fix ray-vs-AABB slab-test NaN when ray direction is zero on an axis intersecting a degenerate AABB (kept as defensive code even after the `VPoint` exclusion removes the most common trigger)
+- [x] Add optional `List<Shape>? exclusionList = null` parameter to both `FindIntersection` overloads — converted to `HashSet<Shape>` once per query for O(1) per-leaf-shape lookup, useful for casting off a source shape or finding the next hit past a known set
+- [x] Move RayCaster tests into a `"CanvasState"` xUnit collection with `DisableParallelization = true` so they don't race against other test classes that auto-register shapes; setup/teardown `Clear()`s `CanvasRenderer.Instance`
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |
