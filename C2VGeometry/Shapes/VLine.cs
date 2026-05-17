@@ -30,6 +30,20 @@ public class VLine : Shape, ICurve
         Color = Shape.DefaultColor;
     }
 
+    internal VLine(VXYZ start, VXYZ end, bool register) : base(register)
+    {
+        Start = start;
+        End = end;
+        Color = Shape.DefaultColor;
+    }
+
+    /// <summary>
+    /// Creates an internal VLine that is not auto-registered with the default
+    /// registry. Use in utility code (e.g. GetSegments, tessellation,
+    /// self-intersection checks) where the VLine is just a data container.
+    /// </summary>
+    internal static VLine Internal(VXYZ start, VXYZ end) => new VLine(start, end, false);
+
     public VLine(double x1, double y1, double x2, double y2)
     {
         Start = new VXYZ(x1, y1);

@@ -167,6 +167,15 @@
 
 ---
 
+### Phase 20: CurveIntersection Canvas-Pollution Fix
+- [x] Rewrite `IsPolylineSelfIntersecting` to use raw-double segment math via a new private `SegmentsIntersectRaw` helper — eliminates the per-iteration `new VLine(...)` allocations that were auto-registering on the canvas. A 360-vertex polygon used to dump ~65k phantom shapes; now zero. Construction time drops from ~5 s (real-world isovist case) to <1 ms.
+- [x] Rewrite `IsPolygonSelfIntersecting` to flatten curves into `(sx, sy, ex, ey)` tuples via a new private `AppendRawSegments` helper and run `SegmentsIntersectRaw` directly — bypasses `GetSegments` entirely on this hot path. `SharedEndpointTouchOnly` preserves the original knot-vertex exemption from `IsOnlyAtSharedEndpoints`.
+- [x] Add internal `VLine.Internal(VPoint, VPoint)` factory and `VLine(start, end, bool register)` constructor — mirrors the existing `VPoint.Internal` pattern, lets utility code allocate `VLine` data containers without auto-registering on the canvas
+- [x] Update `GetSegments` to use `VLine.Internal` for the synthesised segments (the `VLine`→[line] passthrough is unchanged) — `IntersectGeneric` and any future caller now gets pollution-free segment tessellation for free
+- [x] Mirror all four changes to the parallel `C2VGeometry` namespace (uses `VXYZ` instead of `VPoint`, registers with `DefaultRegistry` instead of `CanvasRenderer.Instance`)
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

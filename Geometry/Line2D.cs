@@ -29,6 +29,21 @@ public class VLine : Shape, ICurve
         Color = ShapeDefaults.GlobalColor ?? "Cyan";
     }
 
+    internal VLine(VPoint start, VPoint end, bool register) : base(register)
+    {
+        Start = start;
+        End = end;
+        Color = ShapeDefaults.GlobalColor ?? "Cyan";
+    }
+
+    /// <summary>
+    /// Creates an internal VLine that is not auto-registered with the canvas.
+    /// Use this in utility code (e.g. GetSegments, tessellation, self-intersection
+    /// checks) where the VLine is just a data container for computation, not a
+    /// shape the user asked to draw.
+    /// </summary>
+    internal static VLine Internal(VPoint start, VPoint end) => new VLine(start, end, false);
+
     public VLine(double x1, double y1, double x2, double y2)
     {
         // Use Internal() to avoid auto-registering intermediate points

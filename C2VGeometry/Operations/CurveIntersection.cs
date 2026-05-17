@@ -469,11 +469,15 @@ public static class CurveIntersection
             return segments;
         }
 
+        // Newly synthesised segments are data for computation, not user-drawn
+        // shapes — use VLine.Internal so they don't auto-register with the
+        // default registry. Previously a single VPolygon self-intersection
+        // check could dump tens of thousands of phantom shapes.
         if (curve is VPolygon poly)
         {
             for (int i = 0; i < poly.Points.Count; i++)
             {
-                segments.Add(new VLine(poly.Points[i], poly.Points[(i + 1) % poly.Points.Count]));
+                segments.Add(VLine.Internal(poly.Points[i], poly.Points[(i + 1) % poly.Points.Count]));
             }
             return segments;
         }
@@ -482,7 +486,7 @@ public static class CurveIntersection
         {
             for (int i = 0; i < polyline.Points.Count - 1; i++)
             {
-                segments.Add(new VLine(polyline.Points[i], polyline.Points[i + 1]));
+                segments.Add(VLine.Internal(polyline.Points[i], polyline.Points[i + 1]));
             }
             return segments;
         }
@@ -495,7 +499,7 @@ public static class CurveIntersection
         var points = curve.Divide(numSegments);
         for (int i = 0; i < points.Count - 1; i++)
         {
-            segments.Add(new VLine(points[i], points[i + 1]));
+            segments.Add(VLine.Internal(points[i], points[i + 1]));
         }
 
         return segments;
@@ -527,86 +531,196 @@ public static class CurveIntersection
 
     /// <summary>
     /// Checks if a polyline (given as points) is self-intersecting.
+    /// Uses raw-double segment math: no <see cref="VLine"/> allocations and
+    /// no registry pollution. For a polyline of N vertices this is O(N²) work
+    /// but allocation-free — important because <see cref="VLine"/> auto-
+    /// registers on construction, which would otherwise dump N²/2 phantom
+    /// shapes into the registry.
     /// </summary>
     public static bool IsPolylineSelfIntersecting(List<VXYZ> points)
     {
-        if (points.Count < 4) return false;
+        int n = points.Count;
+        if (n < 4) return false;
 
-        for (int i = 0; i < points.Count - 1; i++)
+        // When the polyline closes on itself (first vertex coincides with the
+        // last), segments (0..1) and (n-2..n-1) are adjacent at the closure
+        // and must not flag — preserves the original wrap-around exemption.
+        bool closedLoop = points[0].DistanceTo(points[n - 1]) < Tolerance;
+
+        for (int i = 0; i < n - 1; i++)
         {
-            var seg1 = new VLine(points[i], points[i + 1]);
+            double ax = points[i].X, ay = points[i].Y;
+            double bx = points[i + 1].X, by = points[i + 1].Y;
 
-            // Check against non-adjacent segments
-            for (int j = i + 2; j < points.Count - 1; j++)
+            for (int j = i + 2; j < n - 1; j++)
             {
-                // Skip if segments share an endpoint (adjacent at wrap-around)
-                if (i == 0 && j == points.Count - 2 &&
-                    points[0].DistanceTo(points[points.Count - 1]) < Tolerance)
-                {
-                    continue;
-                }
+                if (closedLoop && i == 0 && j == n - 2) continue;
 
-                var seg2 = new VLine(points[j], points[j + 1]);
-                var result = IntersectLineLine(seg1, seg2);
+                double cx = points[j].X, cy = points[j].Y;
+                double dx = points[j + 1].X, dy = points[j + 1].Y;
 
-                if (result.HasIntersection)
-                {
-                    // Check if it's just touching at shared endpoints
-                    if (result.IsSinglePoint)
-                    {
-                        var pt = result.Points[0];
-                        bool isSharedEndpoint =
-                            pt.DistanceTo(points[i]) < Tolerance ||
-                            pt.DistanceTo(points[i + 1]) < Tolerance ||
-                            pt.DistanceTo(points[j]) < Tolerance ||
-                            pt.DistanceTo(points[j + 1]) < Tolerance;
-
-                        // If intersection is at a shared endpoint, it's not a crossing
-                        if (isSharedEndpoint && i + 1 == j)
-                        {
-                            continue;
-                        }
-                    }
-
+                if (SegmentsIntersectRaw(ax, ay, bx, by, cx, cy, dx, dy))
                     return true;
-                }
             }
         }
 
         return false;
     }
 
+    // Boolean segment-vs-segment test on raw coordinates. Mirrors the
+    // semantics of IntersectLineLine + CheckCollinearOverlap (proper
+    // crossing, T-junction touch, or collinear overlap all count as a hit)
+    // but returns just true/false and allocates nothing.
+    private static bool SegmentsIntersectRaw(
+        double ax, double ay, double bx, double by,
+        double cx, double cy, double dx, double dy)
+    {
+        double abx = bx - ax, aby = by - ay;
+        double cdx = dx - cx, cdy = dy - cy;
+        double cross = abx * cdy - aby * cdx;
+
+        if (Math.Abs(cross) >= Tolerance)
+        {
+            double acx = cx - ax, acy = cy - ay;
+            double t = (acx * cdy - acy * cdx) / cross;
+            double u = (acx * aby - acy * abx) / cross;
+            return t >= -Tolerance && t <= 1 + Tolerance &&
+                   u >= -Tolerance && u <= 1 + Tolerance;
+        }
+
+        double abLen = Math.Sqrt(abx * abx + aby * aby);
+        if (abLen < Tolerance) return false;
+        double crossAC = abx * (cy - ay) - aby * (cx - ax);
+        if (Math.Abs(crossAC) > Tolerance * Math.Max(1, abLen)) return false;
+
+        double lenSq = abx * abx + aby * aby;
+        double tC = ((cx - ax) * abx + (cy - ay) * aby) / lenSq;
+        double tD = ((dx - ax) * abx + (dy - ay) * aby) / lenSq;
+        if (tC > tD) (tC, tD) = (tD, tC);
+        return tD >= -Tolerance && tC <= 1 + Tolerance;
+    }
+
     private static bool IsPolygonSelfIntersecting(VPolygon polygon)
     {
-        // Get all curve segments and check for intersections
-        var allSegments = new List<(VLine segment, int curveIndex)>();
-
+        // Flatten all curves into raw (sx, sy, ex, ey) segment tuples —
+        // no VLine allocation, no registry pollution. For polygons whose
+        // curves include arcs/circles/ellipses, each non-line curve is
+        // tessellated via Divide() and added as a run of line segments.
+        var segs = new List<(double sx, double sy, double ex, double ey)>();
         for (int c = 0; c < polygon.Curves.Count; c++)
         {
-            var segments = GetSegments(polygon.Curves[c]);
-            foreach (var seg in segments)
-            {
-                allSegments.Add((seg, c));
-            }
+            AppendRawSegments(polygon.Curves[c], segs);
         }
 
-        for (int i = 0; i < allSegments.Count; i++)
+        int n = segs.Count;
+        for (int i = 0; i < n; i++)
         {
-            for (int j = i + 2; j < allSegments.Count; j++)
+            var a = segs[i];
+            for (int j = i + 2; j < n; j++)
             {
-                // Skip adjacent segments
-                if (j == i + 1) continue;
-                if (i == 0 && j == allSegments.Count - 1) continue;
+                // Closure adjacency: last segment touches the first at the
+                // polygon's wrap-around vertex — that's not a self-intersection.
+                if (i == 0 && j == n - 1) continue;
 
-                var result = IntersectLineLine(allSegments[i].segment, allSegments[j].segment);
-                if (result.HasIntersection && !IsOnlyAtSharedEndpoints(result, allSegments[i].segment, allSegments[j].segment))
-                {
-                    return true;
-                }
+                var b = segs[j];
+                if (!SegmentsIntersectRaw(a.sx, a.sy, a.ex, a.ey, b.sx, b.sy, b.ex, b.ey))
+                    continue;
+
+                // Preserve the original "endpoint touch only" exemption: if two
+                // non-adjacent segments meet only at a knot vertex (their shared
+                // endpoint is the only contact point), don't flag it.
+                if (SharedEndpointTouchOnly(a.sx, a.sy, a.ex, a.ey, b.sx, b.sy, b.ex, b.ey))
+                    continue;
+
+                return true;
             }
         }
-
         return false;
+    }
+
+    private static void AppendRawSegments(ICurve curve,
+        List<(double sx, double sy, double ex, double ey)> segs)
+    {
+        switch (curve)
+        {
+            case VLine line:
+                segs.Add((line.Start.X, line.Start.Y, line.End.X, line.End.Y));
+                return;
+            case VPolygon poly:
+            {
+                var pts = poly.Points;
+                int m = pts.Count;
+                for (int i = 0; i < m; i++)
+                {
+                    int j = i + 1 == m ? 0 : i + 1;
+                    segs.Add((pts[i].X, pts[i].Y, pts[j].X, pts[j].Y));
+                }
+                return;
+            }
+            case VPolyline polyline:
+            {
+                var pts = polyline.Points;
+                for (int i = 0; i < pts.Count - 1; i++)
+                    segs.Add((pts[i].X, pts[i].Y, pts[i + 1].X, pts[i + 1].Y));
+                return;
+            }
+            default:
+            {
+                // Match GetSegments tessellation policy (10 segs/unit, cap 1000).
+                double length = curve.GetLength();
+                int numSegments = Math.Max(2, (int)(length * 10));
+                numSegments = Math.Min(numSegments, 1000);
+                var pts = curve.Divide(numSegments);
+                for (int i = 0; i < pts.Count - 1; i++)
+                    segs.Add((pts[i].X, pts[i].Y, pts[i + 1].X, pts[i + 1].Y));
+                return;
+            }
+        }
+    }
+
+    // Two non-adjacent segments may share a vertex (a "knot" in a degenerate
+    // polygon). Treat that as a touch, not a self-intersection — matches the
+    // original IsOnlyAtSharedEndpoints check. Returns true when the segments
+    // share exactly one endpoint and don't cross or overlap elsewhere.
+    private static bool SharedEndpointTouchOnly(
+        double ax, double ay, double bx, double by,
+        double cx, double cy, double dx, double dy)
+    {
+        bool ac = NearEq(ax, ay, cx, cy);
+        bool ad = NearEq(ax, ay, dx, dy);
+        bool bc = NearEq(bx, by, cx, cy);
+        bool bd = NearEq(bx, by, dx, dy);
+        if (!(ac || ad || bc || bd)) return false;
+
+        double abx = bx - ax, aby = by - ay;
+        double cdx = dx - cx, cdy = dy - cy;
+        double cross = abx * cdy - aby * cdx;
+        if (Math.Abs(cross) < Tolerance)
+        {
+            double abLen = Math.Sqrt(abx * abx + aby * aby);
+            if (abLen < Tolerance) return true;
+            double crossAC = abx * (cy - ay) - aby * (cx - ax);
+            if (Math.Abs(crossAC) > Tolerance * Math.Max(1, abLen)) return true;
+            double lenSq = abx * abx + aby * aby;
+            double tC = ((cx - ax) * abx + (cy - ay) * aby) / lenSq;
+            double tD = ((dx - ax) * abx + (dy - ay) * aby) / lenSq;
+            bool cInside = tC > Tolerance && tC < 1 - Tolerance;
+            bool dInside = tD > Tolerance && tD < 1 - Tolerance;
+            return !(cInside || dInside);
+        }
+
+        double acx = cx - ax, acy = cy - ay;
+        double t = (acx * cdy - acy * cdx) / cross;
+        double u = (acx * aby - acy * abx) / cross;
+        bool tAtEnd = t < Tolerance || t > 1 - Tolerance;
+        bool uAtEnd = u < Tolerance || u > 1 - Tolerance;
+        return tAtEnd && uAtEnd;
+    }
+
+    private static bool NearEq(double ax, double ay, double bx, double by)
+    {
+        double dx = ax - bx, dy = ay - by;
+        return dx * dx + dy * dy < Tolerance * Tolerance;
     }
 
     private static bool IsBezierSelfIntersecting(VBezier bezier)
