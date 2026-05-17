@@ -61,7 +61,7 @@ namespace Code2Viz.Documentation
                 { "VCell", "Represents a square cell with a VPolygon boundary. Extends VPolygon. Properties: UniqueId (int), Neighbours (List<VCell>), Center (VXYZ), CellSize (double), Column (int), Row (int), Blocked (bool). Used as a building block for VSpatialGrid. Neighbours are set by the parent grid (4-connectivity: left, right, below, above)." },
                 { "VSpatialGrid", "Represents a grid of square VCell instances with neighbour connectivity and A* pathfinding. Constructor: VSpatialGrid(location, xCount, yCount, cellSize). Location is the center of the bottom-left cell. Each cell knows its adjacent neighbours (4-connectivity). Access cells via Cells property, indexers [index] or [col, row], or GetRow()/GetColumn(). Use FindPath(start, end) for A* shortest path, GetClosestCell(point) for O(log n) nearest-cell lookup via KD-tree." },
                 { "VArrow", "Represents an arrow (line with arrowhead). Supports single or double-ended arrows with configurable head size and angle." },
-                { "RayCaster", "Accelerated 2D ray-casting against large shape collections. Builds an axis-aligned BVH with Surface Area Heuristic splitting once at construction so each subsequent ray query runs in O(log N) average time and scales to millions of shapes. Constructor: new RayCaster(shapes, leafSize = 8). Query methods: FindIntersection(location, direction) returns RayHit? for the closest hit; FindIntersection(location, direction, maxDistance) caps the search and prunes BVH sub-trees beyond the cap; HasIntersection(location, direction, maxDistance) returns true on the first hit (faster shadow-ray query); FindIntersections(queries, parallel = true) batches over IReadOnlyList<RayQuery>. Use Refit() to refresh AABBs in O(N) after shapes move without rebuilding the tree. Queries run on the XY plane (Z ignored); direction need not be normalised. Inline ray-vs-shape math handles VLine, VCircle, VArc, VEllipse, VPolygon (and VRectangle), VPolyline with zero allocation; other shape types fall back to AABB hit. Shapes with non-finite bounds (VRay, VXLine) are excluded from the index. Queries are thread-safe after construction." },
+                { "RayCaster", "Accelerated 2D ray-casting against the visible canvas. Constructor `new RayCaster(leafSize = 8)` snapshots every Shape in CanvasRenderer.Instance.GetShapes() with IsVisible == true and builds an axis-aligned BVH with Surface Area Heuristic splitting, so each subsequent ray query runs in O(log N) average time and scales to millions of shapes. The snapshot is fixed at construction — later canvas adds/removes are not reflected, but Refit() refreshes cached AABBs in O(N) when indexed shapes move. Query methods: FindIntersection(location, direction) returns RayHit? for the closest hit; FindIntersection(location, direction, maxDistance) caps the search and prunes BVH sub-trees beyond the cap; HasIntersection(location, direction, maxDistance) returns true on the first hit (faster shadow-ray query); FindIntersections(queries, parallel = true) batches over IReadOnlyList<RayQuery>. Queries run on the XY plane (Z ignored); direction need not be normalised. Inline ray-vs-shape math handles VLine, VCircle, VArc, VEllipse, VPolygon (and VRectangle), VPolyline with zero allocation; other shape types fall back to AABB hit. Shapes with non-finite bounds (VRay, VXLine) are excluded from the index. Queries are thread-safe after construction." },
                 { "RayHit", "Readonly record struct returned by RayCaster.FindIntersection. Fields: Shape (the hit shape), Point (VXYZ world-space hit location), Distance (Euclidean distance from ray origin to the hit point)." },
                 { "RayQuery", "Readonly record struct used by RayCaster.FindIntersections to describe a single ray. Fields: Origin (VXYZ), Direction (VXYZ, need not be normalised)." },
                 { "VDimension", "Represents a dimension line showing the distance between two points with text annotation. AutoCAD-style properties: Offset, ArrowSize, TextHeight, DecimalPlaces, ExtendBeyondDimLines, OffsetFromOrigin, SuppressExtLine1/2, SuppressDimensionLine, Prefix, Suffix, TextBackgroundOpaque. Per-element colors: ExtensionLineColor, DimensionLineColor, TextColor (null = use base Color). The dimension line is always split around the text for readability. Renders arrowheads at both ends of the dimension line." },
@@ -557,8 +557,8 @@ for cell in path do
 // Find closest cell to a point
 let closest = grid.GetClosestCell(VPoint(12.0, 8.0))" },
 
-                { "RayCaster", @"// Build a BVH once over the scene
-let caster = RayCaster(shapes)
+                { "RayCaster", @"// Snapshot every visible shape on the canvas and build a BVH (one-time setup).
+let caster = RayCaster()
 
 // Closest hit on the XY plane (Z is ignored)
 match caster.FindIntersection(VXYZ(0.0, 0.0, 0.0), VXYZ(1.0, 0.0, 0.0)) with
@@ -1220,11 +1220,11 @@ grid.ApplyStyle();
 grid.Move(new VXYZ(50, 0, 0));
 grid.Scale(grid.GetCenter(), 2.0);" },
 
-                { "RayCaster", @"// Build a BVH (Surface Area Heuristic split) over the scene once.
-// Each query then runs in O(log N) — scales to millions of shapes.
-var shapes = new List<Shape> { /* ... */ };
-var caster = new RayCaster(shapes);                       // default leafSize = 8
-var caster2 = new RayCaster(shapes, leafSize: 16);
+                { "RayCaster", @"// Snapshot every visible shape on the canvas and build a BVH
+// (Surface Area Heuristic split) once. Each query then runs in O(log N) —
+// scales to millions of shapes.
+var caster = new RayCaster();                              // default leafSize = 8
+var caster2 = new RayCaster(leafSize: 16);
 
 // Closest hit (XY plane; Z is ignored, direction need not be normalised)
 RayHit? hit = caster.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
@@ -1250,8 +1250,10 @@ RayHit?[] results = caster.FindIntersections(queries);              // parallel
 RayHit?[] seq     = caster.FindIntersections(queries, parallel: false);
 
 // After shapes move, refresh AABBs in O(N) without rebuilding the tree.
-((VCircle)shapes[0]).Center = new VPoint(50, 0);
-caster.Refit();" },
+var circle = new VCircle(10, 0, 1);
+var rcMoving = new RayCaster();
+circle.Center.X = 50;
+rcMoving.Refit();" },
 
                 // Support classes
                 { "VXYZ", @"// Create a 3D vector

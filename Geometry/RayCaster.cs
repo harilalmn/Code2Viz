@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Code2Viz.Canvas;
 
 namespace Code2Viz.Geometry;
 
@@ -76,19 +77,20 @@ public class RayCaster
     public int Count => _shapes.Length;
 
     /// <summary>
-    /// Builds a ray-casting accelerator over the given shapes.
+    /// Builds a ray-casting accelerator over all visible shapes currently on
+    /// the canvas — every <see cref="Shape"/> in
+    /// <c>CanvasRenderer.Instance.GetShapes()</c> with
+    /// <see cref="Shape.IsVisible"/> set. The canvas state is snapshotted
+    /// at construction: shapes added or removed afterwards are not
+    /// reflected. Use <see cref="Refit"/> when indexed shapes move; build
+    /// a new <see cref="RayCaster"/> when the scene changes structurally.
     /// </summary>
-    /// <param name="shapes">Shapes to index. Materialised internally; later
-    /// changes to the source collection are not reflected (but
-    /// <see cref="Refit"/> can update the cached AABBs after the indexed
-    /// shapes move).</param>
     /// <param name="leafSize">Maximum primitives per BVH leaf. Smaller values
     /// produce a deeper tree (more traversal, fewer leaf tests); larger values
     /// produce a shallower tree (less traversal, more leaf tests). 8 is a
     /// reasonable default for mixed shape sizes.</param>
-    public RayCaster(IEnumerable<Shape> shapes, int leafSize = 8)
+    public RayCaster(int leafSize = 8)
     {
-        if (shapes == null) throw new ArgumentNullException(nameof(shapes));
         _leafSize = leafSize < 1 ? 1 : leafSize;
 
         var keep = new List<Shape>();
@@ -97,9 +99,11 @@ public class RayCaster
         var bMaxX = new List<double>();
         var bMaxY = new List<double>();
 
-        foreach (var s in shapes)
+        foreach (var drawable in CanvasRenderer.Instance.GetShapes())
         {
-            if (s == null) continue;
+            if (drawable is not Shape s) continue;
+            if (!s.IsVisible) continue;
+
             BoundingBox? bb;
             try { bb = s.GetBounds(); }
             catch { continue; }
@@ -353,20 +357,45 @@ public class RayCaster
     /// Standard 2D ray-vs-AABB slab test. <paramref name="tEntry"/> is the
     /// parametric distance to the entry point, clamped to 0 when the origin
     /// lies inside the box.
+    ///
+    /// Handles the degenerate cases where the ray direction is zero on an
+    /// axis (the IEEE <c>0 * ∞</c> in the naive form yields NaN, which would
+    /// poison the comparison chain and cause spurious hits / wrong winners).
+    /// When <c>invD</c> is infinite, the slab is satisfied iff the ray's
+    /// origin already lies inside it.
     /// </summary>
     private static bool RayHitsAabb(double ox, double oy, double invDx, double invDy,
                                     double minX, double minY, double maxX, double maxY,
                                     out double tEntry)
     {
-        double tx1 = (minX - ox) * invDx;
-        double tx2 = (maxX - ox) * invDx;
-        double tMin = Math.Min(tx1, tx2);
-        double tMax = Math.Max(tx1, tx2);
+        double tx1, tx2;
+        if (double.IsInfinity(invDx))
+        {
+            if (ox < minX || ox > maxX) { tEntry = double.PositiveInfinity; return false; }
+            tx1 = double.NegativeInfinity;
+            tx2 = double.PositiveInfinity;
+        }
+        else
+        {
+            tx1 = (minX - ox) * invDx;
+            tx2 = (maxX - ox) * invDx;
+        }
 
-        double ty1 = (minY - oy) * invDy;
-        double ty2 = (maxY - oy) * invDy;
-        tMin = Math.Max(tMin, Math.Min(ty1, ty2));
-        tMax = Math.Min(tMax, Math.Max(ty1, ty2));
+        double ty1, ty2;
+        if (double.IsInfinity(invDy))
+        {
+            if (oy < minY || oy > maxY) { tEntry = double.PositiveInfinity; return false; }
+            ty1 = double.NegativeInfinity;
+            ty2 = double.PositiveInfinity;
+        }
+        else
+        {
+            ty1 = (minY - oy) * invDy;
+            ty2 = (maxY - oy) * invDy;
+        }
+
+        double tMin = Math.Max(Math.Min(tx1, tx2), Math.Min(ty1, ty2));
+        double tMax = Math.Min(Math.Max(tx1, tx2), Math.Max(ty1, ty2));
 
         if (tMax < 0 || tMax < tMin)
         {
@@ -831,21 +860,11 @@ public class RayCaster
         double invDx = dx != 0 ? 1.0 / dx : double.PositiveInfinity;
         double invDy = dy != 0 ? 1.0 / dy : double.PositiveInfinity;
 
-        double minX = _minX[shapeIndex], minY = _minY[shapeIndex];
-        double maxX = _maxX[shapeIndex], maxY = _maxY[shapeIndex];
+        if (!RayHitsAabb(ox, oy, invDx, invDy,
+                _minX[shapeIndex], _minY[shapeIndex],
+                _maxX[shapeIndex], _maxY[shapeIndex], out double t))
+            return;
 
-        double tx1 = (minX - ox) * invDx;
-        double tx2 = (maxX - ox) * invDx;
-        double tMin = Math.Min(tx1, tx2);
-        double tMax = Math.Max(tx1, tx2);
-
-        double ty1 = (minY - oy) * invDy;
-        double ty2 = (maxY - oy) * invDy;
-        tMin = Math.Max(tMin, Math.Min(ty1, ty2));
-        tMax = Math.Min(tMax, Math.Max(ty1, ty2));
-
-        if (tMax < 0 || tMax < tMin) return;
-        double t = tMin > 0 ? tMin : tMax;
         double distSq = t * t;
         if (distSq >= hit.BestDistSq) return;
 

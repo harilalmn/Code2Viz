@@ -2,20 +2,45 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Code2Viz.Canvas;
 using Code2Viz.Geometry;
 
 namespace Code2Viz.Tests;
 
-public class RayCasterTests
+// All RayCaster tests touch the singleton CanvasRenderer.Instance.
+// DisableParallelization on the collection definition prevents these
+// tests from running in parallel with tests in other classes that may
+// also mutate canvas state (e.g. anything constructing shapes with the
+// default AutoRegister = true).
+[CollectionDefinition("CanvasState", DisableParallelization = true)]
+public class CanvasStateCollection { }
+
+[Collection("CanvasState")]
+public class RayCasterTests : IDisposable
 {
+    public RayCasterTests()
+    {
+        // Each test starts with auto-registration on and an empty canvas
+        // so that shapes constructed inside the test become the entire
+        // scene that RayCaster sees. Use the (double, ...) shape
+        // constructors below — they call VPoint.Internal under the hood
+        // and therefore do not auto-register extra VPoint markers.
+        Shape.AutoRegister = true;
+        CanvasRenderer.Instance.Clear();
+    }
+
+    public void Dispose()
+    {
+        CanvasRenderer.Instance.Clear();
+    }
+
     [Fact]
     public void FindIntersection_HitsClosestOfTwoCircles()
     {
-        Shape.AutoRegister = false;
-        var near = new VCircle(new VPoint(10, 0), 1);
-        var far  = new VCircle(new VPoint(50, 0), 1);
+        var near = new VCircle(10, 0, 1);
+        var far  = new VCircle(50, 0, 1);
 
-        var rc = new RayCaster(new Shape[] { far, near });
+        var rc = new RayCaster();
         var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
 
         Assert.NotNull(hit);
@@ -28,9 +53,8 @@ public class RayCasterTests
     [Fact]
     public void FindIntersection_MissesWhenRayPointsAway()
     {
-        Shape.AutoRegister = false;
-        var c = new VCircle(new VPoint(10, 0), 1);
-        var rc = new RayCaster(new Shape[] { c });
+        _ = new VCircle(10, 0, 1);
+        var rc = new RayCaster();
 
         var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(-1, 0, 0));
         Assert.Null(hit);
@@ -39,9 +63,8 @@ public class RayCasterTests
     [Fact]
     public void FindIntersection_HitsLineSegment()
     {
-        Shape.AutoRegister = false;
-        var line = new VLine(new VPoint(5, -5), new VPoint(5, 5));
-        var rc = new RayCaster(new Shape[] { line });
+        var line = new VLine(5, -5, 5, 5);
+        var rc = new RayCaster();
 
         var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
 
@@ -55,16 +78,13 @@ public class RayCasterTests
     [Fact]
     public void FindIntersection_PrunesToCorrectShapeAmongMany()
     {
-        Shape.AutoRegister = false;
-        var shapes = new List<Shape>();
         for (int x = 0; x < 50; x++)
         for (int y = 0; y < 50; y++)
-            shapes.Add(new VCircle(new VPoint(x * 10, y * 10), 0.4));
+            _ = new VCircle(x * 10, y * 10, 0.4);
         // A single circle on the off-grid row (y=7) — the only shape the ray meets.
-        var onlyTarget = new VCircle(new VPoint(300, 7), 0.4);
-        shapes.Add(onlyTarget);
+        var onlyTarget = new VCircle(300, 7, 0.4);
 
-        var rc = new RayCaster(shapes);
+        var rc = new RayCaster();
         var hit = rc.FindIntersection(new VXYZ(-5, 7, 0), new VXYZ(1, 0, 0));
 
         Assert.NotNull(hit);
@@ -75,16 +95,15 @@ public class RayCasterTests
     [Fact]
     public void FindIntersection_ReturnsNullForDegenerateDirection()
     {
-        Shape.AutoRegister = false;
-        var rc = new RayCaster(new Shape[] { new VCircle(new VPoint(0, 0), 1) });
+        _ = new VCircle(0, 0, 1);
+        var rc = new RayCaster();
         Assert.Null(rc.FindIntersection(new VXYZ(5, 0, 0), new VXYZ(0, 0, 0)));
     }
 
     [Fact]
-    public void Constructor_AcceptsEmptyCollection()
+    public void Constructor_HandlesEmptyCanvas()
     {
-        Shape.AutoRegister = false;
-        var rc = new RayCaster(Array.Empty<Shape>());
+        var rc = new RayCaster();
         Assert.Equal(0, rc.Count);
         Assert.Null(rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0)));
     }
@@ -92,9 +111,8 @@ public class RayCasterTests
     [Fact]
     public void FindIntersection_RespectsArcAngleRange()
     {
-        Shape.AutoRegister = false;
-        var upper = new VArc(new VPoint(0, 0), 5, 0, 180);
-        var rc = new RayCaster(new Shape[] { upper });
+        var upper = new VArc(0, 0, 5, 0, 180);
+        var rc = new RayCaster();
 
         var up = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(0, 1, 0));
         Assert.NotNull(up);
@@ -106,24 +124,27 @@ public class RayCasterTests
     }
 
     [Fact]
-    public void FindIntersection_HitsRectangleEdge()
+    public void FindIntersection_HitsRectangleBoundary()
     {
-        Shape.AutoRegister = false;
-        var rect = new VRectangle(new VPoint(10, -5), 10, 10);
-        var rc = new RayCaster(new Shape[] { rect });
+        // VPolygon (and therefore VRectangle) eagerly builds VLine edges in
+        // BuildCurvesFromPoints() and those VLines also auto-register, so
+        // the canvas snapshot indexes both the rectangle and its 4 edges.
+        // Either is a geometrically correct hit at (10, 0) — verify the
+        // intersection point rather than the specific Shape instance.
+        _ = new VRectangle(10, -5, 10, 10);
+        var rc = new RayCaster();
 
         var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
         Assert.NotNull(hit);
-        Assert.Same(rect, hit!.Value.Shape);
-        Assert.Equal(10.0, hit.Value.Point.X, 6);
+        Assert.Equal(10.0, hit!.Value.Point.X, 6);
+        Assert.Equal(0.0, hit.Value.Point.Y, 6);
     }
 
     [Fact]
     public void FindIntersection_HitsEllipseAtMinorAxis()
     {
-        Shape.AutoRegister = false;
-        var ellipse = new VEllipse(new VPoint(0, 0), 10, 3);
-        var rc = new RayCaster(new Shape[] { ellipse });
+        var ellipse = new VEllipse(0, 0, 10, 3);
+        var rc = new RayCaster();
 
         var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(0, 1, 0));
         Assert.NotNull(hit);
@@ -135,22 +156,70 @@ public class RayCasterTests
     public void FindIntersection_DoesNotAlterAutoRegisterState()
     {
         Shape.AutoRegister = true;
-        var line = new VLine(new VPoint(5, -5), new VPoint(5, 5));
-        var rc = new RayCaster(new Shape[] { line });
+        _ = new VLine(5, -5, 5, 5);
+        var rc = new RayCaster();
 
         Assert.True(Shape.AutoRegister);
-        var _ = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
+        var _hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
         Assert.True(Shape.AutoRegister);
     }
 
-    // -- New API: maxDistance --------------------------------------------------
+    // -- Canvas-aware behaviour ----------------------------------------------
+
+    [Fact]
+    public void Constructor_ExcludesHiddenShapes()
+    {
+        var visible = new VCircle(10, 0, 1);
+        var hidden  = new VCircle(5, 0, 1);
+        hidden.Hide();
+
+        var rc = new RayCaster();
+        Assert.Equal(1, rc.Count);
+
+        var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
+        Assert.NotNull(hit);
+        Assert.Same(visible, hit!.Value.Shape);
+        Assert.Equal(9.0, hit.Value.Point.X, 6);
+    }
+
+    [Fact]
+    public void Constructor_SnapshotsCanvas_LaterAddsAreIgnored()
+    {
+        var early = new VCircle(10, 0, 1);
+        var rc = new RayCaster();
+
+        // Adding a closer circle after construction must not influence the index.
+        _ = new VCircle(5, 0, 1);
+
+        var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
+        Assert.NotNull(hit);
+        Assert.Same(early, hit!.Value.Shape);
+    }
+
+    [Fact]
+    public void Constructor_IncludesAutoRegisteredVPoints()
+    {
+        // A bare VPoint is a valid visible canvas shape — RayCaster should
+        // index it. The slab test must stay finite even when the ray is
+        // axis-aligned (direction Y == 0) and the shape's AABB is degenerate
+        // on that same axis (a VPoint has zero extent on both axes).
+        _ = new VPoint(10, 0);
+        var rc = new RayCaster();
+        Assert.Equal(1, rc.Count);
+
+        var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
+        Assert.NotNull(hit);
+        Assert.Equal(10.0, hit!.Value.Point.X, 6);
+        Assert.False(double.IsNaN(hit.Value.Point.Y), "Hit point Y must not be NaN");
+    }
+
+    // -- maxDistance ----------------------------------------------------------
 
     [Fact]
     public void FindIntersection_MaxDistance_RejectsFarHits()
     {
-        Shape.AutoRegister = false;
-        var c = new VCircle(new VPoint(100, 0), 1);
-        var rc = new RayCaster(new Shape[] { c });
+        _ = new VCircle(100, 0, 1);
+        var rc = new RayCaster();
 
         Assert.Null(rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0), maxDistance: 50));
         Assert.NotNull(rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0), maxDistance: 200));
@@ -159,24 +228,22 @@ public class RayCasterTests
     [Fact]
     public void FindIntersection_MaxDistance_PicksNearestWithinRange()
     {
-        Shape.AutoRegister = false;
-        var near = new VCircle(new VPoint(10, 0), 1);
-        var far  = new VCircle(new VPoint(100, 0), 1);
-        var rc = new RayCaster(new Shape[] { far, near });
+        var near = new VCircle(10, 0, 1);
+        _ = new VCircle(100, 0, 1);
+        var rc = new RayCaster();
 
         var hit = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0), maxDistance: 50);
         Assert.NotNull(hit);
         Assert.Same(near, hit!.Value.Shape);
     }
 
-    // -- New API: HasIntersection (any-hit) -----------------------------------
+    // -- HasIntersection (any-hit) -------------------------------------------
 
     [Fact]
     public void HasIntersection_ReturnsTrueWhenAnyShapeIsHit()
     {
-        Shape.AutoRegister = false;
-        var c = new VCircle(new VPoint(10, 0), 1);
-        var rc = new RayCaster(new Shape[] { c });
+        _ = new VCircle(10, 0, 1);
+        var rc = new RayCaster();
 
         Assert.True(rc.HasIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0)));
         Assert.False(rc.HasIntersection(new VXYZ(0, 0, 0), new VXYZ(-1, 0, 0)));
@@ -185,23 +252,21 @@ public class RayCasterTests
     [Fact]
     public void HasIntersection_RespectsMaxDistance()
     {
-        Shape.AutoRegister = false;
-        var c = new VCircle(new VPoint(100, 0), 1);
-        var rc = new RayCaster(new Shape[] { c });
+        _ = new VCircle(100, 0, 1);
+        var rc = new RayCaster();
 
         Assert.False(rc.HasIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0), maxDistance: 50));
         Assert.True(rc.HasIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0), maxDistance: 200));
     }
 
-    // -- New API: batch FindIntersections -------------------------------------
+    // -- Batch FindIntersections ---------------------------------------------
 
     [Fact]
     public void FindIntersections_BatchReturnsResultsAlignedWithInput()
     {
-        Shape.AutoRegister = false;
-        var c1 = new VCircle(new VPoint(10, 0), 1);
-        var c2 = new VCircle(new VPoint(0, 10), 1);
-        var rc = new RayCaster(new Shape[] { c1, c2 });
+        var c1 = new VCircle(10, 0, 1);
+        var c2 = new VCircle(0, 10, 1);
+        var rc = new RayCaster();
 
         var queries = new[]
         {
@@ -220,19 +285,17 @@ public class RayCasterTests
     [Fact]
     public void FindIntersections_ParallelMatchesSequential()
     {
-        Shape.AutoRegister = false;
         var rng = new Random(42);
-        var shapes = new List<Shape>();
         for (int i = 0; i < 200; i++)
         {
             double x = rng.NextDouble() * 100 - 50;
             double y = rng.NextDouble() * 100 - 50;
-            shapes.Add(new VCircle(new VPoint(x, y), 0.5 + rng.NextDouble()));
+            _ = new VCircle(x, y, 0.5 + rng.NextDouble());
         }
-        var rc = new RayCaster(shapes);
+        var rc = new RayCaster();
 
         var queries = Enumerable.Range(0, 500)
-            .Select(i => new RayQuery(
+            .Select(_ => new RayQuery(
                 new VXYZ(rng.NextDouble() * 100 - 50, rng.NextDouble() * 100 - 50, 0),
                 new VXYZ(rng.NextDouble() * 2 - 1, rng.NextDouble() * 2 - 1, 0)))
             .ToList();
@@ -252,21 +315,19 @@ public class RayCasterTests
         }
     }
 
-    // -- New API: Refit --------------------------------------------------------
+    // -- Refit ----------------------------------------------------------------
 
     [Fact]
     public void Refit_PicksUpShapeMovement()
     {
-        Shape.AutoRegister = false;
-        var circle = new VCircle(new VPoint(10, 0), 1);
-        var rc = new RayCaster(new Shape[] { circle });
+        var circle = new VCircle(10, 0, 1);
+        var rc = new RayCaster();
 
         var hitBefore = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
         Assert.Equal(9.0, hitBefore!.Value.Point.X, 6);
 
-        // Move the circle. Without Refit() the cached AABB is stale and the
-        // ray-AABB cull will reject it; Refit() restores correctness.
-        circle.Center = new VPoint(20, 0);
+        // Move in place so we don't allocate a new VPoint on the canvas.
+        circle.Center.X = 20;
         rc.Refit();
 
         var hitAfter = rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0));
@@ -278,11 +339,10 @@ public class RayCasterTests
     [Fact]
     public void Refit_HandlesShapeMovingOutOfPath()
     {
-        Shape.AutoRegister = false;
-        var circle = new VCircle(new VPoint(10, 0), 1);
-        var rc = new RayCaster(new Shape[] { circle });
+        var circle = new VCircle(10, 0, 1);
+        var rc = new RayCaster();
 
-        circle.Center = new VPoint(10, 100); // way above the ray's path
+        circle.Center.Y = 100; // off the ray's path
         rc.Refit();
 
         Assert.Null(rc.FindIntersection(new VXYZ(0, 0, 0), new VXYZ(1, 0, 0)));

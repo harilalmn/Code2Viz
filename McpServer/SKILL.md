@@ -739,12 +739,13 @@ double area = region.Area;
 
 ## Ray Casting (RayCaster)
 
-`RayCaster` accelerates ray-vs-shape queries over large 2D scenes. It builds a flat-array BVH (Surface Area Heuristic split) once, then each query traverses iteratively with a stack-allocated stack and inline ray-vs-shape math for `VLine`, `VCircle`, `VArc`, `VEllipse`, `VPolygon` (covers `VRectangle`), and `VPolyline`. Other shape types fall back to AABB hit. The hot path is allocation-free, and queries are thread-safe after construction.
+`RayCaster` accelerates ray-vs-shape queries over large 2D scenes. It snapshots all visible shapes on the canvas (every `Shape` in `CanvasRenderer.Instance.GetShapes()` with `IsVisible == true`) at construction, builds a flat-array BVH (Surface Area Heuristic split), then each query traverses iteratively with a stack-allocated stack and inline ray-vs-shape math for `VLine`, `VCircle`, `VArc`, `VEllipse`, `VPolygon` (covers `VRectangle`), and `VPolyline`. Other shape types fall back to AABB hit. The hot path is allocation-free, and queries are thread-safe after construction.
 
 ```csharp
-// Build once over the scene (millions of shapes are fine).
-var caster = new RayCaster(shapes);          // default leafSize = 8
-var caster2 = new RayCaster(shapes, leafSize: 16);
+// Build once over every visible shape currently on the canvas
+// (millions of shapes are fine).
+var caster = new RayCaster();                // default leafSize = 8
+var caster2 = new RayCaster(leafSize: 16);
 
 // Closest hit
 RayHit? hit = caster.FindIntersection(
@@ -780,7 +781,7 @@ caster.Refit();
 
 | Type | Description |
 |------|-------------|
-| `RayCaster(IEnumerable<Shape> shapes, int leafSize = 8)` | Builds the BVH. Shapes with non-finite bounds (`VRay`, `VXLine`) are excluded. |
+| `RayCaster(int leafSize = 8)` | Snapshots all visible canvas shapes and builds the BVH. Shapes with `IsVisible == false` or non-finite bounds (`VRay`, `VXLine`) are excluded. |
 | `RayHit(Shape Shape, VXYZ Point, double Distance)` | `readonly record struct` returned by closest-hit queries. |
 | `RayQuery(VXYZ Origin, VXYZ Direction)` | `readonly record struct` for batch input. |
 
@@ -794,6 +795,7 @@ caster.Refit();
 | `Count` | `int` | Number of indexed shapes. |
 
 Notes:
+- The canvas state is snapshotted at construction — shapes added or removed afterwards are not reflected. Build a new `RayCaster` to pick them up.
 - Queries run on the XY plane — the Z component of `location`/`direction` is ignored.
 - Direction need not be normalised; degenerate (zero-length XY) direction returns null/false.
 - `Refit()` preserves the tree topology — good for small movements; rebuild (new `RayCaster`) after large scene changes.

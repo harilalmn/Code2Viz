@@ -411,9 +411,10 @@ public class ApiReferenceResource
 
         ## Ray Casting (RayCaster)
         ```csharp
-        // Build a BVH once over the scene; queries run in O(log N).
-        var caster = new RayCaster(shapes);                       // leafSize = 8
-        var caster2 = new RayCaster(shapes, leafSize: 16);
+        // Build a BVH once over every visible shape on the canvas (snapshot
+        // at construction); queries then run in O(log N).
+        var caster = new RayCaster();                              // leafSize = 8
+        var caster2 = new RayCaster(leafSize: 16);
 
         // Closest hit (XY plane; Z is ignored)
         RayHit? hit = caster.FindIntersection(new VXYZ(0,0,0), new VXYZ(1,0,0));
@@ -438,6 +439,8 @@ public class ApiReferenceResource
         circle.Center = new VPoint(50, 0);
         caster.Refit();
         ```
+        - Indexes every Shape in CanvasRenderer.Instance.GetShapes() with IsVisible == true.
+        - Canvas state is snapshotted at construction; later adds/removes are not reflected — build a new RayCaster to pick them up.
         - Returns `RayHit(Shape, VXYZ Point, double Distance)`; `RayQuery(VXYZ Origin, VXYZ Direction)` is the batch input record.
         - Direction need not be normalised; Z component is ignored.
         - Inline ray-vs-shape math covers VLine, VCircle, VArc, VEllipse, VPolygon (incl. VRectangle), VPolyline; other shape types fall back to AABB hit.
