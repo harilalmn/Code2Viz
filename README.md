@@ -892,13 +892,13 @@ var circle = new VCircle(0, 0, 50);
 circle.Color = "Cyan";           // Outline color
 circle.FillColor = "#4000FFFF";        // Fill color (with transparency)
 circle.LineWeight = 2.5;               // Border thickness
-circle.StrokeStyle = StrokeStyle.Dashed;  // Line pattern
+circle.LineType = LineType.Dashed;  // Line pattern
 circle.Draw();
 ```
 
-### Stroke Styles
+### Line Types
 
-The `StrokeStyle` property controls the line pattern for shape outlines:
+The `LineType` property controls the line pattern for shape outlines:
 
 | Style | Description | Pattern |
 |-------|-------------|---------|
@@ -913,11 +913,11 @@ The `StrokeStyle` property controls the line pattern for shape outlines:
 
 ```csharp
 var line1 = new VLine(0, 0, 100, 0);
-line1.StrokeStyle = StrokeStyle.Dashed;
+line1.LineType = LineType.Dashed;
 line1.Draw();
 
 var line2 = new VLine(0, 20, 100, 20);
-line2.StrokeStyle = StrokeStyle.DashDot;
+line2.LineType = LineType.DashDot;
 line2.Draw();
 ```
 
@@ -961,7 +961,7 @@ Set default styling for all new shapes:
 ShapeDefaults.GlobalColor = "Cyan";
 ShapeDefaults.GlobalFillColor = "Transparent";
 ShapeDefaults.GlobalLineWeight = 2.0;
-ShapeDefaults.GlobalStrokeStyle = StrokeStyle.Continuous;
+ShapeDefaults.GlobalLineType = LineType.Continuous;
 
 // All shapes created after this use these defaults
 var circle = new VCircle(0, 0, 50);
