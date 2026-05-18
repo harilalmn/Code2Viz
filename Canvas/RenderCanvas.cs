@@ -722,7 +722,8 @@ public class RenderCanvas : FrameworkElement
         // and rebuilding the index each frame would negate the performance benefit.
         var viewport = new AABB(minX, minY, maxX, maxY);
         HashSet<IDrawable>? visibleSet = null;
-        bool isAnimating = CanvasRenderer.Instance.ActiveTimeline?.IsPlaying == true;
+        bool isAnimating = CanvasRenderer.Instance.ActiveTimeline?.IsPlaying == true
+                           || Code2Viz.Sketching.SketchRuntime.Instance.IsRunning;
 
         if (_spatialIndex != null && !isAnimating)
         {

@@ -507,6 +507,13 @@
                     Margin="0,4,8,4"
                     Orientation="Horizontal">
                     <Button
+                        Padding="14,6"
+                        Margin="0,0,8,0"
+                        Click="SwitchToAnimator_Click"
+                        Content="Switch to Animator"
+                        Style="{StaticResource RibbonButtonStyle}"
+                        ToolTip="Open the Animator app and close Code2Viz" />
+                    <Button
                         x:Name="RunButton"
                         Padding="16,6"
                         Click="RunButton_Click"
@@ -1406,6 +1413,15 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                            <!--  Sketch Indicator (▶ for Sketch files)  -->
+                                            <TextBlock
+                                                Margin="0,0,4,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="11"
+                                                Foreground="{StaticResource AccentBrush}"
+                                                Text="▶"
+                                                Visibility="{Binding IsSketch, Converter={StaticResource BoolToVisibilityConverter}}" />
+
                                             <!--  File Name  -->
                                             <TextBlock
                                                 VerticalAlignment="Center"

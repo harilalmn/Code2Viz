@@ -238,6 +238,38 @@ public partial class MainWindow : Window
             if (args.RenderingTime == _lastRenderTime) return;
             _lastRenderTime = args.RenderingTime;
 
+            // ── Sketch mode ──
+            // A running Sketch (p5.js-style Setup/Draw) drives the frame loop here.
+            // Mutually exclusive with the Timeline path in v1.
+            if (Code2Viz.Sketching.SketchRuntime.Instance.IsRunning)
+            {
+                // Apply a Background(color) call from Setup before the tick so the new
+                // brush is visible on the first frame paint.
+                var bgRequest = Code2Viz.Sketching.SketchRuntime.Instance.TryConsumeBackground();
+                if (bgRequest != null)
+                {
+                    try
+                    {
+                        var c = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(bgRequest);
+                        RenderCanvas.CanvasBackground = new System.Windows.Media.SolidColorBrush(c);
+                    }
+                    catch
+                    {
+                        Console.ConsoleOutput.Instance.WriteLine("Sketch", 0,
+                            $"Background: '{bgRequest}' is not a recognised color name.");
+                    }
+                }
+
+                Code2Viz.Sketching.SketchRuntime.Instance.Tick();
+                RenderCanvas.Refresh();
+
+                if (Code2Viz.Sketching.SketchRuntime.Instance.TryConsumeZoomRequest())
+                    RenderCanvas.ZoomExtents(CanvasRenderer.Instance.GetShapes());
+
+                UpdateAnimationControlsVisibility();
+                return;
+            }
+
             var timeline = CanvasRenderer.Instance.ActiveTimeline;
 
             if (timeline != null && timeline.IsPlaying)
@@ -3160,36 +3192,56 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Generate unique name based on project language
-        var ext = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp ? ".fs" : ".cs";
+        var isFSharp = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp;
+        var projectName = _currentProject.ProjectFile.Name;
+
+        // Ask whether this is a module file or a p5.js-style Sketch (C# projects only)
+        bool createSketch = false;
+        if (!isFSharp)
+        {
+            var result = MessageBox.Show(
+                "Create a Sketch file?\n\nYes — p5.js-style animation file with Setup()/Draw() blocks (uses C2VGeometry).\nNo — regular module file.",
+                "New File",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+            if (result == MessageBoxResult.Cancel) return;
+            createSketch = result == MessageBoxResult.Yes;
+        }
+
+        // Generate unique name. Sketches use the StartSketch convention; the auto-infer
+        // in VizCodeFile.Kind picks up that name pattern even after reload.
+        var ext = isFSharp ? ".fs" : ".cs";
+        var baseStem = createSketch ? "StartSketch" : "Untitled";
         int i = 1;
-        string fileName = $"Untitled-1{ext}";
+        string fileName = createSketch ? $"{baseStem}{ext}" : $"{baseStem}-1{ext}";
         while (_currentProject.Files.Any(f => f.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
         {
             i++;
-            fileName = $"Untitled-{i}{ext}";
+            fileName = createSketch ? $"{baseStem}-{i}{ext}" : $"{baseStem}-{i}{ext}";
         }
 
-        // Create new in-memory file with language-appropriate template
-        var projectName = _currentProject.ProjectFile.Name;
         var className = Path.GetFileNameWithoutExtension(fileName);
-        var isFSharp = _currentProject.ProjectFile.Language == ProjectLanguage.FSharp;
-        var content = isFSharp
-            ? FSharpTemplates.GetEmptyModuleTemplate(projectName, className)
-            : string.Format(Templates.EmptyModuleTemplate, projectName, className);
+        string content;
+        if (createSketch)
+            content = Templates.GetStartSketchTemplate(projectName);
+        else if (isFSharp)
+            content = FSharpTemplates.GetEmptyModuleTemplate(projectName, className);
+        else
+            content = string.Format(Templates.EmptyModuleTemplate, projectName, className);
 
         var newFile = new VizCodeFile
         {
             FilePath = string.Empty, // No path yet
             Content = content,
             HasUnsavedChanges = true,
-            IsNew = true // Flag as new
+            IsNew = true,
+            Kind = createSketch ? VizFileKind.Sketch : VizFileKind.Module
         };
 
         // Hack: We need a temporary 'FilePath' for the tab binding to display name correctly
-        // VizCodeFile.FileName is derived from FilePath. 
+        // VizCodeFile.FileName is derived from FilePath.
         // Let's set a fake path for now.
-        newFile.FilePath = Path.Combine(_currentProject.ProjectDirectory, fileName); 
+        newFile.FilePath = Path.Combine(_currentProject.ProjectDirectory, fileName);
 
         _currentProject.Files.Add(newFile);
         RefreshFileTabs();
@@ -3687,6 +3739,20 @@ public partial class MainWindow : Window
         // Clear active timeline reference
         CanvasRenderer.Instance.ActiveTimeline = null;
 
+        // Stop any running sketch and unload its assembly context. Also reset the canvas
+        // background in case the sketch called Background(color) — otherwise the user-set
+        // color would leak into the next Run.
+        if (Code2Viz.Sketching.SketchRuntime.Instance.IsRunning)
+        {
+            Code2Viz.Sketching.SketchRuntime.Instance.Stop();
+            RenderCanvas.CanvasBackground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(30, 30, 30));
+        }
+        else
+        {
+            Code2Viz.Sketching.SketchRuntime.Instance.Stop();
+        }
+
         // Hide animation controls
         AnimationControlsPanel.Visibility = Visibility.Collapsed;
         _isPaused = false;
@@ -3761,6 +3827,48 @@ public partial class MainWindow : Window
         RefreshFileTabs();
         LoadProjectTree();
         SetStatus("All files saved", isError: false);
+    }
+
+    private void SwitchToAnimator_Click(object sender, RoutedEventArgs e)
+    {
+        var path = FindAnimatorExe();
+        if (path == null)
+        {
+            MessageBox.Show("Could not locate Animator.exe. Build the Animator project first.",
+                "Switch to Animator", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = path,
+                UseShellExecute = true
+            });
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to launch Animator: {ex.Message}",
+                "Switch to Animator", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private static string? FindAnimatorExe()
+    {
+        // Code2Viz lives at {solution}/bin/{Config}/{TFM}/Code2Viz.exe.
+        // Animator lives at {solution}/Animator/bin/{Config}/{TFM}/Animator.exe.
+        var thisDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!;
+        var candidates = new[]
+        {
+            Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "Animator", "bin", "Debug", "net9.0-windows", "Animator.exe")),
+            Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "Animator", "bin", "Release", "net9.0-windows", "Animator.exe")),
+        };
+        foreach (var c in candidates)
+        {
+            if (File.Exists(c)) return c;
+        }
+        return null;
     }
 
     private async void RunButton_Click(object sender, RoutedEventArgs e)
@@ -10681,6 +10789,19 @@ public class {typeName}
 
     private void UpdateAnimationControlsVisibility()
     {
+        // Sketch mode: show the controls (Stop button) but hide the timeline panel
+        // because a sketch has no finite duration.
+        if (Code2Viz.Sketching.SketchRuntime.Instance.IsRunning)
+        {
+            AnimationControlsPanel.Visibility = Visibility.Visible;
+            TimelinePanel.Visibility = Visibility.Collapsed;
+            TimelineSplitter.Visibility = Visibility.Collapsed;
+            TimelineRow.Height = new GridLength(0);
+            TimeDisplay.Text = $"frame {Code2Viz.Sketching.SketchRuntime.Instance.Active?.FrameCount ?? 0}";
+            PlayPauseBtn.Content = "⏸"; // pause symbol — clicking it triggers the existing Stop path
+            return;
+        }
+
         var timeline = CanvasRenderer.Instance.ActiveTimeline;
         if (timeline != null)
         {

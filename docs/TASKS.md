@@ -189,6 +189,23 @@
 
 ---
 
+### Phase 22: Animator Sub-Project (p5.js-style Sketches)
+- [x] Code2Viz Sketch mode (in-process, multi-file aware): Sketch base / SketchRuntime / C2VGeometryAdapter / C2VGeometryRegistry in `Sketch/`; ModuleCompiler detects a `Code2Viz.Sketching.Sketch` subclass and routes to the per-frame runtime; `MainWindow` integrates the sketch into the existing `CompositionTarget.Rendering` loop; new file dialog offers Module vs Sketch; XAML tab badge for Sketch files.
+- [x] Extract Animator into a separate `Animator.exe` (folder `Animator/`, AssemblyName `Animator`, RootNamespace `Animator`) that depends only on `C2VGeometry.csproj` — no `Code2Viz.dll` reference.
+- [x] `Animator/Canvas/AnimCanvas.cs` — direct C2VGeometry renderer (DrawingVisual + DrawingContext); switch over VCircle, VLine, VRectangle, VEllipse, VArc, VPolygon, VPolyline, VPoint; pan-only (zoom disabled by design); no grid (grid drawing intentionally removed for sketches).
+- [x] `Animator/Sketch/{Sketch, SketchRuntime, ShapeRegistry}.cs` — sketch base with `Setup`/`Draw`/`Size`/`Background`/`Loop`/`NoLoop`/`FrameCount`/`ElapsedSeconds`/`DeltaSeconds`/Mouse/Key inputs; `FrameProduced` event fires each tick with the frame's `IReadOnlyList<C2VGeometry.Shape>`.
+- [x] `Animator/Compiler/SketchCompiler.cs` — Roslyn single-file compile; only Sketch mode (no Main() fallback); collectible `AssemblyLoadContext` retained until Stop.
+- [x] `Animator/Editor/{CachedCompilationWorkspace, FuzzyMatcher, CompletionEngine, AvalonCompletionData}.cs` — IntelliSense (Ctrl+Space + auto-popup on `.` / identifier chars), powered by `SemanticModel.LookupSymbols` with member-access detection via `MemberAccessExpressionSyntax` / `QualifiedNameSyntax`.
+- [x] Code2Viz dark theme replicated in `Animator/App.xaml`; embedded `CSharpHighlighting.xshd` loaded via `HighlightingLoader.Load`; toolbar (not native Menu) with file/run/stop/switch buttons.
+- [x] Cross-app switch — `Switch to Animator` (Code2Viz) and `Switch to Project` (Animator); each launches the other via `AppSwitcher.FindSiblingApp` and closes itself. Prompts to save unsaved edits before switching/closing.
+- [x] Console shows errors in red, warnings in yellow via a typed `ConsoleLine(Level, Source, Message)` record and a `DataTemplate` with `DataTrigger`s.
+- [x] Save-changes prompt — dirty tracking via `Editor.TextChanged` (gated by `_suppressDirty` during programmatic loads); Yes/No/Cancel dialog on New, Open, Switch, and window close. Save() / SaveAs() return bool so cancel-aborts the surrounding flow.
+- [x] `Ctrl+Enter` toggles Run/Stop; `F5` = Run, `Shift+F5` = Stop, `Ctrl+Space` = manual IntelliSense, standard `Ctrl+S/O/N` for file ops.
+- [x] Default template orbits a cyan circle inside a centered 800×600 boundary (bounded motion so the demo never drifts off-screen).
+- [x] `Code2Viz.csproj` excludes `Animator\**` (Compile + Page + ApplicationDefinition + Resource + None) to keep its WPF compile from picking up Animator's XAML.
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

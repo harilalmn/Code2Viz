@@ -1,0 +1,170 @@
+<Window x:Class="Animator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c2a="clr-namespace:Animator.Canvas"
+        xmlns:console="clr-namespace:Animator.Console"
+        xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="Animator"
+        Background="{StaticResource BackgroundBrush}"
+        Foreground="{StaticResource ForegroundBrush}"
+        Width="1400" Height="900"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <!-- Colored row template for the console -->
+        <DataTemplate DataType="{x:Type console:ConsoleLine}">
+            <TextBlock Text="{Binding Display}" FontFamily="Consolas" FontSize="12">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                <Setter Property="Foreground" Value="#DCDCAA"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Level}" Value="Error">
+                                <Setter Property="Foreground" Value="#F44747"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- toolbar -->
+            <RowDefinition Height="*"/>      <!-- editor | canvas -->
+            <RowDefinition Height="Auto"/>   <!-- splitter -->
+            <RowDefinition Height="180"/>    <!-- console -->
+        </Grid.RowDefinitions>
+
+        <!--  Toolbar  -->
+        <Border Grid.Row="0"
+                Background="{StaticResource SecondaryBackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="10,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>  <!-- file label + file buttons -->
+                    <ColumnDefinition Width="*"/>     <!-- spacer -->
+                    <ColumnDefinition Width="Auto"/>  <!-- run/stop -->
+                    <ColumnDefinition Width="Auto"/>  <!-- switch app -->
+                </Grid.ColumnDefinitions>
+
+                <!--  Left side: file ops + status  -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="AppTitle"
+                               Text="Animator"
+                               FontSize="16" FontWeight="SemiBold"
+                               Foreground="{StaticResource ForegroundBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,18,0"/>
+                    <Button Content="New" Click="NewButton_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Ctrl+N"/>
+                    <Button Content="Open…" Click="OpenButton_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Ctrl+O"/>
+                    <Button Content="Save" Click="SaveButton_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Ctrl+S"/>
+                    <TextBlock x:Name="FileLabel"
+                               Text="Untitled.cs"
+                               VerticalAlignment="Center"
+                               Margin="14,0,0,0"
+                               Foreground="{StaticResource MutedForegroundBrush}"/>
+                </StackPanel>
+
+                <!--  Centre: status  -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock x:Name="StatusLabel"
+                               Text="Ready"
+                               Foreground="{StaticResource MutedForegroundBrush}"/>
+                    <TextBlock x:Name="FrameLabel"
+                               Text=""
+                               Margin="14,0,0,0"
+                               Foreground="{StaticResource MutedForegroundBrush}"/>
+                </StackPanel>
+
+                <!--  Right side: Run/Stop and Switch  -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="RunButton"
+                            Content="▶ Run"
+                            Click="RunButton_Click"
+                            Style="{StaticResource RunButtonStyle}"
+                            ToolTip="F5 — also Ctrl+Enter (toggle)"/>
+                    <Button x:Name="StopButton"
+                            Content="■ Stop"
+                            Click="StopButton_Click"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            IsEnabled="False"
+                            ToolTip="Shift+F5 — also Ctrl+Enter (toggle)"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+                    <Button Content="Switch to Project"
+                            Click="SwitchToCode2Viz_Click"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            ToolTip="Open Code2Viz and close Animator"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--  Editor | Canvas  -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="200"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="2*" MinWidth="200"/>
+            </Grid.ColumnDefinitions>
+
+            <avalonedit:TextEditor x:Name="Editor"
+                                   Grid.Column="0"
+                                   FontFamily="Consolas"
+                                   FontSize="13"
+                                   Background="{StaticResource BackgroundBrush}"
+                                   Foreground="{StaticResource ForegroundBrush}"
+                                   LineNumbersForeground="#5A5A5A"
+                                   ShowLineNumbers="True"/>
+
+            <GridSplitter Grid.Column="1"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="{StaticResource BorderBrush}"/>
+
+            <c2a:AnimCanvas x:Name="Canvas" Grid.Column="2"/>
+        </Grid>
+
+        <GridSplitter Grid.Row="2"
+                      Height="4"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="{StaticResource BorderBrush}"/>
+
+        <!--  Console  -->
+        <DockPanel Grid.Row="3"
+                   Background="{StaticResource BackgroundBrush}"
+                   LastChildFill="True">
+            <Border DockPanel.Dock="Top"
+                    Background="{StaticResource SecondaryBackgroundBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="0,1,0,1"
+                    Padding="10,4">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Console"
+                               Foreground="{StaticResource MutedForegroundBrush}"
+                               VerticalAlignment="Center"/>
+                    <Button Content="Clear"
+                            Click="ClearConsoleButton_Click"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            Margin="14,0,0,0"
+                            Padding="8,3"/>
+                </StackPanel>
+            </Border>
+            <ListBox x:Name="ConsoleList"
+                     Background="{StaticResource BackgroundBrush}"
+                     Foreground="{StaticResource ForegroundBrush}"
+                     FontFamily="Consolas"
+                     FontSize="12"
+                     BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+        </DockPanel>
+    </Grid>
+</Window>

@@ -213,36 +213,40 @@ public class VizCodeProject
     /// <summary>
     /// Gets all source files from the project directory for compilation.
     /// Uses in-memory content for open files, reads from disk for others.
+    /// In-memory-only files (newly created via the New File dialog, not yet saved) are
+    /// included too — without this, an unsaved sketch file would not be compiled.
     /// </summary>
     public IEnumerable<VizCodeFile> GetAllSourceFiles()
     {
         var allFiles = new List<VizCodeFile>();
-        var discoveredPaths = DiscoverVizCodeFiles(ProjectDirectory).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var addedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var filePath in discoveredPaths)
+        // 1. Include all in-memory files first. This covers unsaved IsNew files whose
+        //    FilePath points to a location not yet on disk.
+        foreach (var file in Files)
         {
-            // Check if file is already loaded (use in-memory content)
-            var loadedFile = Files.FirstOrDefault(f => f.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase));
-            if (loadedFile != null)
+            if (string.IsNullOrEmpty(file.FilePath)) continue;
+            if (addedPaths.Add(file.FilePath))
+                allFiles.Add(file);
+        }
+
+        // 2. Then walk the project directory and pull in any disk files we haven't
+        //    already added from memory.
+        foreach (var filePath in DiscoverVizCodeFiles(ProjectDirectory))
+        {
+            if (!addedPaths.Add(filePath)) continue;
+            try
             {
-                allFiles.Add(loadedFile);
+                allFiles.Add(new VizCodeFile
+                {
+                    FilePath = filePath,
+                    Content = File.ReadAllText(filePath),
+                    HasUnsavedChanges = false
+                });
             }
-            else
+            catch
             {
-                // Read from disk
-                try
-                {
-                    allFiles.Add(new VizCodeFile
-                    {
-                        FilePath = filePath,
-                        Content = File.ReadAllText(filePath),
-                        HasUnsavedChanges = false
-                    });
-                }
-                catch
-                {
-                    // Skip files that can't be read
-                }
+                // Skip files that can't be read
             }
         }
 

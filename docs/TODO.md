@@ -249,6 +249,10 @@ Core timeline playback is implemented; items below are advanced timeline UX poli
 ### Curve Operations
 - [x] `ICurve.SetBounds(start, end)` — in-place parameter-range trim for VLine/VArc/VEllipse/VPolyline/VBezier/VSpline (VBezier uses De Casteljau, VSpline dense-resamples); throws on VCircle/VPolygon/VRay/VXLine. Mirrored in C2VGeometry. 17 xUnit tests.
 
+### Animator Sub-Project
+- [x] **In-process Sketch mode** in Code2Viz — `Code2Viz.Sketching.Sketch` base, `SketchRuntime`, adapter for C2VGeometry → Code2Viz.Geometry shapes (`Sketch/`), entry probe in `ModuleCompiler`, frame-loop integration in `MainWindow`.
+- [x] **Standalone Animator app** (`Animator.exe`) — separate project under `Animator/`, depends only on `C2VGeometry.csproj`. Direct C2VGeometry renderer (`AnimCanvas`), single-file Roslyn compiler, AvalonEdit + Code2Viz dark theme, IntelliSense (Ctrl+Space, auto-popup), colored console, save-on-close prompts, Ctrl+Enter toggle, cross-app Switch buttons.
+
 ---
 
 ## Notes

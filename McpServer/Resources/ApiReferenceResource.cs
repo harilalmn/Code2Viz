@@ -502,5 +502,32 @@ public class ApiReferenceResource
         }
         var star = new VPolygon(pts) { Color = "Gold", FillColor = "DarkGoldenrod" };
         ```
+
+        ## Sibling app: Animator (p5.js-style sketches)
+
+        Code2Viz ships with a separate WPF app `Animator.exe` (folder `Animator/`) for frame-driven animation sketches. Animator depends only on `C2VGeometry.dll` (no Code2Viz dependency). The MCP tools above do not target Animator — Animator is launched manually or via Code2Viz's **Switch to Animator** button.
+
+        A sketch subclasses `Animator.Sketching.Sketch` and overrides `Setup()` (runs once) and `Draw()` (runs every frame). Geometry uses **C2VGeometry** types; shapes auto-register each frame and the canvas re-renders. Persistent state lives in fields on the sketch class; locals reset each call.
+
+        ```csharp
+        using System;
+        using C2VGeometry;
+        using Animator.Sketching;
+
+        public class MySketch : Sketch
+        {
+            public override void Setup() { Size(800, 600); Background("Black"); }
+
+            public override void Draw()
+            {
+                var r = 200.0;
+                var x = r * Math.Sin(ElapsedSeconds);
+                var y = r * Math.Cos(ElapsedSeconds);
+                new VCircle(new VXYZ(x, y), 12) { FillColor = "Cyan" };
+            }
+        }
+        ```
+
+        Sketch base members: `Setup()`, `Draw()`, `Size(w,h)`, `Background(color)`, `Loop()`/`NoLoop()`, `FrameCount`, `ElapsedSeconds`, `DeltaSeconds`, `Width`/`Height`, `MouseX`/`MouseY`/`MousePressed`, `KeyPressed`/`LastKey`. Console helpers: `VizConsole.Log/Warn/Error(message)`.
         """;
 }

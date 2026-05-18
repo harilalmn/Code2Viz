@@ -25,6 +25,153 @@ Code2Viz is a visual programming environment that lets you write C# or F# code t
 - **NuGet Integration**: Add external packages to extend functionality
 - **Built-in Help**: Comprehensive API documentation with examples
 - **Code Minimap**: VSCode-style minimap with syntax coloring, viewport indicator, and error marker navigation
+- **Animator (sub-project)**: a focused p5.js-style sketch environment for frame-driven animation, ships as a separate `Animator.exe` and is accessible from Code2Viz via the **Switch to Animator** button. See the **Animator** section below.
+
+---
+
+## Animator (Sub-Project)
+
+Animator is a stand-alone WPF app that lives in the `Animator/` folder of the Code2Viz solution. It is designed for **frame-driven animation sketches** — code that runs every frame, in the p5.js model. Where Code2Viz is for *static* visualization with optional finite-timeline animations, Animator is for *generative* and *interactive* animation loops.
+
+### Why it's a separate app
+
+- Different mental model: `Setup()` once, `Draw()` every frame
+- No project model, just one `.cs` file at a time — quicker iteration
+- Uses `C2VGeometry` types (no `Code2Viz.Geometry` dependency)
+- Trimmed feature set: no project explorer, no drawing tools, no dimensions, no properties panel — just editor, canvas, console
+
+### Switching between the two
+
+- In Code2Viz, click **Switch to Animator** (top-right of the toolbar). Closes Code2Viz, opens Animator.
+- In Animator, click **Switch to Project** (top-right). Closes Animator, opens Code2Viz.
+- Each app prompts to save unsaved edits before switching.
+
+### Workflow
+
+1. **Launch** `Animator.exe` (or use **Switch to Animator** from Code2Viz).
+2. The editor is pre-populated with a default sketch that orbits a cyan circle around the origin.
+3. **Run** (▶ Run button, **F5**, or **Ctrl+Enter** to toggle Run/Stop) — the canvas zooms to fit the sketch bounds and the frame loop starts.
+4. **Stop** (■ Stop, **Shift+F5**, or **Ctrl+Enter**) — the sketch halts and the canvas clears.
+5. Edit the code while running — press Run again to recompile.
+
+### Writing a sketch
+
+A sketch is a class that derives from `Animator.Sketching.Sketch` and overrides at minimum `Setup()` and `Draw()`. Geometry is constructed using `C2VGeometry` types; **shapes auto-register each frame and the canvas re-renders the new set** — there's no need to remove or clear them yourself.
+
+```csharp
+using System;
+using C2VGeometry;
+using Animator.Sketching;
+using Animator.Console;
+
+public class MySketch : Sketch
+{
+    public override void Setup()
+    {
+        Size(800, 600);            // logical drawing area, centered on origin
+        Background("Black");       // canvas background colour
+    }
+
+    public override void Draw()
+    {
+        // ElapsedSeconds, FrameCount, DeltaSeconds are framework-provided
+        var r = 200.0;
+        var x = r * Math.Sin(ElapsedSeconds);
+        var y = r * Math.Cos(ElapsedSeconds);
+        new VCircle(new VXYZ(x, y), 12) { FillColor = "Cyan" };
+    }
+}
+```
+
+### Sketch base API
+
+| Member | Type | Description |
+|---|---|---|
+| `Setup()` | virtual void | Override for one-time setup (called when **Run** is pressed) |
+| `Draw()` | virtual void | Override for per-frame work |
+| `Size(w, h)` | protected | Declare the logical drawing area; canvas auto-zooms to fit |
+| `Background(color)` | protected | Set the canvas background colour (named WPF colour or `#RRGGBB`) |
+| `NoLoop()` / `Loop()` | protected | Pause / resume the per-frame `Draw()` loop |
+| `FrameCount` | int | Frame number, 0-based |
+| `ElapsedSeconds` | double | Seconds since `Setup()` returned |
+| `DeltaSeconds` | double | Seconds since the previous frame |
+| `Width`, `Height` | double | Current sketch dimensions (last `Size()` call; default 800×600) |
+| `MouseX`, `MouseY` | double | Last known mouse position in world coordinates (Y-up) |
+| `MousePressed` | bool | True while any mouse button is held |
+| `KeyPressed` | bool | True while the canvas has focus and a key is held |
+| `VizConsole.Log(msg)` | static | Print to the Console pane |
+| `VizConsole.Warn(msg)` | static | Print as a yellow warning |
+| `VizConsole.Error(msg)` | static | Print as a red error |
+
+### Example: mouse-driven sketch
+
+```csharp
+using System;
+using C2VGeometry;
+using Animator.Sketching;
+
+public class FollowMouse : Sketch
+{
+    double trailRadius = 6;
+
+    public override void Setup() { Size(800, 600); Background("#0E0E20"); }
+
+    public override void Draw()
+    {
+        // Trail dot at mouse position; size pulses with time.
+        var size = trailRadius + 2 * Math.Sin(ElapsedSeconds * 4);
+        new VCircle(new VXYZ(MouseX, MouseY), size)
+        {
+            FillColor = MousePressed ? "Magenta" : "Cyan"
+        };
+    }
+}
+```
+
+### Example: persistent state in fields
+
+State that survives across frames lives in fields on the sketch class. Locals reset every call.
+
+```csharp
+public class Bouncer : Sketch
+{
+    double x = 0, y = 0, vx = 3, vy = 2;
+    const double r = 15;
+
+    public override void Setup() { Size(800, 600); Background("Black"); }
+
+    public override void Draw()
+    {
+        x += vx; y += vy;
+        if (x < -400 + r || x > 400 - r) vx = -vx;
+        if (y < -300 + r || y > 300 - r) vy = -vy;
+        new VCircle(new VXYZ(x, y), r) { FillColor = "Orange" };
+    }
+}
+```
+
+### Editor features
+
+- **IntelliSense** — Ctrl+Space for manual trigger, auto-popup on `.` and identifier characters. Uses Roslyn against the C2VGeometry + Animator.Sketching reference set, so dot-completion on `Sketch` members, `VCircle`, `VXYZ`, etc. works.
+- **Code colours** — matches Code2Viz's CSharpHighlighting theme.
+- **Save / Open / New** — File menu buttons or Ctrl+S / Ctrl+O / Ctrl+N. Prompts to save unsaved edits before destructive actions and on window close.
+- **Console** — errors render in red, warnings in yellow, info in default foreground.
+
+### Canvas
+
+- **Centered sketch area** — the `Size(w, h)` box is drawn as a faint outline so you can see your boundary.
+- **No zoom** — wheel zoom is intentionally disabled; the canvas fits the sketch on Run.
+- **Middle-click pan** — supported, for nudging the view.
+
+### When to use which
+
+| Use **Code2Viz** for… | Use **Animator** for… |
+|---|---|
+| Static drawings and diagrams | Frame-driven animation loops |
+| Multi-file projects with helpers | Single-file sketches |
+| Finite timeline animations (Move, Rotate, Fade) | Continuous procedural animation |
+| Drawing-tool interaction (drag points, snap, etc.) | Generative / interactive sketches |
+| Boolean / region operations | Quick visual experiments |
 
 ---
 

@@ -7,6 +7,8 @@ description: "Create and visualize 2D geometry on an interactive canvas using C#
 
 You have access to the Code2Viz MCP server which lets you create and visualize 2D geometry on an interactive canvas. The Code2Viz WPF application must be running for tools to work.
 
+> **Sub-project: Animator.** Code2Viz ships with a sibling app `Animator.exe` (folder: `Animator/`) for p5.js-style animation sketches with `Setup()`/`Draw()` and `C2VGeometry`. The MCP tools below target Code2Viz only — Animator is launched from Code2Viz via the **Switch to Animator** button or from a desktop shortcut. See the Animator section near the end of this skill for the sketch API.
+
 ## Available Tools
 
 ### execute_vizcode
@@ -1062,3 +1064,69 @@ for (int i = 1; i <= 5; i++)
 - ICurve Offset returns ICurve — cast to Shape to set styling: `((Shape)curve.Offset(10)).Color = "Red"`.
 - For Region boolean intersections, use `RegionBooleanOps.Intersect(a, b)` (static) instead of `a.Intersect(b)` (extension) to avoid collision with `Shape.Intersect`.
 - **Multi-file projects**: Call `get_project_context` first to read all files. Other files may define classes, helpers, or data that `Main()` in StartViz.cs can use. Your code in `execute_vizcode` replaces the `Main()` body but is compiled alongside all other project files, so you can reference any types defined in them.
+
+---
+
+## Animator (sibling app, no MCP tools)
+
+`Animator.exe` lives at `Animator/bin/{Config}/net9.0-windows/Animator.exe` and is launched manually or via Code2Viz's **Switch to Animator** button. The MCP tools above do **not** target Animator — they're Code2Viz-only. Animator is a separate WPF app for p5.js-style sketches.
+
+### Sketch model
+
+User code subclasses `Animator.Sketching.Sketch` and overrides `Setup()` (called once) and `Draw()` (called every frame). Geometry uses **`C2VGeometry`** types, not `Code2Viz.Geometry`. Shapes auto-register each frame; the canvas re-renders the current registry contents.
+
+```csharp
+using System;
+using C2VGeometry;
+using Animator.Sketching;
+using Animator.Console;
+
+public class MySketch : Sketch
+{
+    public override void Setup()
+    {
+        Size(800, 600);          // logical drawing area centered on origin
+        Background("Black");
+    }
+
+    public override void Draw()
+    {
+        var r = 200.0;
+        var x = r * Math.Sin(ElapsedSeconds);
+        var y = r * Math.Cos(ElapsedSeconds);
+        new VCircle(new VXYZ(x, y), 12) { FillColor = "Cyan" };
+    }
+}
+```
+
+### Sketch API surface
+
+| Member | Type | Purpose |
+|---|---|---|
+| `Setup()` | virtual void | One-time init; called once when **Run** is pressed |
+| `Draw()` | virtual void | Per-frame loop body |
+| `Size(w, h)` | protected | Declare sketch dimensions; canvas auto-zooms to fit |
+| `Background(color)` | protected | Set the canvas background colour |
+| `NoLoop()` / `Loop()` | protected | Pause / resume the frame loop |
+| `FrameCount` | int | Current frame number (0-based) |
+| `ElapsedSeconds` | double | Seconds since `Setup()` returned |
+| `DeltaSeconds` | double | Seconds since the previous frame |
+| `Width` / `Height` | double | Last `Size()` call (default 800×600) |
+| `MouseX` / `MouseY` | double | Mouse position in world coordinates (Y-up) |
+| `MousePressed` | bool | Any mouse button is pressed |
+| `KeyPressed` / `LastKey` | bool / string | Keyboard state |
+| `VizConsole.Log/Warn/Error(msg)` | static | Print to the Animator console (Warn = yellow, Error = red) |
+
+### Differences from Code2Viz mode
+
+- Single `.cs` file (open / save / save-as), not a multi-file project
+- `C2VGeometry` types only — no `Code2Viz.Geometry`, no `Animator` doesn't import `Code2Viz` at all
+- Per-frame fresh-object semantics: don't try to hold references between frames; put persistent state in fields on the sketch class
+- No `Main()` — only Sketch subclasses are executed
+- No properties panel, no drawing tools, no dimension annotations, no timeline scrubber — this app is for the frame loop, not static editing
+
+### Switching between apps
+
+- **In Code2Viz**: click `Switch to Animator` (top-right, next to Run)
+- **In Animator**: click `Switch to Project` (top-right of the toolbar)
+- Both apps prompt to save unsaved edits before switching

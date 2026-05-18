@@ -17,18 +17,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Exclude sample project folders from compilation -->
+    <!-- Exclude sibling project folders from compilation -->
     <Compile Remove="Tests\**" />
     <Compile Remove="McpBridge\**" />
     <Compile Remove="McpServer\**" />
     <Compile Remove="C2VGeometry\**" />
+    <Compile Remove="Animator\**" />
     <Compile Remove="RegionSample\**" />
     <Compile Remove="Sample Projects\**" />
+    <Page Remove="Animator\**" />
+    <ApplicationDefinition Remove="Animator\**" />
+    <Resource Remove="Animator\**" />
+    <None Remove="Animator\**" />
   </ItemGroup>
 
 
   <ItemGroup>
     <ProjectReference Include="McpBridge\Code2Viz.McpBridge.csproj" />
+    <ProjectReference Include="C2VGeometry\C2VGeometry.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -77,4 +77,41 @@ public static class Templates
             }}
         }}
         """;
+
+    /// <summary>
+    /// Generates a p5.js-style sketch template with Setup() + Draw() blocks.
+    /// Geometry uses the C2VGeometry namespace; shapes are constructed fresh each frame.
+    /// </summary>
+    public static string GetStartSketchTemplate(string projectName)
+    {
+        var safeName = SanitizeIdentifier(projectName);
+
+        return $$"""
+            using System;
+            using C2VGeometry;
+            using Code2Viz.Sketching;
+            using Code2Viz.Console;
+
+            namespace {{safeName}}
+            {
+                public class MySketch : Sketch
+                {
+                    public override void Setup()
+                    {
+                        Size(800, 600);
+                        Background("Black");
+                    }
+
+                    public override void Draw()
+                    {
+                        // Fresh shapes each frame — orbit around origin so the circle stays in view.
+                        var r = 200.0;
+                        var x = r * Math.Sin(ElapsedSeconds);
+                        var y = r * Math.Cos(ElapsedSeconds);
+                        new VCircle(new VXYZ(x, y), 12) { FillColor = "Cyan" };
+                    }
+                }
+            }
+            """;
+    }
 }

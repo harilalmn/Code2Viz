@@ -102,8 +102,11 @@ public class ModuleCompiler
             }
         }
 
-        // Add Code2Viz.Geometry assembly
+        // Add Code2Viz.Geometry assembly (also brings in Code2Viz.Sketch, Code2Viz.Animation, etc.)
         DefaultReferences.Add(MetadataReference.CreateFromFile(typeof(Geometry.VPoint).Assembly.Location));
+
+        // Add C2VGeometry assembly so sketches can `using C2VGeometry;`
+        DefaultReferences.Add(MetadataReference.CreateFromFile(typeof(C2VGeometry.Shape).Assembly.Location));
     }
 
     /// <summary>
@@ -126,9 +129,17 @@ public class ModuleCompiler
 
         try
         {
+            // Tear down any currently-running sketch (unloads its assembly context) before
+            // we compile a fresh user assembly; otherwise the prior context would leak.
+            Code2Viz.Sketching.SketchRuntime.Instance.Stop();
+
             // Clear previous shapes and console
             CanvasRenderer.Instance.Clear();
             ConsoleOutput.Instance.Clear();
+
+            ConsoleOutput.Instance.WriteLine("Compiler", 0,
+                $"Run started. Project: '{project.ProjectFile.Name}', files: " +
+                string.Join(", ", project.Files.Select(f => f.FileName)));
 
             // Create compilation
             var (compilation, allDlls) = await CreateCompilationAsync(project);
@@ -218,30 +229,65 @@ public class ModuleCompiler
 
     public static async Task<CompilationResult> ExecuteAssemblyAsync(Stream assemblyStream, Stream? pdbStream, HashSet<string> dependencies, string projectName)
     {
+        // Use our custom AssemblyLoadContext that knows about restored packages
+        var loadContext = new VizAssemblyLoadContext(dependencies);
+        bool transferredOwnership = false;
         try
         {
-            // Use our custom AssemblyLoadContext that knows about restored packages
-            var loadContext = new VizAssemblyLoadContext(dependencies);
             try
             {
                 var assembly = pdbStream != null
                     ? loadContext.LoadFromStream(assemblyStream, pdbStream)
                     : loadContext.LoadFromStream(assemblyStream);
 
+                // ── Sketch mode probe ──
+                // If the user wrote a class deriving from Code2Viz.Sketching.Sketch, hand off to
+                // SketchRuntime which keeps the load context resident for the per-frame loop.
+                var sketchBase = typeof(Code2Viz.Sketching.Sketch);
+                Type[] allUserTypes;
+                try { allUserTypes = assembly.GetTypes(); }
+                catch (System.Reflection.ReflectionTypeLoadException rtle)
+                {
+                    ConsoleOutput.Instance.WriteLine("Compiler", 0,
+                        $"GetTypes failed: {rtle.Message}. LoaderExceptions: " +
+                        string.Join(" | ", (rtle.LoaderExceptions ?? Array.Empty<Exception?>()).Select(le => le?.Message ?? "(null)")));
+                    allUserTypes = rtle.Types.Where(t => t != null).Cast<Type>().ToArray();
+                }
+
+                var typeNames = string.Join(", ", allUserTypes.Take(8).Select(t => t.FullName));
+                ConsoleOutput.Instance.WriteLine("Compiler", 0,
+                    $"Loaded {allUserTypes.Length} type(s) from user assembly: {typeNames}");
+
+                var sketchType = allUserTypes
+                    .FirstOrDefault(t => !t.IsAbstract && sketchBase.IsAssignableFrom(t));
+
+                if (sketchType != null)
+                {
+                    ConsoleOutput.Instance.WriteLine("Compiler", 0,
+                        $"Sketch detected: {sketchType.FullName}. Entering Sketch mode.");
+                    Code2Viz.Sketching.SketchRuntime.Instance.Start(sketchType, loadContext);
+                    transferredOwnership = true;   // SketchRuntime now owns Unload()
+                    return new CompilationResult { Success = true };
+                }
+
+                ConsoleOutput.Instance.WriteLine("Compiler", 0,
+                    "No Sketch subclass found. Falling back to Main() mode.");
+
+                // ── Main() mode (default) ──
                 // Get the entry point namespace from project name
                 var projectNamespace = Templates.SanitizeIdentifier(projectName);
                 var entryTypeName = $"{projectNamespace}.Viz";
-                
+
                 // Try finding entry type (CS) or module (FS)
                 var entryType = assembly.GetType(entryTypeName);
-                
+
                 // F# modules may compile with different naming conventions
-                // Try alternates: "Namespace.Viz" or "Namespace.VizModule" 
+                // Try alternates: "Namespace.Viz" or "Namespace.VizModule"
                 if (entryType == null)
                 {
                     entryType = assembly.GetType($"{projectNamespace}.VizModule");
                 }
-                
+
                 // List all types in the assembly for debugging
                 if (entryType == null)
                 {
@@ -249,7 +295,7 @@ public class ModuleCompiler
                     return new CompilationResult
                     {
                         Success = false,
-                        Error = $"Entry point not found: class '{entryTypeName}' is missing.\n\nAvailable types:\n" + 
+                        Error = $"Entry point not found: class '{entryTypeName}' is missing.\n\nAvailable types:\n" +
                                 string.Join("\n", allTypes.Take(10)) +
                                 $"\n\nEnsure StartViz contains:\nnamespace {projectNamespace}\n...\n    class Viz / module Viz"
                     };
@@ -301,7 +347,10 @@ public class ModuleCompiler
             }
             finally
             {
-                loadContext.Unload();
+                // Only unload the load context if SketchRuntime didn't take ownership.
+                // Sketch mode keeps the context resident across frames.
+                if (!transferredOwnership)
+                    loadContext.Unload();
             }
         }
         catch (TargetInvocationException ex)
