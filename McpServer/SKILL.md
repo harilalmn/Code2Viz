@@ -579,8 +579,11 @@ Implemented by: VLine, VCircle, VArc, VEllipse, VPolyline, VPolygon, VBezier, VS
 | `Offset(List<double> distances)` | List\<ICurve\> | Multiple offsets |
 | `Intersect(otherCurve)` | IntersectionResult | Find intersection points |
 | `SplitAtPoint(point)` | (ICurve, ICurve) | Split curve at point |
+| `SetBounds(startParam, endParam)` | void | Trim in place to parameter sub-range; new [0,1] spans [startParam, endParam] |
 | `NormalAtPoint(point)` | VXYZ | Normal vector at point |
 | `PointsAtChordLengthFromPoint(point, chordLength)` | List\<VXYZ\> | Points at chord distance |
+
+**SetBounds notes:** Parameters are clamped to [0,1] and swapped if reversed. Supported for VLine, VArc, VEllipse, VPolyline, VBezier, VSpline. **Throws `NotSupportedException`** for closed/infinite curves whose trimmed form changes type: VCircle (→arc), VPolygon (→polyline), VRay/VXLine (→line). Use `SplitAtPoint` on those instead. VSpline resamples densely so the trimmed Catmull-Rom tracks the original path closely; VBezier uses De Casteljau for an exact trim.
 
 ### IntersectionResult
 | Property | Type | Description |

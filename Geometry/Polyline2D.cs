@@ -5,7 +5,7 @@ namespace Code2Viz.Geometry;
 public class VPolyline : Shape, ICurve
 {
     public List<VPoint> Points { get; set; }
-    private readonly bool _selfIntersecting;
+    private bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polyline.</summary>
     public VPoint StartPoint => Points.Count > 0 ? Points[0] : VPoint.Internal(0, 0);
@@ -448,6 +448,37 @@ public class VPolyline : Shape, ICurve
             p1.X + (p2.X - p1.X) * localT,
             p1.Y + (p2.Y - p1.Y) * localT
         );
+    }
+
+    /// <summary>
+    /// Trims this polyline in place so that the parameter range [startParameter, endParameter]
+    /// becomes the new [0, 1] range. The point list is rebuilt: trimmed endpoints plus any interior
+    /// vertices that fall strictly within the range.
+    /// </summary>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        if (Points.Count < 2) return;
+
+        double s = Math.Clamp(startParameter, 0.0, 1.0);
+        double e = Math.Clamp(endParameter, 0.0, 1.0);
+        if (s > e) (s, e) = (e, s);
+
+        int numSegments = Points.Count - 1;
+        double sScaled = s * numSegments;
+        double eScaled = e * numSegments;
+
+        var newPoints = new List<VPoint> { PointAtParameter(s) };
+        for (int i = 0; i <= numSegments; i++)
+        {
+            if (i > sScaled + 1e-12 && i < eScaled - 1e-12)
+            {
+                newPoints.Add(Points[i]);
+            }
+        }
+        newPoints.Add(PointAtParameter(e));
+
+        Points = newPoints;
+        _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 
     /// <summary>

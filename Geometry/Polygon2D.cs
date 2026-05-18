@@ -1040,6 +1040,18 @@ public class VPolygon : Shape, ICurve
     }
 
     /// <summary>
+    /// Not supported: trimming a closed polygon produces a polyline, which is a different shape type.
+    /// Use <see cref="SplitAtPoint"/> to obtain polyline segments instead.
+    /// </summary>
+    /// <exception cref="NotSupportedException">Always thrown.</exception>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        throw new NotSupportedException(
+            "VPolygon.SetBounds is not supported because a trimmed polygon is a polyline, not a polygon. " +
+            "Use SplitAtPoint to obtain polyline segments instead.");
+    }
+
+    /// <summary>
     /// Slices the polygon along an infinite line defined by two points.
     /// Returns a list of resulting polygons. If the line doesn't intersect the polygon
     /// or only touches it at one point, returns a list containing a clone of the original.

@@ -1852,6 +1852,13 @@ offset.Draw();
 // Split curve at a point
 var (first, second) = curve.SplitAtPoint(midPoint);
 
+// Trim curve in place to a parameter sub-range — the new [0, 1] spans [startParam, endParam].
+// Supported on VLine, VArc, VEllipse, VPolyline, VBezier, VSpline.
+// VCircle, VPolygon, VRay, VXLine throw NotSupportedException (their trimmed form is a
+// different shape type — use SplitAtPoint there instead).
+var trimmable = new VBezier(0, 0, 1, 2, 2, 2, 3, 0);
+trimmable.SetBounds(0.2, 0.8);  // Keep only the middle 60% of the curve
+
 // Get normal vector at a point
 VXYZ normal = curve.NormalAtPoint(midPoint);
 

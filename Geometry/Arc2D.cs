@@ -537,5 +537,22 @@ public class VArc : Shape, ICurve
             return Math.Clamp(relativeAngle / sweep, 0, 1);
         }
     }
+
+    /// <summary>
+    /// Trims this arc in place so that the parameter range [startParameter, endParameter]
+    /// becomes the new [0, 1] range. StartAngle and EndAngle are rescaled to span the new range.
+    /// </summary>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        double s = Math.Clamp(startParameter, 0.0, 1.0);
+        double e = Math.Clamp(endParameter, 0.0, 1.0);
+        if (s > e) (s, e) = (e, s);
+
+        double sweep = EndAngle - StartAngle;
+        double newStart = StartAngle + sweep * s;
+        double newEnd = StartAngle + sweep * e;
+        StartAngle = newStart;
+        EndAngle = newEnd;
+    }
 }
 

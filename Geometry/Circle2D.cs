@@ -292,5 +292,17 @@ public class VCircle : Shape, ICurve
         if (angle < 0) angle += 2 * Math.PI;
         return angle / (2 * Math.PI);
     }
+
+    /// <summary>
+    /// Not supported: trimming a circle produces an arc, which is a different shape type.
+    /// Use <see cref="SplitAtPoint"/> to obtain <see cref="VArc"/> segments instead.
+    /// </summary>
+    /// <exception cref="NotSupportedException">Always thrown.</exception>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        throw new NotSupportedException(
+            "VCircle.SetBounds is not supported because a trimmed circle is an arc, not a circle. " +
+            "Use SplitAtPoint to obtain VArc segments instead.");
+    }
 }
 

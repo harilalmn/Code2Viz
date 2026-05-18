@@ -11,7 +11,7 @@ public class VBezier : Shape, ICurve
     public VPoint P1 { get; set; }  // Control point 1
     public VPoint P2 { get; set; }  // Control point 2
     public VPoint P3 { get; set; }  // End point
-    private readonly bool _selfIntersecting;
+    private bool _selfIntersecting;
 
     /// <summary>Number of segments for rendering (higher = smoother)</summary>
     public int Segments { get; set; } = 32;
@@ -437,4 +437,46 @@ public class VBezier : Shape, ICurve
     /// Returns the normalized parameter (0 to 1) for the closest point on the bezier curve to the given point.
     /// </summary>
     public double ParameterAtPoint(VPoint point) => GetClosestParameter(point);
+
+    /// <summary>
+    /// Trims this Bezier in place so that the parameter range [startParameter, endParameter]
+    /// becomes the new [0, 1] range. Uses De Casteljau subdivision: split at endParameter to get
+    /// the left piece, then split that piece at startParameter/endParameter and keep its right piece.
+    /// Control point P0..P3 instances are preserved (their X/Y are updated).
+    /// </summary>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        double s = Math.Clamp(startParameter, 0.0, 1.0);
+        double e = Math.Clamp(endParameter, 0.0, 1.0);
+        if (s > e) (s, e) = (e, s);
+
+        // Step 1: split at e, keep left piece -> control points cover original [0, e].
+        var p01 = Lerp(P0, P1, e);
+        var p12 = Lerp(P1, P2, e);
+        var p23 = Lerp(P2, P3, e);
+        var p012 = Lerp(p01, p12, e);
+        var p123 = Lerp(p12, p23, e);
+        var p0123 = Lerp(p012, p123, e);
+        // Left piece control points: (P0, p01, p012, p0123)
+        var l1 = p01;
+        var l2 = p012;
+        var l3 = p0123;
+
+        // Step 2: within left piece, split at u = s/e, keep right piece -> control points cover [s, e].
+        double u = e > 1e-12 ? s / e : 0;
+        var q01 = Lerp(P0, l1, u);
+        var q12 = Lerp(l1, l2, u);
+        var q23 = Lerp(l2, l3, u);
+        var q012 = Lerp(q01, q12, u);
+        var q123 = Lerp(q12, q23, u);
+        var q0123 = Lerp(q012, q123, u);
+        // Right piece control points: (q0123, q123, q23, l3)
+
+        P0.X = q0123.X; P0.Y = q0123.Y;
+        P1.X = q123.X;  P1.Y = q123.Y;
+        P2.X = q23.X;   P2.Y = q23.Y;
+        P3.X = l3.X;    P3.Y = l3.Y;
+
+        _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
+    }
 }

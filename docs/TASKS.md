@@ -176,6 +176,19 @@
 
 ---
 
+### Phase 21: ICurve.SetBounds (Parameter-Range Trim)
+- [x] Add `void SetBounds(double startParameter, double endParameter)` to the `ICurve` interface in both `Code2Viz.Geometry` and `C2VGeometry`. The parameter sub-range [s, e] becomes the new [0, 1]; inputs are clamped to [0, 1] and swapped if reversed.
+- [x] **VLine** — Set `Start`/`End` to `Evaluate(s)`/`Evaluate(e)`. The `VPoint` instances are preserved (X/Y mutated) so external references stay live.
+- [x] **VArc, VEllipse** — Rescale `StartAngle`/`EndAngle` so the new endpoints sit at the trimmed parameters.
+- [x] **VBezier** — De Casteljau twice: split at `e`, take the left piece, then split that piece at `s/e` and keep its right piece. Exact trim; P0..P3 instances are preserved.
+- [x] **VPolyline** — Rebuild `Points`: trimmed start, original interior vertices strictly within [s, e], trimmed end. Recompute `_selfIntersecting`.
+- [x] **VSpline** — Dense resample at the original render resolution (`numSpans * SegmentsPerSpan` scaled by `(e - s)`) so the trimmed Catmull-Rom passes through enough interpolating points to track the original path. Catmull-Rom tangents depend on neighboring control points, so simply retaining inner CPs visibly bent away from the original.
+- [x] **VCircle / VPolygon / VRay / VXLine** — Throw `NotSupportedException` with a message pointing to `SplitAtPoint`. Their trimmed form would change shape type (circle→arc, polygon→polyline, ray/xline→line).
+- [x] `_selfIntersecting` made non-readonly on `VPolyline`, `VBezier`, `VSpline` so it can be recomputed after the trim.
+- [x] xUnit coverage: 17 cases in `Tests/SetBoundsTests.cs` — VLine subrange + identity + instance preservation + swap + clamp; VArc/VEllipse rescale; VPolyline drop-out-of-range and within-single-segment; VBezier fidelity (trimmed midpoint matches original at remapped parameter) + instance preservation; VSpline endpoint exactness + interior tracking via dense resample; throw-paths for VCircle/VPolygon/VRay/VXLine. All 117 tests in the suite pass.
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

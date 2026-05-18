@@ -104,4 +104,15 @@ public interface ICurve : IDrawable
     /// <param name="point">The point to find the parameter for.</param>
     /// <returns>A value from 0 to 1 representing the position along the curve.</returns>
     double ParameterAtPoint(VPoint point);
+
+    /// <summary>
+    /// Trims this curve in place so that its parameter range [<paramref name="startParameter"/>, <paramref name="endParameter"/>]
+    /// becomes the new [0, 1] range. Parameters are clamped to [0, 1]; if startParameter > endParameter they are swapped.
+    /// </summary>
+    /// <remarks>
+    /// Closed curves (VCircle, VPolygon) and infinite curves (VRay, VXLine) throw
+    /// <see cref="NotSupportedException"/> because a trimmed result is no longer the same shape type
+    /// (e.g. a trimmed circle would be an arc). Use <see cref="SplitAtPoint"/> on those types instead.
+    /// </remarks>
+    void SetBounds(double startParameter, double endParameter);
 }

@@ -295,11 +295,13 @@ public class ApiReferenceResource
         - `Measure(segmentLength)` — Points at fixed distance intervals
         - `PointAtSegmentLength(length)` — Point at distance along curve
         - `PointAtParameter(t)` — Point at parameter (0.0 to 1.0)
+        - `ParameterAtPoint(point)` — Parameter (0–1) of closest point on curve
         - `Project(point)` — Closest point on curve
         - `Offset(distance)` — Parallel curve (returns ICurve)
         - `NormalAtPoint(point)` — Normal vector at point
         - `Intersect(otherCurve)` — Returns IntersectionResult (Points, Curves, HasIntersection, Count)
         - `SplitAtPoint(point)` — Returns (ICurve, ICurve) tuple
+        - `SetBounds(startParam, endParam)` — Trim curve in place; the parameter sub-range [startParam, endParam] becomes the new [0,1]. Parameters are clamped to [0,1] and swapped if reversed. Supported for VLine/VArc/VEllipse/VPolyline/VBezier/VSpline. Throws `NotSupportedException` on VCircle/VPolygon/VRay/VXLine (their trimmed form would be a different shape type — use `SplitAtPoint` for those).
 
         ## VXYZ (3D Vector)
         ```csharp

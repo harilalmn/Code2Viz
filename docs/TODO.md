@@ -246,6 +246,9 @@ Core timeline playback is implemented; items below are advanced timeline UX poli
 - [x] Variable rename from Properties panel
 - [x] Auto-deselect on Run and editor click
 
+### Curve Operations
+- [x] `ICurve.SetBounds(start, end)` — in-place parameter-range trim for VLine/VArc/VEllipse/VPolyline/VBezier/VSpline (VBezier uses De Casteljau, VSpline dense-resamples); throws on VCircle/VPolygon/VRay/VXLine. Mirrored in C2VGeometry. 17 xUnit tests.
+
 ---
 
 ## Notes

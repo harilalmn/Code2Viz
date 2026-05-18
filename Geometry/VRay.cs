@@ -347,4 +347,16 @@ public class VRay : Shape, ICurve
         t = Math.Clamp(t, 0, RenderExtent);
         return t / RenderExtent;
     }
+
+    /// <summary>
+    /// Not supported: trimming a ray produces a finite line, which is a different shape type.
+    /// Use <see cref="SplitAtPoint"/> to obtain a <see cref="VLine"/> segment instead.
+    /// </summary>
+    /// <exception cref="NotSupportedException">Always thrown.</exception>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        throw new NotSupportedException(
+            "VRay.SetBounds is not supported because a trimmed ray is a finite line, not a ray. " +
+            "Use SplitAtPoint to obtain a VLine segment instead.");
+    }
 }

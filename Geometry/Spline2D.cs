@@ -8,7 +8,7 @@ namespace Code2Viz.Geometry;
 public class VSpline : Shape, ICurve
 {
     public List<VPoint> ControlPoints { get; set; }
-    private readonly bool _selfIntersecting;
+    private bool _selfIntersecting;
 
     /// <summary>Number of segments between each pair of control points</summary>
     public int SegmentsPerSpan { get; set; } = 16;
@@ -478,4 +478,37 @@ public class VSpline : Shape, ICurve
     /// Returns the normalized parameter (0 to 1) for the closest point on the spline to the given point.
     /// </summary>
     public double ParameterAtPoint(VPoint point) => GetClosestParameter(point);
+
+    /// <summary>
+    /// Trims this spline in place so that the parameter range [startParameter, endParameter]
+    /// becomes the new [0, 1] range. The trimmed curve is resampled at the original render
+    /// resolution so its shape closely follows the original on the trimmed range.
+    /// </summary>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        if (ControlPoints.Count < 2) return;
+
+        double s = Math.Clamp(startParameter, 0.0, 1.0);
+        double e = Math.Clamp(endParameter, 0.0, 1.0);
+        if (s > e) (s, e) = (e, s);
+
+        // Resample at the original render resolution so the trimmed Catmull-Rom
+        // tracks the original curve through dense interpolating points. Catmull-Rom
+        // tangents at the new endpoints differ from the original because their
+        // neighbors changed, so simply retaining the inner control points would
+        // visibly bend away from the original path.
+        int numSpans = ControlPoints.Count - 1;
+        int totalRenderSamples = Math.Max(1, numSpans * SegmentsPerSpan);
+        int sampleCount = Math.Max(4, (int)Math.Ceiling((e - s) * totalRenderSamples) + 1);
+
+        var newPoints = new List<VPoint>(sampleCount);
+        for (int i = 0; i < sampleCount; i++)
+        {
+            double t = s + (e - s) * i / (sampleCount - 1);
+            newPoints.Add(PointAtParameter(t));
+        }
+
+        ControlPoints = newPoints;
+        _selfIntersecting = CurveIntersection.IsSelfIntersecting(this);
+    }
 }

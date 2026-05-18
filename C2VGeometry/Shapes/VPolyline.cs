@@ -7,7 +7,7 @@ namespace C2VGeometry;
 public class VPolyline : Shape, ICurve
 {
     public List<VXYZ> Points { get; set; }
-    private readonly bool _selfIntersecting;
+    private bool _selfIntersecting;
 
     /// <summary>Gets the start point of the polyline.</summary>
     public VXYZ StartPoint => Points.Count > 0 ? Points[0] : new VXYZ(0, 0);
@@ -454,5 +454,35 @@ public class VPolyline : Shape, ICurve
         }
 
         return bestParam;
+    }
+
+    /// <summary>
+    /// Trims this polyline in place so that the parameter range [startParameter, endParameter]
+    /// becomes the new [0, 1] range.
+    /// </summary>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        if (Points.Count < 2) return;
+
+        double s = Math.Clamp(startParameter, 0.0, 1.0);
+        double e = Math.Clamp(endParameter, 0.0, 1.0);
+        if (s > e) (s, e) = (e, s);
+
+        int numSegments = Points.Count - 1;
+        double sScaled = s * numSegments;
+        double eScaled = e * numSegments;
+
+        var newPoints = new List<VXYZ> { PointAtParameter(s) };
+        for (int i = 0; i <= numSegments; i++)
+        {
+            if (i > sScaled + 1e-12 && i < eScaled - 1e-12)
+            {
+                newPoints.Add(Points[i]);
+            }
+        }
+        newPoints.Add(PointAtParameter(e));
+
+        Points = newPoints;
+        _selfIntersecting = CurveIntersection.IsPolylineSelfIntersecting(Points);
     }
 }

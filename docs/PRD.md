@@ -217,3 +217,15 @@ Viz2d is a desktop application that enables users to visualize 2D geometric shap
 - `CurveIntersection.IsPolylineSelfIntersecting`, `IsPolygonSelfIntersecting`, and `GetSegments` no longer allocate canvas-registered `VLine` objects in their inner loops. Discovered while debugging an isovist ray-cast workload that took ~5 s wall-clock: the slowness was not in `FindIntersection` but in the trailing `new VPolygon(points.ToArray())`, whose self-intersection check was dumping ~65k phantom `VLine` shapes onto the canvas (one per inner-loop iteration of an O(N²) test). Construction of a 360-vertex polygon now takes <1 ms and adds zero phantom shapes.
 - Internal `VLine.Internal(VPoint, VPoint)` factory added (mirrors `VPoint.Internal`) for utility code that needs a `VLine` as a data container, not a drawn shape.
 - Fixes mirrored to the parallel `C2VGeometry` namespace (which has the same auto-register pattern against `DefaultRegistry`).
+
+### Version 1.4 (Implemented) — `ICurve.SetBounds`
+- New `void SetBounds(double startParameter, double endParameter)` on `ICurve`: trims the curve in place so its parameter sub-range [s, e] becomes the new [0, 1]. Inputs clamped to [0, 1] and swapped if reversed.
+- **Open curves** are trimmed in place:
+  - **VLine** — `Start`/`End` mutated via `Evaluate`; the VPoint instances are preserved so external references stay live.
+  - **VArc / VEllipse** — `StartAngle`/`EndAngle` rescaled.
+  - **VBezier** — exact trim via two De Casteljau subdivisions (split at end, then within that piece at start/end); P0..P3 instances preserved.
+  - **VPolyline** — Points list rebuilt with trimmed endpoints plus interior vertices strictly within [s, e]; `_selfIntersecting` recomputed.
+  - **VSpline** — dense resample at the original render resolution. Catmull-Rom tangents depend on neighboring control points, so simply retaining inner CPs visibly bent away from the original path; resampling at `numSpans × SegmentsPerSpan × (e - s)` points keeps the trimmed Catmull-Rom passing through enough interpolating samples that it tracks the original closely.
+- **Closed/infinite curves throw `NotSupportedException`** because their trimmed form would be a different shape type: VCircle → arc, VPolygon → polyline, VRay/VXLine → line. The exception message points callers to `SplitAtPoint` instead.
+- All changes mirrored to the parallel `C2VGeometry` namespace.
+- Test coverage: 17 cases in `Tests/SetBoundsTests.cs` covering trim correctness, instance preservation, parameter clamping/swap, fidelity (Bezier exact, Spline resample), and the throw paths. Full suite passes (117/117).

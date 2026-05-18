@@ -289,4 +289,16 @@ public class VXLine : Shape, ICurve
         double normalizedT = (t / RenderExtent + 1) / 2;
         return Math.Clamp(normalizedT, 0, 1);
     }
+
+    /// <summary>
+    /// Not supported: trimming an infinite construction line produces a finite line, which is a different shape type.
+    /// Use <see cref="SplitAtPoint"/> to obtain ray segments instead.
+    /// </summary>
+    /// <exception cref="NotSupportedException">Always thrown.</exception>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        throw new NotSupportedException(
+            "VXLine.SetBounds is not supported because a trimmed infinite line is a finite line, not an XLine. " +
+            "Use SplitAtPoint to obtain ray segments instead.");
+    }
 }

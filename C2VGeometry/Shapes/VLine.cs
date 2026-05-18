@@ -291,4 +291,20 @@ public class VLine : Shape, ICurve
         double t = ((point.X - Start.X) * dx + (point.Y - Start.Y) * dy) / lengthSq;
         return Math.Clamp(t, 0, 1);
     }
+
+    /// <summary>
+    /// Trims this line in place so that the parameter range [startParameter, endParameter]
+    /// becomes the new [0, 1] range.
+    /// </summary>
+    public void SetBounds(double startParameter, double endParameter)
+    {
+        double s = Math.Clamp(startParameter, 0.0, 1.0);
+        double e = Math.Clamp(endParameter, 0.0, 1.0);
+        if (s > e) (s, e) = (e, s);
+
+        var p0 = Evaluate(s);
+        var p1 = Evaluate(e);
+        Start = p0;
+        End = p1;
+    }
 }
