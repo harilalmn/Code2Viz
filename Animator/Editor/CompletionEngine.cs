@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Code2Viz.Editor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,13 +12,18 @@ namespace Animator.Editor;
 
 /// <summary>
 /// Minimal Roslyn-backed completion engine for the Animator editor.
-/// Maintains an incremental compilation; on request returns symbols at a cursor position
-/// using <see cref="SemanticModel.LookupSymbols"/> so dot-completion and lexical scope work.
+/// Maintains an incremental compilation via <see cref="CachedCompilationWorkspace"/>
+/// (the same one used by Code2Viz) and produces <see cref="CompletionData"/> items
+/// rich enough for the doc sidecar to render XML docs.
 /// </summary>
 public sealed class CompletionEngine
 {
     private readonly CachedCompilationWorkspace _workspace;
-    private const string FileId = "Sketch.cs";
+    public const string FileId = "Sketch.cs";
+
+    /// <summary>The underlying incremental Roslyn workspace, reused by other editor features
+    /// (semantic highlighting, inlay hints) so they all share a single compilation.</summary>
+    public CachedCompilationWorkspace Workspace => _workspace;
 
     public CompletionEngine()
     {
@@ -51,7 +57,7 @@ public sealed class CompletionEngine
     /// Returns completion candidates at the given offset. Filtering by typed prefix is
     /// done downstream by AvalonEdit's CompletionList.
     /// </summary>
-    public List<CompletionItem> GetCompletions(int offset)
+    public List<CompletionData> GetCompletions(int offset)
     {
         var tree = _workspace.GetSyntaxTree(FileId);
         var model = _workspace.GetSemanticModel(FileId);
@@ -63,26 +69,19 @@ public sealed class CompletionEngine
 
         try
         {
-            // Detect member-access context (`expr.` or `expr.partial`)
             var memberAccess = FindMemberAccessContainer(root, model, offset);
-            ImmutableArrayCompatible symbols;
+            System.Collections.Immutable.ImmutableArray<ISymbol> symbols;
             if (memberAccess != null)
-            {
-                symbols = new ImmutableArrayCompatible(
-                    model.LookupSymbols(offset, container: memberAccess, includeReducedExtensionMethods: true));
-            }
+                symbols = model.LookupSymbols(offset, container: memberAccess, includeReducedExtensionMethods: true);
             else
-            {
-                symbols = new ImmutableArrayCompatible(
-                    model.LookupSymbols(offset, includeReducedExtensionMethods: true));
-            }
+                symbols = model.LookupSymbols(offset, includeReducedExtensionMethods: true);
 
-            return symbols.Items
+            return symbols
                 .Where(s => s != null && IsUseful(s))
                 .Select(ToItem)
-                .GroupBy(i => i.DisplayText)
+                .GroupBy(i => i.Text)
                 .Select(g => g.OrderByDescending(x => (int)x.Kind).First())
-                .OrderBy(i => i.DisplayText, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(i => i.Text, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
         catch
@@ -97,7 +96,6 @@ public sealed class CompletionEngine
         if (offset == 0) return null;
         var token = root.FindToken(Math.Max(0, offset - 1));
 
-        // Find the enclosing MemberAccessExpression (`x.y`) or QualifiedName (`X.Y`).
         SyntaxNode? lhs = null;
         if (token.IsKind(SyntaxKind.DotToken))
         {
@@ -142,39 +140,27 @@ public sealed class CompletionEngine
     private static bool IsLocalScope(ISymbol s)
         => s is ILocalSymbol or IParameterSymbol or ITypeParameterSymbol;
 
-    private static CompletionItem ToItem(ISymbol s)
+    private static CompletionData ToItem(ISymbol s)
     {
+        // Map ISymbol → Code2Viz.Editor.CompletionKind. That enum is coarser
+        // (Keyword/Type/Property/Method/Delegate/Snippet) so collapse type-like
+        // symbols to Type and field/local/parameter to Property for icon purposes.
         var kind = s switch
         {
-            INamedTypeSymbol nt when nt.TypeKind == TypeKind.Class     => CompletionKind.Class,
-            INamedTypeSymbol nt when nt.TypeKind == TypeKind.Interface => CompletionKind.Interface,
-            INamedTypeSymbol nt when nt.TypeKind == TypeKind.Struct    => CompletionKind.Struct,
-            INamedTypeSymbol nt when nt.TypeKind == TypeKind.Enum      => CompletionKind.Enum,
-            IMethodSymbol      => CompletionKind.Method,
-            IPropertySymbol    => CompletionKind.Property,
-            IFieldSymbol       => CompletionKind.Field,
-            IEventSymbol       => CompletionKind.Event,
-            ILocalSymbol       => CompletionKind.Local,
-            IParameterSymbol   => CompletionKind.Parameter,
-            INamespaceSymbol   => CompletionKind.Namespace,
-            _ => CompletionKind.Other
+            INamedTypeSymbol or ITypeParameterSymbol => CompletionKind.Type,
+            IMethodSymbol => CompletionKind.Method,
+            IPropertySymbol => CompletionKind.Property,
+            IFieldSymbol or ILocalSymbol or IParameterSymbol => CompletionKind.Property,
+            INamespaceSymbol => CompletionKind.Type,
+            _ => CompletionKind.Property
         };
-        var description = s.ToDisplayString();
-        return new CompletionItem(s.Name, description, kind);
-    }
 
-    /// <summary>
-    /// Tiny adapter so we don't have to take a hard dependency on
-    /// System.Collections.Immutable in our public surface.
-    /// </summary>
-    private readonly struct ImmutableArrayCompatible
-    {
-        public readonly IEnumerable<ISymbol> Items;
-        public ImmutableArrayCompatible(System.Collections.Immutable.ImmutableArray<ISymbol> arr)
-            => Items = arr;
+        var description = s.ToDisplayString();
+        var scope = s switch
+        {
+            ILocalSymbol or IParameterSymbol => SymbolScope.Local,
+            _ => SymbolScope.Global
+        };
+        return new CompletionData(s.Name, description, kind) { Symbol = s, Scope = scope };
     }
 }
-
-public enum CompletionKind { Class, Interface, Struct, Enum, Method, Property, Field, Event, Local, Parameter, Namespace, Keyword, Other }
-
-public sealed record CompletionItem(string DisplayText, string Description, CompletionKind Kind);

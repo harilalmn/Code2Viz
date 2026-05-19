@@ -26,4 +26,38 @@
     <EmbeddedResource Include="CSharpHighlighting.xshd" />
   </ItemGroup>
 
+  <!--
+    Editor source linked from the main Code2Viz project so both apps build from the
+    same source (no duplication, no drift). The "Link" path controls where the file
+    appears in Solution Explorer; the actual file lives under ..\Editor\.
+    Namespace stays "Code2Viz.Editor" so a single `using Code2Viz.Editor;` brings
+    everything into scope here.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Editor\SemanticHighlighter.cs"        Link="Editor\Linked\SemanticHighlighter.cs" />
+    <Compile Include="..\Editor\BraceFoldingStrategy.cs"       Link="Editor\Linked\BraceFoldingStrategy.cs" />
+    <Compile Include="..\Editor\BracketHighlightRenderer.cs"   Link="Editor\Linked\BracketHighlightRenderer.cs" />
+    <Compile Include="..\Editor\MultiSelectionRenderer.cs"     Link="Editor\Linked\MultiSelectionRenderer.cs" />
+    <Compile Include="..\Editor\SelectionHighlightRenderer.cs" Link="Editor\Linked\SelectionHighlightRenderer.cs" />
+    <Compile Include="..\Editor\CodeFormatter.cs"              Link="Editor\Linked\CodeFormatter.cs" />
+    <Compile Include="..\Editor\CodeSnippets.cs"               Link="Editor\Linked\CodeSnippets.cs" />
+    <Compile Include="..\Editor\SnippetSession.cs"             Link="Editor\Linked\SnippetSession.cs" />
+    <Compile Include="..\Editor\SignatureHelpProvider.cs"      Link="Editor\Linked\SignatureHelpProvider.cs" />
+    <Compile Include="..\Editor\TextMarkerService.cs"          Link="Editor\Linked\TextMarkerService.cs" />
+    <Compile Include="..\Editor\InlayHintGenerator.cs"         Link="Editor\Linked\InlayHintGenerator.cs" />
+    <Compile Include="..\Editor\CachedCompilationWorkspace.cs" Link="Editor\Linked\CachedCompilationWorkspace.cs" />
+    <Compile Include="..\Editor\FuzzyMatcher.cs"               Link="Editor\Linked\FuzzyMatcher.cs" />
+    <Compile Include="..\Editor\CompletionData.cs"             Link="Editor\Linked\CompletionData.cs" />
+    <Compile Include="..\Editor\XmlDocumentationProvider.cs"   Link="Editor\Linked\XmlDocumentationProvider.cs" />
+    <Compile Include="..\Editor\DocumentationSidecar.cs"       Link="Editor\Linked\DocumentationSidecar.cs" />
+    <Compile Include="..\Editor\Minimap\MinimapRenderer.cs"    Link="Editor\Linked\Minimap\MinimapRenderer.cs" />
+    <Compile Include="..\Editor\Minimap\MinimapControl.xaml.cs" Link="Editor\Linked\Minimap\MinimapControl.xaml.cs">
+      <DependentUpon>MinimapControl.xaml</DependentUpon>
+    </Compile>
+    <Page Include="..\Editor\Minimap\MinimapControl.xaml" Link="Editor\Linked\Minimap\MinimapControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
 </Project>

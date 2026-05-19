@@ -12,6 +12,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Color = System.Windows.Media.Color;
+// Disambiguate: Animator references CodeAnalysis.CSharp.Workspaces, which imports
+// Microsoft.CodeAnalysis.TextDocument and collides with AvalonEdit's TextDocument.
+using TextDocument = ICSharpCode.AvalonEdit.Document.TextDocument;
 
 namespace Code2Viz.Editor
 {
