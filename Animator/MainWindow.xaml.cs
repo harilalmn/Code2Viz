@@ -324,7 +324,141 @@ public partial class MainWindow : Window
         {
             if (HandleAutoIndentEnter())
                 e.Handled = true;
+            return;
         }
+
+        // Alt+Up/Down → move line. Shift+Alt+Up/Down → duplicate line.
+        // With Alt held the real key is in e.SystemKey (Windows reserves Alt for menus),
+        // so we have to check that field instead of e.Key.
+        var mods = Keyboard.Modifiers;
+        if (mods == ModifierKeys.Alt)
+        {
+            switch (e.SystemKey)
+            {
+                case Key.Up:   MoveLineUp();   e.Handled = true; return;
+                case Key.Down: MoveLineDown(); e.Handled = true; return;
+            }
+        }
+        else if (mods == (ModifierKeys.Alt | ModifierKeys.Shift))
+        {
+            switch (e.SystemKey)
+            {
+                case Key.Up:   CopyLineUp();   e.Handled = true; return;
+                case Key.Down: CopyLineDown(); e.Handled = true; return;
+            }
+        }
+    }
+
+    // ── Line operations ─────────────────────────────────────────────────────
+
+    private (int Start, int End) GetSelectedLineRange()
+    {
+        var document = Editor.Document;
+        var textArea = Editor.TextArea;
+        var selection = textArea.Selection;
+
+        if (selection.IsEmpty)
+        {
+            var ln = textArea.Caret.Line;
+            return (ln, ln);
+        }
+
+        var startLine = document.GetLineByOffset(selection.SurroundingSegment.Offset).LineNumber;
+        var endLine = document.GetLineByOffset(selection.SurroundingSegment.EndOffset).LineNumber;
+        var endLineObj = document.GetLineByNumber(endLine);
+        if (selection.SurroundingSegment.EndOffset == endLineObj.Offset && endLine > startLine)
+            endLine--;
+        return (startLine, endLine);
+    }
+
+    private void MoveLineUp()
+    {
+        if (!Editor.IsKeyboardFocusWithin) return;
+        var document = Editor.Document;
+        var textArea = Editor.TextArea;
+        var (startLine, endLine) = GetSelectedLineRange();
+        if (startLine <= 1) return;
+
+        var firstLine = document.GetLineByNumber(startLine);
+        var lastLine = document.GetLineByNumber(endLine);
+        var lineAbove = document.GetLineByNumber(startLine - 1);
+
+        var selectedText = document.GetText(firstLine.Offset, lastLine.EndOffset - firstLine.Offset);
+        var aboveText = document.GetText(lineAbove.Offset, lineAbove.Length);
+
+        document.BeginUpdate();
+        try
+        {
+            int blockStart = lineAbove.Offset;
+            int blockLength = lastLine.EndOffset - lineAbove.Offset;
+            document.Replace(blockStart, blockLength, selectedText + Environment.NewLine + aboveText);
+        }
+        finally { document.EndUpdate(); }
+
+        var newFirstLine = document.GetLineByNumber(startLine - 1);
+        var newLastLine = document.GetLineByNumber(endLine - 1);
+        textArea.Caret.Position = new ICSharpCode.AvalonEdit.TextViewPosition(startLine - 1, 1);
+        textArea.Selection = AvalonSelection.Create(textArea, newFirstLine.Offset, newLastLine.EndOffset);
+    }
+
+    private void MoveLineDown()
+    {
+        if (!Editor.IsKeyboardFocusWithin) return;
+        var document = Editor.Document;
+        var textArea = Editor.TextArea;
+        var (startLine, endLine) = GetSelectedLineRange();
+        if (endLine >= document.LineCount) return;
+
+        var firstLine = document.GetLineByNumber(startLine);
+        var lastLine = document.GetLineByNumber(endLine);
+        var lineBelow = document.GetLineByNumber(endLine + 1);
+
+        var selectedText = document.GetText(firstLine.Offset, lastLine.EndOffset - firstLine.Offset);
+        var belowText = document.GetText(lineBelow.Offset, lineBelow.Length);
+
+        document.BeginUpdate();
+        try
+        {
+            int blockStart = firstLine.Offset;
+            int blockLength = lineBelow.EndOffset - firstLine.Offset;
+            document.Replace(blockStart, blockLength, belowText + Environment.NewLine + selectedText);
+        }
+        finally { document.EndUpdate(); }
+
+        var newFirstLine = document.GetLineByNumber(startLine + 1);
+        var newLastLine = document.GetLineByNumber(endLine + 1);
+        textArea.Caret.Position = new ICSharpCode.AvalonEdit.TextViewPosition(startLine + 1, 1);
+        textArea.Selection = AvalonSelection.Create(textArea, newFirstLine.Offset, newLastLine.EndOffset);
+    }
+
+    private void CopyLineDown()
+    {
+        if (!Editor.IsKeyboardFocusWithin) return;
+        var document = Editor.Document;
+        var textArea = Editor.TextArea;
+        var (startLine, endLine) = GetSelectedLineRange();
+
+        var firstLine = document.GetLineByNumber(startLine);
+        var lastLine = document.GetLineByNumber(endLine);
+        var textToDuplicate = document.GetText(firstLine.Offset, lastLine.EndOffset - firstLine.Offset);
+
+        document.Insert(lastLine.EndOffset, Environment.NewLine + textToDuplicate);
+        var lineCount = endLine - startLine + 1;
+        textArea.Caret.Line = textArea.Caret.Line + lineCount;
+    }
+
+    private void CopyLineUp()
+    {
+        if (!Editor.IsKeyboardFocusWithin) return;
+        var document = Editor.Document;
+        var (startLine, endLine) = GetSelectedLineRange();
+
+        var firstLine = document.GetLineByNumber(startLine);
+        var lastLine = document.GetLineByNumber(endLine);
+        var textToDuplicate = document.GetText(firstLine.Offset, lastLine.EndOffset - firstLine.Offset);
+
+        document.Insert(firstLine.Offset, textToDuplicate + Environment.NewLine);
+        // Caret stays at same offset, which now sits inside the duplicate (above the original).
     }
 
     private bool HandleAutoIndentEnter()

@@ -107,34 +107,43 @@
             </Grid>
         </Border>
 
-        <!--  Editor | Minimap | Canvas  -->
+        <!--  Editor (+ Minimap) | Splitter | Canvas
+              The editor+minimap pair is wrapped in a nested Grid so the GridSplitter
+              between this pair and the canvas only resizes the editor side; the minimap
+              column is Auto-sized (its own Width="100") and stays fixed when dragging.  -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" MinWidth="200"/>
-                <ColumnDefinition Width="Auto"/>     <!-- minimap -->
                 <ColumnDefinition Width="4"/>
                 <ColumnDefinition Width="2*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
-            <avalonedit:TextEditor x:Name="Editor"
-                                   Grid.Column="0"
-                                   FontFamily="Consolas"
-                                   FontSize="13"
-                                   Background="{StaticResource BackgroundBrush}"
-                                   Foreground="{StaticResource ForegroundBrush}"
-                                   LineNumbersForeground="#5A5A5A"
-                                   ShowLineNumbers="True"/>
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>       <!-- editor: absorbs resize -->
+                    <ColumnDefinition Width="Auto"/>    <!-- minimap: stays at Width=100 -->
+                </Grid.ColumnDefinitions>
 
-            <minimap:MinimapControl x:Name="EditorMinimap"
-                                    Grid.Column="1"
-                                    Width="100"/>
+                <avalonedit:TextEditor x:Name="Editor"
+                                       Grid.Column="0"
+                                       FontFamily="Consolas"
+                                       FontSize="13"
+                                       Background="{StaticResource BackgroundBrush}"
+                                       Foreground="{StaticResource ForegroundBrush}"
+                                       LineNumbersForeground="#5A5A5A"
+                                       ShowLineNumbers="True"/>
 
-            <GridSplitter Grid.Column="2"
+                <minimap:MinimapControl x:Name="EditorMinimap"
+                                        Grid.Column="1"
+                                        Width="100"/>
+            </Grid>
+
+            <GridSplitter Grid.Column="1"
                           HorizontalAlignment="Stretch"
                           VerticalAlignment="Stretch"
                           Background="{StaticResource BorderBrush}"/>
 
-            <c2a:AnimCanvas x:Name="Canvas" Grid.Column="3"/>
+            <c2a:AnimCanvas x:Name="Canvas" Grid.Column="2"/>
         </Grid>
 
         <GridSplitter Grid.Row="2"
