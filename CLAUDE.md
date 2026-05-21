@@ -189,3 +189,5 @@ When the user says "/release", "cut a release", "ship a release", or "release":
 4. **If `gh` CLI is not installed**, the script prints the manual upload URL — relay it along with the installer path.
 
 Never bump versions by hand — the script is the only thing that touches both `Directory.Build.props` and `installer.iss`.
+
+**Animator ships in every release.** The installer bundles `Animator\bin\Release\net9.0-windows\*` into `{app}\Animator\` (see the `AnimatorBuildOutput` define + the wildcard `Source` line in `installer.iss`), and the script's "build Animator Release" step (`dotnet build Animator/Animator.csproj -c Release`) feeds that. If you ever remove either piece, `Switch to Animator` will break on installed copies — Code2Viz's `FindAnimatorExe` and Animator's `AppSwitcher.FindSiblingApp` both rely on the `{app}\Animator\Animator.exe` layout. Do not gate Animator behind a flag, do not split it into a separate installer.
