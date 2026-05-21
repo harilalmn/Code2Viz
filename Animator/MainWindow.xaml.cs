@@ -116,7 +116,12 @@ public partial class MainWindow : Window
     {
         _editorController = new SharedEditorController(Editor, EditorMinimap);
 
-        _editorController.GetActiveFilePath = () => _currentPath ?? "Sketch.cs";
+        // Animator is single-file. The workspace key is always CompletionEngine.FileId
+        // ("Sketch.cs") regardless of which file the user opened on disk — otherwise the
+        // SharedEditorController's TextChanged handler would add a second tree at the
+        // disk path while CompletionEngine.Update kept feeding "Sketch.cs", and every
+        // top-level declaration would compile twice.
+        _editorController.GetActiveFilePath = () => CompletionEngine.FileId;
         _editorController.GetWorkspace = () => _completion.Workspace;
         _editorController.SetStatusMessage = (msg, isError) => StatusLabel.Text = msg;
         _editorController.NavigateToLocation = NavigateToLocation;
@@ -132,12 +137,9 @@ public partial class MainWindow : Window
 
         _editorController.Initialize();
 
-        // Keep completion engine synced
+        // Seed the workspace with the initial text. After this, SharedEditorController's
+        // TextChanged handler keeps the workspace in sync — no separate listener needed.
         _completion.Update(Editor.Text);
-        Editor.TextChanged += (s, e) =>
-        {
-            _completion.Update(Editor.Text);
-        };
     }
 
     private void RefreshConsole()
@@ -244,7 +246,7 @@ public partial class MainWindow : Window
         _currentPath = null;
         _isDirty = false;
         UpdateFileLabel();
-        _editorController?.SetActiveFile("Sketch.cs");
+        _editorController?.SetActiveFile(CompletionEngine.FileId);
     }
 
     private void Open()
@@ -262,7 +264,7 @@ public partial class MainWindow : Window
         _currentPath = dlg.FileName;
         _isDirty = false;
         UpdateFileLabel();
-        _editorController?.SetActiveFile(dlg.FileName);
+        _editorController?.SetActiveFile(CompletionEngine.FileId);
     }
 
     private bool Save()
@@ -272,7 +274,7 @@ public partial class MainWindow : Window
         _isDirty = false;
         UpdateFileLabel();
         StatusLabel.Text = $"Saved {Path.GetFileName(_currentPath)}";
-        _editorController?.SetActiveFile(_currentPath);
+        _editorController?.SetActiveFile(CompletionEngine.FileId);
         return true;
     }
 
@@ -290,7 +292,7 @@ public partial class MainWindow : Window
         _isDirty = false;
         UpdateFileLabel();
         StatusLabel.Text = $"Saved {Path.GetFileName(_currentPath)}";
-        _editorController?.SetActiveFile(_currentPath);
+        _editorController?.SetActiveFile(CompletionEngine.FileId);
         return true;
     }
 
@@ -322,7 +324,68 @@ public partial class MainWindow : Window
     private void NewButton_Click(object sender, RoutedEventArgs e) => New();
     private void OpenButton_Click(object sender, RoutedEventArgs e) => Open();
     private void SaveButton_Click(object sender, RoutedEventArgs e) => Save();
+    private void SaveAsMenuItem_Click(object sender, RoutedEventArgs e) => SaveAs();
     private void ClearConsoleButton_Click(object sender, RoutedEventArgs e) => ConsoleOutput.Instance.Clear();
+    private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => Close();
+
+    // ── View menu toggles ─────────────────────────────────────────────────────
+
+    private void InlayHintsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_editorController == null) return;
+        _editorController.InlayHintsEnabled = InlayHintsMenuItem.IsChecked;
+    }
+
+    private void SemanticHighlightingMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_editorController == null) return;
+        _editorController.SemanticHighlightingEnabled = SemanticHighlightingMenuItem.IsChecked;
+    }
+
+    private void CodeLensMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_editorController == null) return;
+        _editorController.CodeLensEnabled = CodeLensMenuItem.IsChecked;
+    }
+
+    private void MinimapMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        EditorMinimap.Visibility = MinimapMenuItem.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ── Help menu ─────────────────────────────────────────────────────────────
+
+    private void ShortcutsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show(this,
+            "F5            Run sketch\n" +
+            "Shift+F5      Stop sketch\n" +
+            "Ctrl+Enter    Toggle run/stop\n" +
+            "Ctrl+N        New\n" +
+            "Ctrl+O        Open\n" +
+            "Ctrl+S        Save\n" +
+            "Ctrl+Space    Show completions\n" +
+            "F12           Go to Definition\n" +
+            "Shift+F12     Find All References\n" +
+            "F2            Rename\n" +
+            "Ctrl+/        Toggle comment\n" +
+            "Ctrl+Shift+F  Format code\n" +
+            "Alt+Up/Down   Move line",
+            "Keyboard Shortcuts",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show(this,
+            "Animator — p5.js-style sketch host for Code2Viz\n\n" +
+            "Write Setup()/Draw() in C# and render to the canvas every frame.\n\n" +
+            "Part of the Code2Viz suite.",
+            "About Animator",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
 
     // ── Cross-app switch ──
 

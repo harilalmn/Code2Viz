@@ -401,6 +401,22 @@ namespace Code2Viz.Editor
             }
         }
 
+        public bool SemanticHighlightingEnabled
+        {
+            get => _semanticHighlighter != null && _semanticHighlighter.Enabled;
+            set
+            {
+                if (_semanticHighlighter != null)
+                {
+                    _semanticHighlighter.Enabled = value;
+                    if (value)
+                        _ = UpdateSemanticHighlightingAsync();
+                    else
+                        _editor.TextArea.TextView.Redraw();
+                }
+            }
+        }
+
         public void LoadLanguageHighlighting(string filePath)
         {
             try

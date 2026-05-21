@@ -34,14 +34,87 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- menu bar -->
             <RowDefinition Height="Auto"/>   <!-- toolbar -->
             <RowDefinition Height="*"/>      <!-- editor | canvas -->
             <RowDefinition Height="Auto"/>   <!-- splitter -->
             <RowDefinition Height="180"/>    <!-- console -->
         </Grid.RowDefinitions>
 
-        <!--  Toolbar  -->
+        <!--  Menu Bar  -->
         <Border Grid.Row="0"
+                Background="{StaticResource SecondaryBackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Menu Background="Transparent">
+                <Menu.Resources>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Padding" Value="8,6"/>
+                    </Style>
+                    <Style x:Key="MenuItemStyle" TargetType="MenuItem">
+                        <Setter Property="Foreground" Value="#1E1E1E"/>
+                        <Setter Property="Padding" Value="8,4"/>
+                    </Style>
+                </Menu.Resources>
+
+                <MenuItem Header="_File">
+                    <MenuItem Header="_New"        Click="NewButton_Click"     InputGestureText="Ctrl+N" Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="_Open..."    Click="OpenButton_Click"    InputGestureText="Ctrl+O" Style="{StaticResource MenuItemStyle}"/>
+                    <Separator/>
+                    <MenuItem Header="_Save"       Click="SaveButton_Click"    InputGestureText="Ctrl+S" Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="Save _As..." Click="SaveAsMenuItem_Click"                          Style="{StaticResource MenuItemStyle}"/>
+                    <Separator/>
+                    <MenuItem Header="Switch to _Project" Click="SwitchToCode2Viz_Click" Style="{StaticResource MenuItemStyle}"/>
+                    <Separator/>
+                    <MenuItem Header="E_xit" Click="ExitMenuItem_Click" InputGestureText="Alt+F4" Style="{StaticResource MenuItemStyle}"/>
+                </MenuItem>
+
+                <MenuItem Header="_View">
+                    <MenuItem x:Name="InlayHintsMenuItem"
+                              Header="_Inlay Hints"
+                              Click="InlayHintsMenuItem_Click"
+                              IsCheckable="True"
+                              IsChecked="False"
+                              Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem x:Name="SemanticHighlightingMenuItem"
+                              Header="_Semantic Highlighting"
+                              Click="SemanticHighlightingMenuItem_Click"
+                              IsCheckable="True"
+                              IsChecked="True"
+                              Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem x:Name="CodeLensMenuItem"
+                              Header="Code _Lens"
+                              Click="CodeLensMenuItem_Click"
+                              IsCheckable="True"
+                              IsChecked="True"
+                              Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem x:Name="MinimapMenuItem"
+                              Header="_Minimap"
+                              Click="MinimapMenuItem_Click"
+                              IsCheckable="True"
+                              IsChecked="True"
+                              Style="{StaticResource MenuItemStyle}"/>
+                    <Separator/>
+                    <MenuItem Header="Clear _Console" Click="ClearConsoleButton_Click" Style="{StaticResource MenuItemStyle}"/>
+                </MenuItem>
+
+                <MenuItem Header="_Run">
+                    <MenuItem Header="_Run Sketch" Click="RunButton_Click"  InputGestureText="F5"       Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="_Stop"       Click="StopButton_Click" InputGestureText="Shift+F5" Style="{StaticResource MenuItemStyle}"/>
+                </MenuItem>
+
+                <MenuItem Header="_Help">
+                    <MenuItem Header="Keyboard _Shortcuts" Click="ShortcutsMenuItem_Click" Style="{StaticResource MenuItemStyle}"/>
+                    <Separator/>
+                    <MenuItem Header="_About Animator"     Click="AboutMenuItem_Click"    Style="{StaticResource MenuItemStyle}"/>
+                </MenuItem>
+            </Menu>
+        </Border>
+
+        <!--  Toolbar  -->
+        <Border Grid.Row="1"
                 Background="{StaticResource SecondaryBackgroundBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,0,1"
@@ -111,7 +184,7 @@
               The editor+minimap pair is wrapped in a nested Grid so the GridSplitter
               between this pair and the canvas only resizes the editor side; the minimap
               column is Auto-sized (its own Width="100") and stays fixed when dragging.  -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" MinWidth="200"/>
                 <ColumnDefinition Width="4"/>
@@ -146,14 +219,14 @@
             <c2a:AnimCanvas x:Name="Canvas" Grid.Column="2"/>
         </Grid>
 
-        <GridSplitter Grid.Row="2"
+        <GridSplitter Grid.Row="3"
                       Height="4"
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch"
                       Background="{StaticResource BorderBrush}"/>
 
         <!--  Console  -->
-        <DockPanel Grid.Row="3"
+        <DockPanel Grid.Row="4"
                    Background="{StaticResource BackgroundBrush}"
                    LastChildFill="True">
             <Border DockPanel.Dock="Top"
