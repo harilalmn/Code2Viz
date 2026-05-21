@@ -5,18 +5,48 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+#if !ANIMATOR
 using Code2Viz.Execution;
 using Code2Viz.Project;
+#else
+namespace Code2Viz.Project
+{
+    public class VizCodeProject { }
+}
+namespace Code2Viz.Execution
+{
+    public class ModuleCompiler
+    {
+        public System.Collections.Generic.IEnumerable<Microsoft.CodeAnalysis.MetadataReference> GetReferences() => System.Array.Empty<Microsoft.CodeAnalysis.MetadataReference>();
+    }
+}
+#endif
 
 namespace Code2Viz.Editor
 {
+    using Code2Viz.Execution;
+    using Code2Viz.Project;
+
     public class RefactoringProvider
     {
+#if !ANIMATOR
         private readonly ModuleCompiler _compiler;
+#else
+        private readonly ModuleCompiler? _compiler;
+#endif
+        private readonly Func<Task<CSharpCompilation>>? _compilationProvider;
 
+#if !ANIMATOR
         public RefactoringProvider(ModuleCompiler compiler)
         {
             _compiler = compiler;
+        }
+#endif
+
+        public RefactoringProvider(Func<Task<CSharpCompilation>> compilationProvider)
+        {
+            _compilationProvider = compilationProvider;
         }
 
         public class QuickActionItem
@@ -40,7 +70,7 @@ namespace Code2Viz.Editor
                     options: new CSharpParseOptions(LanguageVersion.Latest));
                 
                 // Still need compilation for semantic model
-                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                var (compilation, _) = await CreateCompilationAsync(project);
                 
                 // Replace the tree in compilation for semantic analysis
                 var oldTree = compilation.SyntaxTrees.FirstOrDefault(t => 
@@ -627,7 +657,7 @@ namespace Code2Viz.Editor
 
             try
             {
-                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                var (compilation, _) = await CreateCompilationAsync(project);
                 
                 // Find the document/tree for the requested file
                 // If currentContent is provided, parse it and replace the tree in the compilation
@@ -767,7 +797,7 @@ namespace Code2Viz.Editor
 
             try
             {
-                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                var (compilation, _) = await CreateCompilationAsync(project);
 
                 // Find the document/tree for the requested file
                 var tree = compilation.SyntaxTrees.FirstOrDefault(t =>
@@ -861,7 +891,7 @@ namespace Code2Viz.Editor
 
             try
             {
-                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                var (compilation, _) = await CreateCompilationAsync(project);
 
                 // Find the document/tree for the requested file
                 var tree = compilation.SyntaxTrees.FirstOrDefault(t =>
@@ -986,7 +1016,7 @@ namespace Code2Viz.Editor
 
             try
             {
-                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                var (compilation, _) = await CreateCompilationAsync(project);
 
                 var tree = compilation.SyntaxTrees.FirstOrDefault(t =>
                     string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase) ||
@@ -1110,7 +1140,7 @@ namespace Code2Viz.Editor
 
             try
             {
-                var (compilation, _) = await _compiler.CreateCompilationAsync(project);
+                var (compilation, _) = await CreateCompilationAsync(project);
 
                 foreach (var tree in compilation.SyntaxTrees)
                 {
@@ -1402,7 +1432,16 @@ namespace Code2Viz.Editor
 
         private async Task<(CSharpCompilation Compilation, HashSet<string> AllDlls)> CreateCompilationAsync(VizCodeProject project)
         {
+#if ANIMATOR
+            if (_compilationProvider != null)
+            {
+                var comp = await _compilationProvider();
+                return (comp, new HashSet<string>());
+            }
+            throw new InvalidOperationException("No compilation provider in Animator.");
+#else
             return await _compiler.CreateCompilationAsync(project);
+#endif
         }
     }
 }

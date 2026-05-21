@@ -22,6 +22,7 @@ using FontWeights = System.Windows.FontWeights;
 using FontStyle = System.Windows.FontStyle;
 using FontWeight = System.Windows.FontWeight;
 using TextBlock = System.Windows.Controls.TextBlock;
+using TextDocument = ICSharpCode.AvalonEdit.Document.TextDocument;
 
 namespace Code2Viz.Editor
 {

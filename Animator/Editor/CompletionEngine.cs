@@ -155,7 +155,7 @@ public sealed class CompletionEngine
             _ => CompletionKind.Property
         };
 
-        var description = s.ToDisplayString();
+        var description = s.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
         var scope = s switch
         {
             ILocalSymbol or IParameterSymbol => SymbolScope.Local,

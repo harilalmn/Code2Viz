@@ -41,8 +41,11 @@ public static class TypeInspector
         _knownTypes["decimal"] = typeof(decimal);
         _knownTypes["object"] = typeof(object);
 
-        // Scan Code2Viz.Geometry assembly for all public types
-        var geometryAssembly = typeof(Geometry.VPoint).Assembly;
+#if !ANIMATOR
+        var geometryAssembly = typeof(Code2Viz.Geometry.VPoint).Assembly;
+#else
+        var geometryAssembly = typeof(C2VGeometry.Shape).Assembly;
+#endif
         foreach (var type in geometryAssembly.GetExportedTypes())
         {
             if (type.IsPublic && !type.IsNested)
@@ -52,7 +55,9 @@ public static class TypeInspector
         }
 
         // Add VizConsole
+#if !ANIMATOR
         _knownTypes["VizConsole"] = typeof(Console.VizConsole);
+#endif
 
         // Scan Code2Viz.Animation namespace for Timeline and Animation types
         var animationTypes = geometryAssembly.GetExportedTypes()
@@ -112,11 +117,17 @@ public static class TypeInspector
         _commonTypes = new List<(string Name, string Description)>();
         var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var geometryAssembly = typeof(Geometry.VPoint).Assembly;
+#if !ANIMATOR
+        var geometryAssembly = typeof(Code2Viz.Geometry.VPoint).Assembly;
+        var geometryNamespace = "Code2Viz.Geometry";
+#else
+        var geometryAssembly = typeof(C2VGeometry.Shape).Assembly;
+        var geometryNamespace = "C2VGeometry";
+#endif
 
         // Add Code2Viz.Geometry types (VPoint, VLine, VCircle, etc.)
         var geometryTypes = geometryAssembly.GetExportedTypes()
-            .Where(t => t.Namespace == "Code2Viz.Geometry" && t.IsPublic && !t.IsNested);
+            .Where(t => t.Namespace == geometryNamespace && t.IsPublic && !t.IsNested);
         foreach (var type in geometryTypes)
         {
             var suffix = type.IsAbstract ? " (abstract)" : "";
@@ -1049,8 +1060,11 @@ public static class TypeInspector
             }
         }
 
-        // Also search for extension methods in Code2Viz namespaces
-        var code2vizAssembly = typeof(Geometry.VPoint).Assembly;
+#if !ANIMATOR
+        var code2vizAssembly = typeof(Code2Viz.Geometry.VPoint).Assembly;
+#else
+        var code2vizAssembly = typeof(C2VGeometry.Shape).Assembly;
+#endif
         try
         {
             foreach (var type in code2vizAssembly.GetExportedTypes())

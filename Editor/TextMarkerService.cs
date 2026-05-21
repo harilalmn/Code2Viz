@@ -130,28 +130,28 @@ namespace Code2Viz.Editor
                 {
                     foreach (var r in BackgroundGeometryBuilder.GetRectsForSegment(textView, marker))
                     {
-                        var startPoint = r.BottomLeft;
-                        var endPoint = r.BottomRight;
+                        // Draw the squiggle just below the text baseline so it sits
+                        // tight under the glyphs rather than at the very bottom of
+                        // the line box (which can clip against the next line).
+                        const double period = 4.0;
+                        const double amplitude = 2.0;
+                        double baseY = r.Bottom - amplitude;
+                        var startPoint = new Point(r.Left,  baseY);
+                        var endPoint   = new Point(r.Right, baseY);
 
-                        var usedPen = new Pen(new SolidColorBrush(marker.MarkerColor.Value), 1);
+                        var usedPen = new Pen(new SolidColorBrush(marker.MarkerColor.Value), 1.2);
                         usedPen.Freeze();
-
-                        // Create squiggly line geometry
-                        var period = 3;
-                        var amplitude = 1;
 
                         StreamGeometry geometry = new StreamGeometry();
                         using (StreamGeometryContext ctx = geometry.Open())
                         {
                             ctx.BeginFigure(startPoint, false, false);
                             double x = startPoint.X;
-                            double y = startPoint.Y;
                             bool down = false;
-
                             while (x < endPoint.X)
                             {
-                                x += period;
-                                y = down ? startPoint.Y : startPoint.Y + amplitude;
+                                x += period * 0.5;
+                                double y = down ? baseY : baseY + amplitude;
                                 down = !down;
                                 if (x > endPoint.X) x = endPoint.X;
                                 ctx.LineTo(new Point(x, y), true, true);

@@ -10,6 +10,7 @@
     <AssemblyName>Animator</AssemblyName>
     <PlatformTarget>x64</PlatformTarget>
     <Description>Animator — a p5.js-style sketch environment using C2VGeometry. Sub-project of Code2Viz.</Description>
+    <DefineConstants>$(DefineConstants);ANIMATOR</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +35,7 @@
     everything into scope here.
   -->
   <ItemGroup>
+    <Compile Include="..\Editor\SharedEditorController.cs"     Link="Editor\Linked\SharedEditorController.cs" />
     <Compile Include="..\Editor\SemanticHighlighter.cs"        Link="Editor\Linked\SemanticHighlighter.cs" />
     <Compile Include="..\Editor\BraceFoldingStrategy.cs"       Link="Editor\Linked\BraceFoldingStrategy.cs" />
     <Compile Include="..\Editor\BracketHighlightRenderer.cs"   Link="Editor\Linked\BracketHighlightRenderer.cs" />
@@ -55,6 +57,21 @@
       <DependentUpon>MinimapControl.xaml</DependentUpon>
     </Compile>
     <Page Include="..\Editor\Minimap\MinimapControl.xaml" Link="Editor\Linked\Minimap\MinimapControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="..\Editor\RefactoringProvider.cs"        Link="Editor\Linked\RefactoringProvider.cs" />
+    <Compile Include="..\Editor\RoslynCompletionService.cs"    Link="Editor\Linked\RoslynCompletionService.cs" />
+    <Compile Include="..\Editor\TypeInspector.cs"               Link="Editor\Linked\TypeInspector.cs" />
+    <Compile Include="..\Editor\CodeLensProvider.cs"            Link="Editor\Linked\CodeLensProvider.cs" />
+    <Compile Include="..\Editor\HierarchyProvider.cs"           Link="Editor\Linked\HierarchyProvider.cs" />
+    <Compile Include="..\ColorPickerDialog.xaml.cs"             Link="Linked\ColorPickerDialog.xaml.cs" />
+    <Page Include="..\ColorPickerDialog.xaml"                   Link="Linked\ColorPickerDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="..\RenameDialog.xaml.cs"                  Link="Linked\RenameDialog.xaml.cs" />
+    <Page Include="..\RenameDialog.xaml"                        Link="Linked\RenameDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
