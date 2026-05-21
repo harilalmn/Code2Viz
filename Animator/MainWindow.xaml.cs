@@ -381,10 +381,13 @@ internal static class AppSwitcher
 {
     public static string? FindSiblingApp(string appName)
     {
+        // Installed layout: {app}\Code2Viz.exe + {app}\Animator\Animator.exe (so we walk up one level for Code2Viz)
+        // Dev layouts:      Animator at .../Animator/bin/{Config}/{TFM}, Code2Viz at .../bin/{Config}/{TFM}
         var thisDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
 
         var candidates = new[]
         {
+            Path.GetFullPath(Path.Combine(thisDir, "..", $"{appName}.exe")),
             Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "..", "bin", "Debug", "net9.0-windows", $"{appName}.exe")),
             Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "..", "bin", "Release", "net9.0-windows", $"{appName}.exe")),
             Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "Animator", "bin", "Debug", "net9.0-windows", $"{appName}.exe")),

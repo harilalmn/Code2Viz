@@ -3784,11 +3784,12 @@ public partial class MainWindow : Window
 
     private static string? FindAnimatorExe()
     {
-        // Code2Viz lives at {solution}/bin/{Config}/{TFM}/Code2Viz.exe.
-        // Animator lives at {solution}/Animator/bin/{Config}/{TFM}/Animator.exe.
+        // Installed layout: {app}\Code2Viz.exe + {app}\Animator\Animator.exe
+        // Dev layout:       {solution}\bin\{Config}\{TFM}\Code2Viz.exe + {solution}\Animator\bin\{Config}\{TFM}\Animator.exe
         var thisDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!;
         var candidates = new[]
         {
+            Path.GetFullPath(Path.Combine(thisDir, "Animator", "Animator.exe")),
             Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "Animator", "bin", "Debug", "net9.0-windows", "Animator.exe")),
             Path.GetFullPath(Path.Combine(thisDir, "..", "..", "..", "Animator", "bin", "Release", "net9.0-windows", "Animator.exe")),
         };

@@ -10,6 +10,7 @@
 ; Paths - adjust if your layout differs
 ; C:\Work\Nicety\Projects\Code2Viz\bin\Release\net9.0-windows
 #define BuildOutput "bin\Release\net9.0-windows"
+#define AnimatorBuildOutput "Animator\bin\Release\net9.0-windows"
 #define SampleProjects "Sample Projects"
 
 [Setup]
@@ -98,11 +99,15 @@ Source: "{#BuildOutput}\tr\*"; DestDir: "{app}\tr"; Flags: ignoreversion recurse
 Source: "{#BuildOutput}\zh-Hans\*"; DestDir: "{app}\zh-Hans"; Flags: ignoreversion recursesubdirs
 Source: "{#BuildOutput}\zh-Hant\*"; DestDir: "{app}\zh-Hant"; Flags: ignoreversion recursesubdirs
 
+; Animator sub-app (lives in {app}\Animator\ so its deps stay isolated)
+Source: "{#AnimatorBuildOutput}\*"; DestDir: "{app}\Animator"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+
 ; Sample projects
 Source: "{#SampleProjects}\*"; DestDir: "{app}\Samples"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\Animator"; Filename: "{app}\Animator\Animator.exe"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
