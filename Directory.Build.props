@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    Canonical version source for every C# project in the repo.
+    The scripts/release.ps1 release script bumps these and mirrors the same
+    value into installer.iss (#define MyAppVersion).
+  -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+</Project>

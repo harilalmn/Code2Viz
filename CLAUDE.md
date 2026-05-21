@@ -178,3 +178,14 @@ When the user says "update all documentation", "update docs", or "/update-docs":
    - `README.md` - Update feature descriptions, examples, API tables, keyboard shortcuts
    - `DocGenerator.cs` - Update summaries and samples for new/changed members
 4. **Report summary** of all updates made
+
+## /release Command
+
+When the user says "/release", "cut a release", "ship a release", or "release":
+
+1. **Run `/update-docs` first** so the release ships with current documentation. Commit + push the doc changes as a *separate* commit before bumping the version.
+2. **Confirm semver bump** (major / minor / patch) with the user if not already specified.
+3. **Run `scripts\release.ps1 -Bump <segment>`** — it guards working-tree cleanliness, bumps `Directory.Build.props` + `installer.iss` (the two version sources, kept in sync because Inno Setup doesn't read MSBuild props), commits as "Release v<new>", builds Release configs of `Code2Viz.csproj` + `Animator/Animator.csproj`, runs Inno Setup (`ISCC.exe`) to produce `installer/output/Code2Viz-<new>-Setup.exe`, tags `v<new>`, pushes main + tag, and calls `gh release create` with the installer attached (auto-generates notes from `git log <prevTag>..HEAD` if `-Notes` isn't passed).
+4. **If `gh` CLI is not installed**, the script prints the manual upload URL — relay it along with the installer path.
+
+Never bump versions by hand — the script is the only thing that touches both `Directory.Build.props` and `installer.iss`.
