@@ -42,7 +42,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "associatevizcode"; Description: "Associate .vizcode files with {#MyAppName}"; GroupDescription: "File associations:"
 Name: "associatevizproj"; Description: "Associate .vizproj files with {#MyAppName}"; GroupDescription: "File associations:"
 
 [Files]
@@ -108,12 +107,6 @@ Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Registry]
-; .vizcode file association
-Root: HKA; Subkey: "Software\Classes\.vizcode"; ValueType: string; ValueName: ""; ValueData: "Code2Viz.VizCode"; Flags: uninsdeletevalue; Tasks: associatevizcode
-Root: HKA; Subkey: "Software\Classes\Code2Viz.VizCode"; ValueType: string; ValueName: ""; ValueData: "Code2Viz Code File"; Flags: uninsdeletekey; Tasks: associatevizcode
-Root: HKA; Subkey: "Software\Classes\Code2Viz.VizCode\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"; Tasks: associatevizcode
-Root: HKA; Subkey: "Software\Classes\Code2Viz.VizCode\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: associatevizcode
-
 ; .vizproj file association
 Root: HKA; Subkey: "Software\Classes\.vizproj"; ValueType: string; ValueName: ""; ValueData: "Code2Viz.VizProj"; Flags: uninsdeletevalue; Tasks: associatevizproj
 Root: HKA; Subkey: "Software\Classes\Code2Viz.VizProj"; ValueType: string; ValueName: ""; ValueData: "Code2Viz Project File"; Flags: uninsdeletekey; Tasks: associatevizproj
