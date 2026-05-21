@@ -100,6 +100,7 @@ namespace Code2Viz.Editor
         private OverloadInsightWindow? _insightWindow;
         private DocumentationSidecar? _docSidecar;
         private SnippetSession? _snippetSession;
+        private ToolTip? _activeHoverTip;
 
         // UI Popup state
         private System.Windows.Controls.Primitives.Popup? _peekPopup;
@@ -280,6 +281,19 @@ namespace Code2Viz.Editor
             // 16. Hover quick info / error tooltip
             _editor.MouseHover += Editor_MouseHover;
             _editor.MouseHoverStopped += Editor_MouseHoverStopped;
+            _editor.MouseLeave += (s, e) => CloseHoverTip();
+            _editor.LostFocus += (s, e) => CloseHoverTip();
+            _editor.PreviewMouseDown += (s, e) => CloseHoverTip();
+            _editor.PreviewKeyDown += (s, e) => CloseHoverTip();
+            // The host Window may not exist yet during Initialize; hook it lazily.
+            _editor.Loaded += (s, e) =>
+            {
+                var host = Window.GetWindow(_editor);
+                if (host == null) return;
+                host.Deactivated += (s2, e2) => CloseHoverTip();
+                host.LocationChanged += (s2, e2) => CloseHoverTip();
+                host.Closing += (s2, e2) => CloseHoverTip();
+            };
 
             // 17. Context Menu
             InitializeContextMenu();
@@ -1361,6 +1375,10 @@ namespace Code2Viz.Editor
         // Mouse hover tooltips
         private void Editor_MouseHover(object sender, MouseEventArgs e)
         {
+            // Drop any previous hover tooltip before we consider showing a new one — every
+            // ToolTip we open here is force-shown via IsOpen=true and would otherwise linger.
+            CloseHoverTip();
+
             var pos = _editor.GetPositionFromPoint(e.GetPosition(_editor));
             if (pos == null) return;
 
@@ -1381,9 +1399,30 @@ namespace Code2Viz.Editor
             _ = ShowQuickInfoTooltipAsync(e, offset);
         }
 
-        private void Editor_MouseHoverStopped(object sender, MouseEventArgs e)
+        private void Editor_MouseHoverStopped(object sender, MouseEventArgs e) => CloseHoverTip();
+
+        private void CloseHoverTip()
         {
+            if (_activeHoverTip != null)
+            {
+                _activeHoverTip.IsOpen = false;
+                _activeHoverTip = null;
+            }
             ToolTipService.SetToolTip(_editor, null);
+        }
+
+        private void ShowHoverTip(ToolTip tip, MouseEventArgs e)
+        {
+            CloseHoverTip();
+            _activeHoverTip = tip;
+            tip.Closed += (s, _) =>
+            {
+                if (ReferenceEquals(_activeHoverTip, tip))
+                    _activeHoverTip = null;
+            };
+            ToolTipService.SetToolTip(_editor, tip);
+            tip.IsOpen = true;
+            e.Handled = true;
         }
 
         private void ShowErrorTooltip(MouseEventArgs e, string message)
@@ -1402,9 +1441,7 @@ namespace Code2Viz.Editor
                     MaxWidth = 400
                 }
             };
-            ToolTipService.SetToolTip(_editor, tooltip);
-            tooltip.IsOpen = true;
-            e.Handled = true;
+            ShowHoverTip(tooltip, e);
         }
 
         private async Task ShowQuickInfoTooltipAsync(MouseEventArgs e, int offset)
@@ -1475,9 +1512,11 @@ namespace Code2Viz.Editor
                     Content = stack
                 };
 
-                ToolTipService.SetToolTip(_editor, tooltip);
-                tooltip.IsOpen = true;
-                e.Handled = true;
+                // The async Roslyn lookup that produced this tooltip may have completed after
+                // the user already moved the mouse away — bail out instead of opening a stale tip.
+                if (!_editor.IsMouseOver) return;
+
+                ShowHoverTip(tooltip, e);
             }
             catch { }
         }

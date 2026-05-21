@@ -20,6 +20,7 @@ public sealed class CompletionEngine
 {
     private readonly CachedCompilationWorkspace _workspace;
     public const string FileId = "Sketch.cs";
+    private const string GlobalUsingsFileId = "_GlobalUsings.g.cs";
 
     /// <summary>The underlying incremental Roslyn workspace, reused by other editor features
     /// (semantic highlighting, inlay hints) so they all share a single compilation.</summary>
@@ -48,6 +49,11 @@ public sealed class CompletionEngine
         refs.Add(MetadataReference.CreateFromFile(typeof(C2VGeometry.Shape).Assembly.Location));
 
         _workspace = new CachedCompilationWorkspace(refs);
+
+        // Mirror SketchCompiler.GlobalUsingsSource — every sketch compilation has these
+        // global usings pre-applied, so the editor's compilation must too or it will
+        // flag the unqualified Sketch / VizConsole / V* types as missing.
+        _workspace.UpdateFile(GlobalUsingsFileId, Animator.Compiler.SketchCompiler.GlobalUsingsSource);
     }
 
     /// <summary>Replaces the cached source text. Cheap incremental tree replace.</summary>

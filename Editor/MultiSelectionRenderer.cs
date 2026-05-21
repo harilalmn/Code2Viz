@@ -1315,7 +1315,8 @@ public class MultiSelectionRenderer : IBackgroundRenderer
                 // Draw selection highlight
                 foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
                 {
-                    drawingContext.DrawRectangle(SelectionBrush, null, rect);
+                    drawingContext.DrawRectangle(SelectionBrush, null,
+                        VisualLineRectHelpers.ClampToTextRow(rect, textView));
                 }
             }
 

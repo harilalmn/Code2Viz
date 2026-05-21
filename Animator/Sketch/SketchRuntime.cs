@@ -120,6 +120,38 @@ public sealed class SketchRuntime
         }
     }
 
+    /// <summary>
+    /// Advances the active sketch one frame using explicit virtual time instead of the
+    /// wall clock. Used by the GIF/MP4 exporter so the produced animation is independent
+    /// of how fast the host machine can actually render. Bypasses the looping flag — the
+    /// exporter sets looping=false to stop the live render loop from interfering, but
+    /// still needs to drive frames itself.
+    /// </summary>
+    public void TickFrame(double elapsedSeconds, double deltaSeconds)
+    {
+        if (_active == null) return;
+        _frame++;
+        _registry.Clear();
+
+        _active.FrameCount = _frame;
+        _active.ElapsedSeconds = elapsedSeconds;
+        _active.DeltaSeconds = deltaSeconds;
+
+        try
+        {
+            _active.Draw();
+            EmitFrame();
+        }
+        catch (Exception ex)
+        {
+            ReportError(ex, $"Draw (frame {_frame})");
+            Stop();
+        }
+    }
+
+    /// <summary>Suspends/resumes the live tick (the per-frame Draw call from OnRendering).</summary>
+    public void SetLoopingPublic(bool value) => _looping = value;
+
     public void Stop()
     {
         if (_active == null && _ctx == null) return;

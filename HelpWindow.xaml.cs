@@ -15,10 +15,14 @@ namespace Code2Viz
         private List<Type> _allTypes;
         private List<SearchableItem> _searchIndex;
 
-        public HelpWindow()
+        public HelpWindow() : this(new DocGenerator())
+        {
+        }
+
+        public HelpWindow(DocGenerator generator)
         {
             InitializeComponent();
-            _generator = new DocGenerator();
+            _generator = generator;
             _allTypes = _generator.GetDocumentableTypes();
 
             BuildSearchIndex();

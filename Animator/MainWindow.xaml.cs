@@ -108,6 +108,7 @@ public partial class MainWindow : Window
         InputBindings.Add(new KeyBinding(new RelayCommand(_ => Save()),              Key.S,     ModifierKeys.Control));
         InputBindings.Add(new KeyBinding(new RelayCommand(_ => Open()),              Key.O,     ModifierKeys.Control));
         InputBindings.Add(new KeyBinding(new RelayCommand(_ => New()),               Key.N,     ModifierKeys.Control));
+        InputBindings.Add(new KeyBinding(new RelayCommand(_ => HelpMenuItem_Click(this, new RoutedEventArgs())), Key.F1, ModifierKeys.None));
     }
 
     // ── Editor initialization ────────────────────────────────────────────────
@@ -353,27 +354,108 @@ public partial class MainWindow : Window
         EditorMinimap.Visibility = MinimapMenuItem.IsChecked ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private GridLength _savedConsoleHeight = new GridLength(180);
+    private void ConsoleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (ConsoleMenuItem.IsChecked)
+        {
+            ConsoleSplitterRow.Height = GridLength.Auto;
+            ConsoleRow.Height = _savedConsoleHeight;
+        }
+        else
+        {
+            // Preserve whatever the user dragged the splitter to before hiding.
+            if (ConsoleRow.Height.IsAbsolute && ConsoleRow.Height.Value > 0)
+                _savedConsoleHeight = ConsoleRow.Height;
+            ConsoleSplitterRow.Height = new GridLength(0);
+            ConsoleRow.Height = new GridLength(0);
+        }
+    }
+
+    // ── Export ────────────────────────────────────────────────────────────────
+
+    private void ExportGifMenuItem_Click(object sender, RoutedEventArgs e)
+        => RunExport(Animator.Export.SketchExporter.Format.Gif, "Export GIF Animation",
+            "GIF Animation (*.gif)|*.gif", ".gif");
+
+    private void ExportMp4MenuItem_Click(object sender, RoutedEventArgs e)
+        => RunExport(Animator.Export.SketchExporter.Format.Mp4, "Export Video (MP4)",
+            "MP4 Video (*.mp4)|*.mp4", ".mp4");
+
+    private async void RunExport(Animator.Export.SketchExporter.Format format, string title,
+        string filter, string extension)
+    {
+        var options = new Animator.Export.AnimatorExportOptionsWindow(title) { Owner = this };
+        if (options.ShowDialog() != true) return;
+
+        var save = new SaveFileDialog
+        {
+            Filter = filter,
+            DefaultExt = extension,
+            FileName = (_currentPath != null ? Path.GetFileNameWithoutExtension(_currentPath) : "Sketch") + extension
+        };
+        if (save.ShowDialog(this) != true) return;
+
+        // Stop the live sketch so the export driver has a clean slate. Restore it after.
+        bool wasRunning = Animator.Sketching.SketchRuntime.Instance.IsRunning;
+        if (wasRunning)
+            StopSketch();
+
+        var progressDialog = new Code2Viz.ProgressDialog($"Exporting {title}...") { Owner = this };
+        progressDialog.Show();
+        var originalCursor = Cursor;
+        Cursor = System.Windows.Input.Cursors.Wait;
+
+        bool success = false;
+        try
+        {
+            success = await Animator.Export.SketchExporter.ExportAsync(
+                Canvas, Editor.Text,
+                _currentPath != null ? Path.GetFileName(_currentPath) : "Sketch.cs",
+                save.FileName, format, options.Duration, options.Fps,
+                (i, total) => progressDialog.SetProgress(i, total));
+        }
+        catch (Exception ex)
+        {
+            ConsoleOutput.Instance.WriteError("Export", $"Error: {ex.Message}");
+        }
+        finally
+        {
+            progressDialog.Close();
+            Cursor = originalCursor;
+        }
+
+        if (success)
+        {
+            StatusLabel.Text = $"Exported {Path.GetFileName(save.FileName)}";
+            ConsoleOutput.Instance.WriteLine("Export", $"Wrote {save.FileName}");
+        }
+        else
+        {
+            StatusLabel.Text = "Export failed";
+        }
+
+        // Restart the sketch if it was running before the export.
+        if (wasRunning) RunSketch();
+    }
+
     // ── Help menu ─────────────────────────────────────────────────────────────
 
-    private void ShortcutsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(this,
-            "F5            Run sketch\n" +
-            "Shift+F5      Stop sketch\n" +
-            "Ctrl+Enter    Toggle run/stop\n" +
-            "Ctrl+N        New\n" +
-            "Ctrl+O        Open\n" +
-            "Ctrl+S        Save\n" +
-            "Ctrl+Space    Show completions\n" +
-            "F12           Go to Definition\n" +
-            "Shift+F12     Find All References\n" +
-            "F2            Rename\n" +
-            "Ctrl+/        Toggle comment\n" +
-            "Ctrl+Shift+F  Format code\n" +
-            "Alt+Up/Down   Move line",
-            "Keyboard Shortcuts",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        try
+        {
+            var generator = new Code2Viz.Documentation.DocGenerator(
+                typeof(C2VGeometry.Shape).Assembly,
+                "C2VGeometry");
+            var helpWindow = new Code2Viz.HelpWindow(generator) { Owner = this };
+            helpWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Failed to open Help window:\n\n{ex}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)

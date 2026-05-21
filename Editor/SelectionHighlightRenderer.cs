@@ -70,7 +70,8 @@ public class SelectionHighlightRenderer : IBackgroundRenderer
             
             foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
             {
-                drawingContext.DrawRectangle(HighlightBrush, HighlightPen, rect);
+                drawingContext.DrawRectangle(HighlightBrush, HighlightPen,
+                    VisualLineRectHelpers.ClampToTextRow(rect, textView));
             }
 
             offset += selectionLength;

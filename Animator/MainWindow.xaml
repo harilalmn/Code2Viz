@@ -34,11 +34,11 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>   <!-- menu bar -->
-            <RowDefinition Height="Auto"/>   <!-- toolbar -->
-            <RowDefinition Height="*"/>      <!-- editor | canvas -->
-            <RowDefinition Height="Auto"/>   <!-- splitter -->
-            <RowDefinition Height="180"/>    <!-- console -->
+            <RowDefinition Height="Auto"/>                              <!-- menu bar -->
+            <RowDefinition Height="Auto"/>                              <!-- toolbar -->
+            <RowDefinition Height="*"/>                                 <!-- editor | canvas -->
+            <RowDefinition x:Name="ConsoleSplitterRow" Height="Auto"/>  <!-- splitter -->
+            <RowDefinition x:Name="ConsoleRow"         Height="180"/>   <!-- console -->
         </Grid.RowDefinitions>
 
         <!--  Menu Bar  -->
@@ -65,6 +65,9 @@
                     <Separator/>
                     <MenuItem Header="_Save"       Click="SaveButton_Click"    InputGestureText="Ctrl+S" Style="{StaticResource MenuItemStyle}"/>
                     <MenuItem Header="Save _As..." Click="SaveAsMenuItem_Click"                          Style="{StaticResource MenuItemStyle}"/>
+                    <Separator/>
+                    <MenuItem Header="Export _GIF Animation..."  Click="ExportGifMenuItem_Click"   Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="Export _Video (MP4)..."    Click="ExportMp4MenuItem_Click"   Style="{StaticResource MenuItemStyle}"/>
                     <Separator/>
                     <MenuItem Header="Switch to _Project" Click="SwitchToCode2Viz_Click" Style="{StaticResource MenuItemStyle}"/>
                     <Separator/>
@@ -96,8 +99,14 @@
                               IsCheckable="True"
                               IsChecked="True"
                               Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem x:Name="ConsoleMenuItem"
+                              Header="Show C_onsole"
+                              Click="ConsoleMenuItem_Click"
+                              IsCheckable="True"
+                              IsChecked="True"
+                              Style="{StaticResource MenuItemStyle}"/>
                     <Separator/>
-                    <MenuItem Header="Clear _Console" Click="ClearConsoleButton_Click" Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="Clear Co_nsole" Click="ClearConsoleButton_Click" Style="{StaticResource MenuItemStyle}"/>
                 </MenuItem>
 
                 <MenuItem Header="_Run">
@@ -106,9 +115,9 @@
                 </MenuItem>
 
                 <MenuItem Header="_Help">
-                    <MenuItem Header="Keyboard _Shortcuts" Click="ShortcutsMenuItem_Click" Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="_Help"           Click="HelpMenuItem_Click"  InputGestureText="F1" Style="{StaticResource MenuItemStyle}"/>
                     <Separator/>
-                    <MenuItem Header="_About Animator"     Click="AboutMenuItem_Click"    Style="{StaticResource MenuItemStyle}"/>
+                    <MenuItem Header="_About Animator" Click="AboutMenuItem_Click"                       Style="{StaticResource MenuItemStyle}"/>
                 </MenuItem>
             </Menu>
         </Border>

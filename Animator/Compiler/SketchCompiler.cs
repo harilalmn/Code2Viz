@@ -26,6 +26,17 @@ public class SketchCompiler
 {
     private static readonly MetadataReference[] DefaultReferences;
 
+    // Global usings injected into every sketch compilation. The boilerplate template
+    // therefore doesn't need any `using` directives — these namespaces are always in scope.
+    // The CompletionEngine workspace mirrors this list so the editor IntelliSense sees the
+    // same view of the world.
+    public const string GlobalUsingsSource = """
+        global using System;
+        global using C2VGeometry;
+        global using Animator.Sketching;
+        global using Animator.Console;
+        """;
+
     static SketchCompiler()
     {
         var trusted = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? "")
@@ -62,14 +73,23 @@ public class SketchCompiler
             ConsoleOutput.Instance.WriteLine("Compiler",
                 $"Compiling '{sourceName}'...");
 
+            var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
             var tree = CSharpSyntaxTree.ParseText(
                 Microsoft.CodeAnalysis.Text.SourceText.From(sourceCode, System.Text.Encoding.UTF8),
                 path: sourceName,
-                options: new CSharpParseOptions(LanguageVersion.Latest));
+                options: parseOptions);
+
+            // SourceText.From(...) with an explicit encoding is required when emitting
+            // PDBs — passing a bare string here produces "CS8055: Cannot emit debug
+            // information for a source text without encoding" during compilation.Emit.
+            var globalUsingsTree = CSharpSyntaxTree.ParseText(
+                Microsoft.CodeAnalysis.Text.SourceText.From(GlobalUsingsSource, System.Text.Encoding.UTF8),
+                path: "_GlobalUsings.g.cs",
+                options: parseOptions);
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: $"AnimatorSketch_{Guid.NewGuid():N}",
-                syntaxTrees: new[] { tree },
+                syntaxTrees: new[] { globalUsingsTree, tree },
                 references: DefaultReferences,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                     .WithOptimizationLevel(OptimizationLevel.Debug)

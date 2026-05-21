@@ -15,6 +15,9 @@ namespace Animator.Canvas;
 public class AnimCanvas : FrameworkElement
 {
     private readonly DrawingVisual _visual = new();
+
+    /// <summary>Exposes the drawing visual directly for offscreen captures without layout offsets.</summary>
+    public DrawingVisual DrawingVisual => _visual;
     private List<C2VGeometry.Shape> _shapes = new();
     private Brush _backgroundBrush;
     private double _scale = 1.0;

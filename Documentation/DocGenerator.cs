@@ -11,13 +11,26 @@ namespace Code2Viz.Documentation
     public class DocGenerator
     {
         private Assembly _assembly;
+        private string[] _namespacePrefixes;
         private Dictionary<string, string> _summaries;
         private Dictionary<string, string> _csharpSamples;
         private Dictionary<string, string> _memberDescriptions;
 
         public DocGenerator()
+            : this(Assembly.GetExecutingAssembly(), new[]
+            {
+                "Code2Viz.Geometry",
+                "Code2Viz.Animation",
+                "Code2Viz.Export",
+                "Code2Viz.Console"
+            })
         {
-            _assembly = Assembly.GetExecutingAssembly();
+        }
+
+        public DocGenerator(Assembly assembly, params string[] namespacePrefixes)
+        {
+            _assembly = assembly;
+            _namespacePrefixes = namespacePrefixes ?? Array.Empty<string>();
             InitializeSummaries();
             InitializeCSharpSamples();
             InitializeMemberDescriptions();
@@ -170,10 +183,7 @@ namespace Code2Viz.Documentation
 
             return types
                 .Where(t => t.IsPublic && (t.IsClass || t.IsAbstract) && t.Namespace != null &&
-                    (t.Namespace.StartsWith("Code2Viz.Geometry") ||
-                     t.Namespace.StartsWith("Code2Viz.Animation") ||
-                     t.Namespace.StartsWith("Code2Viz.Export") ||
-                     t.Namespace == "Code2Viz.Console"))
+                    _namespacePrefixes.Any(p => t.Namespace == p || t.Namespace.StartsWith(p + ".") || t.Namespace.StartsWith(p)))
                 .OrderBy(t => t.Namespace)
                 .ThenBy(t => t.Name)
                 .ToList();

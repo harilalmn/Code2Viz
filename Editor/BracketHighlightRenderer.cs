@@ -49,8 +49,7 @@ public class BracketHighlightRenderer : IBackgroundRenderer
         var textSegment = new TextSegment { StartOffset = offset, Length = 1 };
         foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, textSegment))
         {
-             // Adjust rect slightly to look good
-             var drawRect = new Rect(rect.Location, new Size(rect.Width, rect.Height));
+             var drawRect = VisualLineRectHelpers.ClampToTextRow(rect, textView);
              drawingContext.DrawRectangle(HighlightBrush, HighlightPen, drawRect);
         }
     }

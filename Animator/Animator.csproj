@@ -65,6 +65,7 @@
     <Compile Include="..\Editor\TypeInspector.cs"               Link="Editor\Linked\TypeInspector.cs" />
     <Compile Include="..\Editor\CodeLensProvider.cs"            Link="Editor\Linked\CodeLensProvider.cs" />
     <Compile Include="..\Editor\HierarchyProvider.cs"           Link="Editor\Linked\HierarchyProvider.cs" />
+    <Compile Include="..\Editor\VisualLineRectHelpers.cs"       Link="Editor\Linked\VisualLineRectHelpers.cs" />
     <Compile Include="..\ColorPickerDialog.xaml.cs"             Link="Linked\ColorPickerDialog.xaml.cs" />
     <Page Include="..\ColorPickerDialog.xaml"                   Link="Linked\ColorPickerDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -72,6 +73,23 @@
     </Page>
     <Compile Include="..\RenameDialog.xaml.cs"                  Link="Linked\RenameDialog.xaml.cs" />
     <Page Include="..\RenameDialog.xaml"                        Link="Linked\RenameDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="..\Documentation\DocGenerator.cs"         Link="Linked\Documentation\DocGenerator.cs" />
+    <Compile Include="..\HelpWindow.xaml.cs"                    Link="Linked\HelpWindow.xaml.cs">
+      <DependentUpon>HelpWindow.xaml</DependentUpon>
+    </Compile>
+    <Page Include="..\HelpWindow.xaml"                          Link="Linked\HelpWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="..\Export\GifEncoder.cs"                  Link="Linked\Export\GifEncoder.cs" />
+    <Compile Include="..\Export\VideoExporter.cs"               Link="Linked\Export\VideoExporter.cs" />
+    <Compile Include="..\ProgressDialog.xaml.cs"                Link="Linked\ProgressDialog.xaml.cs">
+      <DependentUpon>ProgressDialog.xaml</DependentUpon>
+    </Compile>
+    <Page Include="..\ProgressDialog.xaml"                      Link="Linked\ProgressDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
