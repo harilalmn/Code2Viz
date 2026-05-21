@@ -10,7 +10,7 @@
 ; Paths - adjust if your layout differs
 ; C:\Work\Nicety\Projects\Code2Viz\bin\Release\net9.0-windows
 #define BuildOutput "bin\Release\net9.0-windows"
-#define SampleCSharp "CSharp-SampleProject"
+#define SampleProjects "Sample Projects"
 
 [Setup]
 AppId={{B7A3F2E1-4D5C-6E7F-8A9B-0C1D2E3F4A5B}
@@ -97,7 +97,7 @@ Source: "{#BuildOutput}\zh-Hans\*"; DestDir: "{app}\zh-Hans"; Flags: ignoreversi
 Source: "{#BuildOutput}\zh-Hant\*"; DestDir: "{app}\zh-Hant"; Flags: ignoreversion recursesubdirs
 
 ; Sample projects
-Source: "{#SampleCSharp}\*"; DestDir: "{app}\Samples\CSharp-SampleProject"; Flags: ignoreversion recursesubdirs
+Source: "{#SampleProjects}\*"; DestDir: "{app}\Samples"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
