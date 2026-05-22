@@ -203,8 +203,12 @@ public class CompletionData : ICompletionData
         {
             textArea.Caret.Offset = completionSegment.Offset + textToInsert.Length - 1;
 
-            // Dispatch signature help trigger (deferred to allow completion window to close first)
-            textArea.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, OnMethodCompleted);
+            // Dispatch signature help trigger (deferred to allow completion window to close first).
+            // Animator doesn't wire OnMethodCompleted, so guard against null — Dispatcher.BeginInvoke
+            // throws ArgumentNullException on a null delegate.
+            var onCompleted = OnMethodCompleted;
+            if (onCompleted != null)
+                textArea.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, onCompleted);
         }
     }
 }

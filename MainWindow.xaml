@@ -506,6 +506,91 @@
                     Grid.Column="1"
                     Margin="0,4,8,4"
                     Orientation="Horizontal">
+                    <!--  Update Available banner (collapsed by default; shown by UpdateChecker on launch)  -->
+                    <Button
+                        x:Name="UpdateAvailableButton"
+                        Margin="0,0,12,0"
+                        Padding="14,4"
+                        Click="UpdateAvailableButton_Click"
+                        Cursor="Hand"
+                        Visibility="Collapsed">
+                        <Button.Resources>
+                            <LinearGradientBrush x:Key="UpdateGradient" StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FFB347" />
+                                <GradientStop Offset="0.55" Color="#FF6F61" />
+                                <GradientStop Offset="1" Color="#C2185B" />
+                            </LinearGradientBrush>
+                        </Button.Resources>
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border
+                                    x:Name="PillBorder"
+                                    Background="{StaticResource UpdateGradient}"
+                                    BorderBrush="#FFFFFF"
+                                    BorderThickness="1"
+                                    CornerRadius="14">
+                                    <Border.Effect>
+                                        <DropShadowEffect
+                                            x:Name="GlowShadow"
+                                            BlurRadius="14"
+                                            Direction="0"
+                                            Opacity="0.85"
+                                            ShadowDepth="0"
+                                            Color="#FF6F61" />
+                                    </Border.Effect>
+                                    <ContentPresenter
+                                        Margin="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="PillBorder" Property="BorderThickness" Value="2" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                        <DoubleAnimation
+                                            Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            From="6"
+                                            To="20"
+                                            Duration="0:0:1.2" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            From="0.5"
+                                            To="0.95"
+                                            Duration="0:0:1.2" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock
+                                Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                Foreground="White"
+                                Text="&#x2728;" />
+                            <TextBlock
+                                x:Name="UpdateAvailableText"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Foreground="White"
+                                Text="Update available" />
+                            <TextBlock
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="White"
+                                Opacity="0.85"
+                                Text="&#x2192;" />
+                        </StackPanel>
+                    </Button>
+
                     <Button
                         Padding="14,6"
                         Margin="0,0,8,0"

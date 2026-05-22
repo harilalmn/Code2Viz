@@ -68,3 +68,6 @@ node_modules/
 
 # Antigravity CLI local state
 .antigravitycli/
+
+# Inno Setup installer build output (built by release workflow / -LocalBuild)
+installer/output/

@@ -28,6 +28,7 @@ using Code2Viz.Export;
 using Code2Viz.Project;
 using Code2Viz.Mcp;
 using Code2Viz.Search;
+using Code2Viz.Services;
 using ICSharpCode.AvalonEdit.Rendering;
 using Microsoft.CodeAnalysis;
 
@@ -195,6 +196,29 @@ public partial class MainWindow : Window
 
         // Apply window visibility settings
         ApplyWindowVisibilitySettings();
+
+        _ = CheckForUpdatesAsync();
+    }
+
+    private string? _updateUrl;
+
+    private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+    {
+        var info = await UpdateChecker.CheckAsync();
+        if (info is null) return;
+
+        _updateUrl = info.ReleaseUrl;
+        UpdateAvailableText.Text = $"v{info.Latest} available — Update!";
+        UpdateAvailableButton.ToolTip = $"You're on v{info.Current}. Click to open the release page for {info.TagName}.";
+        UpdateAvailableButton.Visibility = Visibility.Visible;
+    }
+
+    private void UpdateAvailableButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_updateUrl))
+        {
+            UpdateChecker.OpenInBrowser(_updateUrl);
+        }
     }
 
     private void InitializeCanvas()

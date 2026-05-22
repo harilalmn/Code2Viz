@@ -1,14 +1,13 @@
 <#
 .SYNOPSIS
-    Manual release driver for Code2Viz.
+    Release driver for Code2Viz. Bumps version, commits, tags, and pushes.
 
 .DESCRIPTION
     Bumps the version (major/minor/patch) in Directory.Build.props and
-    installer.iss, builds Release configs of Code2Viz + Animator, builds
-    the Inno Setup installer if ISCC.exe is available, tags the commit,
-    pushes main + tag, and creates a GitHub release with the installer
-    attached (uses `gh` CLI if installed; otherwise prints the manual
-    upload URL).
+    installer.iss, commits the bump on main, tags it, and pushes the tag
+    to origin. The `.github/workflows/release.yml` workflow takes over
+    from there: it builds Code2Viz + Animator (Release), runs Inno Setup,
+    creates the GitHub release, and attaches the installer.
 
     Run /update_docs FIRST so the docs commit goes out before the bump
     commit — the release should ship with current documentation.
@@ -16,20 +15,21 @@
 .PARAMETER Bump
     Which segment of semver to bump. One of: major, minor, patch.
 
-.PARAMETER Notes
-    Optional release notes body. Defaults to the auto-generated
-    "v<new> — changes since v<previous>" with git log oneline.
+.PARAMETER LocalBuild
+    Also build Release configs and the installer locally before pushing
+    (useful for offline smoke-testing). The GitHub Actions workflow still
+    builds and publishes the canonical artifacts on tag push.
 
 .EXAMPLE
     .\scripts\release.ps1 -Bump patch
-    .\scripts\release.ps1 -Bump minor -Notes "First public beta"
+    .\scripts\release.ps1 -Bump minor -LocalBuild
 #>
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("major", "minor", "patch")]
     [string]$Bump,
 
-    [string]$Notes = ""
+    [switch]$LocalBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -55,7 +55,6 @@ if ($behind -ne "0") {
 $propsPath = "Directory.Build.props"
 [xml]$props = Get-Content $propsPath
 $current = [Version]($props.Project.PropertyGroup.Version)
-$prevTag = "v$current"
 
 # 2. Compute new version.
 $new = switch ($Bump) {
@@ -81,65 +80,37 @@ Set-Content installer.iss -Value $iss -NoNewline
 git add Directory.Build.props installer.iss
 git commit -m "Release $newTag"
 
-# 6. Build Release configurations.
-Write-Host "Building Code2Viz (Release)..." -ForegroundColor Cyan
-dotnet build Code2Viz.csproj -c Release -nologo | Out-Null
-if ($LASTEXITCODE -ne 0) { Write-Error "Code2Viz build failed." }
+# 6. Optional local smoke build.
+if ($LocalBuild) {
+    Write-Host "Building Code2Viz (Release)..." -ForegroundColor Cyan
+    dotnet build Code2Viz.csproj -c Release -nologo | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Error "Code2Viz build failed." }
 
-Write-Host "Building Animator (Release)..." -ForegroundColor Cyan
-dotnet build Animator/Animator.csproj -c Release -nologo | Out-Null
-if ($LASTEXITCODE -ne 0) { Write-Error "Animator build failed." }
+    Write-Host "Building Animator (Release)..." -ForegroundColor Cyan
+    dotnet build Animator/Animator.csproj -c Release -nologo | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Error "Animator build failed." }
 
-# 7. Build Inno Setup installer.
-$iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-$installerPath = "installer\output\Code2Viz-$new-Setup.exe"
-if (Test-Path $iscc) {
-    Write-Host "Building installer..." -ForegroundColor Cyan
-    & $iscc installer.iss | Out-Null
-    if ($LASTEXITCODE -ne 0) { Write-Error "Inno Setup build failed." }
-    if (-not (Test-Path $installerPath)) {
-        Write-Warning "Expected $installerPath but it wasn't produced."
+    $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+    if (Test-Path $iscc) {
+        Write-Host "Building installer..." -ForegroundColor Cyan
+        & $iscc installer.iss | Out-Null
+        if ($LASTEXITCODE -ne 0) { Write-Error "Inno Setup build failed." }
+    } else {
+        Write-Warning "ISCC.exe not found at $iscc; skipping local installer build (CI will still build it)."
     }
-} else {
-    Write-Warning "ISCC.exe not found at $iscc; skipping installer build."
-    $installerPath = $null
 }
 
-# 8. Tag and push.
+# 7. Tag and push. The tag push triggers .github/workflows/release.yml,
+#    which builds Release configs, runs Inno Setup, and publishes the
+#    GitHub release with the installer attached.
 git tag $newTag
 git push origin main
 git push origin $newTag
 Write-Host "Pushed $newTag to origin." -ForegroundColor Green
 
-# 9. Auto-generate notes if none supplied.
-if ([string]::IsNullOrEmpty($Notes)) {
-    $previousExists = git rev-parse -q --verify "refs/tags/$prevTag" 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        $log = git log "$prevTag..HEAD" --pretty=format:"- %s" 2>$null
-        $Notes = "Changes since ${prevTag}:`n`n$log"
-    } else {
-        $Notes = "Release $newTag"
-    }
-}
-
-# 10. Create GitHub release.
-$gh = Get-Command gh -ErrorAction SilentlyContinue
-if ($gh) {
-    $ghArgs = @("release", "create", $newTag, "--title", $newTag, "--notes", $Notes)
-    if ($installerPath -and (Test-Path $installerPath)) { $ghArgs += $installerPath }
-    & $gh.Source @ghArgs
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "GitHub release published." -ForegroundColor Green
-    } else {
-        Write-Warning "gh release create failed; finish manually at the URL below."
-    }
-} else {
-    Write-Host ""
-    Write-Host "gh CLI not installed. Finish the release manually:" -ForegroundColor Yellow
-    $url = "https://github.com/harilalmn/Code2Viz/releases/new?tag=$newTag"
-    Write-Host "  $url"
-    if ($installerPath) { Write-Host "  Upload: $installerPath" }
-}
-
 Write-Host ""
-Write-Host "Released $newTag" -ForegroundColor Green
+Write-Host "Release workflow triggered. Watch progress at:" -ForegroundColor Cyan
+Write-Host "  https://github.com/harilalmn/Code2Viz/actions/workflows/release.yml"
+Write-Host ""
+Write-Host "When green, the release will appear at:" -ForegroundColor Cyan
+Write-Host "  https://github.com/harilalmn/Code2Viz/releases/tag/$newTag"

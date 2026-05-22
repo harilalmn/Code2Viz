@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Resolve version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = $tag.TrimStart('v')
+          "tag=$tag"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Tag: $tag, Version: $version"
+
+      - name: Verify Directory.Build.props matches tag
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $propsVersion = $props.Project.PropertyGroup.Version.Trim()
+          if ($propsVersion -ne "${{ steps.version.outputs.version }}") {
+            Write-Error "Directory.Build.props Version ($propsVersion) does not match tag (${{ steps.version.outputs.version }}). Did scripts/release.ps1 bump and commit before tagging?"
+          }
+
+      - name: Restore
+        run: dotnet restore Code2Viz.sln
+
+      - name: Build Code2Viz (Release)
+        run: dotnet build Code2Viz.csproj -c Release --no-restore
+
+      - name: Build Animator (Release)
+        run: dotnet build Animator/Animator.csproj -c Release --no-restore
+
+      - name: Run tests
+        run: dotnet test Tests/Code2Viz.Tests.csproj -c Release --no-build
+
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Error "ISCC.exe not found on runner. Install Inno Setup 6 before running this workflow."
+          }
+          & $iscc installer.iss
+          if ($LASTEXITCODE -ne 0) { Write-Error "Inno Setup build failed." }
+
+      - name: Verify installer artifact
+        id: artifact
+        shell: pwsh
+        run: |
+          $path = "installer\output\Code2Viz-${{ steps.version.outputs.version }}-Setup.exe"
+          if (-not (Test-Path $path)) {
+            Write-Error "Expected installer at $path but it was not produced."
+          }
+          "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" `
+            --title "${{ steps.version.outputs.tag }}" `
+            --generate-notes `
+            "${{ steps.artifact.outputs.path }}"
