@@ -35,7 +35,7 @@ MinVersion=10.0
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 DisableProgramGroupPage=yes
-LicenseFile=
+LicenseFile=LICENSE
 ChangesAssociations=yes
 
 [Languages]

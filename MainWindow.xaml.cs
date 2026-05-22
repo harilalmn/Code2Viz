@@ -149,6 +149,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        VersionText.Text = $"v{UpdateChecker.CurrentVersion}";
+
         _compiler = new ModuleCompiler();
         _refactoringProvider = new RefactoringProvider(_compiler);
         _hierarchyProvider = new Editor.HierarchyProvider();
@@ -5617,11 +5619,16 @@ public partial class MainWindow : Window
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        var version = UpdateChecker.CurrentVersion;
         MessageBox.Show(
             "Code2Viz - 2D Geometry Visualizer\n\n" +
-            "A tool for visualizing 2D geometry using C# code.\n\n" +
+            "A tool for visualizing 2D geometry using C# code.\n" +
             "Create points, lines, circles, rectangles, and more!\n\n" +
-            "Version 1.0",
+            $"Version v{version}\n" +
+            "Licensed under the MIT License.\n\n" +
+            "Developed by\n" +
+            "Harilal M N\n" +
+            "harilalmn@gmail.com",
             "About Code2Viz",
             MessageBoxButton.OK,
             MessageBoxImage.Information);

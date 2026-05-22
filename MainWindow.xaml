@@ -64,10 +64,16 @@
             Background="{StaticResource SecondaryBackgroundBrush}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,0,0,1">
-            <Image
-                Height="80"
-                HorizontalAlignment="Left"
-                Source="/img/logo.png" />
+            <StackPanel HorizontalAlignment="Left" Orientation="Vertical">
+                <Image Height="80" Source="/img/logo.png" />
+                <TextBlock
+                    x:Name="VersionText"
+                    Margin="4,2,0,0"
+                    FontFamily="Segoe UI"
+                    FontSize="11"
+                    Foreground="{StaticResource MutedForegroundBrush}"
+                    Text="v0.0.0" />
+            </StackPanel>
         </Border>
 
         <!--  Menu Bar  -->
