@@ -252,17 +252,8 @@ public class ModuleCompiler
                 var projectNamespace = Templates.SanitizeIdentifier(projectName);
                 var entryTypeName = $"{projectNamespace}.Viz";
 
-                // Try finding entry type (CS) or module (FS)
                 var entryType = assembly.GetType(entryTypeName);
 
-                // F# modules may compile with different naming conventions
-                // Try alternates: "Namespace.Viz" or "Namespace.VizModule"
-                if (entryType == null)
-                {
-                    entryType = assembly.GetType($"{projectNamespace}.VizModule");
-                }
-
-                // List all types in the assembly for debugging
                 if (entryType == null)
                 {
                     var allTypes = assembly.GetTypes().Select(t => t.FullName).ToList();
@@ -271,7 +262,7 @@ public class ModuleCompiler
                         Success = false,
                         Error = $"Entry point not found: class '{entryTypeName}' is missing.\n\nAvailable types:\n" +
                                 string.Join("\n", allTypes.Take(10)) +
-                                $"\n\nEnsure StartViz contains:\nnamespace {projectNamespace}\n...\n    class Viz / module Viz"
+                                $"\n\nEnsure StartViz contains:\nnamespace {projectNamespace}\n...\n    class Viz"
                     };
                 }
 
@@ -358,10 +349,10 @@ public class ModuleCompiler
             var lines = ex.StackTrace.Split('\n');
             foreach (var line in lines)
             {
-                // Look for stack frames with .cs/.fs file references
+                // Look for stack frames with .cs file references
                 // Format: "at Namespace.Class.Method() in C:\path\file.cs:line 42"
                 var match = System.Text.RegularExpressions.Regex.Match(
-                    line, @"in\s+(.+\.(?:cs|fs)):line\s+(\d+)");
+                    line, @"in\s+(.+\.cs):line\s+(\d+)");
                 if (match.Success)
                 {
                     var filePath = match.Groups[1].Value;

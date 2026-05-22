@@ -4,17 +4,17 @@
 
 # Code2Viz - 2D Geometry Visualizer
 
-A WPF application for visualizing 2D geometric shapes through C# or F# code execution with animation support.
+A WPF application for visualizing 2D geometric shapes through C# code execution with animation support.
 
 ## Overview
 
-Code2Viz is a visual programming environment that lets you write C# or F# code to create, style, and animate 2D geometric shapes on an interactive canvas. It combines a code editor with syntax highlighting, a real-time rendering canvas with zoom and pan capabilities, and a timeline-based animation system with GIF export.
+Code2Viz is a visual programming environment that lets you write C# code to create, style, and animate 2D geometric shapes on an interactive canvas. It combines a code editor with syntax highlighting, a real-time rendering canvas with zoom and pan capabilities, and a timeline-based animation system with GIF export.
 
 ## Features
 
 - **Live Preview**: Canvas updates automatically as you type (debounced auto-run)
 - **No Draw() Required**: Shapes appear automatically when created
-- **Multi-language Support**: Write code in C# or F# with full syntax highlighting
+- **C# Code Editor**: Roslyn-powered IntelliSense, semantic highlighting, refactoring, and squiggle diagnostics
 - **Rich Shape Library**: Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, regions (curve-bounded areas), hatches (pattern fills), text, arrows, and dimension annotations
 - **Shape Editing**: Select shapes and drag shape-specific control points (vertices, radius handles, curve controls) with live code sync
 - **Properties Panel**: Floating or dockable panel to edit geometry and style properties (color, fill, weight, opacity, visibility, name) with full code sync — changes persist as code lines
@@ -1285,7 +1285,7 @@ The panel can be **floated** as a separate window or **docked** to the right sid
 
 ## Drawing Tools
 
-Code2Viz includes an interactive drawing toolbar that lets you create shapes directly on the canvas with automatic C#/F# code generation.
+Code2Viz includes an interactive drawing toolbar that lets you create shapes directly on the canvas with automatic C# code generation.
 
 ### Toolbar Location
 The drawing toolbar appears below the menu bar with buttons for all shape types.

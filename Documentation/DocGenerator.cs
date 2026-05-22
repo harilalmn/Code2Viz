@@ -2492,7 +2492,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
             // Introduction
             AddWelcomeSectionHeader(doc, "What is Code2Viz?");
             doc.Blocks.Add(new Paragraph(new Run(
-                "Code2Viz is an interactive application that lets you write C# or F# code to create and visualize 2D geometric shapes. " +
+                "Code2Viz is an interactive application that lets you write C# code to create and visualize 2D geometric shapes. " +
                 "Simply write code in the built-in editor, press F5 (or click Run), and see your shapes appear on the canvas instantly. " +
                 "It's perfect for learning geometry, creating diagrams, prototyping visualizations, and exploring mathematical concepts."))
             { FontSize = 14, Margin = new Thickness(0, 0, 0, 15) });
@@ -2504,7 +2504,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 MarkerStyle = TextMarkerStyle.Disc,
                 Margin = new Thickness(20, 0, 0, 20)
             };
-            AddListItem(featuresList, "Multi-language Support", "Write code in C# or F# with full IntelliSense-like syntax highlighting");
+            AddListItem(featuresList, "C# Code Editor", "Roslyn-powered IntelliSense, semantic highlighting, and refactoring");
             AddListItem(featuresList, "Rich Shape Library", "Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, text, arrows, and dimensions");
             AddListItem(featuresList, "Drawing Tools", "Draw shapes directly on the canvas with automatic code generation");
             AddListItem(featuresList, "Animation System", "Create timeline-based animations with draw, move, rotate, and flip effects");
@@ -2563,7 +2563,7 @@ namespace StartViz
             AddWelcomeSectionHeader(doc, "Drawing Tools");
             doc.Blocks.Add(new Paragraph(new Run(
                 "Draw shapes directly on the canvas using the toolbar below the menu bar. " +
-                "Click to place points, and the corresponding C#/F# code is automatically generated and inserted into your Main() method."))
+                "Click to place points, and the corresponding C# code is automatically generated and inserted into your Main() method."))
             { FontSize = 14, Margin = new Thickness(0, 0, 0, 10) });
 
             // Drawing tools table
