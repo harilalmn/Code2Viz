@@ -2,7 +2,7 @@
 ; Builds an installer for Code2Viz - 2D Geometry Visualization Tool
 
 #define MyAppName "Code2Viz"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "Nicety"
 #define MyAppExeName "Code2Viz.exe"
 #define MyAppURL "https://github.com/harilalmn/Code2Viz"
