@@ -1858,7 +1858,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
                 { "VText.Draw", "Renders the text to the canvas." },
                 { "VText.Clone", "Creates a deep copy of this text with all properties duplicated." },
                 { "VText.Move", "Translates the text by the specified displacement vector." },
-                { "VText.Rotate", "Rotates the text around the specified pivot by the given angle in degrees." },
+                { "VText.Rotate", "Rotates the text around the specified pivot by the given angle in degrees. Both Location (moved around pivot) and Angle (text's own orientation) are updated, so the characters tilt by the same amount." },
                 { "VText.Flip", "Mirrors the text across the specified axis line." },
                 { "VText.Scale", "Scales the text relative to a center point by the specified factor." },
                 { "VText.GetBounds", "Returns the axis-aligned bounding box of the text." },
