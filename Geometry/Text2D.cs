@@ -225,6 +225,93 @@ public class VText : Shape
         return (offsetX, offsetY);
     }
 
+    /// <summary>
+    /// Returns true if the text's (possibly rotated) bounding quad overlaps the other shape's
+    /// bounding box. Symmetric for axis-aligned text; uses an OBB-vs-AABB SAT test when rotated.
+    /// </summary>
+    public override bool DoesIntersect(Shape other)
+    {
+        if (other == null) return false;
+
+        GetCornerCoords(out var ax, out var ay);
+        var b = other.GetBounds();
+        var bx = new[] { b.Min.X, b.Max.X, b.Max.X, b.Min.X };
+        var by = new[] { b.Min.Y, b.Min.Y, b.Max.Y, b.Max.Y };
+
+        return ConvexQuadsOverlap(ax, ay, bx, by);
+    }
+
+    private void GetCornerCoords(out double[] xs, out double[] ys)
+    {
+        var textWidth = Width > 0 ? Width : Height * Content.Length * 0.6;
+        var (offsetX, offsetY) = GetAnchorOffset(textWidth, Height);
+
+        if (Angle == 0)
+        {
+            xs = new[] { Location.X + offsetX, Location.X + offsetX + textWidth, Location.X + offsetX + textWidth, Location.X + offsetX };
+            ys = new[] { Location.Y + offsetY, Location.Y + offsetY, Location.Y + offsetY + Height, Location.Y + offsetY + Height };
+            return;
+        }
+
+        var rad = Angle * Math.PI / 180.0;
+        var cos = Math.Cos(rad);
+        var sin = Math.Sin(rad);
+        double rx0 = offsetX, ry0 = offsetY;
+        double rx1 = offsetX + textWidth, ry1 = offsetY;
+        double rx2 = offsetX + textWidth, ry2 = offsetY + Height;
+        double rx3 = offsetX, ry3 = offsetY + Height;
+        xs = new[]
+        {
+            Location.X + rx0 * cos - ry0 * sin,
+            Location.X + rx1 * cos - ry1 * sin,
+            Location.X + rx2 * cos - ry2 * sin,
+            Location.X + rx3 * cos - ry3 * sin,
+        };
+        ys = new[]
+        {
+            Location.Y + rx0 * sin + ry0 * cos,
+            Location.Y + rx1 * sin + ry1 * cos,
+            Location.Y + rx2 * sin + ry2 * cos,
+            Location.Y + rx3 * sin + ry3 * cos,
+        };
+    }
+
+    private static bool ConvexQuadsOverlap(double[] ax, double[] ay, double[] bx, double[] by)
+    {
+        const double eps = 1e-9;
+        for (int side = 0; side < 2; side++)
+        {
+            var qx = side == 0 ? ax : bx;
+            var qy = side == 0 ? ay : by;
+            for (int i = 0; i < 4; i++)
+            {
+                int j = (i + 1) & 3;
+                double axisX = -(qy[j] - qy[i]);
+                double axisY = qx[j] - qx[i];
+                double len = Math.Sqrt(axisX * axisX + axisY * axisY);
+                if (len < 1e-12) continue;
+                axisX /= len; axisY /= len;
+
+                Project(ax, ay, axisX, axisY, out var minA, out var maxA);
+                Project(bx, by, axisX, axisY, out var minB, out var maxB);
+                if (maxA < minB - eps || maxB < minA - eps) return false;
+            }
+        }
+        return true;
+    }
+
+    private static void Project(double[] xs, double[] ys, double axisX, double axisY, out double min, out double max)
+    {
+        min = double.PositiveInfinity;
+        max = double.NegativeInfinity;
+        for (int i = 0; i < 4; i++)
+        {
+            double d = xs[i] * axisX + ys[i] * axisY;
+            if (d < min) min = d;
+            if (d > max) max = d;
+        }
+    }
+
     public override string ToString() => $"VText(\"{Content}\" at {Location})";
 }
 
