@@ -48,11 +48,29 @@ public partial class MainWindow : Window
 
     private SharedEditorController? _editorController;
 
-    public MainWindow()
+    public MainWindow() : this(null) { }
+
+    public MainWindow(string? initialFile)
     {
         InitializeComponent();
 
-        Editor.Text = Templates.DefaultSketch;
+        if (!string.IsNullOrWhiteSpace(initialFile) && File.Exists(initialFile))
+        {
+            try
+            {
+                Editor.Text = File.ReadAllText(initialFile);
+                _currentPath = initialFile;
+                RecentAnimationsManager.AddAnimation(initialFile);
+            }
+            catch
+            {
+                Editor.Text = Templates.DefaultSketch;
+            }
+        }
+        else
+        {
+            Editor.Text = Templates.DefaultSketch;
+        }
         UpdateFileLabel();
 
         InitializeEditor();
@@ -93,6 +111,8 @@ public partial class MainWindow : Window
                 UpdateFileLabel();
             }
         };
+
+        Editor.PreviewKeyDown += Editor_PreviewKeyDown_StopSketch;
 
         Closing += MainWindow_Closing;
         Closed += (s, e) =>
@@ -233,6 +253,27 @@ public partial class MainWindow : Window
             RunSketch();
     }
 
+    // Stop the running sketch the moment the user starts interacting with the editor.
+    // Skip pure modifier keys (they fire on their own as part of any shortcut) and
+    // Ctrl/Alt/Win combos so genuine shortcuts (Ctrl+S, Shift+F5, etc.) still work.
+    private void Editor_PreviewKeyDown_StopSketch(object sender, KeyEventArgs e)
+    {
+        if (!SketchRuntime.Instance.IsRunning) return;
+
+        if (e.Key is Key.LeftCtrl or Key.RightCtrl
+                  or Key.LeftShift or Key.RightShift
+                  or Key.LeftAlt or Key.RightAlt
+                  or Key.System
+                  or Key.LWin or Key.RWin
+                  or Key.CapsLock or Key.NumLock or Key.Scroll)
+            return;
+
+        if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Windows)) != 0)
+            return;
+
+        StopSketch();
+    }
+
     private void RunButton_Click(object sender, RoutedEventArgs e) => RunSketch();
     private void StopButton_Click(object sender, RoutedEventArgs e) => StopSketch();
 
@@ -266,6 +307,7 @@ public partial class MainWindow : Window
         _isDirty = false;
         UpdateFileLabel();
         _editorController?.SetActiveFile(CompletionEngine.FileId);
+        RecentAnimationsManager.AddAnimation(dlg.FileName);
     }
 
     private bool Save()
@@ -276,6 +318,7 @@ public partial class MainWindow : Window
         UpdateFileLabel();
         StatusLabel.Text = $"Saved {Path.GetFileName(_currentPath)}";
         _editorController?.SetActiveFile(CompletionEngine.FileId);
+        RecentAnimationsManager.AddAnimation(_currentPath);
         return true;
     }
 
@@ -294,6 +337,7 @@ public partial class MainWindow : Window
         UpdateFileLabel();
         StatusLabel.Text = $"Saved {Path.GetFileName(_currentPath)}";
         _editorController?.SetActiveFile(CompletionEngine.FileId);
+        RecentAnimationsManager.AddAnimation(_currentPath);
         return true;
     }
 

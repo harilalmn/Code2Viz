@@ -46,13 +46,23 @@ Animator is a stand-alone WPF app that lives in the `Animator/` folder of the Co
 - In Animator, click **Switch to Project** (top-right). Closes Animator, opens Code2Viz.
 - Each app prompts to save unsaved edits before switching.
 
+### Welcome dialog (Code / Animate)
+
+When Code2Viz launches, the Welcome dialog now has a **Code** / **Animate** radio toggle:
+
+- **Code** (default) — *Create a new project* / *Open a local project*, with **Recent Projects** listed on the left.
+- **Animate** — *Create a new animation* / *Open an animation file* (a `.cs` sketch), with **Recent Animation Files** on the left. Choosing either action launches `Animator.exe`; *Open an animation file* passes the chosen path so it loads immediately.
+
+Recent animation files are tracked automatically whenever you Open or Save a sketch in Animator, or launch it from the Welcome dialog with a file selected.
+
 ### Workflow
 
-1. **Launch** `Animator.exe` (or use **Switch to Animator** from Code2Viz).
-2. The editor is pre-populated with a default sketch that orbits a cyan circle around the origin.
+1. **Launch** `Animator.exe` (or pick *Animate* in Code2Viz's Welcome dialog, or use **Switch to Animator**).
+   - Animator also accepts a `.cs` file as a command-line argument and loads it on startup: `Animator.exe path\to\Sketch.cs`.
+2. The editor is pre-populated with a default sketch that orbits a cyan circle around the origin (or your loaded file).
 3. **Run** (▶ Run button, **F5**, or **Ctrl+Enter** to toggle Run/Stop) — the canvas zooms to fit the sketch bounds and the frame loop starts.
 4. **Stop** (■ Stop, **Shift+F5**, or **Ctrl+Enter**) — the sketch halts and the canvas clears.
-5. Edit the code while running — press Run again to recompile.
+5. Edit the code while running — **typing in the editor immediately stops the running sketch** (modifier-only keys and shortcuts like Ctrl+S are ignored), then press Run again to recompile.
 
 ### Writing a sketch
 

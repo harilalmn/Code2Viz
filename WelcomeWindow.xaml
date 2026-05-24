@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Welcome to Code2Viz"
-    Width="800"
+    Width="900"
     Height="450"
     Background="#1E1E1E"
     ResizeMode="NoResize"
@@ -11,7 +11,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1.5*" />
+            <ColumnDefinition Width="1.2*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -30,7 +30,29 @@
                     Foreground="#888888"
                     Text="Visual Geometry Environment" />
 
+                <StackPanel
+                    Margin="0,0,0,20"
+                    Orientation="Horizontal">
+                    <RadioButton
+                        x:Name="CodeModeRadio"
+                        Margin="0,0,20,0"
+                        Checked="ModeRadio_Checked"
+                        Content="Code"
+                        FontSize="14"
+                        Foreground="#E0E0E0"
+                        GroupName="WelcomeMode"
+                        IsChecked="True" />
+                    <RadioButton
+                        x:Name="AnimateModeRadio"
+                        Checked="ModeRadio_Checked"
+                        Content="Animate"
+                        FontSize="14"
+                        Foreground="#E0E0E0"
+                        GroupName="WelcomeMode" />
+                </StackPanel>
+
                 <TextBlock
+                    x:Name="RecentListHeader"
                     Margin="0,0,0,10"
                     FontSize="16"
                     Foreground="#E0E0E0"
@@ -116,7 +138,8 @@
                 Margin="0,0,0,15"
                 Background="#3E3E42"
                 BorderThickness="0"
-                Click="NewProjectBtn_Click">
+                Click="NewProjectBtn_Click"
+                Tag="Create a new project">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Border
@@ -142,7 +165,7 @@
                                         FontSize="16"
                                         FontWeight="SemiBold"
                                         Foreground="White"
-                                        Text="Create a new project" />
+                                        Text="{TemplateBinding Tag}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -161,7 +184,8 @@
                 Height="60"
                 Background="#3E3E42"
                 BorderThickness="0"
-                Click="OpenProjectBtn_Click">
+                Click="OpenProjectBtn_Click"
+                Tag="Open a local project">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Border
@@ -187,7 +211,7 @@
                                         FontSize="16"
                                         FontWeight="SemiBold"
                                         Foreground="White"
-                                        Text="Open a local project" />
+                                        Text="{TemplateBinding Tag}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
