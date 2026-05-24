@@ -234,6 +234,8 @@ vertical.Angle = 90;  // reads bottom-to-top
 
 **VTextAnchor enum values**: `BottomLeft` (default), `BottomCenter`, `BottomRight`, `MiddleLeft`, `MiddleCenter`, `MiddleRight`, `TopLeft`, `TopCenter`, `TopRight`
 
+`VText.DoesIntersect(other)` is text-aware: it tests the text's (possibly rotated, anchor-aware) bounding quad against the other shape's bounding box using the Separating Axis Theorem. The fallback in `Shape.DoesIntersect` mirrors the test, so `other.DoesIntersect(text)` returns the same result.
+
 ### VArrow
 ```csharp
 new VArrow(x1, y1, x2, y2);

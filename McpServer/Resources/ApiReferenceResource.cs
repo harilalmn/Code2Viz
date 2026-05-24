@@ -162,6 +162,9 @@ public class ApiReferenceResource
         // VFont: Arial, TimesNewRoman, CourierNew, Verdana, Georgia, Tahoma, Consolas, etc.
         // VTextAnchor: BottomLeft (default), BottomCenter, BottomRight, MiddleLeft, MiddleCenter,
         //   MiddleRight, TopLeft, TopCenter, TopRight
+        // DoesIntersect(other): text-aware via OBB-vs-AABB SAT on the rotated, anchor-aware
+        //   bounding quad. Shape.DoesIntersect falls back so the check is symmetric:
+        //   other.DoesIntersect(text) returns the same result.
         ```
 
         ### VArrow
