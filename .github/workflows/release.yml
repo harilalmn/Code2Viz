@@ -71,6 +71,24 @@ jobs:
           }
           "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
+      - name: Generate release notes
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          # Most recent release tag before this one (empty for the first release).
+          $prev = ""
+          try { $prev = (git describe --tags --abbrev=0 "$tag^" 2>$null).Trim() } catch { }
+          $range = if ($prev) { "$prev..$tag" } else { $tag }
+          # Commit subjects since the previous release, excluding the version-bump commits.
+          # (This repo commits directly to main, so PR-based --generate-notes would be empty.)
+          $log = git log $range --no-merges --invert-grep --grep="^Release v" --pretty=format:"- %s"
+          if (-not $log) { $log = "- Maintenance and internal improvements." }
+          $repo = "${{ github.repository }}"
+          $lines = @("## What's Changed", "", $log)
+          if ($prev) { $lines += @("", "**Full Changelog**: https://github.com/$repo/compare/$prev...$tag") }
+          ($lines -join "`n") | Out-File -FilePath notes.md -Encoding utf8
+          Write-Host "----- notes.md -----"; Get-Content notes.md
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -78,5 +96,5 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.tag }}" `
             --title "${{ steps.version.outputs.tag }}" `
-            --generate-notes `
+            --notes-file notes.md `
             "${{ steps.artifact.outputs.path }}"
