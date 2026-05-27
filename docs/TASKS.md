@@ -225,6 +225,23 @@
 
 ---
 
+### Phase 25: Geometry Unification — Single `C2VGeometry` Namespace (2026-05-27)
+- [x] **Port `RayCaster` into `C2VGeometry`** — the spatial accelerator (flat-array BVH, SAH split, inline ray-vs-shape math, `Refit`) now lives in the unified namespace and snapshots shapes from the canonical registry. `VPoint` markers and infinite-bounds shapes (VRay/VXLine) stay excluded.
+- [x] **Reconcile `ShapeDefaults` into `C2VGeometry` construction** — global style + dimension defaults are applied at shape-construction time in the unified namespace (no parallel copy in the old namespace).
+- [x] **Make `CanvasRenderer` the canonical `IShapeRegistry`** — shapes auto-register against `CanvasRenderer.Instance` through the registry interface; the Animator path keeps using `DefaultRegistry`. One registry abstraction, two hosts.
+- [x] **Repoint the whole app from `Code2Viz.Geometry` to `C2VGeometry`** — every `using Code2Viz.Geometry;` across Canvas, Editor, Execution, Export, Mcp, Project, Commands, samples, and templates now uses `C2VGeometry`. User scripts import `using C2VGeometry;`.
+- [x] **`VPoint` is now only a drawable marker; `VXYZ` is the coordinate type** — coordinates/positions/vectors (circle centers, line endpoints, polygon vertices, `BoundingBox.Min/Max`, `ICurve.Divide` results, etc.) are `VXYZ` value types. `VPoint` is reserved for visible point markers on the canvas.
+- [x] **Delete `Code2Viz.Geometry` + adapter/parity scaffolding** — the old namespace, the C2VGeometry↔Code2Viz.Geometry adapter, and the parity-test scaffolding are removed. There is now a single geometry namespace shared by Code2Viz and Animator.
+- [x] **Docs swept to the unified namespace** — README, `Documentation/DocGenerator.cs` (namespace list + summaries + sample-code strings), `McpServer/SKILL.md`, `McpServer/Resources/ApiReferenceResource.cs`, and `McpServer/Tools/VizCodeTools.cs` (the functional "Available imports" string) updated to `C2VGeometry` / `VXYZ`.
+
+---
+
+### Phase 26: Editor & Canvas Fixes (2026-05-27)
+- [x] **CodeLens blink-on-broken-syntax fix** — a nearby structural syntax error made Roslyn error-recovery intermittently fail to parse the following declaration as a method, so alternating recomputes added/dropped its (2×-tall) CodeLens row, blinking it in/out and bouncing the code below. `UpdateCodeLens` now swaps `_items` outright only on a clean parse; on a broken parse it merges via `MergePreservingExisting` (keeps all prior items, only adds new `(Kind, SymbolName)`, never removes) and a failed build leaves `_items` untouched instead of blanking the gutter. Shared `Editor/` source — flows to both apps.
+- [x] **Canvas-focus fix for P/L/C/R drawing-tool shortcuts** — `RenderCanvas.OnMouseDown` never took keyboard focus on click, so focus stayed in the code editor and pressing P/L/C/R (and Delete/A/Esc) typed the letter into the editor instead of activating the drawing tool. Any canvas click now grabs focus if it doesn't already have it. Pre-existing bug, independent of the geometry-unification work.
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

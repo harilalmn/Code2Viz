@@ -19,7 +19,7 @@ namespace Code2Viz.Documentation
         public DocGenerator()
             : this(Assembly.GetExecutingAssembly(), new[]
             {
-                "Code2Viz.Geometry",
+                "C2VGeometry",
                 "Code2Viz.Animation",
                 "Code2Viz.Export",
                 "Code2Viz.Console"
@@ -41,7 +41,7 @@ namespace Code2Viz.Documentation
             _summaries = new Dictionary<string, string>
             {
                 { "Code2Viz", "Root namespace for the Code2Viz application." },
-                { "Code2Viz.Geometry", "Contains classes and interfaces for 2D geometric shapes and operations." },
+                { "C2VGeometry", "Contains classes and interfaces for 2D geometric shapes and operations, plus the VXYZ coordinate type. This is the single geometry namespace used by both Code2Viz and Animator." },
                 { "Code2Viz.Editor", "Contains classes related to the code editor, including formatting, completion, and snippets." },
 
                 // Base classes
@@ -2530,7 +2530,7 @@ foreach (var name in BuiltInHatches.GetAllNames())
 
             // Quick Example
             AddWelcomeSectionHeader(doc, "Quick Example");
-            var exampleCode = @"using Code2Viz.Geometry;
+            var exampleCode = @"using C2VGeometry;
 
 namespace StartViz
 {

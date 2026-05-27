@@ -24,7 +24,7 @@ public class ApiReferenceResource
         using System.Linq;
         using System.Numerics;
         using System.Collections.Generic;
-        using Code2Viz.Geometry;
+        using C2VGeometry;
         using Code2Viz.Console;
         using Code2Viz.Animation;
         ```
@@ -53,8 +53,8 @@ public class ApiReferenceResource
 
         ## Shape Methods (all shapes)
         - `Move(new VXYZ(dx, dy, 0))` — Translate by vector
-        - `Rotate(pivot, angleDeg)` — Rotate around VPoint pivot
-        - `Scale(center, factor)` — Scale around VPoint center
+        - `Rotate(pivot, angleDeg)` — Rotate around VXYZ pivot
+        - `Scale(center, factor)` — Scale around VXYZ center
         - `Flip(mirrorLine)` — Mirror across VLine
         - `Clone()` — Deep copy
         - `GetBounds()` — Returns BoundingBox with Min, Max, Width, Height, Center, Area
@@ -63,7 +63,7 @@ public class ApiReferenceResource
         - `BringAbove(otherShape)` — Move above another shape in draw order (renders on top)
         - `SendBehind(otherShape)` — Move behind another shape in draw order (renders underneath)
         - `Contains(point)` — Point containment test
-        - `DistanceTo(point)` — Distance to VPoint
+        - `DistanceTo(point)` — Distance to VXYZ
         - `DoesIntersect(other)` — Check intersection with another shape
         - `Intersect(other)` — Get intersection shape (or null)
 
@@ -82,7 +82,7 @@ public class ApiReferenceResource
         ### VLine
         ```csharp
         new VLine(x1, y1, x2, y2);
-        new VLine(VPoint start, VPoint end);
+        new VLine(VXYZ start, VXYZ end);
         new VLine(startPoint, angleInDegrees, length);
         // Properties: Start, End, MidPoint, Direction (VXYZ)
         ```
@@ -90,7 +90,7 @@ public class ApiReferenceResource
         ### VCircle
         ```csharp
         new VCircle(centerX, centerY, radius);
-        new VCircle(center, radius);                       // VPoint or VXYZ center
+        new VCircle(center, radius);                       // VXYZ center
         new VCircle(p1, p2, p3);                           // circumcircle through 3 points
         VCircle.FromCenterDiameter(center, diameter);
         VCircle.FromCenterDiameter(cx, cy, diameter);
@@ -125,8 +125,8 @@ public class ApiReferenceResource
 
         ### VPolygon
         ```csharp
-        new VPolygon(params VPoint[] vertices);
-        new VPolygon(List<VPoint> vertices);
+        new VPolygon(params VXYZ[] vertices);
+        new VPolygon(List<VXYZ> vertices);
         new VPolygon(List<ICurve> curves);  // from ordered curves forming closed loop
         // Auto-closes
         // Properties: Points, Area, SignedArea
@@ -135,8 +135,8 @@ public class ApiReferenceResource
 
         ### VPolyline
         ```csharp
-        new VPolyline(params VPoint[] points);
-        new VPolyline(List<VPoint> points);
+        new VPolyline(params VXYZ[] points);
+        new VPolyline(List<VXYZ> points);
         // Open path
         ```
 
@@ -147,7 +147,7 @@ public class ApiReferenceResource
 
         ### VSpline
         ```csharp
-        new VSpline(params VPoint[] points);
+        new VSpline(params VXYZ[] points);
         // Catmull-Rom through all points
         // Properties: ControlPoints, SegmentsPerSpan (16), Tension (0.5, range 0=sharp to 1=loose)
         ```
@@ -223,7 +223,7 @@ public class ApiReferenceResource
         ```csharp
         new VRadialDimension(circle);          // from VCircle
         new VRadialDimension(arc);             // from VArc
-        new VRadialDimension(center, radius);  // from VPoint + radius
+        new VRadialDimension(center, radius);  // from VXYZ + radius
         // Properties: LeaderAngle (45), ShowDiameter (false), ArrowSize (8), TextHeight (12), DecimalPlaces (2)
         // Prefix (""), Suffix (""), CustomText (null), TextBackgroundOpaque (false)
         // Per-element colors (null = use base Color): DimensionLineColor, TextColor
@@ -232,8 +232,8 @@ public class ApiReferenceResource
 
         ### VXLine (infinite construction line)
         ```csharp
-        new VXLine(basePoint, direction);       // VPoint + VXYZ
-        new VXLine(point1, point2);            // through two VPoints
+        new VXLine(basePoint, direction);       // VXYZ + VXYZ
+        new VXLine(point1, point2);            // through two VXYZ points
         new VXLine(x1, y1, x2, y2);
         VXLine.Horizontal(y);
         VXLine.Vertical(x);
@@ -241,10 +241,10 @@ public class ApiReferenceResource
 
         ### VRay (semi-infinite ray)
         ```csharp
-        new VRay(origin, direction);            // VPoint + VXYZ
-        new VRay(origin, throughPoint);         // two VPoints
+        new VRay(origin, direction);            // VXYZ + VXYZ
+        new VRay(origin, throughPoint);         // two VXYZ points
         new VRay(ox, oy, tx, ty);
-        VRay.AtAngle(origin, angleDeg);        // VPoint origin + angle
+        VRay.AtAngle(origin, angleDeg);        // VXYZ origin + angle
         VRay.HorizontalRight(origin); VRay.HorizontalLeft(origin);
         VRay.VerticalUp(origin); VRay.VerticalDown(origin);
         // Properties: Origin, Direction, RenderExtent (10000)
@@ -285,7 +285,7 @@ public class ApiReferenceResource
         ```csharp
         list.Add(new VLine(0, 0, 100, 100) { Color = "Cyan", Name = "edge" });  // List.Add
         hulls[i] = new VPolygon(pts) { Color = "Lime", Name = $"hull{i}" };      // array slot
-        VLine Make(VPoint a, VPoint b) =>                                        // helper return
+        VLine Make(VXYZ a, VXYZ b) =>                                            // helper return
             new VLine(a, b) { Color = "Gold", Name = "edge" };
         ```
         If shapes get hidden, the console logs `Warning: N unnamed shape(s) hidden (...)`. Calling `.Draw()` on a shape also keeps it visible (sets `IsExplicitlyDrawn = true`).
@@ -294,7 +294,7 @@ public class ApiReferenceResource
         Properties: StartPoint, EndPoint, Vertices, SelfIntersecting
         Methods:
         - `GetLength()` — Total arc length
-        - `Divide(n)` — Split into n equal segments, returns List<VPoint>
+        - `Divide(n)` — Split into n equal segments, returns List<VXYZ>
         - `Measure(segmentLength)` — Points at fixed distance intervals
         - `PointAtSegmentLength(length)` — Point at distance along curve
         - `PointAtParameter(t)` — Point at parameter (0.0 to 1.0)
@@ -318,7 +318,7 @@ public class ApiReferenceResource
         Returned by `shape.GetBounds()` method on all shapes.
         ```csharp
         BoundingBox bounds = shape.GetBounds();
-        // Properties: Min, Max (VPoint corners), Width, Height, Center, Area
+        // Properties: Min, Max (VXYZ corners), Width, Height, Center, Area
         // Methods: Contains(point), Intersects(other), Union(other), Expand(distance)
         var (min, max) = bounds;  // tuple deconstruction
         ```
@@ -447,7 +447,7 @@ public class ApiReferenceResource
         RayHit?[] seq     = caster.FindIntersections(qs, parallel: false);
 
         // Refit after shape movement (in-place, O(N), preserves topology)
-        circle.Center = new VPoint(50, 0);
+        circle.Center = new VXYZ(50, 0);
         caster.Refit();
         ```
         - Indexes every Shape in CanvasRenderer.Instance.GetShapes() with IsVisible == true.
@@ -491,17 +491,17 @@ public class ApiReferenceResource
         ```csharp
         var hex = new VPolygon(Enumerable.Range(0, 6).Select(i => {
             double a = Math.PI / 3 * i;
-            return new VPoint(Math.Cos(a) * 20, Math.Sin(a) * 20);
+            return new VXYZ(Math.Cos(a) * 20, Math.Sin(a) * 20);
         }).ToArray()) { Color = "Cyan" };
-        var ring = hex.CircularArray(new VPoint(0, 0), 12);
+        var ring = hex.CircularArray(new VXYZ(0, 0), 12);
         ```
 
         ### Star polygon
         ```csharp
-        var pts = new List<VPoint>();
+        var pts = new List<VXYZ>();
         for (int i = 0; i < 5; i++) {
             double angle = Math.PI / 2 + i * 4 * Math.PI / 5;
-            pts.Add(new VPoint(Math.Cos(angle) * 100, Math.Sin(angle) * 100));
+            pts.Add(new VXYZ(Math.Cos(angle) * 100, Math.Sin(angle) * 100));
         }
         var star = new VPolygon(pts) { Color = "Gold", FillColor = "DarkGoldenrod" };
         ```

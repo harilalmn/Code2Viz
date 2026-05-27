@@ -5,8 +5,12 @@ two geometry namespaces exist today and the parity-test guardrail. **This** doc 
 the plan and the measured results of a spike to **collapse them into one**, plus an
 analysis of which Code2Viz features can flow to Animator once that's done.
 
-Status: **spike complete, full migration not started.** Spike proof lives on branch
-`worktree-vcircle-geometry-spike` (commit `b74a8f4`) — buildable, 152/152 tests green.
+Status: **DONE — migration complete on `feature/geometry-unification`.** `Code2Viz.Geometry`
+is deleted; the app runs on `C2VGeometry`. Builds clean (Code2Viz + Animator + Tests), suite
+green, render visually verified. Increments: (1) RayCaster port, (2) ShapeDefaults reconcile,
+(3) repoint + delete. The repoint exposed a polygon-edge `VLine` auto-registration bug (caught
+by the visual render smoke test, not unit tests) — fixed to `VLine.Internal`, guarded by
+`Tests/GeometryRegistryPollutionTests.cs`. See `GEOMETRY_STRATEGY.md` for the end state.
 
 ---
 

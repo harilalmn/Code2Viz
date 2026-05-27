@@ -37,7 +37,7 @@ Animator is a stand-alone WPF app that lives in the `Animator/` folder of the Co
 
 - Different mental model: `Setup()` once, `Draw()` every frame
 - No project model, just one `.cs` file at a time — quicker iteration
-- Uses `C2VGeometry` types (no `Code2Viz.Geometry` dependency)
+- Uses the same `C2VGeometry` types as Code2Viz (the single geometry namespace)
 - Trimmed feature set: no project explorer, no drawing tools, no dimensions, no properties panel — just editor, canvas, console
 
 ### Switching between the two
@@ -194,7 +194,7 @@ File > New Project (Ctrl+Shift+N) creates a new project with a starter template.
 The entry point is `StartViz.Viz.Main()` in `StartViz.cs`:
 
 ```csharp
-using Code2Viz.Geometry;
+using C2VGeometry;
 
 namespace StartViz
 {
@@ -1010,7 +1010,7 @@ double y = Math.Sin(30.0.ToRadians());          // 0.5
 double angleDeg = Math.Atan2(dy, dx).ToDegrees();
 ```
 
-Defined in `Code2Viz.Geometry.DoubleExtensions`, available wherever you `using Code2Viz.Geometry;`.
+Defined in `C2VGeometry.DoubleExtensions`, available wherever you `using C2VGeometry;`.
 
 ---
 
@@ -1023,7 +1023,7 @@ Code2Viz includes an animation system using the `Animator` class for creating an
 ### Basic Animation Example
 
 ```csharp
-using Code2Viz.Geometry;
+using C2VGeometry;
 using Code2Viz.Animation;
 
 namespace StartViz
@@ -1399,7 +1399,7 @@ new VCircle(150.00, 100.00, 75.50).Draw();
 ```
 
 ### Drawing Tool Shortcuts
-When the editor is not focused:
+These single-key shortcuts only fire when the editor is **not** focused. Click the canvas first to give it keyboard focus, then press the key:
 | Shortcut | Action |
 |----------|--------|
 | `P` | Point tool |
@@ -1867,7 +1867,7 @@ The Project Explorer panel (right side) shows all files and folders in your proj
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Code2Viz.Geometry;    // Shapes: VPoint, VLine, VCircle, etc.
+using C2VGeometry;          // Shapes: VPoint, VLine, VCircle, etc. and the VXYZ coordinate type
 using Code2Viz.Animation;   // Timeline, DrawAnimation, MoveAnimation, etc.
 using Code2Viz.Console;     // VizConsole.Log()
 ```
@@ -2077,7 +2077,7 @@ VizConsole.Log($"Polyline self-intersects: {polyline.SelfIntersecting}");  // tr
 ## Example: Complete Drawing
 
 ```csharp
-using Code2Viz.Geometry;
+using C2VGeometry;
 using System;
 
 namespace StartViz
@@ -2159,7 +2159,7 @@ trails.Add(new VLine(a, b) { Color = "Cyan", Name = "trail" });
 hulls[i] = new VPolygon(pts) { Color = "Lime", Name = $"hull{i}" };
 
 // Helper-function return — the returned shape has no caller-side variable name
-VLine MakeEdge(VPoint a, VPoint b) =>
+VLine MakeEdge(VXYZ a, VXYZ b) =>
     new VLine(a, b) { Color = "Gold", Name = "edge" };
 ```
 

@@ -78,7 +78,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
-using Code2Viz.Geometry;
+using C2VGeometry;
 using Code2Viz.Console;
 using Code2Viz.Animation;
 ```
@@ -748,7 +748,7 @@ double area = region.Area;
 
 `RayCaster` accelerates ray-vs-shape queries over large 2D scenes. It snapshots all visible shapes on the canvas (every `Shape` in `CanvasRenderer.Instance.GetShapes()` with `IsVisible == true`) at construction, builds a flat-array BVH (Surface Area Heuristic split), then each query traverses iteratively with a stack-allocated stack and inline ray-vs-shape math for `VLine`, `VCircle`, `VArc`, `VEllipse`, `VPolygon` (covers `VRectangle`), and `VPolyline`. Other shape types fall back to AABB hit. The hot path is allocation-free, and queries are thread-safe after construction.
 
-**`VPoint` markers are always excluded** from the index — they're zero-area visual labels, not meaningful ray targets. This holds regardless of `IsVisible` or how the `VPoint` was registered (including auto-registered centers from `new VCircle(new VPoint(...), r)`).
+**`VPoint` markers are always excluded** from the index — they're zero-area visual labels, not meaningful ray targets. This holds regardless of `IsVisible` or how the `VPoint` was registered (any standalone `new VPoint(...)` marker on the canvas).
 
 ```csharp
 // Build once over every visible shape currently on the canvas
@@ -793,7 +793,7 @@ RayHit?[] results = caster.FindIntersections(queries);
 RayHit?[] seq     = caster.FindIntersections(queries, parallel: false);
 
 // After shapes move, refit AABBs in O(N) without rebuilding the tree.
-circle.Center = new VPoint(50, 0);
+circle.Center = new VXYZ(50, 0);
 caster.Refit();
 ```
 
@@ -1075,7 +1075,7 @@ for (int i = 1; i <= 5; i++)
 
 ### Sketch model
 
-User code subclasses `Animator.Sketching.Sketch` and overrides `Setup()` (called once) and `Draw()` (called every frame). Geometry uses **`C2VGeometry`** types, not `Code2Viz.Geometry`. Shapes auto-register each frame; the canvas re-renders the current registry contents.
+User code subclasses `Animator.Sketching.Sketch` and overrides `Setup()` (called once) and `Draw()` (called every frame). Geometry uses **`C2VGeometry`** types — the same single geometry namespace that Code2Viz uses. Shapes auto-register each frame; the canvas re-renders the current registry contents.
 
 ```csharp
 using System;
@@ -1122,7 +1122,7 @@ public class MySketch : Sketch
 ### Differences from Code2Viz mode
 
 - Single `.cs` file (open / save / save-as), not a multi-file project
-- `C2VGeometry` types only — no `Code2Viz.Geometry`, no `Animator` doesn't import `Code2Viz` at all
+- Uses the same `C2VGeometry` types as Code2Viz; Animator does not import `Code2Viz` at all
 - Per-frame fresh-object semantics: don't try to hold references between frames; put persistent state in fields on the sketch class
 - No `Main()` — only Sketch subclasses are executed
 - No properties panel, no drawing tools, no dimension annotations, no timeline scrubber — this app is for the frame loop, not static editing

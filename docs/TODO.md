@@ -181,6 +181,8 @@ Core timeline playback is implemented; items below are advanced timeline UX poli
 
 ### Architecture
 - [x] Separate geometry library for reuse (C2VGeometry)
+- [x] Unify on a single geometry namespace — `Code2Viz.Geometry` retired; `C2VGeometry` is the one geometry namespace shared by both Code2Viz and Animator; coordinates are `VXYZ`, `VPoint` is only a drawable marker
+- [ ] Migrate Code2Viz's inlined editor wiring in MainWindow.xaml.cs to SharedEditorController (Animator already uses it)
 - [ ] Add dependency injection for testability
 - [ ] Implement plugin system for custom shapes
 
@@ -254,6 +256,11 @@ Core timeline playback is implemented; items below are advanced timeline UX poli
 ### Animator Sub-Project
 - [x] **In-process Sketch mode** in Code2Viz — `Code2Viz.Sketching.Sketch` base, `SketchRuntime`, adapter for C2VGeometry → Code2Viz.Geometry shapes (`Sketch/`), entry probe in `ModuleCompiler`, frame-loop integration in `MainWindow`.
 - [x] **Standalone Animator app** (`Animator.exe`) — separate project under `Animator/`, depends only on `C2VGeometry.csproj`. Direct C2VGeometry renderer (`AnimCanvas`), single-file Roslyn compiler, AvalonEdit + Code2Viz dark theme, IntelliSense (Ctrl+Space, auto-popup), colored console, save-on-close prompts, Ctrl+Enter toggle, cross-app Switch buttons.
+
+### Recently Completed (2026-05-27)
+- [x] **Geometry unification — single `C2VGeometry` namespace** — `Code2Viz.Geometry` is retired and deleted along with the C2VGeometry↔Code2Viz.Geometry adapter and parity-test scaffolding. `RayCaster` and `ShapeDefaults` were ported into `C2VGeometry`, and `CanvasRenderer` is now the canonical `IShapeRegistry` shapes auto-register against (Animator keeps `DefaultRegistry`). The whole app and all user scripts now `using C2VGeometry;`. Coordinates/positions/vectors are the `VXYZ` value type; `VPoint` is now only a drawable point marker. Docs swept across README, DocGenerator, SKILL.md, ApiReferenceResource.cs, and VizCodeTools.cs.
+- [x] **CodeLens blink-on-broken-syntax fix** — `Editor/CodeLensProvider.cs`: a nearby structural syntax error made Roslyn error-recovery intermittently fail to re-parse the following declaration as a method, so alternating recomputes added/dropped its 2×-tall CodeLens row and blinked it in/out. `UpdateCodeLens` now swaps `_items` only on a clean parse; on a broken parse it merges (keeps prior items, only adds new, never removes) and a failed build leaves `_items` untouched. Shared `Editor/` source — flows to both apps.
+- [x] **Canvas-focus fix for drawing-tool shortcuts** — `RenderCanvas.OnMouseDown` now grabs keyboard focus on click, so single-key drawing-tool shortcuts (P/L/C/R, plus Delete/A/Esc) fire on the canvas instead of typing into the code editor. Click the canvas first to focus it, then press the key.
 
 ### Recently Completed (2026-05-26)
 - [x] **CodeLens vertical-jitter fix** — `Editor/CodeLensProvider.cs` stored each CodeLens row as a frozen absolute offset and only recomputed on the 500 ms semantic-update debounce, but AvalonEdit redraws touched lines on every keystroke. Typing above a code-lensed declaration shifted the real offsets while the cached ones went stale, so the 2×-tall CodeLens row rendered on the wrong line and snapped back after the debounce. Each item now holds a live `TextAnchor` (`AfterInsertion`, `SurviveDeletion`) and the element generator reads `CurrentOffset`, so the row tracks edits instead of snapping; only the debounced count text lags, which causes no movement. Flows to both apps via the shared `Editor/` source.
