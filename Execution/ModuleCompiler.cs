@@ -91,6 +91,13 @@ public class ModuleCompiler
 
         // Add C2VGeometry assembly so user code can `using C2VGeometry;`
         DefaultReferences.Add(MetadataReference.CreateFromFile(typeof(C2VGeometry.Shape).Assembly.Location));
+
+        // Add the Code2Viz host assembly so user code can `using Code2Viz.Console;` (VizConsole),
+        // `using Code2Viz.Animation;`, and `using Code2Viz.Sketching;`. Before the geometry
+        // unification this came in via the host-resident Code2Viz.Geometry assembly; geometry now
+        // lives in the separate C2VGeometry.dll, so the host must be referenced explicitly or those
+        // namespaces fail to resolve (CS0246) in both the editor and at runtime.
+        DefaultReferences.Add(MetadataReference.CreateFromFile(typeof(ModuleCompiler).Assembly.Location));
     }
 
     /// <summary>
