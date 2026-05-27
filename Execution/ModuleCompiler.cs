@@ -125,8 +125,12 @@ public class ModuleCompiler
                 $"Run started. Project: '{project.ProjectFile.Name}', files: " +
                 string.Join(", ", project.Files.Select(f => f.FileName)));
 
-            // Create compilation
-            var (compilation, allDlls) = await CreateCompilationAsync(project);
+            // Create compilation. injectStackGuards: true so runaway recursion in user code
+            // surfaces as a catchable InsufficientExecutionStackException (handled below / by
+            // SketchRuntime) instead of an uncatchable StackOverflowException that would kill the
+            // whole app. Only the execute path opts in — the guard shifts in-line character offsets,
+            // which would break offset-based editor features (go-to-def/rename) that share this method.
+            var (compilation, allDlls) = await CreateCompilationAsync(project, injectStackGuards: true);
 
             // Emit to memory stream with PDB for line numbers in stack traces
             using var ms = new MemoryStream();
@@ -501,7 +505,8 @@ public class ModuleCompiler
         return (references, allDlls);
     }
 
-    public async Task<(CSharpCompilation Compilation, HashSet<string> AllDlls)> CreateCompilationAsync(VizCodeProject project)
+    public async Task<(CSharpCompilation Compilation, HashSet<string> AllDlls)> CreateCompilationAsync(
+        VizCodeProject project, bool injectStackGuards = false)
     {
         // Get ALL source files from project directory (not just open ones)
         var allSourceFiles = project.GetAllSourceFiles().ToList();
@@ -519,7 +524,13 @@ public class ModuleCompiler
 
             // Transform animation variable declarations to include Name property
             var newRoot = rewriter.Visit(tree.GetRoot());
-            
+
+            // Guard against uncatchable StackOverflowException from runaway recursion. Only on the
+            // execute path: the guard preserves line numbers (for stack traces) but shifts in-line
+            // offsets, so it must not pollute trees used for semantic/offset-based editor features.
+            if (injectStackGuards)
+                newRoot = StackGuardRewriter.Inject(newRoot);
+
             // IMPORTANT: Preserve the original file path when creating the new tree
             // Using newRoot.SyntaxTree loses the file path!
             return tree.WithRootAndOptions(newRoot, tree.Options);

@@ -217,7 +217,13 @@ public sealed class SketchRuntime
 
     private static void ReportError(Exception ex, string phase)
     {
-        ConsoleOutput.Instance.WriteError("Sketch", $"{phase} error: {ex.Message}");
+        if (ex is InsufficientExecutionStackException)
+            ConsoleOutput.Instance.WriteError("Sketch",
+                $"{phase} error: stack depth limit reached — almost certainly infinite or runaway " +
+                "recursion (a method calling itself, or two methods calling each other, with no exit). " +
+                "The sketch was stopped to keep Animator alive.");
+        else
+            ConsoleOutput.Instance.WriteError("Sketch", $"{phase} error: {ex.Message}");
         if (ex.StackTrace != null)
         {
             foreach (var line in ex.StackTrace.Split('\n'))

@@ -6,6 +6,7 @@ using System.Runtime.Loader;
 using System.Threading.Tasks;
 using Animator.Console;
 using Animator.Sketching;
+using Code2Viz.Execution; // StackGuardRewriter (shared source, linked into Animator)
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -78,6 +79,15 @@ public class SketchCompiler
                 Microsoft.CodeAnalysis.Text.SourceText.From(sourceCode, System.Text.Encoding.UTF8),
                 path: sourceName,
                 options: parseOptions);
+
+            // Inject stack-depth guards so runaway recursion in the sketch surfaces as a catchable
+            // InsufficientExecutionStackException (handled by SketchRuntime) instead of an
+            // uncatchable StackOverflowException that would kill Animator.exe. Recreate the tree
+            // with the original path + encoding so PDB emit and diagnostic line mapping still point
+            // at the user's source.
+            var guardedRoot = (CSharpSyntaxNode)StackGuardRewriter.Inject(tree.GetRoot());
+            tree = CSharpSyntaxTree.Create(
+                guardedRoot, parseOptions, path: sourceName, encoding: System.Text.Encoding.UTF8);
 
             // SourceText.From(...) with an explicit encoding is required when emitting
             // PDBs — passing a bare string here produces "CS8055: Cannot emit debug

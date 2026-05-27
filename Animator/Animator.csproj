@@ -76,6 +76,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="..\Execution\StackGuardRewriter.cs"      Link="Linked\Execution\StackGuardRewriter.cs" />
     <Compile Include="..\Documentation\DocGenerator.cs"         Link="Linked\Documentation\DocGenerator.cs" />
     <Compile Include="..\Project\RecentAnimationsManager.cs"    Link="Linked\Project\RecentAnimationsManager.cs" />
     <Compile Include="..\HelpWindow.xaml.cs"                    Link="Linked\HelpWindow.xaml.cs">
