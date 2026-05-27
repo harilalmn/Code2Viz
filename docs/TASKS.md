@@ -242,6 +242,14 @@
 
 ---
 
+### Phase 27: Animator Bottom-Left Origin + Calendar Versioning (2026-05-27)
+- [x] **Animator sketch frame origin moved to bottom-left** — `AnimCanvas.SetBoundary` (plus the resize handler and boundary-outline draw) anchor the `Size()` frame at the origin so `(0,0)` is the frame's bottom-left corner instead of its centre. Valid sketch coordinates run `x ∈ [0,Width]`, `y ∈ [0,Height]`, Y-up. The world↔screen transform and `ZoomToBounds` were already general; only the frame bounds changed. Code2Viz's own canvas is unaffected (still centre-origin).
+- [x] **Origin axis lines no longer drawn** — `AnimCanvas.Refresh` stopped calling `DrawAxes`, so the X/Y lines through the origin are gone (matching the already-disabled grid). The faint frame outline still renders.
+- [x] **Default sketch boilerplate updated** — `Animator/Templates.cs` `DefaultSketch` declares `width`/`height` fields and offsets the orbiting circle to the frame centre (`+ width/2`, `+ height/2`) so it stays visible under the bottom-left origin.
+- [x] **Calendar versioning (`YEAR.MONTH.PATCH`)** — `scripts/release.ps1` drops `-Bump`; it stamps year/month from the release date and increments patch within a month (resets to 0 on a new month/year). `Directory.Build.props` + `installer.iss` moved `2.0.0` → `2026.5.0`, and `CLAUDE.md`'s `/release` section was updated to match.
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |
