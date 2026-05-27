@@ -343,6 +343,11 @@ public class RenderCanvas : FrameworkElement
 
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
+        // Grab keyboard focus on any click so canvas shortcuts (P/L/C/R drawing tools,
+        // Delete, A=select-all, Esc) work. Without this, focus stays in the code editor
+        // and the keystroke is typed there instead of triggering the tool.
+        if (!IsKeyboardFocusWithin) Focus();
+
         if (e.MiddleButton == MouseButtonState.Pressed)
         {
             _isPanning = true;
