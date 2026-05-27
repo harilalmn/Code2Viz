@@ -250,6 +250,15 @@
 
 ---
 
+### Phase 28: Sketch Crash-Resilience, Process-Isolation Foundation, Animator Completion + Ribbon (2026-05-27)
+- [x] **Stack-overflow hardening (`Execution/StackGuardRewriter.cs`, namespace `Code2Viz.Execution`)** — a Roslyn rewriter injects `RuntimeHelpers.EnsureSufficientExecutionStack()` at the top of every method-like body so runaway recursion throws a *catchable* `InsufficientExecutionStackException` before the uncatchable `StackOverflowException` would fail-fast and kill the process. Wired into both compilers: Code2Viz `ModuleCompiler.CreateCompilationAsync(project, injectStackGuards: true)` (execute path only — defaults false so offset-based editor features are unaffected) and Animator `SketchCompiler`. Single-sourced in `Execution/`, linked into Animator; guarded by `Tests/StackGuardRewriterTests.cs`.
+- [x] **Phase 2 process-isolation foundation (POC) — `SketchHost.exe` + `Animator/Ipc/`** — out-of-process sketch host so an infinite loop / OOM / native crash can't take down the UI (the cases the stack guard can't catch). `HostMessage.cs` (length-prefixed binary framing over the child's stdin/stdout), `ShapeCodec.cs` (encodes the 8 AnimCanvas-rendered shape types), `SketchHostClient.cs` (parent handle + frame-starvation watchdog). Proven against benign / circlesFill / infinite-loop sketches (parent survives all three). See `SKETCH_ISOLATION_PLAN.md`.
+- [x] **Animator UI wired to the child behind `ANIMATOR_ISOLATE=1`** — `MainWindow.xaml.cs` branches on the env flag (default OFF; in-process path stays authoritative); `SketchIsRunning` unifies the running-state check; `EnsureHostClient` (re)spawns and marshals events; `AppSwitcher.FindSketchHostExe()` locates the child. Verified live in the GUI (Run spawns the child; the watchdog kills an infinite-loop child while Animator survives). Remaining steps (installer bundling, making it the default, deleting the in-process path) tracked in `SKETCH_ISOLATION_PLAN.md`.
+- [x] **Animator completion unified on `RoslynCompletionService`** — removed the `#if ANIMATOR → CompletionEngine` fork in `SharedEditorController.ShowCompletionWindow`, un-gated `SortCompletions`, and wired the doc-sidecar selection handler for both apps. Animator now gets fuzzy matching + highlighting, scope/expected-type sorting, the documentation sidecar, and Roslyn noise-filtering — the same engine as Code2Viz. `CompletionEngine` kept only for its `Workspace`/`FileId`.
+- [x] **Animator branding ribbon** — added a Code2Viz-style branding strip above the menu bar (logo + "Animator" + "Sketch in dotnet." tagline + assembly calendar version), wrapped in the Row-0 StackPanel so no grid rows shift; removed the redundant toolbar title.
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

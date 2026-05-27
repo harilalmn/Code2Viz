@@ -162,10 +162,11 @@ public class Bouncer : Sketch
 
 ### Editor features
 
-- **IntelliSense** — Ctrl+Space for manual trigger, auto-popup on `.` and identifier characters. Uses Roslyn against the C2VGeometry + Animator.Sketching reference set, so dot-completion on `Sketch` members, `VCircle`, `VXYZ`, etc. works.
+- **IntelliSense** — Ctrl+Space for manual trigger, auto-popup on `.` and identifier characters. Uses the **same Roslyn completion engine as Code2Viz** (against the C2VGeometry + Animator.Sketching reference set), so dot-completion on `Sketch` members, `VCircle`, `VXYZ`, etc. works — with fuzzy matching + match highlighting, scope/expected-type ranking, per-kind icons, and a documentation sidecar showing the selected member's signature and summary.
 - **Code colours** — matches Code2Viz's CSharpHighlighting theme.
 - **Save / Open / New** — File menu buttons or Ctrl+S / Ctrl+O / Ctrl+N. Prompts to save unsaved edits before destructive actions and on window close.
 - **Console** — errors render in red, warnings in yellow, info in default foreground.
+- **Crash-resistant** — a runaway sketch (e.g. infinite or mutual recursion) is caught and stopped with a console message instead of taking down the app; the stack-depth guard turns the otherwise-fatal stack overflow into a recoverable error.
 
 ### Canvas
 
