@@ -1,19 +1,22 @@
 <#
 .SYNOPSIS
-    Release driver for Code2Viz. Bumps version, commits, tags, and pushes.
+    Release driver for Code2Viz. Stamps a calendar version, commits, tags, and pushes.
 
 .DESCRIPTION
-    Bumps the version (major/minor/patch) in Directory.Build.props and
-    installer.iss, commits the bump on main, tags it, and pushes the tag
-    to origin. The `.github/workflows/release.yml` workflow takes over
+    Code2Viz uses calendar versioning: YEAR.MONTH.PATCH. YEAR and MONTH are
+    taken from today's date; PATCH counts releases within the same month and
+    resets to 0 the first time you release in a new month or year. So the
+    second release in May 2026 is 2026.5.1, and the first release in June is
+    2026.6.0 — no -Bump argument to choose.
+
+    The script writes the computed version into Directory.Build.props and
+    installer.iss, commits the bump on main, tags it `v<version>`, and pushes
+    the tag to origin. The `.github/workflows/release.yml` workflow takes over
     from there: it builds Code2Viz + Animator (Release), runs Inno Setup,
     creates the GitHub release, and attaches the installer.
 
-    Run /update_docs FIRST so the docs commit goes out before the bump
+    Run /update-docs FIRST so the docs commit goes out before the bump
     commit — the release should ship with current documentation.
-
-.PARAMETER Bump
-    Which segment of semver to bump. One of: major, minor, patch.
 
 .PARAMETER LocalBuild
     Also build Release configs and the installer locally before pushing
@@ -21,14 +24,10 @@
     builds and publishes the canonical artifacts on tag push.
 
 .EXAMPLE
-    .\scripts\release.ps1 -Bump patch
-    .\scripts\release.ps1 -Bump minor -LocalBuild
+    .\scripts\release.ps1
+    .\scripts\release.ps1 -LocalBuild
 #>
 param(
-    [Parameter(Mandatory = $true)]
-    [ValidateSet("major", "minor", "patch")]
-    [string]$Bump,
-
     [switch]$LocalBuild
 )
 
@@ -56,12 +55,18 @@ $propsPath = "Directory.Build.props"
 [xml]$props = Get-Content $propsPath
 $current = [Version]($props.Project.PropertyGroup.Version)
 
-# 2. Compute new version.
-$new = switch ($Bump) {
-    "major" { "$($current.Major + 1).0.0" }
-    "minor" { "$($current.Major).$($current.Minor + 1).0" }
-    "patch" { "$($current.Major).$($current.Minor).$($current.Build + 1)" }
+# 2. Compute the new calendar version: YEAR.MONTH.PATCH.
+#    YEAR and MONTH come from today; PATCH increments within the same month
+#    and resets to 0 the first time we release in a new month or year.
+$now   = Get-Date
+$year  = $now.Year
+$month = $now.Month
+if ($current.Major -eq $year -and $current.Minor -eq $month) {
+    $patch = $current.Build + 1
+} else {
+    $patch = 0
 }
+$new = "$year.$month.$patch"
 $newTag = "v$new"
 Write-Host "Bumping $current -> $new" -ForegroundColor Cyan
 

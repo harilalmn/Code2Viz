@@ -1,12 +1,13 @@
 <Project>
   <!--
     Canonical version source for every C# project in the repo.
-    The scripts/release.ps1 release script bumps these and mirrors the same
-    value into installer.iss (#define MyAppVersion).
+    Calendar versioning: YEAR.MONTH.PATCH. The scripts/release.ps1 release
+    script stamps YEAR/MONTH from the release date, increments PATCH within a
+    month, and mirrors the same value into installer.iss (#define MyAppVersion).
   -->
   <PropertyGroup>
-    <Version>2.0.0</Version>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
+    <Version>2026.5.0</Version>
+    <AssemblyVersion>2026.5.0.0</AssemblyVersion>
+    <FileVersion>2026.5.0.0</FileVersion>
   </PropertyGroup>
 </Project>
