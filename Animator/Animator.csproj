@@ -27,6 +27,11 @@
     <EmbeddedResource Include="CSharpHighlighting.xshd" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Shared logo asset (same image Code2Viz uses) for the branding strip. -->
+    <Resource Include="..\img\logo.png" Link="img\logo.png" />
+  </ItemGroup>
+
   <!--
     Editor source linked from the main Code2Viz project so both apps build from the
     same source (no duplication, no drift). The "Link" path controls where the file

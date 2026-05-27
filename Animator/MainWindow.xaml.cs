@@ -65,6 +65,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        VersionText.Text = "v" + GetAppVersion();
+
         if (!string.IsNullOrWhiteSpace(initialFile) && File.Exists(initialFile))
         {
             try
@@ -633,6 +635,20 @@ public partial class MainWindow : Window
             "About Animator",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    /// <summary>App version for the branding strip — the calendar version stamped into the
+    /// assembly's informational version (Directory.Build.props), minus any build metadata.</summary>
+    private static string GetAppVersion()
+    {
+        var asm = Assembly.GetExecutingAssembly();
+        var info = asm.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrEmpty(info))
+        {
+            var plus = info.IndexOf('+');
+            return plus >= 0 ? info.Substring(0, plus) : info;
+        }
+        return asm.GetName().Version?.ToString(3) ?? "0.0.0";
     }
 
     // ── Cross-app switch ──

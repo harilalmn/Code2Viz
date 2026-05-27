@@ -41,12 +41,36 @@
             <RowDefinition x:Name="ConsoleRow"         Height="180"/>   <!-- console -->
         </Grid.RowDefinitions>
 
-        <!--  Menu Bar  -->
-        <Border Grid.Row="0"
-                Background="{StaticResource SecondaryBackgroundBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="0,0,0,1">
-            <Menu Background="Transparent">
+        <!--  Header: branding strip + menu bar (Code2Viz-style ribbon)  -->
+        <StackPanel Grid.Row="0" Orientation="Vertical">
+
+            <!--  Branding strip  -->
+            <Border Background="{StaticResource SecondaryBackgroundBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="12,8">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Width="40" Height="40" Source="/img/logo.png"
+                           VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <StackPanel Orientation="Vertical" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Animator" FontSize="20" FontWeight="Bold"
+                                   Foreground="{StaticResource ForegroundBrush}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Sketch in dotnet." FontSize="12" Margin="0,0,8,0"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                            <TextBlock x:Name="VersionText" Text="v0.0.0" FontSize="12"
+                                       Foreground="{StaticResource MutedForegroundBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!--  Menu Bar  -->
+            <Border Background="{StaticResource SecondaryBackgroundBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <Menu Background="Transparent">
                 <Menu.Resources>
                     <Style TargetType="MenuItem">
                         <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
@@ -119,8 +143,9 @@
                     <Separator/>
                     <MenuItem Header="_About Animator" Click="AboutMenuItem_Click"                       Style="{StaticResource MenuItemStyle}"/>
                 </MenuItem>
-            </Menu>
-        </Border>
+                </Menu>
+            </Border>
+        </StackPanel>
 
         <!--  Toolbar  -->
         <Border Grid.Row="1"
@@ -138,12 +163,6 @@
 
                 <!--  Left side: file ops + status  -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="AppTitle"
-                               Text="Animator"
-                               FontSize="16" FontWeight="SemiBold"
-                               Foreground="{StaticResource ForegroundBrush}"
-                               VerticalAlignment="Center"
-                               Margin="0,0,18,0"/>
                     <Button Content="New" Click="NewButton_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Ctrl+N"/>
                     <Button Content="Open…" Click="OpenButton_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Ctrl+O"/>
                     <Button Content="Save" Click="SaveButton_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Ctrl+S"/>
