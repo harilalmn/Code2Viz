@@ -81,12 +81,14 @@ jobs:
           $range = if ($prev) { "$prev..$tag" } else { $tag }
           # Commit subjects since the previous release, excluding the version-bump commits.
           # (This repo commits directly to main, so PR-based --generate-notes would be empty.)
-          $log = git log $range --no-merges --invert-grep --grep="^Release v" --pretty=format:"- %s"
-          if (-not $log) { $log = "- Maintenance and internal improvements." }
+          # @(...) forces an array even for 0/1 results; -join collapses it to one string
+          # (a bare `git log` capture is a string[] and would stringify as "System.Object[]").
+          $commits = @(git log $range --no-merges --invert-grep --grep="^Release v" --pretty=format:"- %s")
+          $log = if ($commits.Count -gt 0) { $commits -join "`n" } else { "- Maintenance and internal improvements." }
           $repo = "${{ github.repository }}"
-          $lines = @("## What's Changed", "", $log)
-          if ($prev) { $lines += @("", "**Full Changelog**: https://github.com/$repo/compare/$prev...$tag") }
-          ($lines -join "`n") | Out-File -FilePath notes.md -Encoding utf8
+          $body = "## What's Changed`n`n$log"
+          if ($prev) { $body += "`n`n**Full Changelog**: https://github.com/$repo/compare/$prev...$tag" }
+          $body | Out-File -FilePath notes.md -Encoding utf8
           Write-Host "----- notes.md -----"; Get-Content notes.md
 
       - name: Create GitHub release
