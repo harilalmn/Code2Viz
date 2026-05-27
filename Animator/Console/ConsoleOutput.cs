@@ -5,9 +5,13 @@ namespace Animator.Console;
 
 public enum ConsoleLevel { Info, Warning, Error }
 
-public sealed record ConsoleLine(ConsoleLevel Level, string Source, string Message)
+public sealed record ConsoleLine(ConsoleLevel Level, string Source, string Message, int Line = 0, int Column = 0)
 {
     public string Display => $"[{Source}] {Message}";
+
+    /// <summary>True when this line points at a source location, so double-clicking it navigates the editor.</summary>
+    public bool IsClickable => Line > 0;
+
     public override string ToString() => Display;
 }
 
@@ -34,12 +38,12 @@ public sealed class ConsoleOutput
     public void WriteWarning(string source, string message)
         => Write(ConsoleLevel.Warning, source, message);
 
-    public void WriteError(string source, string message)
-        => Write(ConsoleLevel.Error, source, message);
+    public void WriteError(string source, string message, int line = 0, int column = 0)
+        => Write(ConsoleLevel.Error, source, message, line, column);
 
-    public void Write(ConsoleLevel level, string source, string message)
+    public void Write(ConsoleLevel level, string source, string message, int line = 0, int column = 0)
     {
-        lock (_gate) _lines.Add(new ConsoleLine(level, source, message));
+        lock (_gate) _lines.Add(new ConsoleLine(level, source, message, line, column));
         Changed?.Invoke(this, EventArgs.Empty);
     }
 

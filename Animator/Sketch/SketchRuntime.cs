@@ -231,8 +231,12 @@ public sealed class SketchRuntime
                 var match = System.Text.RegularExpressions.Regex.Match(
                     line, @"in\s+(.+\.cs):line\s+(\d+)");
                 if (match.Success)
+                {
+                    int.TryParse(match.Groups[2].Value, out var lineNo);
                     ConsoleOutput.Instance.WriteError("Sketch",
-                        $"  at {System.IO.Path.GetFileName(match.Groups[1].Value)}:{match.Groups[2].Value}");
+                        $"  at {System.IO.Path.GetFileName(match.Groups[1].Value)}:{match.Groups[2].Value}",
+                        lineNo, 1);
+                }
             }
         }
     }

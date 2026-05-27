@@ -185,6 +185,18 @@ public partial class MainWindow : Window
             ConsoleList.ScrollIntoView(snap[snap.Count - 1]);
     }
 
+    /// <summary>Double-clicking an error/diagnostic row jumps the editor to its source line.</summary>
+    private void ConsoleList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ConsoleList.SelectedItem is ConsoleLine cl && cl.IsClickable)
+        {
+            // Animator is single-file; NavigateToLocation works off the live editor document,
+            // so the file-path argument is informational only.
+            NavigateToLocation(_currentPath ?? CompletionEngine.FileId, cl.Line, cl.Column);
+            e.Handled = true;
+        }
+    }
+
     // ── Sketch lifecycle ──
 
     /// <summary>

@@ -112,11 +112,21 @@ public class SketchCompiler
             {
                 var errs = emit.Diagnostics
                     .Where(d => d.Severity == DiagnosticSeverity.Error)
-                    .Select(FormatDiagnostic)
                     .ToList();
-                foreach (var line in errs)
-                    ConsoleOutput.Instance.WriteError("Compiler", line);
-                return new CompileResult { Success = false, Error = string.Join(Environment.NewLine, errs) };
+                foreach (var d in errs)
+                {
+                    // Only diagnostics located in the user's sketch tree map to an editor line —
+                    // errors in the injected global-usings tree have no clickable source line.
+                    int line = 0, col = 0;
+                    if (d.Location.IsInSource && ReferenceEquals(d.Location.SourceTree, tree))
+                    {
+                        var pos = d.Location.GetLineSpan().StartLinePosition;
+                        line = pos.Line + 1;
+                        col = pos.Character + 1;
+                    }
+                    ConsoleOutput.Instance.WriteError("Compiler", FormatDiagnostic(d), line, col);
+                }
+                return new CompileResult { Success = false, Error = string.Join(Environment.NewLine, errs.Select(FormatDiagnostic)) };
             }
 
             ms.Seek(0, SeekOrigin.Begin);

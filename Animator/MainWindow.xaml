@@ -25,6 +25,10 @@
                             <DataTrigger Binding="{Binding Level}" Value="Error">
                                 <Setter Property="Foreground" Value="#F44747"/>
                             </DataTrigger>
+                            <DataTrigger Binding="{Binding IsClickable}" Value="True">
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="ToolTip" Value="Double-click to go to this line"/>
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </TextBlock.Style>
@@ -57,9 +61,18 @@
                         <TextBlock Text="Animator" FontSize="20" FontWeight="Bold"
                                    Foreground="{StaticResource ForegroundBrush}"/>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Sketch in dotnet." FontSize="12" Margin="0,0,8,0"
-                                       Foreground="{StaticResource AccentBrush}"/>
+                            <TextBlock Text="Doodle in dotnet." FontFamily="Segoe UI" FontSize="13"
+                                       FontStyle="Italic" FontWeight="SemiBold" Margin="0,0,8,0"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Foreground>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Offset="0.0" Color="{StaticResource AccentColor}"/>
+                                        <GradientStop Offset="1.0" Color="{StaticResource SuccessColor}"/>
+                                    </LinearGradientBrush>
+                                </TextBlock.Foreground>
+                            </TextBlock>
                             <TextBlock x:Name="VersionText" Text="v0.0.0" FontSize="12"
+                                       VerticalAlignment="Center"
                                        Foreground="{StaticResource MutedForegroundBrush}"/>
                         </StackPanel>
                     </StackPanel>
@@ -279,6 +292,7 @@
                      FontFamily="Consolas"
                      FontSize="12"
                      BorderThickness="0"
+                     MouseDoubleClick="ConsoleList_MouseDoubleClick"
                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"/>
         </DockPanel>

@@ -9,6 +9,7 @@
         <Color x:Key="ForegroundColor">#D4D4D4</Color>
         <Color x:Key="AccentColor">#007ACC</Color>
         <Color x:Key="AccentHoverColor">#1C97EA</Color>
+        <Color x:Key="SuccessColor">#4EC9B0</Color>
         <Color x:Key="BorderColor">#3F3F46</Color>
         <Color x:Key="MutedForegroundColor">#808080</Color>
 
