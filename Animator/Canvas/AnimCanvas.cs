@@ -9,8 +9,9 @@ namespace Animator.Canvas;
 
 /// <summary>
 /// Lightweight 2D canvas for Animator. Renders <see cref="C2VGeometry.Shape"/> instances directly
-/// using a single <see cref="DrawingVisual"/>. Coordinate system is mathematical (Y-up),
-/// origin at the centre of the visual. Supports mouse-wheel zoom and middle-button pan.
+/// using a single <see cref="DrawingVisual"/>. Coordinate system is mathematical (Y-up); when a
+/// sketch declares a frame via Size(), the origin (0,0) is anchored at the frame's bottom-left
+/// corner. Supports mouse-wheel zoom and middle-button pan.
 /// </summary>
 public class AnimCanvas : FrameworkElement
 {
@@ -53,21 +54,22 @@ public class AnimCanvas : FrameworkElement
         MouseUp += OnMouseUp;
         SizeChanged += (s, e) =>
         {
-            if (_hasBoundary) ZoomToBounds(-_boundaryWidth / 2, -_boundaryHeight / 2, _boundaryWidth / 2, _boundaryHeight / 2);
+            if (_hasBoundary) ZoomToBounds(0, 0, _boundaryWidth, _boundaryHeight);
             else Refresh();
         };
     }
 
     /// <summary>
-    /// Declares the sketch's logical drawing area. The canvas zooms to fit a centered
-    /// width×height rectangle and renders a faint outline around it.
+    /// Declares the sketch's logical drawing area. The canvas zooms to fit a
+    /// width×height rectangle whose bottom-left corner is the origin (0,0) and
+    /// renders a faint outline around it.
     /// </summary>
     public void SetBoundary(double width, double height)
     {
         _boundaryWidth = width;
         _boundaryHeight = height;
         _hasBoundary = true;
-        ZoomToBounds(-width / 2, -height / 2, width / 2, height / 2);
+        ZoomToBounds(0, 0, width, height);
     }
 
     public void ClearBoundary()
@@ -131,13 +133,12 @@ public class AnimCanvas : FrameworkElement
         using var dc = _visual.RenderOpen();
 
         dc.DrawRectangle(_backgroundBrush, null, new Rect(0, 0, ActualWidth, ActualHeight));
-        // Grid intentionally disabled — see request from user.
-        DrawAxes(dc);
+        // Grid and origin axis lines intentionally disabled — see request from user.
 
         if (_hasBoundary)
         {
-            var tl = WorldPt(-_boundaryWidth / 2,  _boundaryHeight / 2);
-            var br = WorldPt( _boundaryWidth / 2, -_boundaryHeight / 2);
+            var tl = WorldPt(0, _boundaryHeight);
+            var br = WorldPt(_boundaryWidth, 0);
             dc.DrawRectangle(null, _boundaryPen,
                 new Rect(tl, br));
         }

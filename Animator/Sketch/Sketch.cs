@@ -34,7 +34,8 @@ public abstract class Sketch
 
     /// <summary>
     /// Defines the sketch's logical drawing area. The canvas zooms to fit a
-    /// width×height region centered on origin on the first frame.
+    /// width×height region with the origin (0,0) at its bottom-left corner on
+    /// the first frame, so valid coordinates run x∈[0,width], y∈[0,height] (Y-up).
     /// </summary>
     protected void Size(double width, double height)
     {

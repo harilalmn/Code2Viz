@@ -15,18 +15,21 @@ public static class Templates
 
         public class MySketch : Sketch
         {
+            int width = 800;
+            int height = 600;
+
             public override void Setup()
             {
-                Size(800, 600);
+                Size(width, height);
                 Background("Black");
             }
 
             public override void Draw()
             {
-                // Orbit a cyan circle around the origin so it stays visible.
+                // Orbit a cyan circle around the frame centre so it stays visible.
                 var r = 200.0;
-                var x = r * Math.Sin(ElapsedSeconds);
-                var y = r * Math.Cos(ElapsedSeconds);
+                var x = r * Math.Sin(ElapsedSeconds) + width / 2;
+                var y = r * Math.Cos(ElapsedSeconds) + height / 2;
                 new VCircle(new VXYZ(x, y), 12) { FillColor = "Cyan" };
             }
         }
