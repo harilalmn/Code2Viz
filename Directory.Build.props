@@ -6,8 +6,8 @@
     month, and mirrors the same value into installer.iss (#define MyAppVersion).
   -->
   <PropertyGroup>
-    <Version>2026.5.2</Version>
-    <AssemblyVersion>2026.5.2.0</AssemblyVersion>
-    <FileVersion>2026.5.2.0</FileVersion>
+    <Version>2026.5.3</Version>
+    <AssemblyVersion>2026.5.3.0</AssemblyVersion>
+    <FileVersion>2026.5.3.0</FileVersion>
   </PropertyGroup>
 </Project>
