@@ -1226,25 +1226,18 @@ namespace Code2Viz.Editor
                 string prefix = "";
                 string? expectedType = null;
 
-#if !ANIMATOR
+                // Unified semantic completion for both apps (Code2Viz multi-file project and the
+                // Animator single-file sketch). The workspace carries the right references and, in
+                // Animator, the injected global-usings tree; `activeFile` is the workspace's file-id
+                // key in both hosts (Animator: CompletionEngine.FileId), so the correct syntax tree
+                // and semantic model are used. This replaces Animator's old, much simpler
+                // CompletionEngine path — it now gets fuzzy matching, scope/expected-type sorting,
+                // the doc sidecar, and noise filtering, same as Code2Viz.
                 if (workspace != null)
                 {
                     var service = new RoslynCompletionService(workspace);
                     (completions, isAfterNew, prefix, expectedType) = await service.GetCompletionsAsync(code, offset, workspace, activeFile);
                 }
-#else
-                if (workspace != null)
-                {
-                    var engine = new CompletionEngine(); // Fallback sketch engine
-                    engine.Update(code);
-                    completions = engine.GetCompletions(offset).Cast<ICompletionData>().ToList();
-                    
-                    // Simple prefix analysis for sketch completions
-                    var start = offset;
-                    while (start > 0 && IsIdentifierChar(code[start - 1])) start--;
-                    prefix = code.Substring(start, offset - start);
-                }
-#endif
 
                 if (completions.Count > 0)
                 {
@@ -1252,11 +1245,9 @@ namespace Code2Viz.Editor
                     _completionWindow.StartOffset = offset - prefix.Length;
                     var data = _completionWindow.CompletionList.CompletionData;
 
-                    var sorted = completions;
-#if !ANIMATOR
-                    // Sort C# completions using Code2Viz criteria if in Code2Viz
-                    sorted = SortCompletions(completions, prefix, isAfterNew, expectedType);
-#endif
+                    // Fuzzy-filter + rank (scope priority, expected-type/after-new boosting, score).
+                    // Now shared by both apps since Animator uses RoslynCompletionService too.
+                    var sorted = SortCompletions(completions, prefix, isAfterNew, expectedType);
 
                     foreach (var item in sorted)
                     {
@@ -1274,9 +1265,24 @@ namespace Code2Viz.Editor
                     }
 
                     StyleCompletionWindow(_completionWindow);
-                    _completionWindow.Show();
-                    
                     _docSidecar?.TrackCompletionWindow(_completionWindow);
+
+                    // Show the selected item's documentation beside the list as the user navigates.
+                    _completionWindow.CompletionList.ListBox.SelectionChanged += (s, e) =>
+                    {
+                        if (_completionWindow?.CompletionList.SelectedItem is CompletionData sel && sel.Symbol != null)
+                            _docSidecar?.ShowForItem(sel);
+                        else
+                            _docSidecar?.Hide();
+                    };
+                    _completionWindow.Loaded += (s, e) =>
+                    {
+                        _docSidecar?.UpdatePosition();
+                        if (_completionWindow?.CompletionList.SelectedItem is CompletionData init && init.Symbol != null)
+                            _docSidecar?.ShowForItem(init);
+                    };
+
+                    _completionWindow.Show();
 
                     _completionWindow.Closed += (s, e) =>
                     {
