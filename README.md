@@ -16,6 +16,7 @@ Code2Viz is a visual programming environment that lets you write C# code to crea
 - **No Draw() Required**: Shapes appear automatically when created
 - **C# Code Editor**: Roslyn-powered IntelliSense, semantic highlighting, refactoring, and squiggle diagnostics
 - **Rich Shape Library**: Points, lines, circles, rectangles, ellipses, arcs, polygons, polylines, Bezier curves, splines, regions (curve-bounded areas), hatches (pattern fills), text, arrows, and dimension annotations
+- **Charts**: Built-in `Chart.Bar/Line/Scatter/Pie/Area` helpers produce ready-to-render chart groups (axes, ticks, labels, legend-ready palette) from raw data
 - **Shape Editing**: Select shapes and drag shape-specific control points (vertices, radius handles, curve controls) with live code sync
 - **Properties Panel**: Floating or dockable panel to edit geometry and style properties (color, fill, weight, opacity, visibility, name) with full code sync — changes persist as code lines
 - **Animation System**: Create timeline-based animations with draw, move, rotate, flip, and fade effects
@@ -251,6 +252,143 @@ With **Auto-update Canvas** enabled (default), the canvas updates automatically 
 | **VHatch** | Pattern fill within boundary | `new VHatch(polygon, BuiltInHatch.ANSI31, scale)` |
 
 > **VXYZ vs VPoint**: `VXYZ` is the coordinate/vector type used for all position parameters, properties, and return types (e.g., `new VXYZ(10, 20)`). `VPoint` is a visible shape that draws a dot on the canvas. Use `new VXYZ(x, y)` where you previously used `VPoint.Internal(x, y)`.
+
+---
+
+## Charts (Chart Class)
+
+`Chart` is a static helper that builds Chart.js-style charts out of standard C2VGeometry primitives. Each method returns a `VGroup` containing axes, gridlines, ticks, tick labels and the data shapes — the chart is rendered, selected, moved and styled as a single unit. Axis ranges auto-fit from the data using "nice" round-number tick spacing. No new shape types or canvas changes were added; charts work in both Code2Viz and Animator unchanged.
+
+### Chart methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Chart.Bar(labels, values, opts?)` | VGroup | Categorical bars with numeric Y axis |
+| `Chart.Line(xs, ys, opts?)` | VGroup | Line chart with point markers |
+| `Chart.Scatter(points, opts?)` | VGroup | Scatter plot from VXYZ points |
+| `Chart.Pie(values, labels?, opts?)` | VGroup | Pie chart; sectors are polygon-approximated |
+| `Chart.Area(xs, ys, opts?)` | VGroup | Filled area chart with stroked top edge |
+
+### ChartOptions
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `Origin` | `(0, 0)` | Bottom-left of plot area in world coordinates |
+| `Width` / `Height` | 400 / 250 | Plot area size |
+| `Title` | null | Chart title above the plot |
+| `XAxisTitle` / `YAxisTitle` | null | Axis titles |
+| `XMin` / `XMax` / `YMin` / `YMax` | null (auto-fit) | Pin a fixed axis range |
+| `XTickCount` / `YTickCount` | 6 / 6 | Approximate number of ticks |
+| `ShowGrid` | true | Light gridlines behind the chart |
+| `XLabelRotation` | 0 | Rotation of X tick labels (good for long category names) |
+| `LabelFontSize` / `TitleFontSize` | 10 / 14 | Text sizes |
+| `AxisColor` / `GridColor` / `TextColor` | "White" / "DimGray" / "White" | Colors |
+| `Palette` | 10-color qualitative | Colors cycled across series / bars / slices |
+| `TickDecimalPlaces` | null (auto) | Numeric tick precision |
+
+### Per-chart-type examples
+
+Each example is self-contained — paste into Code2Viz's editor (or an Animator sketch's `Setup()`) and press F5.
+
+**Bar — categorical values with a numeric Y axis.**
+
+```csharp
+var labels = new[] { "Q1", "Q2", "Q3", "Q4" };
+var values = new[] { 120.0, 150, 95, 180 };
+
+var revenue = Chart.Bar(labels, values, new ChartOptions
+{
+    Origin = new VXYZ(-250, -150),
+    Width = 500,
+    Height = 300,
+    Title = "Quarterly Revenue (M$)",
+    YAxisTitle = "Revenue",
+    YMin = 0,                       // pin the Y axis to zero instead of auto-fitting
+    TickDecimalPlaces = 0
+});
+```
+
+**Line — computed time series, auto-fit ranges.**
+
+```csharp
+var xs = Enumerable.Range(0, 60).Select(i => i * 0.1).ToArray();           // 0.0, 0.1, ... 5.9
+var ys = xs.Select(x => Math.Exp(-0.3 * x) * Math.Sin(2 * x)).ToArray();    // damped oscillator
+
+var trace = Chart.Line(xs, ys, new ChartOptions
+{
+    Origin = new VXYZ(-300, -150),
+    Width = 600,
+    Height = 300,
+    Title = "Damped Oscillator",
+    XAxisTitle = "Time (s)",
+    YAxisTitle = "Amplitude",
+});
+```
+
+**Scatter — correlated random sample.**
+
+```csharp
+var rng = new Random(42);
+var sample = Enumerable.Range(0, 80)
+    .Select(_ =>
+    {
+        double age = rng.NextDouble() * 40 + 20;                  // 20-60 yrs
+        double height = age * 0.4 + 150 + rng.NextDouble() * 20;  // cm, mildly correlated
+        return new VXYZ(age, height);
+    })
+    .ToArray();
+
+var scatter = Chart.Scatter(sample, new ChartOptions
+{
+    Origin = new VXYZ(-250, -150),
+    Width = 500,
+    Height = 300,
+    Title = "Height vs Age",
+    XAxisTitle = "Age",
+    YAxisTitle = "Height (cm)"
+});
+```
+
+**Pie — named slices, custom palette.**
+
+```csharp
+var browserShare = new[] { 64.7, 19.5, 9.3, 3.5, 3.0 };
+var browsers     = new[] { "Chrome", "Safari", "Edge", "Firefox", "Other" };
+
+var pie = Chart.Pie(browserShare, browsers, new ChartOptions
+{
+    Origin = new VXYZ(-150, -150),
+    Width = 300,
+    Height = 300,
+    Title = "Browser Market Share",
+    Palette = new[] { "DodgerBlue", "Tomato", "MediumSeaGreen", "Gold", "Gray" }
+});
+```
+
+**Area — filled trend with X axis title.**
+
+```csharp
+var months = Enumerable.Range(0, 12).Select(i => (double)(i + 1)).ToArray();
+var mau    = new[] { 4.2, 5.1, 6.0, 7.3, 8.1, 8.8, 9.4, 9.7, 10.2, 10.5, 11.0, 11.6 };
+
+var growth = Chart.Area(months, mau, new ChartOptions
+{
+    Origin = new VXYZ(-300, -150),
+    Width = 600,
+    Height = 300,
+    Title = "Monthly Active Users",
+    XAxisTitle = "Month",
+    YAxisTitle = "MAU (millions)",
+    YMin = 0
+});
+```
+
+A chart is a `VGroup`, so the entire thing can be moved, rotated, scaled or restyled as a unit:
+
+```csharp
+growth.Move(new VXYZ(0, 50));
+growth.Scale(growth.GetCenter(), 0.75);
+```
 
 ---
 

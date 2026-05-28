@@ -10,6 +10,22 @@ between tags; this file is the curated, human-friendly summary.
 
 ## [Unreleased]
 
+### Added
+- **Charts** — new `Chart` static helper builds Chart.js-style charts (`Chart.Bar`,
+  `Chart.Line`, `Chart.Scatter`, `Chart.Pie`, `Chart.Area`) out of standard
+  C2VGeometry primitives. Each call returns a `VGroup` containing axes, gridlines,
+  ticks, labels and data shapes, with auto-fit "nice" axis ranges and a 10-color
+  default palette. Configurable through a new `ChartOptions` record (plot
+  origin/size, axis ranges, tick counts, label rotation, title, gridlines,
+  per-element colors, palette, decimal places). Works unchanged in Animator
+  because it emits only existing shapes — no canvas changes required.
+
+### Fixed
+- **F1 Help now lists C2VGeometry types again.** When `C2VGeometry` was extracted
+  into a separate assembly, the documentation generator was still scanning only
+  the Code2Viz assembly, so the geometry tree (VLine, VCircle, VHatch, …) showed
+  up empty. The generator now scans both assemblies.
+
 ## [2026.5.3] - 2026-05-27
 
 ### Added

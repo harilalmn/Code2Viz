@@ -468,6 +468,126 @@ var hatch3 = new VHatch(rect, pattern, scale: 2.0);
 
 **Built-in patterns (BuiltInHatch enum)**: SOLID, ANGLE, ANSI31-ANSI38, AR_B816, AR_BRSTD, AR_CONC, AR_HBONE, AR_SAND, BOX, BRASS, BRICK, BRSTONE, CLAY, CORK, CROSS, DASH, DOTS, EARTH, ESCHER, GRASS, GRATE, HEX, HONEY, LINE, NET, NET3, SQUARE, STARS, STEEL, TRIANG, ZIGZAG, and more (73 total). Use `BuiltInHatches.GetAllNames()` to list all.
 
+### Chart (Charts & Graphs)
+Build Chart.js-style charts from your data. Each method returns a `VGroup` containing axes, gridlines, ticks, tick labels and the data shapes. The chart auto-fits its axis range to the data, picks "nice" round-number tick spacing, and uses a 10-color palette for series / bars / slices. The whole chart can be moved/rotated/scaled as one unit because it is a VGroup.
+
+| Chart.* Method | Returns | Description |
+|--------|---------|-------------|
+| `Bar(labels, values, opts)` | VGroup | Categorical bars with numeric Y axis |
+| `Line(xs, ys, opts)` | VGroup | Line chart with point markers |
+| `Scatter(points, opts)` | VGroup | Scatter plot from VXYZ points |
+| `Pie(values, labels?, opts)` | VGroup | Pie chart (no axes); polygon-approximated sectors |
+| `Area(xs, ys, opts)` | VGroup | Filled area chart with stroked top edge |
+
+| ChartOptions Property | Default | Description |
+|----------|------|-------------|
+| Origin | (0, 0) | Bottom-left of plot area in world coords |
+| Width / Height | 400 / 250 | Plot area size |
+| Title | null | Chart title (above plot) |
+| XAxisTitle / YAxisTitle | null | Axis titles |
+| XMin/XMax/YMin/YMax | null (auto-fit) | Pin a fixed axis range |
+| XTickCount / YTickCount | 6 / 6 | Approximate tick count |
+| ShowGrid | true | Light gridlines |
+| XLabelRotation | 0 | Rotate X tick labels (good for long category names) |
+| LabelFontSize / TitleFontSize | 10 / 14 | Text sizes |
+| AxisColor / GridColor / TextColor | "White" / "DimGray" / "White" | Colors |
+| Palette | 10-color qualitative | Series/bar/slice colors |
+| TickDecimalPlaces | null (auto) | Numeric tick precision |
+
+#### Bar — categorical values with a numeric Y axis
+
+```csharp
+var labels = new[] { "Q1", "Q2", "Q3", "Q4" };
+var values = new[] { 120.0, 150, 95, 180 };
+
+var revenue = Chart.Bar(labels, values, new ChartOptions
+{
+    Origin = new VXYZ(-250, -150),
+    Width = 500,
+    Height = 300,
+    Title = "Quarterly Revenue (M$)",
+    YAxisTitle = "Revenue",
+    YMin = 0,                       // pin Y to zero (otherwise auto-fits)
+    TickDecimalPlaces = 0
+});
+```
+
+#### Line — computed time series, auto-fit ranges
+
+```csharp
+var xs = Enumerable.Range(0, 60).Select(i => i * 0.1).ToArray();
+var ys = xs.Select(x => Math.Exp(-0.3 * x) * Math.Sin(2 * x)).ToArray();
+
+var trace = Chart.Line(xs, ys, new ChartOptions
+{
+    Origin = new VXYZ(-300, -150),
+    Width = 600,
+    Height = 300,
+    Title = "Damped Oscillator",
+    XAxisTitle = "Time (s)",
+    YAxisTitle = "Amplitude"
+});
+```
+
+#### Scatter — correlated random sample
+
+```csharp
+var rng = new Random(42);
+var sample = Enumerable.Range(0, 80).Select(_ =>
+{
+    double age = rng.NextDouble() * 40 + 20;
+    double height = age * 0.4 + 150 + rng.NextDouble() * 20;
+    return new VXYZ(age, height);
+}).ToArray();
+
+var scatter = Chart.Scatter(sample, new ChartOptions
+{
+    Origin = new VXYZ(-250, -150),
+    Width = 500,
+    Height = 300,
+    Title = "Height vs Age",
+    XAxisTitle = "Age",
+    YAxisTitle = "Height (cm)"
+});
+```
+
+#### Pie — named slices, custom palette
+
+```csharp
+var share    = new[] { 64.7, 19.5, 9.3, 3.5, 3.0 };
+var browsers = new[] { "Chrome", "Safari", "Edge", "Firefox", "Other" };
+
+var pie = Chart.Pie(share, browsers, new ChartOptions
+{
+    Origin = new VXYZ(-150, -150),
+    Width = 300,
+    Height = 300,
+    Title = "Browser Market Share",
+    Palette = new[] { "DodgerBlue", "Tomato", "MediumSeaGreen", "Gold", "Gray" }
+});
+```
+
+#### Area — filled trend with axis titles
+
+```csharp
+var months = Enumerable.Range(0, 12).Select(i => (double)(i + 1)).ToArray();
+var mau    = new[] { 4.2, 5.1, 6.0, 7.3, 8.1, 8.8, 9.4, 9.7, 10.2, 10.5, 11.0, 11.6 };
+
+var growth = Chart.Area(months, mau, new ChartOptions
+{
+    Origin = new VXYZ(-300, -150),
+    Width = 600,
+    Height = 300,
+    Title = "Monthly Active Users",
+    XAxisTitle = "Month",
+    YAxisTitle = "MAU (millions)",
+    YMin = 0
+});
+
+// The chart is a VGroup — move/rotate/scale as one unit
+growth.Move(new VXYZ(0, 50));
+```
+
 ## Shape Properties (all shapes)
 
 | Property | Type | Default | Description |

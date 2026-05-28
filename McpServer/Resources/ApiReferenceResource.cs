@@ -276,6 +276,115 @@ public class ApiReferenceResource
         // Custom: HatchType.Parse("*NAME, Desc\n45, 0,0, 0,10"), or new HatchType(name, desc, lines)
         ```
 
+        ### Chart (Chart.js-style charts)
+        Each method returns a `VGroup` containing axes, gridlines, ticks, labels and data.
+        Child shapes don't register individually — only the outer VGroup does, so the chart
+        can be Moved/Rotated/Scaled as one unit. Axis ranges auto-fit using "nice" round-
+        number tick spacing. Methods: `Bar`, `Line`, `Scatter`, `Pie`, `Area`.
+
+        **Bar — categorical values with a numeric Y axis**
+        ```csharp
+        var labels = new[] { "Q1", "Q2", "Q3", "Q4" };
+        var values = new[] { 120.0, 150, 95, 180 };
+
+        var revenue = Chart.Bar(labels, values, new ChartOptions
+        {
+            Origin = new VXYZ(-250, -150),
+            Width = 500, Height = 300,
+            Title = "Quarterly Revenue (M$)",
+            YAxisTitle = "Revenue",
+            YMin = 0,
+            TickDecimalPlaces = 0
+        });
+        ```
+
+        **Line — computed time series, auto-fit ranges**
+        ```csharp
+        var xs = Enumerable.Range(0, 60).Select(i => i * 0.1).ToArray();
+        var ys = xs.Select(x => Math.Exp(-0.3 * x) * Math.Sin(2 * x)).ToArray();
+
+        var trace = Chart.Line(xs, ys, new ChartOptions
+        {
+            Origin = new VXYZ(-300, -150),
+            Width = 600, Height = 300,
+            Title = "Damped Oscillator",
+            XAxisTitle = "Time (s)",
+            YAxisTitle = "Amplitude"
+        });
+        ```
+
+        **Scatter — correlated random sample**
+        ```csharp
+        var rng = new Random(42);
+        var sample = Enumerable.Range(0, 80).Select(_ =>
+        {
+            double age = rng.NextDouble() * 40 + 20;
+            double height = age * 0.4 + 150 + rng.NextDouble() * 20;
+            return new VXYZ(age, height);
+        }).ToArray();
+
+        var scatter = Chart.Scatter(sample, new ChartOptions
+        {
+            Origin = new VXYZ(-250, -150),
+            Width = 500, Height = 300,
+            Title = "Height vs Age",
+            XAxisTitle = "Age",
+            YAxisTitle = "Height (cm)"
+        });
+        ```
+
+        **Pie — named slices, custom palette**
+        ```csharp
+        var share    = new[] { 64.7, 19.5, 9.3, 3.5, 3.0 };
+        var browsers = new[] { "Chrome", "Safari", "Edge", "Firefox", "Other" };
+
+        var pie = Chart.Pie(share, browsers, new ChartOptions
+        {
+            Origin = new VXYZ(-150, -150),
+            Width = 300, Height = 300,
+            Title = "Browser Market Share",
+            Palette = new[] { "DodgerBlue", "Tomato", "MediumSeaGreen", "Gold", "Gray" }
+        });
+        ```
+
+        **Area — filled trend with axis titles**
+        ```csharp
+        var months = Enumerable.Range(0, 12).Select(i => (double)(i + 1)).ToArray();
+        var mau    = new[] { 4.2, 5.1, 6.0, 7.3, 8.1, 8.8, 9.4, 9.7, 10.2, 10.5, 11.0, 11.6 };
+
+        var growth = Chart.Area(months, mau, new ChartOptions
+        {
+            Origin = new VXYZ(-300, -150),
+            Width = 600, Height = 300,
+            Title = "Monthly Active Users",
+            XAxisTitle = "Month",
+            YAxisTitle = "MAU (millions)",
+            YMin = 0
+        });
+
+        // A chart is a VGroup — move/rotate/scale/style as a unit
+        growth.Move(new VXYZ(0, 50));
+        ```
+
+        **ChartOptions — every property optional**
+        ```csharp
+        var opts = new ChartOptions
+        {
+            Origin = new VXYZ(0, 0),       // bottom-left of plot area
+            Width = 500, Height = 300,
+            Title = "Monthly active users",
+            XAxisTitle = "Month", YAxisTitle = "MAU",
+            XMin = null, XMax = null,      // null = auto-fit (also YMin/YMax)
+            XTickCount = 12, YTickCount = 5,
+            ShowGrid = true,
+            XLabelRotation = 45,           // degrees, for long category names
+            LabelFontSize = 9, TitleFontSize = 14,
+            AxisColor = "White", GridColor = "DimGray", TextColor = "White",
+            Palette = new[] { "DodgerBlue", "Tomato", "MediumSeaGreen" },
+            TickDecimalPlaces = 0          // null = auto format
+        };
+        ```
+
         ## Shape Visibility Rules (important!)
         After your script's `Main()` returns, Code2Viz hides any Shape where `Name` is empty and `IsExplicitlyDrawn` is false. The intent is to suppress intermediate construction shapes. The auto-naming pass only fills `Name` from these two C# patterns:
         - Local declarations: `var x = new VShape(...)`

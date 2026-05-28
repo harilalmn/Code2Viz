@@ -68,6 +68,7 @@ Code2Viz/
 - **Single geometry namespace** for the whole solution (Code2Viz + Animator). The old WPF-coupled `Code2Viz.Geometry` was deleted; everything now uses `C2VGeometry`.
 - **`VXYZ` is the coordinate value-type** (immutable-ish, not a `Shape`). **`VPoint` is only a drawable point marker.** Shape coordinates (`Center`, `Start`/`End`, polygon `Points`) are `VXYZ`; methods that take a position take `VXYZ`.
 - **`CanvasRenderer` implements `C2VGeometry.IShapeRegistry`** and is set as `C2VGeometry.Shape.DefaultRegistry`, so `new VCircle(...)` auto-registers onto the canvas. There is no longer any `C2VGeometryAdapter`/conversion layer.
+- **Charts (`C2VGeometry/Charts/`)** — `Chart` is a static helper that builds Chart.js-style charts (`Bar`/`Line`/`Scatter`/`Pie`/`Area`) by composing existing primitives (VLine, VRectangle, VPolyline, VPolygon, VText) into a single `VGroup`. To prevent the dozens of child shapes from auto-registering individually onto the canvas, the helper flips `Shape.AutoRegister = false` during construction and registers only the outer `VGroup`; the flag is restored in a `finally` block. This is the only sanctioned `Shape.AutoRegister` flip in user-construction code — never reintroduce it in `RayCaster` or other hot paths (see note 9). Pie sectors are polygon-approximated (no `VSector` shape). Because the helper emits only existing primitives, Animator gets charts for free.
 
 ### Shape System
 - All shapes extend `Shape` abstract class which implements `IDrawable`

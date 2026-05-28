@@ -147,6 +147,10 @@ namespace Code2Viz.Documentation
                 // Array Operations
                 { "ArrayOps", "Static class providing array and pattern generation for shapes. Includes LinearArray (copies along direction), RectangularArray (grid pattern), CircularArray (polar pattern around center), PathArray (copies along curve), SpiralArray (spiral pattern), and Mirror (create mirrored copy)." },
 
+                // Charts
+                { "Chart", "Static helper class for building Chart.js-style charts out of standard C2VGeometry primitives. Each method returns a VGroup containing axes, gridlines, ticks, labels and the data shapes. Methods: Bar(labels, values, options), Line(xs, ys, options), Scatter(points, options), Pie(values, labels, options), Area(xs, ys, options). Child shapes do not register individually with the canvas; only the returned VGroup is registered, so the whole chart can be moved/rotated/scaled as one unit." },
+                { "ChartOptions", "Configuration object for Chart.* methods. Properties: Origin (bottom-left of plot in world coords), Width, Height, Title, XAxisTitle, YAxisTitle, XMin/XMax/YMin/YMax (null = auto-fit), XTickCount, YTickCount, ShowGrid, ShowLegend, XLabelRotation, LabelFontSize, TitleFontSize, AxisColor, GridColor, TextColor, Palette (string[] of color names cycled across series/bars/slices), TickDecimalPlaces (null = auto-format)." },
+
                 // Export
                 { "Code2Viz.Export", "Contains classes for exporting shapes and animations to various file formats." },
                 { "DxfExporter", "Exports shapes to AutoCAD DXF format (R12 ASCII). Supports all shape types including lines, circles, arcs, ellipses, polygons, polylines, text, and arrows." },
@@ -1480,7 +1484,115 @@ var h5 = new VHatch(polygon, BuiltInHatch.AR_HBONE, scale: 2);
 
 // List all available patterns
 foreach (var name in BuiltInHatches.GetAllNames())
-    VizConsole.Log(name);" }
+    VizConsole.Log(name);" },
+
+                { "Chart", @"// === Bar — categorical values with a numeric Y axis ===
+var labels = new[] { ""Q1"", ""Q2"", ""Q3"", ""Q4"" };
+var values = new[] { 120.0, 150, 95, 180 };
+
+var revenue = Chart.Bar(labels, values, new ChartOptions
+{
+    Origin = new VXYZ(-250, -150),
+    Width = 500,
+    Height = 300,
+    Title = ""Quarterly Revenue (M$)"",
+    YAxisTitle = ""Revenue"",
+    YMin = 0,                       // pin Y to zero (otherwise auto-fits)
+    TickDecimalPlaces = 0
+});
+
+
+// === Line — computed time series, auto-fit ranges ===
+var xs = Enumerable.Range(0, 60).Select(i => i * 0.1).ToArray();
+var ys = xs.Select(x => Math.Exp(-0.3 * x) * Math.Sin(2 * x)).ToArray();
+
+var trace = Chart.Line(xs, ys, new ChartOptions
+{
+    Origin = new VXYZ(-300, -150),
+    Width = 600,
+    Height = 300,
+    Title = ""Damped Oscillator"",
+    XAxisTitle = ""Time (s)"",
+    YAxisTitle = ""Amplitude""
+});
+
+
+// === Scatter — correlated random sample ===
+var rng = new Random(42);
+var sample = Enumerable.Range(0, 80).Select(_ =>
+{
+    double age = rng.NextDouble() * 40 + 20;
+    double height = age * 0.4 + 150 + rng.NextDouble() * 20;
+    return new VXYZ(age, height);
+}).ToArray();
+
+var scatter = Chart.Scatter(sample, new ChartOptions
+{
+    Origin = new VXYZ(-250, -150),
+    Width = 500,
+    Height = 300,
+    Title = ""Height vs Age"",
+    XAxisTitle = ""Age"",
+    YAxisTitle = ""Height (cm)""
+});
+
+
+// === Pie — named slices, custom palette ===
+var share    = new[] { 64.7, 19.5, 9.3, 3.5, 3.0 };
+var browsers = new[] { ""Chrome"", ""Safari"", ""Edge"", ""Firefox"", ""Other"" };
+
+var pie = Chart.Pie(share, browsers, new ChartOptions
+{
+    Origin = new VXYZ(-150, -150),
+    Width = 300,
+    Height = 300,
+    Title = ""Browser Market Share"",
+    Palette = new[] { ""DodgerBlue"", ""Tomato"", ""MediumSeaGreen"", ""Gold"", ""Gray"" }
+});
+
+
+// === Area — filled trend with axis titles ===
+var months = Enumerable.Range(0, 12).Select(i => (double)(i + 1)).ToArray();
+var mau    = new[] { 4.2, 5.1, 6.0, 7.3, 8.1, 8.8, 9.4, 9.7, 10.2, 10.5, 11.0, 11.6 };
+
+var growth = Chart.Area(months, mau, new ChartOptions
+{
+    Origin = new VXYZ(-300, -150),
+    Width = 600,
+    Height = 300,
+    Title = ""Monthly Active Users"",
+    XAxisTitle = ""Month"",
+    YAxisTitle = ""MAU (millions)"",
+    YMin = 0
+});
+
+// A chart is a VGroup — move/rotate/scale/style as one unit
+growth.Move(new VXYZ(0, 50));" },
+
+                { "ChartOptions", @"// Customise plot area, palette, axes
+var opts = new ChartOptions
+{
+    Origin = new VXYZ(0, 0),
+    Width = 500,
+    Height = 300,
+    Title = ""Monthly active users"",
+    XAxisTitle = ""Month"",
+    YAxisTitle = ""MAU (thousands)"",
+    XTickCount = 12,
+    YTickCount = 5,
+    XLabelRotation = 45,        // angle long category names
+    LabelFontSize = 9,
+    Palette = new[] { ""DodgerBlue"", ""HotPink"" },
+    TickDecimalPlaces = 0,
+    ShowGrid = true,
+};
+
+var data = new[] { 4.2, 5.1, 6.0, 7.3, 8.1, 8.8, 9.4, 9.7, 10.2, 10.5, 11.0, 11.6 };
+var labels = new[] { ""Jan"",""Feb"",""Mar"",""Apr"",""May"",""Jun"",""Jul"",""Aug"",""Sep"",""Oct"",""Nov"",""Dec"" };
+Chart.Bar(labels, data, opts);
+
+// Pin the axis range instead of auto-fitting
+var fixedRange = new ChartOptions { YMin = 0, YMax = 100, YTickCount = 5 };" }
             };
         }
 
