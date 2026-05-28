@@ -10,26 +10,33 @@ namespace Code2Viz.Documentation
 {
     public class DocGenerator
     {
-        private Assembly _assembly;
+        private Assembly[] _assemblies;
         private string[] _namespacePrefixes;
         private Dictionary<string, string> _summaries;
         private Dictionary<string, string> _csharpSamples;
         private Dictionary<string, string> _memberDescriptions;
 
         public DocGenerator()
-            : this(Assembly.GetExecutingAssembly(), new[]
-            {
-                "C2VGeometry",
-                "Code2Viz.Animation",
-                "Code2Viz.Export",
-                "Code2Viz.Console"
-            })
+            : this(
+                new[] { Assembly.GetExecutingAssembly(), typeof(C2VGeometry.Shape).Assembly },
+                new[]
+                {
+                    "C2VGeometry",
+                    "Code2Viz.Animation",
+                    "Code2Viz.Export",
+                    "Code2Viz.Console"
+                })
         {
         }
 
         public DocGenerator(Assembly assembly, params string[] namespacePrefixes)
+            : this(new[] { assembly }, namespacePrefixes)
         {
-            _assembly = assembly;
+        }
+
+        public DocGenerator(Assembly[] assemblies, string[] namespacePrefixes)
+        {
+            _assemblies = (assemblies ?? Array.Empty<Assembly>()).Where(a => a != null).Distinct().ToArray();
             _namespacePrefixes = namespacePrefixes ?? Array.Empty<string>();
             InitializeSummaries();
             InitializeCSharpSamples();
@@ -170,15 +177,17 @@ namespace Code2Viz.Documentation
 
         public List<Type> GetDocumentableTypes()
         {
-            Type[] types;
-            try
+            var types = new List<Type>();
+            foreach (var assembly in _assemblies)
             {
-                types = _assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                // Some types may fail to load (e.g. missing dependencies); use the ones that loaded
-                types = ex.Types.Where(t => t != null).ToArray()!;
+                try
+                {
+                    types.AddRange(assembly.GetTypes());
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types.AddRange(ex.Types.Where(t => t != null)!);
+                }
             }
 
             return types
