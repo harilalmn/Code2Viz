@@ -33,35 +33,57 @@ public class SketchCompiler
     // same view of the world.
     public const string GlobalUsingsSource = """
         global using System;
+        global using System.Linq;
+        global using System.Collections.Generic;
         global using C2VGeometry;
         global using Animator.Sketching;
         global using Animator.Console;
         """;
 
-    static SketchCompiler()
+    // Names of the trusted-platform assemblies that get loaded as MetadataReferences for both
+    // sketch compilation and editor IntelliSense. Kept in lockstep with Code2Viz's
+    // ModuleCompiler so a user who types e.g. `System.Text.Json.` gets completions AND the
+    // same code compiles at runtime.
+    public static readonly string[] NeededAssemblies = new[]
+    {
+        "System.Runtime", "System.Private.CoreLib", "netstandard",
+        "System.Collections", "System.Collections.Concurrent", "System.Collections.Immutable",
+        "System.Linq", "System.Linq.Expressions",
+        "System.Numerics", "System.Numerics.Vectors",
+        "System.Console", "System.IO", "System.IO.FileSystem",
+        "System.Text.RegularExpressions", "System.Text.Json", "System.Text.Encoding.Extensions",
+        "System.Threading", "System.Threading.Tasks",
+        "System.Memory", "System.ObjectModel", "System.ComponentModel", "System.ComponentModel.Primitives",
+        "Microsoft.CSharp",
+        "System.Windows.Forms",
+        "WindowsBase", "PresentationCore", "PresentationFramework", "System.Xaml"
+    };
+
+    /// <summary>
+    /// Builds the full reference set used for sketch compilation. Reused by the editor's
+    /// CompletionEngine so IntelliSense and runtime see the same symbols.
+    /// </summary>
+    public static System.Collections.Generic.List<MetadataReference> BuildDefaultReferences()
     {
         var trusted = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? "")
             .Split(Path.PathSeparator);
-        var needed = new[]
-        {
-            "System.Runtime", "System.Private.CoreLib", "netstandard",
-            "System.Collections", "System.Linq", "System.Numerics",
-            "System.Console", "System.Text.RegularExpressions",
-            "System.Threading", "Microsoft.CSharp",
-            "WindowsBase", "PresentationCore", "PresentationFramework"
-        };
         var refs = new System.Collections.Generic.List<MetadataReference>();
         foreach (var a in trusted)
         {
             var name = Path.GetFileNameWithoutExtension(a);
-            if (needed.Contains(name, StringComparer.OrdinalIgnoreCase))
+            if (NeededAssemblies.Contains(name, StringComparer.OrdinalIgnoreCase))
                 refs.Add(MetadataReference.CreateFromFile(a));
         }
         // The host (Animator.exe) brings in Sketch and the canvas types.
         refs.Add(MetadataReference.CreateFromFile(typeof(SketchCompiler).Assembly.Location));
         // C2VGeometry brings in the shape types.
         refs.Add(MetadataReference.CreateFromFile(typeof(C2VGeometry.Shape).Assembly.Location));
-        DefaultReferences = refs.ToArray();
+        return refs;
+    }
+
+    static SketchCompiler()
+    {
+        DefaultReferences = BuildDefaultReferences().ToArray();
     }
 
     public async Task<CompileResult> CompileAndRunAsync(string sourceCode, string sourceName)

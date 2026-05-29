@@ -1055,10 +1055,23 @@ namespace Code2Viz.Editor
             {
                 ShowCompletionWindow(autoTrigger: true);
             }
+            else if (ch == ' ' && _completionWindow == null && IsAfterCompletionKeyword())
+            {
+                // "new " / "is " / "as " — list candidate types up front instead of waiting
+                // for the user to type a character into the empty-prefix slot.
+                ShowCompletionWindow(autoTrigger: true);
+            }
             else if (_completionWindow == null && (char.IsLetter(ch) || ch == '_'))
             {
                 var caret = _editor.CaretOffset;
-                if (caret >= 2 && (char.IsLetterOrDigit(_editor.Document.GetCharAt(caret - 2)) || _editor.Document.GetCharAt(caret - 2) == '_'))
+                // Default: trigger from the 2nd character of an identifier (caret-2 is a word
+                // char). Also trigger on the 1st character when the preceding token is a
+                // completion-priming keyword like `new`, so `new V` immediately lists types
+                // instead of waiting for the 2nd letter.
+                bool trigger = caret >= 2 && (char.IsLetterOrDigit(_editor.Document.GetCharAt(caret - 2)) || _editor.Document.GetCharAt(caret - 2) == '_');
+                if (!trigger && IsAfterCompletionKeyword(skipBack: 1))
+                    trigger = true;
+                if (trigger)
                     ShowCompletionWindow(autoTrigger: true);
             }
 
@@ -1071,6 +1084,33 @@ namespace Code2Viz.Editor
             {
                 FormatCurrentLineOnType();
             }
+        }
+
+        /// <summary>
+        /// Returns true when the caret sits immediately after a completion-priming keyword
+        /// like `new`, `is`, or `as` (with intervening whitespace). Used to fire completion
+        /// on the space following the keyword, and on the first letter of the type name.
+        /// </summary>
+        /// <param name="skipBack">Characters to ignore at the caret tail (1 when probing
+        /// from `OnTextEntered` for the letter the user just typed).</param>
+        private bool IsAfterCompletionKeyword(int skipBack = 0)
+        {
+            var doc = _editor.Document;
+            int i = _editor.CaretOffset - skipBack;
+            // Walk back over the trailing space the trigger itself emitted, or the gap
+            // before the just-typed letter.
+            while (i > 0 && doc.GetCharAt(i - 1) == ' ') i--;
+            // Pull the preceding word.
+            int end = i;
+            while (i > 0)
+            {
+                char c = doc.GetCharAt(i - 1);
+                if (char.IsLetterOrDigit(c) || c == '_') i--;
+                else break;
+            }
+            if (end == i) return false;
+            var word = doc.GetText(i, end - i);
+            return word == "new" || word == "is" || word == "as";
         }
 
         private void OnTextEntering(object sender, TextCompositionEventArgs e)

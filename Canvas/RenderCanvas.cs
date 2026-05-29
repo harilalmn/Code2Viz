@@ -2606,12 +2606,18 @@ public class RenderCanvas : FrameworkElement
         var applyOpacity = group.Opacity < 1.0;
         if (applyOpacity) dc.PushOpacity(group.Opacity);
 
-        // Draw each shape in the group
+        // Apply group-level offset (Move/Path animations drive group.OffsetX/OffsetY).
+        // Screen-Y is inverted, so negate the Y component.
+        var applyOffset = group.OffsetX != 0 || group.OffsetY != 0;
+        if (applyOffset)
+            dc.PushTransform(new TranslateTransform(group.OffsetX * _viewport.Scale, -group.OffsetY * _viewport.Scale));
+
         foreach (var shape in group.Shapes)
         {
             DrawShape(dc, shape);
         }
 
+        if (applyOffset) dc.Pop();
         if (applyOpacity) dc.Pop();
     }
 

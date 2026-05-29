@@ -28,25 +28,9 @@ public sealed class CompletionEngine
 
     public CompletionEngine()
     {
-        var trusted = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? "")
-            .Split(Path.PathSeparator);
-        var needed = new[]
-        {
-            "System.Runtime", "System.Private.CoreLib", "netstandard",
-            "System.Collections", "System.Linq", "System.Numerics",
-            "System.Console", "System.Text.RegularExpressions",
-            "System.Threading", "Microsoft.CSharp",
-            "WindowsBase", "PresentationCore", "PresentationFramework"
-        };
-        var refs = new List<MetadataReference>();
-        foreach (var a in trusted)
-        {
-            var name = Path.GetFileNameWithoutExtension(a);
-            if (needed.Contains(name, StringComparer.OrdinalIgnoreCase))
-                refs.Add(MetadataReference.CreateFromFile(a));
-        }
-        refs.Add(MetadataReference.CreateFromFile(typeof(Animator.Sketching.Sketch).Assembly.Location));
-        refs.Add(MetadataReference.CreateFromFile(typeof(C2VGeometry.Shape).Assembly.Location));
+        // Pull the same reference set the sketch compiler uses so IntelliSense
+        // and runtime compilation agree on which assemblies are in scope.
+        var refs = Animator.Compiler.SketchCompiler.BuildDefaultReferences();
 
         _workspace = new CachedCompilationWorkspace(refs);
 

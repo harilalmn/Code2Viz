@@ -392,7 +392,7 @@ $1line.Color = ""$6Lime"";
 $1line.Draw();$0"),
 
         ["vlinea"] = ("Create a line from angle and length",
-@"var $1line = new VLine(new VPoint($20, $30), $445, $5100);
+@"var $1line = new VLine(new VXYZ($20, $30), $445, $5100);
 $1line.Color = ""$6Lime"";
 $1line.Draw();$0"),
 
@@ -404,9 +404,9 @@ $1rect.Draw();$0"),
 
         ["vpoly"] = ("Create a polygon",
 @"var $1poly = new VPolygon(
-    new VPoint($20, $30),
-    new VPoint($450, $5100),
-    new VPoint($6100, $70)
+    new VXYZ($20, $30),
+    new VXYZ($450, $5100),
+    new VXYZ($6100, $70)
 );
 $1poly.Color = ""Pink"";
 $1poly.FillColor = ""DarkMagenta"";
@@ -414,21 +414,21 @@ $1poly.Draw();$0"),
 
         ["vbezier"] = ("Create a bezier curve",
 @"var $1bezier = new VBezier(
-    new VPoint($20, $30),    // Start
-    new VPoint($425, $550),  // Control 1
-    new VPoint($675, $750),  // Control 2
-    new VPoint($8100, $90)   // End
+    new VXYZ($20, $30),    // Start
+    new VXYZ($425, $550),  // Control 1
+    new VXYZ($675, $750),  // Control 2
+    new VXYZ($8100, $90)   // End
 );
 $1bezier.Color = ""Purple"";
 $1bezier.Draw();$0"),
 
         ["vspline"] = ("Create a smooth spline",
 @"var $1spline = new VSpline(
-    new VPoint(0, 0),
-    new VPoint(25, 50),
-    new VPoint(50, 0),
-    new VPoint(75, 50),
-    new VPoint(100, 0)
+    new VXYZ(0, 0),
+    new VXYZ(25, 50),
+    new VXYZ(50, 0),
+    new VXYZ(75, 50),
+    new VXYZ(100, 0)
 );
 $1spline.Color = ""$2Violet"";
 $1spline.Draw();$0"),
@@ -513,7 +513,7 @@ for (int i = 0; i < points; i++)
 }$0"),
 
         ["star"] = ("Create a star shape",
-@"var points = new List<VPoint>();
+@"var points = new List<VXYZ>();
 int starPoints = $15;
 double outerRadius = $2100;
 double innerRadius = $340;
@@ -522,7 +522,7 @@ for (int i = 0; i < starPoints * 2; i++)
 {
     double radius = (i % 2 == 0) ? outerRadius : innerRadius;
     double angle = i * Math.PI / starPoints - Math.PI / 2;
-    points.Add(new VPoint(Math.Cos(angle) * radius, Math.Sin(angle) * radius));
+    points.Add(new VXYZ(Math.Cos(angle) * radius, Math.Sin(angle) * radius));
 }
 
 var star = new VPolygon(points);
@@ -531,11 +531,11 @@ star.FillColor = ""$5DarkOrange"";
 star.Draw();$0"),
 
         ["wave"] = ("Create a wave pattern",
-@"var points = new List<VPoint>();
+@"var points = new List<VXYZ>();
 for (double x = $1-100; x <= $2100; x += $35)
 {
     double y = Math.Sin(x * $40.1) * $530;
-    points.Add(new VPoint(x, y));
+    points.Add(new VXYZ(x, y));
 }
 var wave = new VSpline(points);
 wave.Color = ""$6Aqua"";

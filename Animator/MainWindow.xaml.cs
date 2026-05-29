@@ -175,6 +175,42 @@ public partial class MainWindow : Window
         // Seed the workspace with the initial text. After this, SharedEditorController's
         // TextChanged handler keeps the workspace in sync — no separate listener needed.
         _completion.Update(Editor.Text);
+
+        ApplyPersistedSettings();
+    }
+
+    /// <summary>
+    /// Restores the View-menu toggle states from <see cref="AnimatorSettings"/> on startup.
+    /// Must run after <c>_editorController.Initialize()</c> so the controller's enabled
+    /// flags exist before we drive them.
+    /// </summary>
+    private void ApplyPersistedSettings()
+    {
+        var s = AnimatorSettings.Instance;
+
+        InlayHintsMenuItem.IsChecked = s.InlayHintsEnabled;
+        SemanticHighlightingMenuItem.IsChecked = s.SemanticHighlightingEnabled;
+        CodeLensMenuItem.IsChecked = s.CodeLensEnabled;
+        MinimapMenuItem.IsChecked = s.MinimapVisible;
+        ConsoleMenuItem.IsChecked = s.ConsoleVisible;
+
+        _editorController!.InlayHintsEnabled = s.InlayHintsEnabled;
+        _editorController.SemanticHighlightingEnabled = s.SemanticHighlightingEnabled;
+        _editorController.CodeLensEnabled = s.CodeLensEnabled;
+
+        EditorMinimap.Visibility = s.MinimapVisible ? Visibility.Visible : Visibility.Collapsed;
+
+        _savedConsoleHeight = new GridLength(s.ConsoleHeight > 0 ? s.ConsoleHeight : 180);
+        if (s.ConsoleVisible)
+        {
+            ConsoleSplitterRow.Height = GridLength.Auto;
+            ConsoleRow.Height = _savedConsoleHeight;
+        }
+        else
+        {
+            ConsoleSplitterRow.Height = new GridLength(0);
+            ConsoleRow.Height = new GridLength(0);
+        }
     }
 
     private void RefreshConsole()
@@ -497,7 +533,16 @@ public partial class MainWindow : Window
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (!ConfirmDiscardChanges())
+        {
             e.Cancel = true;
+            return;
+        }
+
+        // Capture the splitter-dragged console height (only updated lazily by the toggle
+        // handler), so a height the user resized but never toggled survives a restart.
+        if (ConsoleMenuItem.IsChecked && ConsoleRow.Height.IsAbsolute && ConsoleRow.Height.Value > 0)
+            AnimatorSettings.Instance.ConsoleHeight = ConsoleRow.Height.Value;
+        AnimatorSettings.Save();
     }
 
     private void NewButton_Click(object sender, RoutedEventArgs e) => New();
@@ -513,23 +558,31 @@ public partial class MainWindow : Window
     {
         if (_editorController == null) return;
         _editorController.InlayHintsEnabled = InlayHintsMenuItem.IsChecked;
+        AnimatorSettings.Instance.InlayHintsEnabled = InlayHintsMenuItem.IsChecked;
+        AnimatorSettings.Save();
     }
 
     private void SemanticHighlightingMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (_editorController == null) return;
         _editorController.SemanticHighlightingEnabled = SemanticHighlightingMenuItem.IsChecked;
+        AnimatorSettings.Instance.SemanticHighlightingEnabled = SemanticHighlightingMenuItem.IsChecked;
+        AnimatorSettings.Save();
     }
 
     private void CodeLensMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (_editorController == null) return;
         _editorController.CodeLensEnabled = CodeLensMenuItem.IsChecked;
+        AnimatorSettings.Instance.CodeLensEnabled = CodeLensMenuItem.IsChecked;
+        AnimatorSettings.Save();
     }
 
     private void MinimapMenuItem_Click(object sender, RoutedEventArgs e)
     {
         EditorMinimap.Visibility = MinimapMenuItem.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+        AnimatorSettings.Instance.MinimapVisible = MinimapMenuItem.IsChecked;
+        AnimatorSettings.Save();
     }
 
     private GridLength _savedConsoleHeight = new GridLength(180);
@@ -548,6 +601,11 @@ public partial class MainWindow : Window
             ConsoleSplitterRow.Height = new GridLength(0);
             ConsoleRow.Height = new GridLength(0);
         }
+
+        AnimatorSettings.Instance.ConsoleVisible = ConsoleMenuItem.IsChecked;
+        if (_savedConsoleHeight.IsAbsolute && _savedConsoleHeight.Value > 0)
+            AnimatorSettings.Instance.ConsoleHeight = _savedConsoleHeight.Value;
+        AnimatorSettings.Save();
     }
 
     // ── Export ────────────────────────────────────────────────────────────────

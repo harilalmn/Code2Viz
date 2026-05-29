@@ -33,6 +33,14 @@ public class VPoint : Shape
     /// </summary>
     public VXYZ AsVXYZ() => new VXYZ(X, Y);
 
+    /// <summary>
+    /// Implicit conversion to <see cref="VXYZ"/>. Lets old code that passes <c>new VPoint(...)</c>
+    /// as vertex arguments (e.g. <c>new VPolygon(new VPoint(0,0), new VPoint(1,1))</c>) compile
+    /// against the current constructors which take <c>VXYZ</c>. New code should use <c>new VXYZ(...)</c>
+    /// directly — VPoint is a drawable marker and constructing one still auto-registers it on the canvas.
+    /// </summary>
+    public static implicit operator VXYZ(VPoint p) => new VXYZ(p.X, p.Y);
+
     public override VPoint Clone()
     {
         var clone = new VPoint(X, Y);

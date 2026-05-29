@@ -90,7 +90,7 @@ public static class CodeGenerator
     {
         if (pg.Points.Count == 0)
             return "new VPolygon()";
-        var points = string.Join(", ", pg.Points.Select(p => $"new VPoint({FormatDouble(p.X)}, {FormatDouble(p.Y)})"));
+        var points = string.Join(", ", pg.Points.Select(p => $"new VXYZ({FormatDouble(p.X)}, {FormatDouble(p.Y)})"));
         return $"new VPolygon({points})";
     }
 
@@ -98,7 +98,7 @@ public static class CodeGenerator
     {
         if (pl.Points.Count == 0)
             return "new VPolyline()";
-        var points = string.Join(", ", pl.Points.Select(p => $"new VPoint({FormatDouble(p.X)}, {FormatDouble(p.Y)})"));
+        var points = string.Join(", ", pl.Points.Select(p => $"new VXYZ({FormatDouble(p.X)}, {FormatDouble(p.Y)})"));
         return $"new VPolyline({points})";
     }
 
@@ -106,7 +106,7 @@ public static class CodeGenerator
     {
         if (s.ControlPoints.Count == 0)
             return "new VSpline()";
-        var points = string.Join(", ", s.ControlPoints.Select(p => $"new VPoint({FormatDouble(p.X)}, {FormatDouble(p.Y)})"));
+        var points = string.Join(", ", s.ControlPoints.Select(p => $"new VXYZ({FormatDouble(p.X)}, {FormatDouble(p.Y)})"));
         return $"new VSpline({points})";
     }
 
