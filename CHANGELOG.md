@@ -10,6 +10,48 @@ between tags; this file is the curated, human-friendly summary.
 
 ## [Unreleased]
 
+## [2026.5.5] - 2026-05-29
+
+### Added
+- **Animator remembers View-menu state across runs.** The Inlay Hints, Semantic
+  Highlighting, Code Lens, Minimap and Console toggles (plus the console
+  splitter height) now persist to `%AppData%\Code2Viz\animator_settings.json`.
+- **Completion auto-triggers after `new` / `is` / `as`.** Pressing space after
+  one of those keywords pops up the candidate type list immediately, and the
+  first letter you type then continues to match — no more waiting for the
+  second character or hitting `Ctrl+Space` manually.
+- **PathAnimation works on `VGroup` targets.** A whole group can now ride along
+  any `ICurve` path; previously the animation drove the group's offset but the
+  renderer ignored it, so nothing moved. `MoveAnimation` against a group works
+  for the same reason.
+
+### Changed
+- **Animator IntelliSense matches Code2Viz's reference set.** The editor's
+  Roslyn workspace now sees `System.IO`, `System.Text.Json`,
+  `System.Collections.Immutable`, `System.Linq.Expressions`,
+  `System.Threading.Tasks` and the rest — types in those namespaces resolve in
+  completion lookups instead of silently dropping out.
+- **Animator boilerplate includes the common usings.** New sketches start with
+  `using System; using System.Linq; using System.Collections.Generic; using C2VGeometry;`
+  visible at the top of the file; `System.Linq` and `System.Collections.Generic`
+  also became global usings, so `List<VXYZ>` resolves even in older sketches.
+- **Canvas drawing tool emits `VXYZ` vertex args.** Polygons, polylines and
+  splines drawn directly on the canvas now generate
+  `new VPolygon(new VXYZ(...), ...)` instead of `new VPolygon(new VPoint(...), ...)`.
+  This stops every polygon vertex from auto-registering as a phantom point
+  marker on the canvas. The built-in code snippets (`vpoly`, `vbezier`,
+  `vspline`, `vlinea`, `star`, `wave`) were updated to match.
+
+### Fixed
+- **Old projects that used `new VPoint(...)` as vertex args still compile.**
+  Added an implicit conversion from `VPoint` to `VXYZ` so legacy code like
+  `new VPolygon(new VPoint(...), new VPoint(...))` keeps working against the
+  current `VXYZ`-based constructors. New code should still use `VXYZ` directly
+  because constructing a `VPoint` auto-registers it on the canvas as a visible
+  marker.
+
+## [2026.5.4] - 2026-05-28
+
 ### Added
 - **Charts** — new `Chart` static helper builds Chart.js-style charts (`Chart.Bar`,
   `Chart.Line`, `Chart.Scatter`, `Chart.Pie`, `Chart.Area`) out of standard

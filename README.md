@@ -1294,7 +1294,8 @@ anim.Animate();
 
 ### PathAnimation Example
 
-`PathAnimation` moves a shape along any `ICurve` path (bezier, arc, spline, polyline, etc.):
+`PathAnimation` moves a shape along any `ICurve` path (bezier, arc, spline, polyline, etc.).
+The target can be any `Shape`, including a `VGroup` — the whole group rides the path:
 
 ```csharp
 var dot = new VCircle(0, 0, 5) { Color = "Yellow" };
@@ -1305,6 +1306,10 @@ anim.AddToAnimations(new PathAnimation(dot, path, 3.0));
 anim.Repeat = true;
 anim.Animate();
 ```
+
+Call `path.Hide()` if you only want the target to move along the curve without
+the curve itself being drawn — the animation runs purely off the curve's math
+and is unaffected by visibility.
 
 ### Pausing Between Animations
 
