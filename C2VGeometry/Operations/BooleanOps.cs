@@ -84,6 +84,37 @@ public static class BooleanOps
 
     #endregion
 
+    #region Region Operations (delegate to RegionBooleanOps)
+
+    // Convenience overloads so Region boolean ops can be reached through the same BooleanOps
+    // entry point. These simply forward to RegionBooleanOps (the canonical region API).
+
+    /// <summary>Computes the union of two regions (single Region, or null if disjoint).</summary>
+    public static Region? Union(Region a, Region b) => RegionBooleanOps.Union(a, b);
+
+    /// <summary>Computes the union of a collection of regions (e.g. a List&lt;Region&gt;).</summary>
+    public static Region? Union(IEnumerable<Region> regions) => RegionBooleanOps.Union(regions);
+
+    /// <summary>Computes the intersection of two regions.</summary>
+    public static List<Region> Intersect(Region a, Region b) => RegionBooleanOps.Intersect(a, b);
+
+    /// <summary>Computes the intersection common to a collection of regions.</summary>
+    public static List<Region> Intersect(IEnumerable<Region> regions) => RegionBooleanOps.Intersect(regions);
+
+    /// <summary>Computes the difference of two regions (a - b).</summary>
+    public static List<Region> Difference(Region a, Region b) => RegionBooleanOps.Difference(a, b);
+
+    /// <summary>Computes the first region minus every subsequent region in the collection.</summary>
+    public static List<Region> Difference(IEnumerable<Region> regions) => RegionBooleanOps.Difference(regions);
+
+    /// <summary>Computes the symmetric difference (XOR) of two regions.</summary>
+    public static List<Region> Xor(Region a, Region b) => RegionBooleanOps.Xor(a, b);
+
+    /// <summary>Computes the running symmetric difference (XOR) of a collection of regions.</summary>
+    public static List<Region> Xor(IEnumerable<Region> regions) => RegionBooleanOps.Xor(regions);
+
+    #endregion
+
     #region Boolean Operations with Hole Support
 
     /// <summary>

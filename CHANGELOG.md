@@ -10,6 +10,26 @@ between tags; this file is the curated, human-friendly summary.
 
 ## [Unreleased]
 
+## [2026.5.6] - 2026-05-29
+
+### Added
+- **Build a `Region` from a single closed curve.** `new Region(closedCurve)` accepts any
+  circle, ellipse, closed polygon, or closed polyline/spline/bezier and turns it into a
+  filled, curve-bounded region — no more hand-assembling a list of edge curves. Circles and
+  ellipses keep their true curve geometry; polygons/polylines decompose into edges. The source
+  curve is *consumed* (removed from the canvas) so its outline isn't drawn twice. A matching
+  `AddHole(closedCurve)` overload lets you punch a hole from another closed curve.
+- **"Flex" sliders in the Properties panel.** Every numeric geometry property (radius, angle,
+  coordinates, …) now has a slider beneath its value, with small editable min/max boxes on each
+  end. Drag to sweep the value and watch the canvas update live; release to commit the change
+  back to your source code. Typing in the value box moves the slider (range auto-expands), and
+  the min/max boxes retarget the slider's range.
+- **Boolean operations accept a `List<Region>`.** `RegionBooleanOps.Union/Intersect/Difference/Xor`
+  now take a whole collection (a `List<Region>`, array, or `params`) in addition to a pair —
+  Union merges all, Intersect keeps the area common to every region, Difference subtracts the rest
+  from the first, and Xor folds the symmetric difference. The `BooleanOps` facade also accepts
+  regions now (it forwards to `RegionBooleanOps`), so `BooleanOps.Union(listOfRegions)` works.
+
 ## [2026.5.5] - 2026-05-29
 
 ### Added

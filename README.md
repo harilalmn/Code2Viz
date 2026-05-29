@@ -248,7 +248,7 @@ With **Auto-update Canvas** enabled (default), the canvas updates automatically 
 | **VGrid** | Grid of visible VPoints | `new VGrid(location, xcount, ycount, spacing, centered)` |
 | **VCell** | Square cell with neighbours | Created by `VSpatialGrid` |
 | **VSpatialGrid** | Grid of cells with A* pathfinding | `new VSpatialGrid(location, xCount, yCount, cellSize)` |
-| **Region** | Curve-bounded region | `new Region(curves)` or `new Region(outerCurves, holes)` |
+| **Region** | Curve-bounded region | `new Region(curves)`, `new Region(outerCurves, holes)`, or `new Region(closedCurve)` |
 | **VHatch** | Pattern fill within boundary | `new VHatch(polygon, BuiltInHatch.ANSI31, scale)` |
 
 > **VXYZ vs VPoint**: `VXYZ` is the coordinate/vector type used for all position parameters, properties, and return types (e.g., `new VXYZ(10, 20)`). `VPoint` is a visible shape that draws a dot on the canvas. Use `new VXYZ(x, y)` where you previously used `VPoint.Internal(x, y)`.
@@ -884,6 +884,31 @@ var dShape = new Region(new List<ICurve> { new VLine(bottom, top), arc });
 // Curves can be provided in any order - they are auto-ordered into a loop
 ```
 
+#### From a single closed curve
+
+Pass any **closed** curve directly — a circle, ellipse, closed polygon, or a closed
+polyline / spline / bezier (one whose first and last points coincide). The Region *consumes*
+the source curve (removing it from the canvas) so its outline isn't drawn twice:
+
+```csharp
+// Circle / ellipse become filled regions (true curve geometry is preserved)
+var circleRegion = new Region(new VCircle(0, 0, 50));
+circleRegion.FillColor = "#4000FFFF";
+
+var ellipseRegion = new Region(new VEllipse(0, 0, 60, 30));
+
+// A closed polygon's edges become the region boundary
+var poly = new VPolygon(new VXYZ(0, 0), new VXYZ(100, 0), new VXYZ(50, 80));
+var polyRegion = new Region(poly);
+
+// Add a hole from another closed curve
+polyRegion.AddHole(new VCircle(50, 30, 10));
+```
+
+> A non-circular/elliptical curve must be closed (start point == end point) or an
+> `ArgumentException` is thrown.
+
+
 ### Regions with Holes
 
 ```csharp
@@ -947,8 +972,17 @@ var intersection = RegionBooleanOps.Intersect(regionA, regionB); // List<Region>
 var difference = RegionBooleanOps.Difference(regionA, regionB);  // List<Region>
 var xor = RegionBooleanOps.Xor(regionA, regionB);               // List<Region>
 
-// Multi-region union
-var combined = RegionBooleanOps.Union(region1, region2, region3);
+// Operate on a whole collection (List<Region>, array, or params).
+// Union = merged area, Intersect = area common to ALL, Difference = first minus the rest,
+// Xor = running symmetric difference.
+var regions = new List<Region> { region1, region2, region3 };
+var combined = RegionBooleanOps.Union(regions);          // Region?
+var common   = RegionBooleanOps.Intersect(regions);      // List<Region>
+var firstCut = RegionBooleanOps.Difference(regions);     // List<Region>
+var combinedParams = RegionBooleanOps.Union(region1, region2, region3); // params form
+
+// The BooleanOps facade also accepts regions (forwards to RegionBooleanOps):
+var alsoUnion = BooleanOps.Union(regions);
 
 // Extension method syntax
 var union = regionA.Union(regionB);
@@ -1432,6 +1466,14 @@ Open via **Windows > Properties** menu. The panel shows:
 - **Shape info**: Type, ID, and editable Name
 - **Geometry**: Shape-specific numeric properties (coordinates, radii, dimensions)
 - **Style**: Color and fill color (with color picker), line weight slider, opacity slider, visibility toggle
+
+#### Flex sliders
+Every numeric geometry property has a **"flex" slider** beneath its value box, with a small editable
+**min** box on the left and **max** box on the right. Drag the slider to sweep the value and watch the
+canvas update live — handy for exploring how a radius, angle, or coordinate affects the result. While
+you drag, only the canvas redraws; when you release, the change is committed once and synced back to your
+source code. Type a new value in the value box to move the slider (the range auto-expands if needed), or
+edit the min/max boxes to retarget the slider's range.
 
 The panel can be **floated** as a separate window or **docked** to the right side of the main window using the Dock/Float button in the panel header. Multi-selection shows common style properties.
 

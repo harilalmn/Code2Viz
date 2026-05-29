@@ -255,13 +255,15 @@ public class ApiReferenceResource
         ```csharp
         new Region(new List<ICurve> { line1, arc1, line2, arc2 }); // curves auto-ordered into loop
         new Region(outerCurves, new List<List<ICurve>> { holeCurves }); // with holes
+        new Region(new VCircle(0, 0, 50)); // from a single closed curve (consumes the source)
         Region.FromPolygon(polygon);
         Region.FromPolygonWithHoles(pwh);
         // Properties: OuterLoop, Holes, Area, SignedArea, Perimeter
-        // Methods: AddHole(curves), Contains(point), ToPolygon(), ToPolygonHighRes(segments),
+        // Methods: AddHole(curves) | AddHole(closedCurve), Contains(point), ToPolygon(), ToPolygonHighRes(segments),
         //          ToPolygonWithHoles(segments), Clone(), Move(), Rotate(), Flip(), Scale(), GetBounds()
         // Boolean ops (static): RegionBooleanOps.Union(a, b), .Intersect(a, b), .Difference(a, b), .Xor(a, b)
-        // Multi-union: RegionBooleanOps.Union(r1, r2, r3, ...)
+        // Collection forms (List<Region>/array/params) for all four: .Union(list), .Intersect(list), .Difference(list), .Xor(list)
+        // BooleanOps.Union(list)/.Intersect(list)/... also accept regions (forward to RegionBooleanOps)
         ```
 
         ### VHatch (pattern fill)

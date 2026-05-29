@@ -402,6 +402,11 @@ var region = new Region(new List<ICurve> {
 // With holes
 var regionWithHole = new Region(outerCurves, new List<List<ICurve>> { holeCurves });
 
+// From a single closed curve (circle, ellipse, closed polygon/polyline/spline/bezier).
+// The source curve is consumed (removed from the canvas) so its outline isn't drawn twice.
+var circleRegion = new Region(new VCircle(0, 0, 50));
+circleRegion.AddHole(new VCircle(0, 0, 20));  // hole from another closed curve
+
 // From existing polygon
 var regionFromPoly = Region.FromPolygon(polygon);
 var regionFromPwh = Region.FromPolygonWithHoles(pwh);
@@ -843,9 +848,14 @@ var intersection = RegionBooleanOps.Intersect(regionA, regionB); // List<Region>
 var difference = RegionBooleanOps.Difference(regionA, regionB);  // List<Region>
 var xor = RegionBooleanOps.Xor(regionA, regionB);               // List<Region>
 
-// Union of multiple regions
+// All four ops accept a whole collection (List<Region>, array, or params), folding across all:
+// Union = merged, Intersect = common to all, Difference = first minus rest, Xor = running symmetric diff
 var multiUnion = RegionBooleanOps.Union(region1, region2, region3); // Region?
-var listUnion = RegionBooleanOps.Union(listOfRegions);              // Region?
+var listUnion  = RegionBooleanOps.Union(listOfRegions);            // Region?
+var common     = RegionBooleanOps.Intersect(listOfRegions);       // List<Region>
+var firstCut   = RegionBooleanOps.Difference(listOfRegions);      // List<Region>
+// The BooleanOps facade also accepts regions and forwards here:
+var alsoUnion  = BooleanOps.Union(listOfRegions);                 // Region?
 
 // Extension methods (use static for Intersect)
 var union = regionA.Union(regionB);           // Region?

@@ -5456,6 +5456,8 @@ public partial class MainWindow : Window
 
         _propertiesPanel = new PropertiesPanel();
         _propertiesPanel.ShapePropertyChanged += OnPropertiesPanelPropertyChanged;
+        // Flex-slider drag: redraw the canvas only (no source-code sync) so dragging stays smooth.
+        _propertiesPanel.ShapeLivePreview += (_, __) => RenderCanvas.Refresh();
         _propertiesPanel.DockRequested += OnPropertiesPanelDockRequested;
         _propertiesPanel.FloatRequested += OnPropertiesPanelFloatRequested;
     }

@@ -96,6 +96,92 @@ public static class RegionBooleanOps
 
     #endregion
 
+    #region Collection Operations
+
+    // The following overloads accept a whole collection of regions (e.g. a List<Region>),
+    // folding the binary operation across all of them:
+    //   Intersect = the area common to ALL regions
+    //   Difference = the first region minus every other region
+    //   Xor        = the running symmetric difference of all regions
+    // Union(IEnumerable<Region>) is defined above.
+
+    /// <summary>Computes the intersection common to all regions. Returns an empty list if fewer than one region.</summary>
+    public static List<Region> Intersect(IEnumerable<Region> regions, int segmentsPerCurve = DefaultSegmentsPerCurve)
+    {
+        var list = regions?.ToList() ?? new List<Region>();
+        if (list.Count == 0) return new List<Region>();
+        if (list.Count == 1) return new List<Region> { (Region)list[0].Clone() };
+
+        var acc = new List<Region> { list[0] };
+        for (int i = 1; i < list.Count && acc.Count > 0; i++)
+        {
+            var next = new List<Region>();
+            foreach (var r in acc) next.AddRange(Intersect(r, list[i], segmentsPerCurve));
+            acc = next;
+        }
+        return acc;
+    }
+
+    /// <summary>Computes the first region minus every subsequent region.</summary>
+    public static List<Region> Difference(IEnumerable<Region> regions, int segmentsPerCurve = DefaultSegmentsPerCurve)
+    {
+        var list = regions?.ToList() ?? new List<Region>();
+        if (list.Count == 0) return new List<Region>();
+        if (list.Count == 1) return new List<Region> { (Region)list[0].Clone() };
+
+        var acc = new List<Region> { list[0] };
+        for (int i = 1; i < list.Count && acc.Count > 0; i++)
+        {
+            var next = new List<Region>();
+            foreach (var r in acc) next.AddRange(Difference(r, list[i], segmentsPerCurve));
+            acc = next;
+        }
+        return acc;
+    }
+
+    /// <summary>Computes the running symmetric difference (XOR) of all regions.</summary>
+    public static List<Region> Xor(IEnumerable<Region> regions, int segmentsPerCurve = DefaultSegmentsPerCurve)
+    {
+        var list = regions?.ToList() ?? new List<Region>();
+        if (list.Count == 0) return new List<Region>();
+        if (list.Count == 1) return new List<Region> { (Region)list[0].Clone() };
+
+        var acc = new List<Region> { list[0] };
+        for (int i = 1; i < list.Count; i++)
+        {
+            var next = list[i];
+
+            // (acc - next)
+            var part = new List<Region>();
+            foreach (var r in acc) part.AddRange(Difference(r, next, segmentsPerCurve));
+
+            // (next - acc): subtract every accumulator region from next
+            var remainder = new List<Region> { next };
+            foreach (var r in acc)
+            {
+                var tmp = new List<Region>();
+                foreach (var p in remainder) tmp.AddRange(Difference(p, r, segmentsPerCurve));
+                remainder = tmp;
+            }
+
+            // the two parts are disjoint by construction
+            part.AddRange(remainder);
+            acc = part;
+        }
+        return acc;
+    }
+
+    /// <summary>Computes the intersection common to all supplied regions.</summary>
+    public static List<Region> Intersect(params Region[] regions) => Intersect((IEnumerable<Region>)regions);
+
+    /// <summary>Computes the first region minus every subsequent region.</summary>
+    public static List<Region> Difference(params Region[] regions) => Difference((IEnumerable<Region>)regions);
+
+    /// <summary>Computes the running symmetric difference (XOR) of all supplied regions.</summary>
+    public static List<Region> Xor(params Region[] regions) => Xor((IEnumerable<Region>)regions);
+
+    #endregion
+
     #region Boolean Operations with Hole Support
 
     /// <summary>

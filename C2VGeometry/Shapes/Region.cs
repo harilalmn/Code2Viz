@@ -75,6 +75,41 @@ public class Region : Shape
     }
 
     /// <summary>
+    /// Creates a Region directly from a single <b>closed</b> curve.
+    /// </summary>
+    /// <remarks>
+    /// Accepts any inherently-closed curve (<see cref="VCircle"/>, <see cref="VEllipse"/>,
+    /// <see cref="VPolygon"/>) or any other curve whose start and end points coincide
+    /// (a closed <see cref="VPolyline"/>, <see cref="VSpline"/>, or <see cref="VBezier"/>).
+    /// Polygons and polylines are decomposed into their straight edges; circles, ellipses and
+    /// smooth closed curves are kept whole so the region preserves their true geometry.
+    /// <para>
+    /// The Region <i>consumes</i> the source curve: the supplied curve is removed from the
+    /// canvas/registry so it isn't drawn twice (once as the curve, once as the region outline).
+    /// </para>
+    /// </remarks>
+    /// <param name="closedCurve">A closed curve to use as the region's outer boundary.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="closedCurve"/> is null.</exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the curve is open (start point != end point) and is not an inherently-closed type,
+    /// or when it has fewer than 3 distinct vertices.
+    /// </exception>
+    public Region(ICurve closedCurve)
+    {
+        if (closedCurve == null)
+            throw new ArgumentNullException(nameof(closedCurve));
+
+        OuterLoop = BuildClosedLoop(closedCurve);
+
+        // The region "consumes" the source curve — remove it from the canvas so it isn't
+        // rendered twice (the region already draws its outline).
+        ConsumeSource(closedCurve);
+
+        Color = ShapeDefaults.GlobalColor ?? "LightBlue";
+        FillColor = ShapeDefaults.GlobalFillColor ?? "Transparent";
+    }
+
+    /// <summary>
     /// Internal constructor that skips validation — used for boolean operation results
     /// where the loops are already known to be valid.
     /// </summary>
@@ -108,6 +143,20 @@ public class Region : Shape
 
         var holeFinal = orderedCurves.Select(t => t.reversed ? ReverseCurve(t.curve) : t.curve).ToList();
         Holes.Add(holeFinal);
+    }
+
+    /// <summary>
+    /// Adds a hole to the region from a single <b>closed</b> curve (circle, ellipse, closed polygon,
+    /// closed polyline/spline/bezier). The hole should lie entirely inside the outer boundary.
+    /// The source curve is consumed (removed from the canvas) like in <see cref="Region(ICurve)"/>.
+    /// </summary>
+    public void AddHole(ICurve closedCurve)
+    {
+        if (closedCurve == null)
+            throw new ArgumentNullException(nameof(closedCurve));
+
+        Holes.Add(BuildClosedLoop(closedCurve));
+        ConsumeSource(closedCurve);
     }
 
     #endregion
@@ -583,6 +632,71 @@ public class Region : Shape
     #endregion
 
     #region Helper Methods
+
+    /// <summary>
+    /// Builds an outer-loop curve list from a single closed curve.
+    /// Polygons/polylines become straight <see cref="VLine"/> edges (non-registering);
+    /// inherently-closed curves (circle, ellipse) and smooth closed curves are kept whole.
+    /// </summary>
+    private static List<ICurve> BuildClosedLoop(ICurve closedCurve)
+    {
+        switch (closedCurve)
+        {
+            case VPolygon poly:
+                return BuildEdgeLoop(poly.Points);
+
+            case VPolyline pl:
+                if (!VxyzAreClose(pl.StartPoint, pl.EndPoint))
+                    throw new ArgumentException(
+                        "A VPolyline must be closed (first point == last point) to form a Region.",
+                        nameof(closedCurve));
+                return BuildEdgeLoop(pl.Points);
+
+            case VCircle:
+            case VEllipse:
+                // Inherently closed — keep whole; SampleLoop/Divide approximate it faithfully.
+                return new List<ICurve> { closedCurve };
+
+            default:
+                // Splines, beziers, arcs, or any other curve: require an explicitly closed shape.
+                if (!VxyzAreClose(closedCurve.StartPoint, closedCurve.EndPoint))
+                    throw new ArgumentException(
+                        $"{closedCurve.GetType().Name} must be a closed curve (start point == end point) " +
+                        "to form a Region. Make the first and last points coincide.",
+                        nameof(closedCurve));
+                return new List<ICurve> { closedCurve };
+        }
+    }
+
+    /// <summary>
+    /// Builds wrap-around <see cref="VLine"/> edges from a vertex list, dropping a trailing
+    /// vertex that duplicates the first. Uses <see cref="VLine.Internal"/> so the edges do not
+    /// auto-register on the canvas (see CLAUDE.md notes 6 and 10).
+    /// </summary>
+    private static List<ICurve> BuildEdgeLoop(IReadOnlyList<VXYZ> points)
+    {
+        var pts = points.ToList();
+        while (pts.Count > 1 && VxyzAreClose(pts[0], pts[^1]))
+            pts.RemoveAt(pts.Count - 1);
+
+        if (pts.Count < 3)
+            throw new ArgumentException(
+                "A closed curve needs at least 3 distinct points to form a Region.");
+
+        var edges = new List<ICurve>(pts.Count);
+        for (int i = 0; i < pts.Count; i++)
+            edges.Add(VLine.Internal(pts[i], pts[(i + 1) % pts.Count]));
+        return edges;
+    }
+
+    /// <summary>
+    /// Removes the source curve from the canvas/registry so a Region built from it isn't drawn twice.
+    /// </summary>
+    private static void ConsumeSource(ICurve closedCurve)
+    {
+        if (closedCurve is Shape src)
+            src.Remove();
+    }
 
     private static bool PointsAreClose(VPoint p1, VPoint p2)
     {
