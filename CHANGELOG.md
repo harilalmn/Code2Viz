@@ -10,6 +10,18 @@ between tags; this file is the curated, human-friendly summary.
 
 ## [Unreleased]
 
+## [2026.5.7] - 2026-05-30
+
+### Fixed
+- **Boolean operations on overlapping shapes no longer fail in degenerate cases.** Union,
+  intersection, difference and XOR — for both polygons (`BooleanOps`) and regions
+  (`RegionBooleanOps`) — are now powered by the robust [Clipper2](https://github.com/AngusJohnson/Clipper2)
+  library. Previously a hand-rolled clipper could wrongly report two clearly overlapping shapes as
+  "disjoint" and return `null`/empty — most visibly when a circle was centered on a rectangle's
+  corner (its sampled vertices landed exactly on the rectangle's edges) or when two rectangles
+  shared a full edge. Those now union/intersect correctly, and results with holes (e.g. a square
+  minus a fully-enclosed square) are represented properly via the `*WithHoles` variants.
+
 ## [2026.5.6] - 2026-05-29
 
 ### Added

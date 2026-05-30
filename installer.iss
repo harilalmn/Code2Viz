@@ -55,6 +55,9 @@ Source: "{#BuildOutput}\Code2Viz.runtimeconfig.json"; DestDir: "{app}"; Flags: i
 ; C2VGeometry (shared geometry library used by sketches and projects)
 Source: "{#BuildOutput}\C2VGeometry.dll"; DestDir: "{app}"; Flags: ignoreversion
 
+; Clipper2 (robust polygon boolean-operation engine used by C2VGeometry's BooleanOps/RegionBooleanOps)
+Source: "{#BuildOutput}\Clipper2Lib.dll"; DestDir: "{app}"; Flags: ignoreversion
+
 ; McpBridge
 Source: "{#BuildOutput}\Code2Viz.McpBridge.dll"; DestDir: "{app}"; Flags: ignoreversion
 

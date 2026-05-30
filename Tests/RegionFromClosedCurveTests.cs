@@ -40,6 +40,27 @@ public class RegionFromClosedCurveTests : IDisposable
     }
 
     [Fact]
+    public void Union_CircleCenteredOnRectangleCorner_MergesNonNull()
+    {
+        // Regression for the reported bug: a circle whose polygon vertices land EXACTLY on the
+        // rectangle's edges (circle centered on the rect's corner) made the old Greiner-Hormann
+        // clipper find zero crossings and wrongly report the regions as disjoint, so Union returned
+        // null. Clipper2 handles this vertex-on-edge degeneracy. Hiding the regions must not matter.
+        var r1 = new Region(new VCircle(27.00, 21.22, 15.57));
+        var r2 = new Region(new VRectangle(0.00, 0.00, 27.00, 21.22));
+        r1.Hide();
+        r2.Hide();
+
+        var union = BooleanOps.Union(new List<Region> { r1, r2 });
+
+        Assert.NotNull(union);
+        // Inclusion–exclusion: |A∪B| = |A| + |B| − |A∩B|. The shapes genuinely overlap, so the
+        // union must strictly exceed the rectangle's area (572.94).
+        Assert.True(union!.Area > 572.94,
+            $"Union area ({union.Area:F2}) should exceed the rectangle area (overlap is real).");
+    }
+
+    [Fact]
     public void FromCircle_ConsumesSourceCurve()
     {
         var circle = new VCircle(new VXYZ(0, 0), 5);

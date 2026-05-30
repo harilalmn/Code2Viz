@@ -259,6 +259,11 @@
 
 ---
 
+### Phase 29: Boolean Ops on Clipper2 (2026-05-30)
+- [x] **Replaced the hand-rolled Greiner-Hormann clipper with Clipper2 (`C2VGeometry/Operations/PolygonClipper.cs`)** — the old tracer wrongly reported clearly-overlapping shapes as "disjoint" on degenerate inputs (a polygon vertex landing exactly on another's edge — e.g. a circle centered on a rectangle's corner — and full collinear shared-edge bands), so `BooleanOps.Union`/`RegionBooleanOps.Union` returned `null`. Now delegates polygon Union/Intersect/Difference/Xor + `*WithHoles` + `MakeSimple` to the `Clipper2` NuGet library (`ClipperD`/`PolyTreeD`, `FillRule.NonZero`); `PointInPolygonTest` unchanged. Added the package to `C2VGeometry.csproj` and an explicit `Clipper2Lib.dll` line to `installer.iss`. Guarded by new regression tests in `Tests/BooleanOpsTests.cs` (collinear band, donut-with-hole) and `Tests/RegionFromClosedCurveTests.cs` (circle-on-corner). See CLAUDE.md note 32.
+
+---
+
 ## Implementation Statistics
 
 | Category | Count |

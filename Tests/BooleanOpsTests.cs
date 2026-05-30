@@ -130,6 +130,22 @@ public class BooleanOpsTests
         Assert.Equal(36.0, PolyArea(result), precision: 1);
     }
 
+    [Fact]
+    public void Union_RectanglesSharingFullCollinearEdge_MergeIntoOne()
+    {
+        // Regression: the old hand-rolled clipper mis-unioned two rectangles that shared a full
+        // collinear edge band, returning a single rectangle's area (see CLAUDE.md note 31).
+        // [0,4]×[0,4] and [4,0]×[8,4] share the entire edge x=4, y∈[0,4].
+        var a = MakePoly((0, 0), (4, 0), (4, 4), (0, 4));   // area 16
+        var b = MakePoly((4, 0), (8, 0), (8, 4), (4, 4));   // area 16, shares full edge x=4
+
+        var result = BooleanOps.Union(a, b);
+
+        Assert.NotNull(result);
+        // Merged into one 8×4 rectangle = 32 (NOT 16).
+        Assert.Equal(32.0, PolyArea(result), precision: 1);
+    }
+
     #endregion
 
     #region Difference Tests
@@ -293,6 +309,24 @@ public class BooleanOpsTests
         double intersectArea = intersection.Sum(p => PolyArea(p));
 
         Assert.Equal(areaA, diffArea + intersectArea, precision: 1);
+    }
+
+    #endregion
+
+    #region Holes
+
+    [Fact]
+    public void DifferenceWithHoles_ContainedClipInsideSubject_ProducesHole()
+    {
+        // A big square minus a smaller fully-contained square is a donut: one outer with one hole.
+        var big = MakePoly((0, 0), (10, 0), (10, 10), (0, 10));   // area 100
+        var small = MakePoly((3, 3), (7, 3), (7, 7), (3, 7));     // area 16, fully inside
+
+        var result = BooleanOps.DifferenceWithHoles(big, small);
+
+        Assert.Single(result);
+        Assert.Single(result[0].Holes);
+        Assert.Equal(84.0, result[0].Area, precision: 1);   // 100 - 16
     }
 
     #endregion

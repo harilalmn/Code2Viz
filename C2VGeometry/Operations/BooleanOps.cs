@@ -6,7 +6,7 @@ namespace C2VGeometry;
 
 /// <summary>
 /// Provides boolean operations (union, intersection, difference) on polygons.
-/// Uses native Greiner-Hormann algorithm implementation.
+/// Delegates to the Clipper2 library via <see cref="PolygonClipper"/>.
 /// </summary>
 public static class BooleanOps
 {
