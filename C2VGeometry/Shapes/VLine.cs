@@ -8,11 +8,11 @@ public class VLine : Shape, ICurve
     public VXYZ Start { get; set; }
     public VXYZ End { get; set; }
 
-    /// <summary>Gets the start point of the line.</summary>
-    public VXYZ StartPoint => Start;
+    /// <summary>Gets the start point of the line. Explicit <see cref="ICurve"/> implementation — use <see cref="Start"/> directly on a VLine.</summary>
+    VXYZ ICurve.StartPoint => Start;
 
-    /// <summary>Gets the end point of the line.</summary>
-    public VXYZ EndPoint => End;
+    /// <summary>Gets the end point of the line. Explicit <see cref="ICurve"/> implementation — use <see cref="End"/> directly on a VLine.</summary>
+    VXYZ ICurve.EndPoint => End;
 
     /// <summary>A line is never self-intersecting.</summary>
     public bool SelfIntersecting => false;

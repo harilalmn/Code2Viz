@@ -193,6 +193,8 @@ public partial class MainWindow : Window
         CodeLensMenuItem.IsChecked = s.CodeLensEnabled;
         MinimapMenuItem.IsChecked = s.MinimapVisible;
         ConsoleMenuItem.IsChecked = s.ConsoleVisible;
+        CanvasBorderMenuItem.IsChecked = s.CanvasBorderVisible;
+        Canvas.ShowBoundary = s.CanvasBorderVisible;
 
         _editorController!.InlayHintsEnabled = s.InlayHintsEnabled;
         _editorController.SemanticHighlightingEnabled = s.SemanticHighlightingEnabled;
@@ -582,6 +584,13 @@ public partial class MainWindow : Window
     {
         EditorMinimap.Visibility = MinimapMenuItem.IsChecked ? Visibility.Visible : Visibility.Collapsed;
         AnimatorSettings.Instance.MinimapVisible = MinimapMenuItem.IsChecked;
+        AnimatorSettings.Save();
+    }
+
+    private void CanvasBorderMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Canvas.ShowBoundary = CanvasBorderMenuItem.IsChecked;
+        AnimatorSettings.Instance.CanvasBorderVisible = CanvasBorderMenuItem.IsChecked;
         AnimatorSettings.Save();
     }
 

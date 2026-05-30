@@ -171,9 +171,10 @@ public class Bouncer : Sketch
 
 ### Canvas
 
-- **Centered sketch area** — the `Size(w, h)` box is drawn as a faint outline so you can see your boundary.
-- **No zoom** — wheel zoom is intentionally disabled; the canvas fits the sketch on Run.
-- **Middle-click pan** — supported, for nudging the view.
+- **Centered sketch area** — the `Size(w, h)` box is drawn as a faint outline so you can see your boundary. Toggle it off via **View > Canvas Border** (persisted across sessions).
+- **Mouse-wheel zoom** — zoom in/out centered on the cursor.
+- **Double-click zoom-extents** — fits the sketch boundary (or all shapes if no `Size()` is declared).
+- **Middle-click pan** — drag to nudge the view.
 
 ### When to use which
 
@@ -2115,6 +2116,15 @@ var rotated = v.Rotate(90);  // Returns new VXYZ rotated 90 degrees
 var x = VXYZ.BasisX;  // (1, 0, 0)
 var y = VXYZ.BasisY;  // (0, 1, 0)
 var z = VXYZ.BasisZ;  // (0, 0, 1)
+
+// Operators: +, -, * and / work between VXYZ and scalars, and freely
+// between VXYZ and VPoint (a VPoint participates as its (X, Y) coordinate).
+// Every mixed operation returns a plain VXYZ — never a drawable VPoint — so
+// intermediate results don't pollute the canvas.
+var sum  = new VXYZ(1, 2) + new VPoint(3, 4);   // (4, 6, 0)
+var diff = new VPoint(5, 7) - new VPoint(1, 2);  // (4, 5, 0)
+var scaled = new VPoint(2, 3) * 2.0;             // (4, 6, 0)
+var hadamard = new VXYZ(2, 3) * new VPoint(4, 5);// component-wise (8, 15, 0)
 ```
 
 ### Common Shape Methods

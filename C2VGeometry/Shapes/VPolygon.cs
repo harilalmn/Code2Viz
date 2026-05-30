@@ -436,7 +436,7 @@ public class VPolygon : Shape, ICurve
 
         if (curve is VLine line)
         {
-            points = new List<VXYZ> { line.StartPoint, line.EndPoint };
+            points = new List<VXYZ> { line.Start, line.End };
         }
         else if (curve is VPolyline polyline)
         {

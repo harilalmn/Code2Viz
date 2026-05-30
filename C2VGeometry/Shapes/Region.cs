@@ -405,7 +405,7 @@ public class Region : Shape
 
             if (curve is VLine line)
             {
-                curvePoints = new List<VXYZ> { line.StartPoint, line.EndPoint };
+                curvePoints = new List<VXYZ> { line.Start, line.End };
             }
             else
             {
@@ -732,7 +732,7 @@ public class Region : Shape
 
         if (curve is VLine line)
         {
-            points = new List<VXYZ> { line.StartPoint, line.EndPoint };
+            points = new List<VXYZ> { line.Start, line.End };
         }
         else if (curve is VPolyline polyline)
         {
@@ -848,7 +848,7 @@ public class Region : Shape
     {
         // For lines, just swap endpoints
         if (curve is VLine line)
-            return new VLine(line.EndPoint, line.StartPoint);
+            return new VLine(line.End, line.Start);
 
         // For arcs, reverse the sweep
         if (curve is VArc arc)

@@ -11,7 +11,8 @@ namespace Animator.Canvas;
 /// Lightweight 2D canvas for Animator. Renders <see cref="C2VGeometry.Shape"/> instances directly
 /// using a single <see cref="DrawingVisual"/>. Coordinate system is mathematical (Y-up); when a
 /// sketch declares a frame via Size(), the origin (0,0) is anchored at the frame's bottom-left
-/// corner. Supports mouse-wheel zoom and middle-button pan.
+/// corner. Supports mouse-wheel zoom (cursor-anchored), middle-button pan, and double-click
+/// to zoom-extents (to the sketch boundary if one is declared, otherwise to all shapes).
 /// </summary>
 public class AnimCanvas : FrameworkElement
 {
@@ -31,6 +32,17 @@ public class AnimCanvas : FrameworkElement
     private readonly Dictionary<string, Brush> _brushCache = new(StringComparer.OrdinalIgnoreCase);
     private double _boundaryWidth, _boundaryHeight;
     private bool _hasBoundary;
+    private bool _showBoundary = true;
+
+    /// <summary>
+    /// Whether the faint outline around the sketch boundary is drawn. The boundary is still
+    /// tracked (and used for zoom-extents) when hidden — this only controls rendering.
+    /// </summary>
+    public bool ShowBoundary
+    {
+        get => _showBoundary;
+        set { if (_showBoundary != value) { _showBoundary = value; Refresh(); } }
+    }
 
     public AnimCanvas()
     {
@@ -52,6 +64,7 @@ public class AnimCanvas : FrameworkElement
         MouseDown += OnMouseDown;
         MouseMove += OnMouseMove;
         MouseUp += OnMouseUp;
+        MouseWheel += OnMouseWheel;
         SizeChanged += (s, e) =>
         {
             if (_hasBoundary) ZoomToBounds(0, 0, _boundaryWidth, _boundaryHeight);
@@ -127,6 +140,55 @@ public class AnimCanvas : FrameworkElement
         Refresh();
     }
 
+    private const double MinScale = 1e-4;
+    private const double MaxScale = 1e6;
+
+    /// <summary>Multiplies the zoom by <paramref name="factor"/> while keeping the world
+    /// point under <paramref name="screenCentre"/> fixed (cursor-anchored zoom).</summary>
+    public void ZoomAt(Point screenCentre, double factor)
+    {
+        if (ActualWidth <= 0 || ActualHeight <= 0) return;
+        var newScale = Math.Clamp(_scale * factor, MinScale, MaxScale);
+        if (newScale == _scale) return;
+
+        var (wx, wy) = ScreenToWorld(screenCentre.X, screenCentre.Y);
+        _scale = newScale;
+        // Solve pan so WorldToScreen(wx, wy) lands back on screenCentre.
+        _panX = screenCentre.X - ActualWidth * 0.5 - wx * _scale;
+        _panY = screenCentre.Y - ActualHeight * 0.5 + wy * _scale;
+        Refresh();
+    }
+
+    /// <summary>Zoom-extents: fit the sketch boundary if one is declared, otherwise fit all
+    /// visible shapes. No-op when there is neither.</summary>
+    public void ZoomExtents()
+    {
+        if (_hasBoundary)
+        {
+            ZoomToBounds(0, 0, _boundaryWidth, _boundaryHeight);
+            return;
+        }
+
+        double minX = double.PositiveInfinity, minY = double.PositiveInfinity;
+        double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity;
+        bool any = false;
+        foreach (var shape in _shapes)
+        {
+            if (!shape.IsVisible) continue;
+            var b = shape.GetBounds();
+            if (!IsFinite(b.Min) || !IsFinite(b.Max)) continue; // skip VRay/VXLine etc.
+            minX = Math.Min(minX, Math.Min(b.Min.X, b.Max.X));
+            minY = Math.Min(minY, Math.Min(b.Min.Y, b.Max.Y));
+            maxX = Math.Max(maxX, Math.Max(b.Min.X, b.Max.X));
+            maxY = Math.Max(maxY, Math.Max(b.Min.Y, b.Max.Y));
+            any = true;
+        }
+        if (any) ZoomToBounds(minX, minY, maxX, maxY);
+    }
+
+    private static bool IsFinite(C2VGeometry.VXYZ p)
+        => double.IsFinite(p.X) && double.IsFinite(p.Y);
+
     public void Refresh()
     {
         if (ActualWidth <= 0 || ActualHeight <= 0) return;
@@ -135,7 +197,7 @@ public class AnimCanvas : FrameworkElement
         dc.DrawRectangle(_backgroundBrush, null, new Rect(0, 0, ActualWidth, ActualHeight));
         // Grid and origin axis lines intentionally disabled — see request from user.
 
-        if (_hasBoundary)
+        if (_hasBoundary && _showBoundary)
         {
             var tl = WorldPt(0, _boundaryHeight);
             var br = WorldPt(_boundaryWidth, 0);
@@ -351,7 +413,7 @@ public class AnimCanvas : FrameworkElement
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // Mouse interaction (pan only — zoom is intentionally disabled)
+    // Mouse interaction: middle-button pan, wheel zoom, double-click zoom-extents
     // ────────────────────────────────────────────────────────────────────────
 
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
@@ -363,7 +425,19 @@ public class AnimCanvas : FrameworkElement
             CaptureMouse();
             Cursor = Cursors.SizeAll;
         }
+        else if (e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
+        {
+            ZoomExtents();
+        }
         Focus();
+    }
+
+    private void OnMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // ~10% per notch, in the wheel's natural direction (up = zoom in).
+        var factor = e.Delta > 0 ? 1.1 : 1.0 / 1.1;
+        ZoomAt(e.GetPosition(this), factor);
+        e.Handled = true;
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)

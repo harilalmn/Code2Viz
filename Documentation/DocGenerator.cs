@@ -101,7 +101,7 @@ namespace Code2Viz.Documentation
                 { "Grid2D", "Represents a rectangular grid of points." },
 
                 // Support classes
-                { "VXYZ", "3D coordinate type (X, Y, Z) used for all position and vector parameters. Use new VXYZ(x, y) for 2D (Z defaults to 0). Provides vector operations like Add, Subtract, CrossProduct, DotProduct, Normalize, GetLength. Also has static properties BasisX, BasisY, BasisZ, Zero." },
+                { "VXYZ", "3D coordinate type (X, Y, Z) used for all position and vector parameters. Use new VXYZ(x, y) for 2D (Z defaults to 0). Provides vector operations like Add, Subtract, CrossProduct, DotProduct, Normalize, GetLength. Supports the +, -, * and / operators with scalars and with VPoint (mixed operations return a plain VXYZ, never a drawable point). Also has static properties BasisX, BasisY, BasisZ, Zero." },
                 { "VPlane", "Represents a plane in 3D space defined by origin and basis vectors. Used for coordinate transformations." },
                 { "VTransform", "Represents a 3D transformation matrix for rotation and reflection operations." },
                 { "VCoordinateSystem", "Represents a 3D coordinate system with origin and orthonormal basis vectors (X, Y, Z axes)." },
@@ -911,7 +911,13 @@ var y = VXYZ.BasisY;  // (0, 1, 0)
 var z = VXYZ.BasisZ;  // (0, 0, 1)
 
 // Rotate a vector around the Z-axis
-var rotated = v1.Rotate(90);  // Rotates 90 degrees" },
+var rotated = v1.Rotate(90);  // Rotates 90 degrees
+
+// Operators: +, -, * and / work with scalars and with VPoint.
+// Mixing VXYZ and VPoint always returns a plain VXYZ (never a drawable point).
+var sum = new VXYZ(1, 2) + new VPoint(3, 4);       // (4, 6, 0)
+var scaled = new VPoint(2, 3) * 2.0;               // (4, 6, 0)
+var hadamard = new VXYZ(2, 3) * new VPoint(4, 5);  // component-wise (8, 15, 0)" },
 
                 { "VPlane", @"// Create a plane from normal and origin
 var origin = VXYZ.Zero;
@@ -1678,8 +1684,8 @@ var fixedRange = new ChartOptions { YMin = 0, YMax = 100, YTickCount = 5 };" }
                 { "VPoint.ToString", "Returns a string representation: \"VPoint(X, Y)\"." },
 
                 // VLine Properties
-                { "VLine.StartPoint", "Gets or sets the starting point of the line segment." },
-                { "VLine.EndPoint", "Gets or sets the ending point of the line segment." },
+                { "VLine.Start", "Gets or sets the starting point of the line segment." },
+                { "VLine.End", "Gets or sets the ending point of the line segment." },
                 { "VLine.Length", "Gets the length of the line segment." },
                 { "VLine.MidPoint", "Gets the midpoint of the line segment." },
                 { "VLine.SelfIntersecting", "Always returns false (lines cannot self-intersect)." },

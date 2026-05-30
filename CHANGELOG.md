@@ -10,6 +10,26 @@ between tags; this file is the curated, human-friendly summary.
 
 ## [Unreleased]
 
+## [2026.5.8] - 2026-05-30
+
+### Added
+- **Arithmetic between `VXYZ` and `VPoint`.** The `+`, `-`, `*` and `/` operators now work
+  freely between `VXYZ` and `VPoint` (and between two `VPoint`s, and with scalars). A `VPoint`
+  participates as its `(X, Y)` coordinate; every mixed operation returns a plain `VXYZ` (never a
+  drawable point), so intermediate results don't clutter the canvas. Additive ops are 3D
+  component-wise; `*`/`/` are component-wise in the XY-plane.
+- **Animator: mouse-wheel zoom and double-click zoom-extents.** Scroll to zoom in/out anchored at
+  the cursor; double-click the canvas to fit the sketch boundary (or all shapes when no `Size()`
+  is declared). Middle-click pan is unchanged.
+- **Animator: Canvas Border toggle.** **View > Canvas Border** shows/hides the faint outline around
+  the `Size()` drawing area; the setting persists across sessions.
+
+### Changed
+- **`VLine`/`VArrow` expose their endpoints only as `Start`/`End`.** The redundant read-only
+  `StartPoint`/`EndPoint` aliases were removed from these two types (`VLine` still satisfies the
+  `ICurve.StartPoint`/`EndPoint` contract internally). Use `.Start`/`.End` on a `VLine`/`VArrow`;
+  generic `ICurve` code is unaffected.
+
 ## [2026.5.7] - 2026-05-30
 
 ### Fixed

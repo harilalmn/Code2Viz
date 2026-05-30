@@ -43,10 +43,10 @@ public static class CurveIntersection
 
     public static IntersectionResult IntersectLineLine(VLine line1, VLine line2)
     {
-        var p1 = line1.StartPoint;
-        var p2 = line1.EndPoint;
-        var p3 = line2.StartPoint;
-        var p4 = line2.EndPoint;
+        var p1 = line1.Start;
+        var p2 = line1.End;
+        var p3 = line2.Start;
+        var p4 = line2.End;
 
         double d1x = p2.X - p1.X;
         double d1y = p2.Y - p1.Y;
@@ -79,9 +79,9 @@ public static class CurveIntersection
     private static IntersectionResult CheckCollinearOverlap(VLine line1, VLine line2)
     {
         // Check if lines are collinear
-        var p1 = line1.StartPoint;
-        var p2 = line1.EndPoint;
-        var p3 = line2.StartPoint;
+        var p1 = line1.Start;
+        var p2 = line1.End;
+        var p3 = line2.Start;
 
         double d1x = p2.X - p1.X;
         double d1y = p2.Y - p1.Y;
@@ -99,8 +99,8 @@ public static class CurveIntersection
 
         double t1 = 0;
         double t2 = 1;
-        double t3 = ((line2.StartPoint.X - p1.X) * d1x + (line2.StartPoint.Y - p1.Y) * d1y) / (len1 * len1);
-        double t4 = ((line2.EndPoint.X - p1.X) * d1x + (line2.EndPoint.Y - p1.Y) * d1y) / (len1 * len1);
+        double t3 = ((line2.Start.X - p1.X) * d1x + (line2.Start.Y - p1.Y) * d1y) / (len1 * len1);
+        double t4 = ((line2.End.X - p1.X) * d1x + (line2.End.Y - p1.Y) * d1y) / (len1 * len1);
 
         if (t3 > t4) (t3, t4) = (t4, t3);
 
@@ -125,8 +125,8 @@ public static class CurveIntersection
 
         // Check for antiparallel lines (dot product < 0)
         // If antiparallel, they are touching (boundaries meet) but not overlapping in the polygon sense
-        double d2x = line2.EndPoint.X - line2.StartPoint.X;
-        double d2y = line2.EndPoint.Y - line2.StartPoint.Y;
+        double d2x = line2.End.X - line2.Start.X;
+        double d2y = line2.End.Y - line2.Start.Y;
 
         if (d1x * d2x + d1y * d2y < -Tolerance)
         {
@@ -149,8 +149,8 @@ public static class CurveIntersection
 
     public static IntersectionResult IntersectLineCircle(VLine line, VCircle circle)
     {
-        var p1 = line.StartPoint;
-        var p2 = line.EndPoint;
+        var p1 = line.Start;
+        var p2 = line.End;
         var center = circle.Center;
         double radius = circle.Radius;
 
@@ -263,8 +263,8 @@ public static class CurveIntersection
     public static IntersectionResult IntersectLineEllipse(VLine line, VEllipse ellipse)
     {
         // Transform to ellipse-centered coordinates
-        var p1 = line.StartPoint;
-        var p2 = line.EndPoint;
+        var p1 = line.Start;
+        var p2 = line.End;
         var center = ellipse.Center;
         double a = ellipse.RadiusX;
         double b = ellipse.RadiusY;
@@ -742,8 +742,8 @@ public static class CurveIntersection
         if (!result.IsSinglePoint) return false;
 
         var pt = result.Points[0];
-        bool atSeg1End = pt.DistanceTo(seg1.StartPoint) < Tolerance || pt.DistanceTo(seg1.EndPoint) < Tolerance;
-        bool atSeg2End = pt.DistanceTo(seg2.StartPoint) < Tolerance || pt.DistanceTo(seg2.EndPoint) < Tolerance;
+        bool atSeg1End = pt.DistanceTo(seg1.Start) < Tolerance || pt.DistanceTo(seg1.End) < Tolerance;
+        bool atSeg2End = pt.DistanceTo(seg2.Start) < Tolerance || pt.DistanceTo(seg2.End) < Tolerance;
 
         return atSeg1End && atSeg2End;
     }

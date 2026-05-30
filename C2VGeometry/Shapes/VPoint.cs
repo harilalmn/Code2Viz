@@ -41,6 +41,33 @@ public class VPoint : Shape
     /// </summary>
     public static implicit operator VXYZ(VPoint p) => new VXYZ(p.X, p.Y);
 
+    // ── Arithmetic with VXYZ / VPoint ───────────────────────────────────────
+    // VPoint is a 2D marker, so it participates as the coordinate (X, Y, 0).
+    // Every overload returns a non-drawable VXYZ — never a VPoint — so chained
+    // intermediate results don't auto-register on the canvas. Additive ops are
+    // full 3D component-wise (a VXYZ operand's Z passes through); multiplicative
+    // ops are computed in the XY-plane (Z = 0), matching VPoint's 2D nature and
+    // sidestepping divide-by-zero on the absent Z.
+    public static VXYZ operator +(VPoint a, VPoint b) => new VXYZ(a.X + b.X, a.Y + b.Y);
+    public static VXYZ operator +(VPoint a, VXYZ b)   => new VXYZ(a.X + b.X, a.Y + b.Y, b.Z);
+    public static VXYZ operator +(VXYZ a, VPoint b)   => new VXYZ(a.X + b.X, a.Y + b.Y, a.Z);
+
+    public static VXYZ operator -(VPoint a, VPoint b) => new VXYZ(a.X - b.X, a.Y - b.Y);
+    public static VXYZ operator -(VPoint a, VXYZ b)   => new VXYZ(a.X - b.X, a.Y - b.Y, -b.Z);
+    public static VXYZ operator -(VXYZ a, VPoint b)   => new VXYZ(a.X - b.X, a.Y - b.Y, a.Z);
+
+    public static VXYZ operator *(VPoint a, double s) => new VXYZ(a.X * s, a.Y * s);
+    public static VXYZ operator *(double s, VPoint a) => new VXYZ(a.X * s, a.Y * s);
+    public static VXYZ operator /(VPoint a, double s) => new VXYZ(a.X / s, a.Y / s);
+
+    public static VXYZ operator *(VPoint a, VPoint b) => new VXYZ(a.X * b.X, a.Y * b.Y);
+    public static VXYZ operator *(VPoint a, VXYZ b)   => new VXYZ(a.X * b.X, a.Y * b.Y);
+    public static VXYZ operator *(VXYZ a, VPoint b)   => new VXYZ(a.X * b.X, a.Y * b.Y);
+
+    public static VXYZ operator /(VPoint a, VPoint b) => new VXYZ(a.X / b.X, a.Y / b.Y);
+    public static VXYZ operator /(VPoint a, VXYZ b)   => new VXYZ(a.X / b.X, a.Y / b.Y);
+    public static VXYZ operator /(VXYZ a, VPoint b)   => new VXYZ(a.X / b.X, a.Y / b.Y);
+
     public override VPoint Clone()
     {
         var clone = new VPoint(X, Y);

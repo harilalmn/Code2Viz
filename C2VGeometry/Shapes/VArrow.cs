@@ -17,8 +17,6 @@ public class VArrow : Shape
     /// <summary>Whether to draw arrowhead at start as well</summary>
     public bool DoubleEnded { get; set; } = false;
 
-    public VXYZ StartPoint => Start;
-    public VXYZ EndPoint => End;
     public VXYZ MidPoint => new VXYZ((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
 
     public VArrow(VXYZ start, VXYZ end)

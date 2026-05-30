@@ -10,6 +10,7 @@ public class AnimatorSettingsData
     public bool CodeLensEnabled { get; set; } = true;
     public bool MinimapVisible { get; set; } = true;
     public bool ConsoleVisible { get; set; } = true;
+    public bool CanvasBorderVisible { get; set; } = true;
     public double ConsoleHeight { get; set; } = 180;
 }
 
