@@ -35,17 +35,35 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
+# Run git robustly. Under $ErrorActionPreference='Stop', PowerShell turns ANY
+# native-command stderr output into a terminating NativeCommandError — even when
+# the command exits 0. git routinely writes benign notices to stderr (the
+# "LF will be replaced by CRLF" warning on `git add`, plus `fetch`/`push`
+# progress), which previously aborted this script mid-release. This helper runs
+# git with stderr merged into stdout (so nothing hits the error stream) under a
+# local 'Continue' preference, and fails ONLY on a nonzero exit code. It returns
+# just the real stdout lines so callers that parse output stay clean.
+function Invoke-Git {
+    $ErrorActionPreference = 'Continue'
+    $out = & git @args 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $out | ForEach-Object { Write-Host $_ }
+        throw "git $($args -join ' ') failed (exit code $LASTEXITCODE)."
+    }
+    $out | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }
+}
+
 # Guard: clean working tree, on main, in sync with origin.
-$status = git status --porcelain
+$status = Invoke-Git status --porcelain
 if ($status) {
     Write-Error "Working tree not clean. Commit or stash first."
 }
-$branch = (git rev-parse --abbrev-ref HEAD).Trim()
+$branch = "$(Invoke-Git rev-parse --abbrev-ref HEAD)".Trim()
 if ($branch -ne "main") {
     Write-Error "Not on main (currently $branch). Switch first."
 }
-git fetch origin --quiet
-$behind = (git rev-list HEAD..origin/main --count).Trim()
+Invoke-Git fetch origin --quiet
+$behind = "$(Invoke-Git rev-list HEAD..origin/main --count)".Trim()
 if ($behind -ne "0") {
     Write-Error "Local main is behind origin/main by $behind commit(s). Pull first."
 }
@@ -82,23 +100,25 @@ $iss = $iss -replace '(?m)^(#define MyAppVersion\s+").*?(")', "`${1}$new`${2}"
 Set-Content installer.iss -Value $iss -NoNewline
 
 # 5. Commit the bump.
-git add Directory.Build.props installer.iss
-git commit -m "Release $newTag"
+Invoke-Git add Directory.Build.props installer.iss
+Invoke-Git commit -m "Release $newTag"
 
 # 6. Optional local smoke build.
 if ($LocalBuild) {
+    # Merge stderr into stdout (2>&1) before discarding, so build-tool stderr
+    # output doesn't trip the same Stop-mode NativeCommandError; gate on exit code.
     Write-Host "Building Code2Viz (Release)..." -ForegroundColor Cyan
-    dotnet build Code2Viz.csproj -c Release -nologo | Out-Null
+    & dotnet build Code2Viz.csproj -c Release -nologo 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { Write-Error "Code2Viz build failed." }
 
     Write-Host "Building Animator (Release)..." -ForegroundColor Cyan
-    dotnet build Animator/Animator.csproj -c Release -nologo | Out-Null
+    & dotnet build Animator/Animator.csproj -c Release -nologo 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { Write-Error "Animator build failed." }
 
     $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
     if (Test-Path $iscc) {
         Write-Host "Building installer..." -ForegroundColor Cyan
-        & $iscc installer.iss | Out-Null
+        & $iscc installer.iss 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { Write-Error "Inno Setup build failed." }
     } else {
         Write-Warning "ISCC.exe not found at $iscc; skipping local installer build (CI will still build it)."
@@ -108,9 +128,9 @@ if ($LocalBuild) {
 # 7. Tag and push. The tag push triggers .github/workflows/release.yml,
 #    which builds Release configs, runs Inno Setup, and publishes the
 #    GitHub release with the installer attached.
-git tag $newTag
-git push origin main
-git push origin $newTag
+Invoke-Git tag $newTag
+Invoke-Git push origin main
+Invoke-Git push origin $newTag
 Write-Host "Pushed $newTag to origin." -ForegroundColor Green
 
 Write-Host ""
